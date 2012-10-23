@@ -1,0 +1,20 @@
+To do For version 4.2.3 (4.2.3.0 is development version)
+
+Feature: save setting of macro
+
+Major bug: autofocus on ScanFrame moves also x-y position (on Five-live)
+
+
+Manual should be edited to explain better zoom-1 piezo, inactivated (?). These are all not very clear.
+
+
+
+
+To do for version 5 :
+
+Maybe create a Autofocus macro independent of micropilot. Divide macros in different small macros that are called when needed.
+
+A general window for setting specific tracks (for autofocus, micropilot etc).
+
+
+
