@@ -1,17 +1,22 @@
 To do for version 2.1 
 
 Major bug: autofocus on ScanFrame moves also x-y position (on Five-live ZEN2009)
-
+	- in principle the macro works you just need to set properly how x and y are mirrored on the different microscopes
 Minor bug: Sometime does not return to orginal setting. These get then lost
 
-Manual should be edited to explain better zoom-1 piezo, inactivated (?). These are all not very clear.
+Major bug: Z-spacing without piezo for dz larger than a maximal size gave wrong results. The z-spacing was wrong with respect to the size that one wanted to span.
+	- solved by implementing an extra check in the autofocus routine
+
+Feature: Ask if overwriting images after Save. This should be done either for one or all the images (ask only once) 
+
+Manual should be put up to date edited to explain better zoom-1 piezo, inactivated (?). These are all not very clear.
 Explain how to start the macro with an example image
 
 
 
 To do for version 3 (eventually in the Workflow-Manager):
 
-Feature: save setting of macro/ and original setting so to oretrieve them after a crash
+Feature: save setting of macro/ and original setting so to retrieve them after a crash
 		 mirror axis feature
 		
 Maybe create a Autofocus macro independent of micropilot. Divide macros in different small macros that are called when needed.
