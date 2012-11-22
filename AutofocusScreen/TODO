@@ -1,5 +1,7 @@
 To do for version 2.1 
 
+Major bug: Password protection does not work
+
 Major bug: autofocus on ScanFrame moves also x-y position (on Five-live ZEN2009)
 	- in principle the macro works you just need to set properly how x and y are mirrored on the different microscopes
 Minor bug: Sometime does not return to orginal setting. These get then lost
