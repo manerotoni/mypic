@@ -1,0 +1,4 @@
+Version 2.1
+
+	* Autofocus in the absence of pieze works for large z-Step. This is however quite slow. 
+	
