@@ -1,4 +1,4 @@
- To do for version 3 (eventually in the Workflow-Manager):
+To do for version 3 (eventually in the Workflow-Manager):
 
 Feature: save setting of macro/ and original setting so to retrieve them after a crash
 		 mirror axis feature
