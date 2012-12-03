@@ -14,8 +14,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-
-
+Option Explicit
 
 
 
@@ -23,7 +22,7 @@ Attribute VB_Exposed = False
 Private Sub ChangeFocusButton_Click()
 ChangeFocus = True
 FocusChanged = True
-RestoreAcquisitionParameters
+RestoreAquisitionParameters
 Lsm5Vba.Application.ThrowEvent eRootReuse, 0
 DoEvents
 AutofocusForm.ActivateAcquisitionTrack

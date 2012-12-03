@@ -1,4 +1,7 @@
 Version 2.1
 
-	* Autofocus in the absence of pieze works for large z-Step. This is however quite slow. 
+	* Autofocus in the absence of piezo works for large z-Step. This is however quite slow. (not finished)
+	* Code clean up and comments
+	* Improved check for Stop button using GetInputState() that checks for inputs only when something happens to mouse or keyboards
+
 	

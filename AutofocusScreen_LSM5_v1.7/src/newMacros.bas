@@ -1,9 +1,6 @@
 Attribute VB_Name = "newMacros"
 Option Explicit
 Public SystemVersion As String
-
-Public Declare Function GetInputState Lib "user32" () As Long ' Check if mouse or keyboard has been pushed
-
 Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
 Public Declare Function GetKeyState Lib "user32" (ByVal nVirtKey As Long) As Integer
 Declare Function RegOpenKeyEx _
@@ -87,7 +84,7 @@ Public BleachStartTable() As Double
 Public BleachStopTable() As Double
 Public RepetitionNumber As Long
 
-Public ZOffset As Double
+Public Zoffset As Double
 Public MultipleLocation As Boolean
 Public LocationTracking As Boolean
 Public TrackZ As Boolean
@@ -105,7 +102,7 @@ Public HRZBefore As Double
 Public HRZ As Boolean
 Public NoReflectionSignal As Boolean
 Public PubSentStageGrid As Boolean
-Public BleachingActivated As Boolean
+
 
 Public flgUserChange As Boolean
 Public flgEvent As Integer
@@ -119,9 +116,6 @@ Public GlobalHelpName As String
 Public GlobalPrvTime As Double
 Public GlobalMacroKey As String
 Public GlobalCorrectionOffset As Double
-
-'newPublic29.06.2010
-Public NoFrames As Long
 
 ' Public BlockAutoConfiguration As String
 Public BlockTimeIndex As Long
@@ -141,7 +135,6 @@ Public BlockRepetitions As Long
 
 Public TimerKey As String
 
-Public GlobalHighRes As Boolean
 Public GlobalDataBaseName As String
 Public GlobalFileName As String
 Public GlobalImageIndex() As Long
@@ -160,18 +153,15 @@ Public BlockSingleTrackIndex As Long
 Public BlockMultiTrack As String
 Public BlockMultiTrackIndex As Long
 
-
      
 Public Track As DsTrack
 Public TrackNumber As Integer
 Public TrackName As String
-Public Success As Integer
+Public success As Integer
 Public IsAutofocusTrackSelected As Boolean
 Public AutofocusTrack As Integer
 Public IsAcquisitionTrackSelected As Boolean
 Public ActiveChannels() As String
-
-Public LocationName As String
 
 Public DoNotGoOn As Boolean
 Public ChangeFocus As Boolean
@@ -179,8 +169,7 @@ Public FocusChanged As Boolean
 Public Try As Long
 Public SystemName As String
           
-Public GlobalBackupRecording As DsRecording ' TODO: why two variables
-Public BackupRecording As DsRecording       ' TODO: why two variables
+Public GlobalBackupRecording As DsRecording
 Public ImageNumber As Long
 Public Const OFS_MAXPATHNAME = 128
 Public Const OF_EXIST = &H4000
@@ -194,21 +183,7 @@ Public TileX As Integer
 Public TileY As Integer
 Public Overlap As Double
 
-Public AcquisitionController As AimAcquisitionController40.AimScanController  'Debugging 20110131
-Public RecordingDocpub As DsRecordingDoc
 
-
-
-Public posGridX(10000) As Double
-Public posGridY(10000) As Double
-Public locationNumbersMainGrid(10000) As Integer
-Public posGridXY_valid(10000) As Integer
-Public nGoodCells As Integer
-Public minGoodCellsPerImage As Integer
-Public minGoodCellsPerWell As Integer
-Public nGoodCellsPerWell As Integer
-
-        
 Public HelpNamePDF As String
 
 Public GlobalStageControlZValues As Boolean
@@ -255,6 +230,10 @@ Sub A_Setup()
 End Sub
 
 
+
+
+
+
 Public Sub DisplayProgress(state As String, Color As Long)       'Used to display in the progress bar what the macro is doing
     If (Color & &HFF) > 128 Or ((Color / 256) & &HFF) > 128 Or ((Color / 256) & &HFF) > 128 Then
         AutofocusForm.ProgressLabel.ForeColor = 0
@@ -268,7 +247,7 @@ End Sub
 
 Public Sub AutoStore()    ' This was used to store values of the macro parameteres in the registry. This could be used for saving of the macro and resuisng them but is not working in its present state.
     Dim myKey As String
-    Dim Success As Boolean
+    Dim success As Boolean
     Dim storeOK As Boolean
     Dim idx As Long
     Dim lockNo As Long
@@ -276,11 +255,11 @@ Public Sub AutoStore()    ' This was used to store values of the macro parameter
     AutofocusForm.GetBlockValues
     storeOK = True
     myKey = "UI\" + GlobalMacroKey + "\AutoStore"
-    Success = tools.RegExistKey(myKey)
-    If Success Then
-        Success = tools.RegDeleteKey(myKey)
+    success = tools.RegExistKey(myKey)
+    If success Then
+        success = tools.RegDeleteKey(myKey)
     End If
-    Success = tools.RegCreateKey(myKey)
+    success = tools.RegCreateKey(myKey)
 '    tools.RegStringValue(myKey, "BlockAutoConfiguration") = BlockAutoConfiguration
     tools.RegLongValue(myKey, "BlockTimeIndex") = BlockTimeIndex
 '    tools.RegLongValue(myKey, "BlockAutoConfigurationUse") = BlockAutoConfigurationUse
@@ -288,76 +267,30 @@ Public Sub AutoStore()    ' This was used to store values of the macro parameter
     tools.RegDoubleValue(myKey, "BlockLowZoom") = BlockLowZoom
     tools.RegDoubleValue(myKey, "BlockHRZ") = BlockHRZ
    
-    tools.RegDoubleValue(myKey, "BlockZOffset") = BlockZOffset
+    tools.RegDoubleValue(myKey, "BlockZoffset") = BlockZOffset
     tools.RegDoubleValue(myKey, "BlockZRange") = BlockZRange
     tools.RegDoubleValue(myKey, "BlockZStep") = BlockZStep
 End Sub
 
 
-Public Sub ScanToImage(RecordingDoc As DsRecordingDoc) ' new routine to scan overwrite the same image, even with several z-slices
-   ' Dim AcquisitionController As AimAcquisitionController40.AimScanController 'now public
-    Dim image As AimImage
-    
-    If Not RecordingDoc Is Nothing Then
-        Set image = RecordingDoc.RecordingDocument.image(0, True)
-
-        If Not image Is Nothing Then
-            Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
-            AcquisitionController.DestinationImage(0) = image
-            AcquisitionController.DestinationImage(1) = Nothing
-            AcquisitionController.StartGrab eGrabModeSingle
-        End If
-    End If
-    
-End Sub
-
-Public Sub ScanToImageNew(RecordingDoc As DsRecordingDoc) ' new routine to scan overwrite the same image, even with several z-slices
-    'new changed on 30.05.2011 should then also scan and keep all the tracks...
-    'Dim AcquisitionController As AimAcquisitionController40.AimScanController 'now public
-    Dim ProgressFifo As IAimProgressFifo
-
-    Dim AcquisitionController As AimAcquisitionController40.AimScanController
-    Dim WasLocked As Double
-    
-    Dim gui As Object, treenode As Object
-    Set gui = Lsm5.ViewerGuiServer
-    
-    If Not RecordingDoc Is Nothing Then
-        Set treenode = RecordingDoc.RecordingDocument.image(0, True)
-        'Set treenode = Lsm5.NewDocument
-    
-        Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
-        AcquisitionController.DestinationImage(0) = treenode 'EngelImageToHechtImage(GlobalSingleImage).Image(0, True)
-        AcquisitionController.DestinationImage(1) = Nothing
-        Set ProgressFifo = AcquisitionController.DestinationImage(0)
-        Lsm5.tools.CheckLockControllers True
-        AcquisitionController.StartGrab eGrabModeSingle
-        If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
-    End If
-    
-End Sub
-
-
-
 Public Sub AutoRecall()   ' This was used to read values of the macro parameteres in the registry. This could be used for saving of the macro and resuisng them but is not working in its present state.
     Dim myKey As String
-    Dim Success As Boolean
+    Dim success As Boolean
     Dim idx As Long
     Dim lockNo As Long
     Dim Msg, Style, Title, Help, Ctxt, Response, MyString As String
-'    Dim Position As Long
-   ' Dim Range As Double
+    Dim Position As Long
+    Dim Range As Double
     
     myKey = "UI\" + GlobalMacroKey + "\AutoStore"
-    Success = tools.RegExistKey(myKey)
-    If Success Then
-'        Position = Lsm5.Hardware.CpObjectiveRevolver.RevolverPosition
-'        If Position >= 0 Then
-'            Range = Lsm5.Hardware.CpObjectiveRevolver.FreeWorkingDistance(Position) * 1000#
-'        Else
-'            Range = 0#
-'        End If
-'substituted29.06.2010 by Function Range
+    success = tools.RegExistKey(myKey)
+    If success Then
+        Position = Lsm5.Hardware.CpObjectiveRevolver.RevolverPosition
+        If Position >= 0 Then
+            Range = Lsm5.Hardware.CpObjectiveRevolver.FreeWorkingDistance(Position) * 1000#
+        Else
+            Range = 0#
+        End If
     
 '        BlockAutoConfiguration = tools.RegStringValue(myKey, "BlockAutoConfiguration")
         BlockTimeIndex = tools.RegLongValue(myKey, "BlockTimeIndex")
@@ -366,7 +299,7 @@ Public Sub AutoRecall()   ' This was used to read values of the macro parametere
         BlockLowZoom = tools.RegDoubleValue(myKey, "BlockLowZoom")
         HRZ = tools.RegDoubleValue(myKey, "BlockHRZ")
         
-        BlockZOffset = tools.RegDoubleValue(myKey, "BlockZOffset")
+        BlockZOffset = tools.RegDoubleValue(myKey, "BlockZoffset")
         BlockZRange = tools.RegDoubleValue(myKey, "BlockZRange")
         BlockZStep = tools.RegDoubleValue(myKey, "BlockZStep")
         If BlockZRange > Range * 0.9 Then
@@ -383,46 +316,80 @@ Public Sub AutoRecall()   ' This was used to read values of the macro parametere
     End If
 End Sub
 
-''''''
-'   CopyRecording(Destination As DsRecording, Source As DsRecording)
-'   TODO: Do we need this function?
-'''''
+
 Public Sub CopyRecording(Destination As DsRecording, Source As DsRecording)
+    Dim TS As DsTrack
+    Dim TD As DsTrack
+    Dim DataS As DsDataChannel
+    Dim DataD As DsDataChannel
+    Dim DetS As DsDetectionChannel
+    Dim DetD As DsDetectionChannel
+    Dim IlS As DsIlluminationChannel
+    Dim IlD As DsIlluminationChannel
+    Dim BS As DsBeamSplitter
+    Dim BD As DsBeamSplitter
+    Dim lT As Long
+    Dim lI As Long
+    Dim success As Integer
+    
     Destination.Copy Source
-    Destination.FramesPerStack = Source.FramesPerStack ' why only this
+ '   Destination.Objective = Source.Objective
+'    For lT = 0 To Destination.TrackCount - 1
+'
+'        Set TS = Source.TrackObjectByIndex(lT, success)
+'        Set TD = Destination.TrackObjectByIndex(lT, success)
+'
+'        TD.Collimator1Position = TS.Collimator1Position
+'        TD.Collimator2Position = TS.Collimator2Position
+'
+'        For lI = 0 To TD.DataChannelCount - 1
+'            Set DataS = TS.DataChannelObjectByIndex(lI, success)
+'            Set DataD = TD.DataChannelObjectByIndex(lI, success)
+'            DataD.ColorRef = DataS.ColorRef
+'        Next lI
+'
+'        For lI = 0 To TD.DetectionChannelCount - 1
+'            Set DetS = TS.DetectionChannelObjectByIndex(lI, success)
+'            Set DetD = TD.DetectionChannelObjectByIndex(lI, success)
+'            DetD.Filter1 = DetS.Filter1
+'            DetD.Filter2 = DetS.Filter2
+'            DetD.DetectorGain = DetS.DetectorGain
+'            DetD.AmplifierGain = DetS.AmplifierGain
+'            DetD.AmplifierOffset = DetS.AmplifierOffset
+'            DetD.PinholeDiameter = DetS.PinholeDiameter
+'        Next lI
+'
+'        For lI = 0 To TD.IlluminationChannelCount - 1
+'            Set IlS = TS.IlluminationObjectByIndex(lI, success)
+'            Set IlD = TD.IlluminationObjectByIndex(lI, success)
+'            IlD.Acquire = IlS.Acquire
+'            IlD.Power = IlS.Power
+'            IlD.DetectionChannelName = IlS.DetectionChannelName
+'        Next lI
+'
+'        For lI = 0 To TD.BeamSplitterCount - 1
+'            Set BS = TS.BeamSplitterObjectByIndex(lI, success)
+'            Set BD = TD.BeamSplitterObjectByIndex(lI, success)
+'            BD.Filter = BS.Filter
+'        Next lI
+'
+'    Next lT
 End Sub
 
-'''''
-' StoreAcquisitionParameters()
-' stores the whole set of scan parameters.
-' it uses GlobalBackupRecording and BackupRecording
-' TODO: Why 2 backuprecording are needed
-'''''''
-Public Sub StoreAcquisitionParameters()
+
+
+Public Sub StoreAquisitionParameters()
+    'stores the whole set of scan parameters
     Set GlobalBackupRecording = Lsm5.CreateBackupRecording
-    Set BackupRecording = Lsm5.CreateBackupRecording
-    CopyRecording GlobalBackupRecording, Lsm5.DsRecording ' TODO why do we need CopyRecording. This is done with CreateBackupRecording!
-    CopyRecording BackupRecording, Lsm5.DsRecording
+    CopyRecording GlobalBackupRecording, Lsm5.DsRecording
 End Sub
-
-
-''''''
-'   RestoreAcquisitionParameters()
-'   Restores the image acquisition recording parameters from GlobalBackupRecording
-'   Lsm5.DsRecording Out - Recording setting
-''''''
-Public Sub RestoreAcquisitionParameters()
+Public Sub RestoreAquisitionParameters()
+    'Restores the image acquisition recording parameters
      CopyRecording Lsm5.DsRecording, GlobalBackupRecording
 End Sub
 
-'''''
-'   SystemVersionOffset()
-'   Calculate an offset added to z-stack changes
-'       [GlobalCorrectionOffset] Global Out - Offset added to shift in zStack
-'   TODO: Do we still need it. Only for Axioskop does the Offset change
-'''''
 Public Sub SystemVersionOffset()
-    SystemVersion = Lsm5.Info.VersionIs
+SystemVersion = Lsm5.Info.VersionIs
     If StrComp(SystemVersion, "2.8", vbBinaryCompare) >= 0 Then
         If Lsm5.Info.IsAxioskop Then
             If BlockHighSpeed Then
@@ -434,7 +401,7 @@ Public Sub SystemVersionOffset()
             GlobalCorrectionOffset = 0
         ElseIf Lsm5.Info.IsAxioplan2 Then
             GlobalCorrectionOffset = 0
-        ElseIf Lsm5.Info.IsAxioplan2i Then
+       ElseIf Lsm5.Info.IsAxioplan2i Then
             GlobalCorrectionOffset = 0
         ElseIf Lsm5.Info.IsAxioVert Then
             GlobalCorrectionOffset = 0
@@ -463,90 +430,67 @@ Public Sub SystemVersionOffset()
 
 End Sub
 
-'''''''
-' Autofocus_StackShift ( ZRange As Double, ZStep As Double, HighSpeed As Boolean, ZOffset As Double, NewPicture As DsRecordingDoc )
-' Performs image scan, calculation of signal centroid (mass) and assign the
-' global variables [ZShift] (LineScan) + [XShift] and [YShift] (FrameScan). This function does not change the focus just computes it
-'       [ZRange]    In/Out  - The range in um over which the scan is made. Changed if to big
-'       [ZStep]     In      - ZStep size in um
-'       [HighSpeed] In      - Corresponds to BlockHighSpeed. Corresponds Range to MaxSpeed toggle
-'       [ZOffset]   In/Out  - zOffset is checked weather it fits the
-'       [NewPicture] In/Out - Contains the image
-'''''''
-Public Function Autofocus_StackShift(ZRange As Double, ZStep As Double, HighSpeed As Boolean, ZOffset As Double, NewPicture As DsRecordingDoc) As Boolean
-    Dim BigZStep As Double
-    Dim locStep As Double
-    Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
-    If NewPicture Is Nothing Then
-        Set NewPicture = Lsm5.NewScanWindow
-        While NewPicture.IsBusy
-            Sleep (100)
-            DoEvents
-        Wend
-    End If
 
-    AutofocusForm.ActivateAutofocusTrack HighSpeed
-    
+Public Sub Autofocus_StackShift(ZRange As Double, ZStep As Double, HighSpeed As Boolean, Zoffset As Double)
+    Dim Position As Long
+    Dim Range As Double
+    Dim NoFrames As Long
+    Dim NewPicture As DsRecordingDoc
+    Dim BigZStep As Double
+
+'If GettingZmap And Not idpos = 1 Then GoTo ZStackagain
+AutofocusForm.ActivateAutofocusTrack HighSpeed
     If Not IsAutofocusTrackSelected Then
         MsgBox "No track selected for Autofocus! Cannot Autofocus!"
         ScanStop = True
-        Autofocus_StackShift = False
-        Exit Function
+        Exit Sub
     End If
+Lsm5Vba.Application.ThrowEvent eRootReuse, 0
     DoEvents
     
-    If Range() = 0 Then
+    Position = Lsm5.Hardware.CpObjectiveRevolver.RevolverPosition
+    If Position >= 0 Then
+        Range = Lsm5.Hardware.CpObjectiveRevolver.FreeWorkingDistance(Position) * 1000#
+    Else
+        Range = 0#
+    End If
+    If Range = 0 Then
         MsgBox "Objective's working distance not defined! Cannot Autofocus!"
-        Exit Function
+        Exit Sub
     End If
-    If ZRange > Range() * 0.9 Then 'this is already tested in the slider could be removed
+    If ZRange > Range * 0.9 Then
         ZRange = Range * 0.9
-        MsgBox "Autofocus range is too large! Has been reduced to " + Str(ZRange)
     End If
-    If Abs(ZOffset) > Range() * 0.9 Then 'this is already tested in the slider could be removed
-        ZOffset = 0
-        MsgBox "ZOffset has to be less than the working distance of the objective: " + CStr(Range) + " um"
+    If Abs(Zoffset) > Range * 0.9 Then
+        Zoffset = 0
     End If
+    
     SystemVersionOffset
+    
 
     'Now this is a code specific for the DoAutofocus (is not in the SetAutofocus).
     'This is to move to the offset position, with the focuswheel
-    
-    If Not GettingZmap Then DisplayProgress "Autofocus 1", RGB(0, &HC0, 0)       'I added this at some points for troubleshooting.
-    
-    Lsm5.Hardware.CpHrz.Position = 0  ' center the piezo focus
+  If Not GettingZmap Then DisplayProgress "Autofocus 1", RGB(0, &HC0, 0)       'I added this at some points for troubleshooting.
+    Lsm5.Hardware.CpHrz.Position = 0
   
     
-ZStackagain: 'this refers to goto lines (not used anymore)
+ZStackagain:
 
     Zbefore = Lsm5.Hardware.CpFocus.Position        'To remember the position of the focuswheel
-    'Lsm5.DsRecording.SpecialScanMode = "ZScanner" ' is taken care of in AutofocusForm.AutofocusSetting
+
    
-    If ZOffset <= Range * 0.9 Then
-        
-        Lsm5.Hardware.CpFocus.Position = Zbefore - ZOffset + GlobalCorrectionOffset + ZBacklash 'Move down 50um (=ZBacklash) below the position of the offset
-        Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy                 'Waits that the objective movement is finished, code from the original macro
-           Sleep (20)  '20ms
+     If Zoffset <= Range * 0.9 Then
+       Lsm5.Hardware.CpFocus.Position = Zbefore + Zoffset + GlobalCorrectionOffset + ZBacklash 'Move down 50um (=ZBacklash) below the position of the offset
+      Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy                 'Waits that the objective movement is finished, code from the original macro
+            Sleep (20)  '20ms
            DoEvents
-        Loop
-        Lsm5.Hardware.CpFocus.Position = Zbefore - ZOffset + GlobalCorrectionOffset            'Moves up to the position of the offset
-        Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy                 'Waits that the objective movement is finished, code from the original macro
+       Loop
+       Lsm5.Hardware.CpFocus.Position = Zbefore + Zoffset + GlobalCorrectionOffset            'Moves up to the position of the offset
+       Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy                 'Waits that the objective movement is finished, code from the original macro
            Sleep (20)
            DoEvents
         Loop
-    
-    End If
-
-    'Lsm5.DsRecording.FrameSpacing = ZStep
-    'NoFrames = CLng(ZRange / ZStep) + 1                     'Calculates the number of frames per stack. Clng converts it to a long and rounds up the fraction
-    'Lsm5.DsRecording.FramesPerStack = NoFrames
-    'If NoFrames > 2048 Then                                 'overwrites the userdefined value if too many frames have been defined by the user
-    '    NoFrames = 2048
-    'End If
-    'Lsm5.DsRecording.Sample0Z = ZStep * NoFrames / 2        'Distance of the actual focus to the first Z position of the image (or line) to acquire in the stack.
-                                                            'I think this is only valid for the focus wheel and not the HRZ
-    
-    AutofocusForm.AutofocusSetting HRZ, BlockHighSpeed, BlockZStep
+   End If
 
     Lsm5.DsRecording.FrameSpacing = ZStep
     NoFrames = CLng(ZRange / ZStep) + 1                     'Calculates the number of frames per stack. Clng converts it to a long and rounds up the fraction
@@ -555,139 +499,162 @@ ZStackagain: 'this refers to goto lines (not used anymore)
         NoFrames = 2048
     End If
     Lsm5.DsRecording.Sample0Z = ZStep * NoFrames / 2        'Distance of the actual focus to the first Z position of the image (or line) to acquire in the stack.
-    locStep = Lsm5.DsRecording.FrameSpacing
-    
-    ' check that the ZStep has been set correctly otherwise remove on the fly = Fast Z line. Microscope with Fast Zline can nonly make small number of steps
-    If HRZ = False Then
-        If ZStep > Round(Lsm5.DsRecording.FrameSpacing, 3) Then
-            DisplayProgress "Highest Z Step with no piezo and Fast Z line " + CStr(Round(Lsm5.DsRecording.FrameSpacing, 3)) + " um. Autofocus uses slower Focus Step", RGB(&HC0, &HC0, 0)
-            Lsm5.DsRecording.SpecialScanMode = "FocusStep"
-            Lsm5.DsRecording.FrameSpacing = ZStep
-        End If
+                                                            'I think this is only valid for the focus wheel and not the HRZ
+    AutofocusForm.AutofocusSetting HRZ, BlockHighSpeed
+
+
+  Lsm5.DsRecording.FrameSpacing = ZStep
+    NoFrames = CLng(ZRange / ZStep) + 1                     'Calculates the number of frames per stack. Clng converts it to a long and rounds up the fraction
+    Lsm5.DsRecording.FramesPerStack = NoFrames
+    If NoFrames > 2048 Then                                 'overwrites the userdefined value if too many frames have been defined by the user
+        NoFrames = 2048
     End If
-    '!!!!!!!!!!!!!!!!!!!!!! potential error source!!!!!!!!!!!!!!!!!!
-    If PubSearchScan Then ' todo: what is this?
-        
-        '  BigZStep = Range * 0.7 / 200
-        If HRZ And SystemName = "LIVE" Then
+    Lsm5.DsRecording.Sample0Z = ZStep * NoFrames / 2        'Distance of the actual focus to the first Z position of the image (or line) to acquire in the stack.
+                                                           
+     
+   '!!!!!!!!!!!!!!!!!!!!!! potential error source!!!!!!!!!!!!!!!!!!
+    If PubSearchScan Then
+      '  BigZStep = Range * 0.7 / 200
+      If HRZ And SystemName = "LIVE" Then
 
-        '   If Range > 1000 Then Range = 600  deleted 30.06.2010
+        If Range > 1000 Then Range = 600
 
-            Lsm5.DsRecording.SpecialScanMode = "OnTheFly"
-            Lsm5.DsRecording.FramesPerStack = 1201
-            Lsm5.DsRecording.Sample0Z = Range / 2
-            Lsm5.DsRecording.FrameSpacing = Range / 1200
-            Sleep (100)
+        Lsm5.DsRecording.SpecialScanMode = "OnTheFly"
+        Lsm5.DsRecording.FramesPerStack = 1201
+        Lsm5.DsRecording.Sample0Z = Range / 2
+        Lsm5.DsRecording.FrameSpacing = Range / 1200
+        Sleep (100)
         
         Else
-        
-            BigZStep = Range * 0.7 / 200
-            Lsm5.DsRecording.SpecialScanMode = "FocusStep"
-            NoFrames = CLng(Range * 0.7 / BigZStep) + 1
-            Lsm5.DsRecording.FramesPerStack = NoFrames
-            Lsm5.DsRecording.FrameSpacing = BigZStep
-            Lsm5.DsRecording.Sample0Z = BigZStep * NoFrames / 2
-            Sleep (20)
-            
+       BigZStep = Range * 0.7 / 200
+
+
+       Lsm5.DsRecording.SpecialScanMode = "FocusStep"
+         NoFrames = CLng(Range * 0.7 / BigZStep) + 1
+        Lsm5.DsRecording.FramesPerStack = NoFrames
+        Lsm5.DsRecording.FrameSpacing = BigZStep
+        Lsm5.DsRecording.Sample0Z = BigZStep * NoFrames / 2
+        Sleep (20)
         End If
-    
     End If
         
-    ' Here the Stack is acquired ***
-    'DisplayProgress "Acquiring AF stack...", RGB(&HC0, 0, 0)
-    'Set NewPicture = Lsm5.StartScan
-    ScanToImageNew NewPicture
+    Set NewPicture = Lsm5.StartScan
+  
     
-    While AcquisitionController.IsGrabbing
-        Sleep (100)
-        DoEvents
+    Do While NewPicture.IsBusy
         If ScanStop Then
-            AutofocusForm.StopAcquisition
-            Autofocus_StackShift = False
-            Exit Function
+            Lsm5.StopScan
+            'ScanStop = True
+            DisplayProgress "Stopped", RGB(&HC0, 0, 0)
+            Exit Sub
         End If
-    Wend
+        DoEvents
+        Sleep (10)
+    Loop
+  
+    Lsm5.tools.WaitForScanEnd False, 20
+  If Not GettingZmap Then DisplayProgress "Autofocus 6", RGB(0, &HC0, 0)
     
-    'Lsm5.tools.WaitForScanEnd False, 20
-    ' ******************************
-    
+     AutofocusForm.MassCenter ("Autofocus")
+     If AreStageCoordinateExchanged Then
+            XShift = YMass
+            YShift = XMass
+     Else
+        XShift = XMass
+        YShift = -YMass
+     End If
+        ZShift = ZMass
+         'check if Z shift makes sense
+         If PubSearchScan = True Then Exit Sub
+       CheckRefControl BlockZRange
 
-    If Not GettingZmap Then DisplayProgress "Autofocus 6", RGB(0, &HC0, 0)
-    
-    AutofocusForm.MassCenter ("Autofocus")
-    
-    If AreStageCoordinateExchanged Then
-           XShift = YMass
-           YShift = XMass
-    Else
-           XShift = -XMass
-           YShift = YMass
+' If Not (Running = True And AutofocusForm.CheckBoxZMap.Value = True) Then
+'        If (BlockZRange * 0.8 / 2) > Abs(ZShift) And Abs(ZShift) > 5 And NoReflectionSignal = False Then
+'    MovetoCorrectZPosition Zoffset
+'    GoTo ZStackagain
+'   End If
+   ' End If
+
+           
+    'MsgBox "trying to close AF image"
+    If NewPicture.IsValid Then
+        NewPicture.CloseAllWindows
+        'MsgBox "NewPicture.CloseAllWindows"
     End If
+            
+    'End If
     
-    ZShift = ZMass
-    
-    
-    'check if Z shift makes sense
-    If PubSearchScan = True Then Exit Function ' TODO What is this?
-    CheckRefControl BlockZRange ' this does not do anything as Focuscontrolis not set
-    Autofocus_StackShift = True
-
-End Function
+   
+   
+End Sub
 
 
-''''''
-'   Autofocus_MoveAcquisition(ZOffset As Double)
-'   Add offset to z determined by the Autofocus. This uses stage stepping
-'       [ZOffset] In - Value of ZOffset in um
-''''''
-Public Sub Autofocus_MoveAcquisition(ZOffset As Double)
-    
-    Dim NoZStack As Boolean
-    Const ZBacklash = -50   'why do we need this. TODO?
-    Dim ZFocus As Double
-    Dim Zbefore As Double
-    Dim x As Double
-    Dim y As Double
-    
-    RestoreAcquisitionParameters
-    DoEvents ' this releases window to push some butttons
-    
-    AutofocusForm.ActivateAcquisitionTrack ' Check if Acquisition
+
+Public Sub Autofocus_MoveAquisition(LowZoom As Boolean, Zoffset As Double)
+Dim NoZStack As Boolean
+Const ZBacklash = -50
+Dim ZFocus As Double
+Dim Zbefore As Double
+Dim x As Double
+Dim y As Double
+
+
+
+    RestoreAquisitionParameters
+
+  '  Set GlobalBackupRecording = Nothing
+    Lsm5Vba.Application.ThrowEvent eRootReuse, 0
+    DoEvents
+    AutofocusForm.ActivateAcquisitionTrack
     If Lsm5.DsRecording.ScanMode = "ZScan" Or Lsm5.DsRecording.ScanMode = "Stack" Then  'Looks if a Z-Stack is going to be acquired
         NoZStack = False
     Else
         NoZStack = True
     End If
-    '''''''''''''''''''''''''''''''''''''''
-    ' Moving to the correct position in Z
-    ' Defines the new focus position as the actual position plus the shift and goes back to the object position (that's why you need the offset)
-    ZFocus = Lsm5.Hardware.CpFocus.Position + ZOffset + ZShift
-    ' Why do you need to move downward first ? Todo check if recquired step
-    Lsm5.Hardware.CpFocus.Position = ZFocus + ZBacklash     'Moves down -50uM (ZBacklash) with the focus wheel
-    Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
-        Sleep (20)
-        DoEvents
-    Loop
+
+    'Moving to the correct position in Z
+                                          'If using HRZ for autofocusing and there is no Zstack for image acquisition
+     '   ZFocus = Lsm5.Hardware.CpHrz.Position + ZShift - Zoffset
+     
+     'Defines the new focus position as the actual position plus the shift and goes back to the object position (that's why you need the offset)
     
-    Lsm5.Hardware.CpFocus.Position = ZFocus                     'Moves up to the focus position with the focus wheel
-    Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
-        Sleep (20)
+    If HRZ Then
+     ZFocus = Lsm5.Hardware.CpFocus.Position - Zoffset - ZShift
+       Lsm5.Hardware.CpFocus.Position = ZFocus + ZBacklash     'Moves down -50uM (ZBacklash) with the focus wheel
+        Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
+            Sleep (20)
+            DoEvents
+        Loop
+        Lsm5.Hardware.CpFocus.Position = ZFocus                     'Moves up to the focus position with the focus wheel
+        Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
+            Sleep (20)
+            DoEvents
+        Loop
+    Else
+    ZFocus = Lsm5.Hardware.CpFocus.Position - Zoffset + ZShift
+       Lsm5.Hardware.CpFocus.Position = ZFocus + ZBacklash     'Moves down -50uM (ZBacklash) with the focus wheel
+        Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
+            Sleep (20)
+            DoEvents
+        Loop
+        Lsm5.Hardware.CpFocus.Position = ZFocus                     'Moves up to the focus position with the focus wheel
+        Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
+            Sleep (20)
+            DoEvents
+        Loop
+    End If
+''''' If I want to do it properly, I should add a lot of controls here, to wait to be sure the HRZ can acces the position, and also to wait it is done...
+        Sleep (100)
         DoEvents
-    Loop
-    
-    ' Todo: one might add a lot of controls here, to wait to be sure the focus wheel can acces the position, and also to wait it is done...
-    Sleep (100)
-    DoEvents
    
-    'This is moving the x and y position
-    'This we want only to do when xy-focus is set
+   
+
     'Moving to the correct position in X and Y
+ 
     If FrameAutofocussing Then
-        ' Todo: check whether it moves in the correct direction
-        x = Lsm5.Hardware.CpStages.PositionX - XShift
+        x = Lsm5.Hardware.CpStages.PositionX - XShift  'the fact that it is "-" in this line and "+" in the next line  probably has to do with where the XY of the origin is set (top right corner and not botom left, I think)
         y = Lsm5.Hardware.CpStages.PositionY - YShift
-        
-        Success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition(x, y)
+        success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition(x, y)
          
         Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
             If ScanStop Then
@@ -699,26 +666,22 @@ Public Sub Autofocus_MoveAcquisition(ZOffset As Double)
             DoEvents
             Sleep (5)
         Loop
-    
     End If
     
-    ' center all z-stacks again!
-    Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.FrameSpacing * Int(Lsm5.DsRecording.FramesPerStack / 2)
-    
+
     DisplayProgress "Autofocus 14", RGB(0, &HC0, 0)
-    'Lsm5Vba.Application.ThrowEvent eRootReuse, 0
+    Lsm5Vba.Application.ThrowEvent eRootReuse, 0
     DoEvents
     DisplayProgress "Autofocus 15", RGB(0, &HC0, 0)
-
 End Sub
 
-Private Sub MovetoCorrectZPosition(ZOffset As Double)
+Private Sub MovetoCorrectZPosition(Zoffset As Double)
 Const ZBacklash = -50
 Dim ZFocus As Double
 Dim Zbefore As Double
 Dim x As Double
 Dim y As Double
-     ZFocus = Lsm5.Hardware.CpFocus.Position + ZOffset + ZShift
+     ZFocus = Lsm5.Hardware.CpFocus.Position + Zoffset + ZShift
        Lsm5.Hardware.CpFocus.Position = ZFocus + ZBacklash    'Moves down -50uM (ZBacklash) with the focus wheel
         Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
             Sleep (20)
@@ -735,15 +698,19 @@ Dim y As Double
 End Sub
 
 
-Public Sub Autofocus_MoveAcquisition_HRZ(ZOffset As Double)
-    Dim NoZStack As Boolean
-    Const ZBacklash = -50
-    Dim ZFocus As Double
-    Dim Zbefore As Double
-    Dim x As Double
-    Dim y As Double
 
-    RestoreAcquisitionParameters
+
+Public Sub Autofocus_MoveAquisition_HRZ(LowZoom As Boolean, Zoffset As Double)
+Dim NoZStack As Boolean
+Const ZBacklash = -50
+Dim ZFocus As Double
+Dim Zbefore As Double
+Dim x As Double
+Dim y As Double
+
+
+
+    RestoreAquisitionParameters
     
     Set GlobalBackupRecording = Nothing
     Lsm5Vba.Application.ThrowEvent eRootReuse, 0
@@ -757,14 +724,15 @@ Public Sub Autofocus_MoveAcquisition_HRZ(ZOffset As Double)
 
     'Moving to the correct position in Z
     If HRZ And NoZStack Then                                            'If using HRZ for autofocusing and there is no Zstack for image acquisition
-        Lsm5.Hardware.CpHrz.Stepsize = 0.2
-        Lsm5Vba.Application.ThrowEvent eRootReuse, 0
-        DoEvents
-     '   ZFocus = Lsm5.Hardware.CpHrz.Position + ZShift - ZOffset
+     Lsm5.Hardware.CpHrz.Stepsize = 0.2
+     
+      Lsm5Vba.Application.ThrowEvent eRootReuse, 0
+    DoEvents
+     '   ZFocus = Lsm5.Hardware.CpHrz.Position + ZShift - Zoffset
      
      'Defines the new focus position as the actual position plus the shift and goes back to the object position (that's why you need the offset)
   
-        ZFocus = Lsm5.Hardware.CpHrz.Position + ZOffset + ZShift
+     ZFocus = Lsm5.Hardware.CpHrz.Position + Zoffset + ZShift
        
         Lsm5.Hardware.CpHrz.Position = ZFocus                     'Moves up to the focus position with the focus wheel
         Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
@@ -777,7 +745,7 @@ Public Sub Autofocus_MoveAcquisition_HRZ(ZOffset As Double)
 
     Else                                        'either there is a Z stack for image acquisition or we're using the focuswheel for autofocussing
         If HRZ Then                             ' Now I'm not sure with the signs and... I some point I just tried random combinations...
-            ZFocus = Lsm5.Hardware.CpHrz.Position - ZOffset - ZShift '         'ZBefore corresponds to the position where the focuswheel was before doing anything. Zshift is the calculated shift
+            ZFocus = Lsm5.Hardware.CpHrz.Position - Zoffset - ZShift '         'ZBefore corresponds to the position where the focuswheel was before doing anything. Zshift is the calculated shift
         Else                                    'If the HRZ is not calibrated the Z shift might be wrong
             ZFocus = Zbefore + ZShift
         End If
@@ -794,7 +762,7 @@ Public Sub Autofocus_MoveAcquisition_HRZ(ZOffset As Double)
     If FrameAutofocussing Then
         x = Lsm5.Hardware.CpStages.PositionX - XShift  'the fact that it is "-" in this line and "+" in the next line  probably has to do with where the XY of the origin is set (top right corner and not botom left, I think)
         y = Lsm5.Hardware.CpStages.PositionY - YShift
-        Success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition(x, y)
+        success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition(x, y)
          
         Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
             If ScanStop Then
@@ -816,67 +784,67 @@ Public Sub Autofocus_MoveAcquisition_HRZ(ZOffset As Double)
 End Sub
 
 Public Sub CheckRefControl(BlockZRange As Double)
-    ' TODO: what is happening here?
-    If Try = Empty Then Try = 1
-        
-    'checkif Z shift makes sense
-    ' Todo: where is AutofocusForm.CheckBoxRefControl.Value  set?
-    If AutofocusForm.CheckBoxRefControl.Value = True Then
-        If Abs(ZShift) > (BlockZRange * 0.8 / 2) Or NoReflectionSignal Then
-            PubSearchScan = True
-            DoNotGoOn = False
-            Try = Try + 1
-           
-            If Try >= 4 Then
-                CountDownBox
-                PubSearchScan = False
-                NoReflectionSignal = False
-                AutofocusForm.GetBlockValues 'Updates the parameters value for BlockZRange, BlockZStep..
-                DisplayProgress "Autofocus 0", RGB(0, &HC0, 0)
-                Lsm5.StopScan
-            End If
-            
-            If Not FocusChanged Then
-                If Try >= 4 Then
-                   Try = 1
-                   Exit Sub
-                End If
-            End If
-            'Scan with Focuswheel abigger region,move to the brightest region and do the Piezoscanning again
-              
-            'Lsm5.Hardware.CpFocus.Position = Zbefore
-            Autofocus_StackShift BlockZRange, BlockZStep, BlockHighSpeed, BlockZOffset, RecordingDocpub
-            MovetoCorrectZPosition BlockZOffset
-            'Zbefore = Zbefore + ZShift
-            PubSearchScan = False
-            NoReflectionSignal = False
-              
-            Autofocus_StackShift BlockZRange, BlockZStep, BlockHighSpeed, BlockZOffset, RecordingDocpub
-        End If
-    End If
-    Try = 1
+
+If Try = Empty Then Try = 1
+
+'checkif Z shift makes sense
+                 If AutofocusForm.CheckBoxRefControl.Value = True Then
+                    If Abs(ZShift) > (BlockZRange * 0.8 / 2) Or NoReflectionSignal Then
+                    PubSearchScan = True
+                    DoNotGoOn = False
+                    Try = Try + 1
+                       If Try >= 4 Then
+                       CountDownBox
+                        PubSearchScan = False
+                        NoReflectionSignal = False
+                        AutofocusForm.GetBlockValues 'Updates the parameters value for BlockZRange, BlockZStep..
+                        DisplayProgress "Autofocus 0", RGB(0, &HC0, 0)
+                        Lsm5.StopScan
+                       End If
+                       If Not FocusChanged Then
+                       If Try >= 4 Then
+                            Try = 1
+                            Exit Sub
+                       End If
+                       End If
+                    'Scan with Focuswheel abigger region,move to the brightest region and do the Piezoscanning again
+                       
+                       'Lsm5.Hardware.CpFocus.Position = Zbefore
+                       Autofocus_StackShift BlockZRange, BlockZStep, BlockHighSpeed, BlockZOffset
+                       MovetoCorrectZPosition BlockZOffset
+                       'Zbefore = Zbefore + ZShift
+                       PubSearchScan = False
+                       NoReflectionSignal = False
+                       
+                       Autofocus_StackShift BlockZRange, BlockZStep, BlockHighSpeed, BlockZOffset
+                     End If
+                 End If
+
+
+Try = 1
+
 End Sub
 
 Private Sub CountDownBox()
-    DoNotGoOn = True
-    Load CorrectFocusForm
-    CorrectFocusForm.Show
-    While DoNotGoOn = True
-    DoEvents
-    Sleep (10)
-    Wend
-    
+DoNotGoOn = True
+Load CorrectFocusForm
+CorrectFocusForm.Show
+While DoNotGoOn = True
+DoEvents
+Sleep (10)
+Wend
+
 End Sub
 
 Public Sub PutStagePositionsInArray()
-    ReDim GlobalXpos(GlobalPositionsStage)
-    ReDim GlobalYpos(GlobalPositionsStage)
-    ReDim GlobalZpos(GlobalPositionsStage)
-    For idpos = 0 To GlobalPositionsStage - 1
-    Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).GetMarkZ idpos, GlobalXpos(idpos + 1), GlobalYpos(idpos + 1), GlobalZpos(idpos + 1)
-    '           GlobalXpos(idpos) = Lsm5.Hardware.CpStages.PositionX
-    '           GlobalYpos(idpos) = Lsm5.Hardware.CpStages.PositionY
-    '           GlobalZpos(idpos) = Lsm5.Hardware.CpFocus.Position
-                
-    Next idpos
+ReDim GlobalXpos(GlobalPositionsStage)
+ReDim GlobalYpos(GlobalPositionsStage)
+ReDim GlobalZpos(GlobalPositionsStage)
+For idpos = 0 To GlobalPositionsStage - 1
+Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).GetMarkZ idpos, GlobalXpos(idpos + 1), GlobalYpos(idpos + 1), GlobalZpos(idpos + 1)
+'           GlobalXpos(idpos) = Lsm5.Hardware.CpStages.PositionX
+'           GlobalYpos(idpos) = Lsm5.Hardware.CpStages.PositionY
+'           GlobalZpos(idpos) = Lsm5.Hardware.CpFocus.Position
+            
+Next idpos
 End Sub

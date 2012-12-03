@@ -1,5 +1,5 @@
 Attribute VB_Name = "MCUCommands"
-
+Option Explicit
 Public Abort As Boolean
 Private Interface As Object
 Private Frequency As Double
@@ -99,7 +99,7 @@ Public Function SetStageSpeed(StageSpeed As Double, CANN As Boolean) As Boolean
     Dim SamplingTime As Double
     Dim v As Long
     
-    SampleTimer = SendStageCommandWaitForAnswer("Xn" + Strings.Chr(13))
+    SampleTimer = SendStageCommandWaitForAnswer("Xn" + Chr(13))
     SamplingTime = 16 * (SampleTimer + 1) * (1 / Frequency)
 
     v = CLng(StageSpeed * SamplingTime / Resolution)
@@ -109,12 +109,12 @@ Public Function SetStageSpeed(StageSpeed As Double, CANN As Boolean) As Boolean
     End If
     
     If CANN Then
-        SendStageCommand "XV" + CStr(v) + Strings.Chr(13)
-        SendStageCommand "YV" + CStr(v) + Strings.Chr(13)
+        SendStageCommand "XV" + CStr(v) + Chr(13)
+        SendStageCommand "YV" + CStr(v) + Chr(13)
         SetStageSpeed = True
     Else
-        SendCommand "NPXV" + CStr(v) + Strings.Chr(13)
-        SendCommand "NPYV" + CStr(v) + Strings.Chr(13)
+        SendCommand "NPXV" + CStr(v) + Chr(13)
+        SendCommand "NPYV" + CStr(v) + Chr(13)
     End If
 End Function
     
@@ -123,19 +123,19 @@ End Function
     
 Public Sub SetStageAcceleration(Accelearation As Double, CANN As Boolean)
     If CANN Then
-        SendStageCommand "XA" + CStr(CLng(Accelearation)) + Strings.Chr(13)
-        SendStageCommand "YA" + CStr(CLng(Accelearation)) + Strings.Chr(13)
+        SendStageCommand "XA" + CStr(CLng(Accelearation)) + Chr(13)
+        SendStageCommand "YA" + CStr(CLng(Accelearation)) + Chr(13)
     Else
-        SendCommand "NPXA" + CStr(CLng(Accelearation)) + Strings.Chr(13)
-        SendCommand "NPYA" + CStr(CLng(Accelearation)) + Strings.Chr(13)
+        SendCommand "NPXA" + CStr(CLng(Accelearation)) + Chr(13)
+        SendCommand "NPYA" + CStr(CLng(Accelearation)) + Chr(13)
     End If
 End Sub
 
 Public Function GetStageAcceleration(CANN As Boolean) As Long
     If CANN Then
-        GetStageAcceleration = SendStageCommandWaitForAnswer("Xa" + Strings.Chr(13))
+        GetStageAcceleration = SendStageCommandWaitForAnswer("Xa" + Chr(13))
     Else
-        GetStageAcceleration = SendCommandWaitForAnswer("NPXa" + Strings.Chr(13))
+        GetStageAcceleration = SendCommandWaitForAnswer("NPXa" + Chr(13))
     End If
 End Function
 
@@ -143,23 +143,23 @@ Public Function GetStageSpeed(CANN As Boolean) As Double
     Dim SampleTimer As Double
     Dim SamplingTime As Double
 
-    SampleTimer = SendStageCommandWaitForAnswer("Xn" + Strings.Chr(13))
+    SampleTimer = SendStageCommandWaitForAnswer("Xn" + Chr(13))
     SamplingTime = 16 * (SampleTimer + 1) * (1 / Frequency)
     
     If CANN Then
-        GetStageSpeed = SendStageCommandWaitForAnswer("Xv" + Strings.Chr(13)) * Resolution / SamplingTime
+        GetStageSpeed = SendStageCommandWaitForAnswer("Xv" + Chr(13)) * Resolution / SamplingTime
     Else
-        GetStageSpeed = SendCommandWaitForAnswer("NPXv" + Strings.Chr(13)) * Resolution / SamplingTime
+        GetStageSpeed = SendCommandWaitForAnswer("NPXv" + Chr(13)) * Resolution / SamplingTime
     End If
 End Function
 
 Public Function IsStageBusy(CANN As Boolean) As Boolean
     If CANN Then
-        IsStageBusy = (SendStageCommandWaitForAnswer("Xt" + Strings.Chr(13)) <> 0) _
-                   Or (SendStageCommandWaitForAnswer("Yt" + Strings.Chr(13)) <> 0)
+        IsStageBusy = (SendStageCommandWaitForAnswer("Xt" + Chr(13)) <> 0) _
+                   Or (SendStageCommandWaitForAnswer("Yt" + Chr(13)) <> 0)
     Else
-        IsStageBusy = (SendCommandWaitForAnswer("NPXt" + Strings.Chr(13)) <> 0) _
-                   Or (SendCommandWaitForAnswer("NPYt" + Strings.Chr(13)) <> 0)
+        IsStageBusy = (SendCommandWaitForAnswer("NPXt" + Chr(13)) <> 0) _
+                   Or (SendCommandWaitForAnswer("NPYt" + Chr(13)) <> 0)
     End If
 End Function
 
@@ -182,9 +182,9 @@ Private Function StageMoveToPositionX(PositionMetre As Double, CANN As Boolean)
         Position = Strings.Right(Position, 6)
     End If
     If CANN Then
-        SendStageCommand ("XT" + Position + Strings.Chr(13))
+        SendStageCommand ("XT" + Position + Chr(13))
     Else
-         SendCommand ("NPXT" + Position + Strings.Chr(13))
+         SendCommand ("NPXT" + Position + Chr(13))
     End If
 End Function
 
@@ -198,26 +198,26 @@ Private Function StageMoveToPositionY(PositionMetre As Double, CANN As Boolean)
         Position = Strings.Right(Position, 6)
     End If
     If CANN Then
-        SendStageCommand ("YT" + Position + Strings.Chr(13))
+        SendStageCommand ("YT" + Position + Chr(13))
     Else
-        SendCommand ("NPYT" + Position + Strings.Chr(13))
+        SendCommand ("NPYT" + Position + Chr(13))
     End If
     
 End Function
 
 Private Function StageGetPositionX(CANN As Boolean) As Double
     If CANN Then
-        StageGetPositionX = -SendStageCommandWaitForHexAnswer("Xp" + Strings.Chr(13)) * Resolution
+        StageGetPositionX = -SendStageCommandWaitForHexAnswer("Xp" + Chr(13)) * Resolution
     Else
-        StageGetPositionX = -SendCommandWaitForHexAnswer("NPXp" + Strings.Chr(13)) * Resolution
+        StageGetPositionX = -SendCommandWaitForHexAnswer("NPXp" + Chr(13)) * Resolution
     End If
 End Function
 
 Private Function StageGetPositionY(CANN As Boolean) As Double
     If CANN Then
-        StageGetPositionY = SendStageCommandWaitForHexAnswer("Yp" + Strings.Chr(13)) * Resolution
+        StageGetPositionY = SendStageCommandWaitForHexAnswer("Yp" + Chr(13)) * Resolution
     Else
-        StageGetPositionY = SendCommandWaitForHexAnswer("NPYp" + Strings.Chr(13)) * Resolution
+        StageGetPositionY = SendCommandWaitForHexAnswer("NPYp" + Chr(13)) * Resolution
     End If
 End Function
 
@@ -284,11 +284,7 @@ Lsm5.ExternalCpObject.pHardwareObjects.GetImageAxisStateS 1, ExchangeXY, MirrorX
 End Sub
 
 
-''''''
-'   AreStageCoordinateExchanged() As Boolean
-'       Check weather X and Y axis are exchanged and return True if yes.
-'       Todo: Could also return weather axis are mirrored. Intrestingly althouh axes are not mirrored we use -X??
-''''''
+
 Public Function AreStageCoordinateExchanged() As Boolean
     Dim ExchangeXY As Boolean
     Dim MirrorX As Boolean

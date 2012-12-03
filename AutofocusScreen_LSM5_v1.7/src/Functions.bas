@@ -1,49 +1,4 @@
 Attribute VB_Name = "Functions"
-Option Explicit
-
-
-'''''''''
-'Introduce minimize button for Macro window
-''''''
-Private Declare Function FindWindowA Lib "user32" _
-(ByVal lpClassName As String, _
-ByVal lpWindowName As String) As Long
- 
-Private Declare Function GetWindowLongA Lib "user32" _
-(ByVal hWnd As Long, _
-ByVal nIndex As Long) As Long
- 
-Private Declare Function SetWindowLongA Lib "user32" _
-(ByVal hWnd As Long, _
-ByVal nIndex As Long, _
-ByVal dwNewLong As Long) As Long
-
-Sub FormatUserForm(UserFormCaption As String)
-     
-    Dim hWnd            As Long
-    Dim exLong          As Long
-     
-    hWnd = FindWindowA(vbNullString, UserFormCaption)
-    exLong = GetWindowLongA(hWnd, -16)
-    If (exLong And &H20000) = 0 Then
-        SetWindowLongA hWnd, -16, exLong Or &H20000
-    Else
-    End If
-     
-End Sub
-''''''''
-
-Public Function Range() As Double
-    Dim RevolverPosition As Long
-    RevolverPosition = Lsm5.Hardware.CpObjectiveRevolver.RevolverPosition
-    If RevolverPosition >= 0 Then
-        Range = Lsm5.Hardware.CpObjectiveRevolver.FreeWorkingDistance(RevolverPosition) * 1000# ' the # is a double declaration
-    Else
-        Range = 0#
-    End If
-End Function
-
-
 Public Function GetGlobalZZero(SetZeroMarked As Boolean, ZeroChanged As Boolean)
     Dim Count As Integer
     Dim idx As Long
@@ -55,7 +10,7 @@ Public Function GetGlobalZZero(SetZeroMarked As Boolean, ZeroChanged As Boolean)
     Dim Y1 As Double
     Dim res1 As Integer
 
-    Dim Success As Boolean
+    Dim success As Boolean
     Dim result As Long
     Dim Positions As Long
     ZeroChanged = False
