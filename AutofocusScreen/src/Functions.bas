@@ -33,6 +33,19 @@ Sub FormatUserForm(UserFormCaption As String)
 End Sub
 ''''''''
 
+
+'''''
+'   FileExist(ByVal Pathname)
+'   Check if file is present or not
+'''''
+Public Function FileExist(ByVal Pathname) As Boolean
+    If (Dir(Pathname) = "") Then
+        FileExist = False
+     Else
+        FileExist = True
+     End If
+End Function
+
 Public Function Range() As Double
     Dim RevolverPosition As Long
     RevolverPosition = Lsm5.Hardware.CpObjectiveRevolver.RevolverPosition
@@ -44,58 +57,6 @@ Public Function Range() As Double
 End Function
 
 
-Public Function GetGlobalZZero(SetZeroMarked As Boolean, ZeroChanged As Boolean)
-    Dim Count As Integer
-    Dim idx As Long
-    
-    Dim XPos As Double
-    Dim YPos As Double
-    Dim ZPos As Double
-    Dim x1 As Double
-    Dim Y1 As Double
-    Dim res1 As Integer
-
-    Dim Success As Boolean
-    Dim result As Long
-    Dim Positions As Long
-    ZeroChanged = False
-    If GlobalIsStage Then
-        Positions = Lsm5.Hardware.CpStages.MarkCount
-        ZPos = CpFocus.Position
-        result = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).lAddMarkZ(0, 0, 0)
-        If result <> (Positions + 1) Then
-            result = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).lAddMarkZ(10, 10, 0)
-        End If
-        result = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).GetMarkZ(Positions, GlobalXZero, GlobalYZero, GlobalZZero)
-        res1 = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).ClearMark(Positions)
-        
-        Positions = GlobalPositionsStage
-        If SetZeroMarked Then
-            GlobalZZeroMarked = GlobalZZero
-        Else
-            If Positions <= 1 Then
-                Positions = 1
-                If GlobalZZeroMarked <> GlobalZZero Then
-                    GlobalZZeroMarked = GlobalZZero
-                    ZeroChanged = True
-                End If
-                
-            Else
-                If GlobalZZeroMarked <> GlobalZZero Then
-                    For idx = 1 To Positions
-                        GlobalZpos(idx) = GlobalZpos(idx) + GlobalZZeroMarked - GlobalZZero
-                    Next idx
-                    GlobalZZeroMarked = GlobalZZero
-                    ZeroChanged = True
-    
-                End If
-            End If
-        End If
-    Else
-        GlobalZZero = 0
-        Positions = 0
-    End If
-End Function
 Function FServerFromDescription(strName As String, StrPath As String, ExecName As String) As Boolean
     Dim lngResult As Long
     Dim strTmp As String
@@ -103,7 +64,7 @@ Function FServerFromDescription(strName As String, StrPath As String, ExecName A
     Dim strBuffer As String
     Dim cb As Long
     Dim i As Integer
-    
+     
     FServerFromDescription = False
     
     strTmp = VBA.Space(255)
@@ -147,22 +108,3 @@ error_exit:
 
 End Function
 
-Public Function PubFuncOverWriteZ() As Boolean
-Dim Msg, Style, Title, Help, Ctxt, Response, MyString
-If GlobalZmapAquired = True Then
-    Msg = "Do You Want to overwrite Z-Values?"
-    Style = VbYesNo + VbQuestion + VbDefaultButton2   ' Define buttons.
-    Title = "ZValues"  ' Define title.
-    Response = MsgBox(Msg, Style, Title)
-    If Response = vbYes Then ' User chose Yes.
-        PubFuncOverWriteZ = True
-    Else
-        PubFuncOverWriteZ = False
-        GlobalZposOld() = GlobalZpos()
-       GlobalLocationsOrderOld() = GlobalLocationsOrder()
-    End If
- Else
-    PubFuncOverWriteZ = True
-End If
-
-End Function

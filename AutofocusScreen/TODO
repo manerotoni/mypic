@@ -12,7 +12,10 @@ Major bug: Z-spacing without piezo for dz larger than a maximal size gave wrong 
 Bug?: Change the z-scan parameters within an acquisition. Is this possible (it seems but must look at it again). 
 
 Feature: Ask if overwriting images after Save. This should be done either for one or all the images (ask only once) 
-	Number files always with location. This keeps the overall structure the same. 	
+	 Number files always with location. This keeps the overall structure the same. Add number of location
+
+Feature: Multiposition ZEN position soll mit position 
+
 Feature: mirror of axes
 
 Feature: Speed of AF can't be set independently. Revert to similar setting as in version 1.7 where you have separate speed setting for the AF. 
@@ -20,6 +23,7 @@ Feature: Speed of AF can't be set independently. Revert to similar setting as in
 
 Feature: Update also the menu when the values are updated for the acquisition setup
 
+Feature: Check that AF is done correctly. This was done in version 1.7 has been removed and should be reimplemented at a certain point (CheckRe
 Clean up the code for unused stuff
 Manual should be put up to date edited to explain better zoom-1 piezo, inactivated (?). These are all not very clear.
 Explain how to start the macro with an example image

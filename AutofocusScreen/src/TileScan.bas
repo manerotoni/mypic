@@ -12,25 +12,10 @@ Dim Xnew As Double
 Dim Ynew As Double
 
 
-Public Sub Tile()
-TileX = AutofocusForm.TextBoxTileX.Value
-TileY = AutofocusForm.TextBoxTileY.Value
-Overlap = AutofocusForm.TextBoxOverlap.Value
-
-FrameWidth = Lsm5.DsRecording.FrameWidth
-FrameHeight = Lsm5.DsRecording.FrameHeight
-
-RelFrameWidth = FrameWidth - (FrameWidth * Overlap) / 100
-RelFrameHeight = FrameHeight - (FrameHeight * Overlap) / 100
-
-If (TileX > 1 Or TileY > 1) Then CalculateTileLocs
-
-End Sub
 
 
 Public Sub CalculateTileLocs()
-CopyPositionArrays
-
+    CopyPositionArrays
 End Sub
 
 

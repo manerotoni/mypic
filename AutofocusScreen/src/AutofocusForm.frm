@@ -25,62 +25,6 @@ Option Explicit 'force to declare all variables
 Private Const Version = " v2.0.1"
 
 
-Private Sub BSliderFrameSize_Change()
-    
-End Sub
-
-Private Sub CheckBoxActivatedGridScan_Initialise_Click()
-
-End Sub
-
-Private Sub CheckBoxMoveHRZ_Click()
-
-End Sub
-
-' This corresponds to focus control. Is not used
-Private Sub CheckBoxRefControl_Click()
-
-End Sub
-
-Private Sub Frame16_Click()
-
-End Sub
-
-Private Sub FrameSizeLabel_Click()
-
-End Sub
-
-Private Sub GridScan_nXsub_Change()
-
-End Sub
-
-Private Sub Label11_Click()
-    
-End Sub
-
-Private Sub Label39_Click()
-
-End Sub
-
-Private Sub Label44_Click()
-
-End Sub
-
-Private Sub Label51_Click()
-
-End Sub
-
-Private Sub Label52_Click()
-
-End Sub
-
-Private Sub Label53_Click()
-
-End Sub
-
-Private Sub MultiPage1_Change()
-
-End Sub
 
 ''''''
 ' UserForm_Initialize()
@@ -88,46 +32,306 @@ End Sub
 '   Load and initialize form
 ''
 Private Sub UserForm_Initialize()
+
     Me.Caption = Me.Caption + Version
-    ' make minimizing button available
-    FormatUserForm (Me.Caption)
-    ' Initialize some of the variables
-    Re_Start
+    FormatUserForm (Me.Caption) ' make minimizing button available
+    Re_Start                    ' Initialize some of the variables
+    
 End Sub
 
+
 ''''
-' CheckBoxActivatedGridScan_Click()
-'   Set the grid scan  on or off
-''
-Private Sub CheckBoxActivatedGridScan_Click()
-            
-    If MultipleLocationToggle.Value = True Then
-       ' MsgBox "GridScan not compatible with Multiple Locations!"
-       CheckBoxActivatedGridScan.Value = False
-    End If
+' Re_Start()
+' Initializations that need to be performed only at the first start of the Macro
+''''
+Private Sub Re_Start()
+    Dim delay As Single
+    Dim standType As String
+    Dim Count As Long
+    Dim ImageDatabase As DsGuidedModeDatabase
+    Dim i As Long
+    Dim MruList As DsMruList
+    Dim cnt As Long
+    Dim lpReOpenBuff As OFSTRUCT
+    Dim wStyle As Long
+    Dim lpRootPathName As String
+    Dim lpSectorsPerCluster As Long
+    Dim lpBytesPerSector As Long
+    Dim lpNumberOfFreeClusters As Long
+    Dim lpTotalNumberOfClusters As Long
+    Dim lSpace As Long
+    Dim lFreeSpace As Double
+    Dim fSize As Double
+    Dim hFile As Long
+    Dim bLSM As Boolean
+    Dim bLIVE As Boolean
+    Dim bCamera As Boolean
+
     
-    If CheckBoxActivatedGridScan.Value = True Then
-       ' MsgBox "GridScan not compatible with Location Tracking!"
-        TrackingToggle.Value = False
+    Set tools = Lsm5.tools
+    GlobalMacroKey = "Autofocus"
+    
+    flgUserChange = True
+    delay = 1
+    flgEvent = 7
+    flg = 0
+    Lsm5.StopScan
+    Wait (delay)
+    TimerUnit = 1
+    CommandTimeSec.BackColor = &HFF8080
+    BlockRepetitions = 1
+    ReDim Preserve GlobalImageIndex(BlockRepetitions)
+    ScanLineToggle.Value = True
+    LocationTextLabel.Caption = ""
+    GlobalProject = "AutofocusScreen2.1"
+    GlobalProjectName = GlobalProject + ".lvb"
+    HelpNamePDF = "AutofocusScreen_help.pdf"
+    UsedDevices40 bLSM, bLIVE, bCamera
+    
+    'Set standard values for Autofocus
+    ' blSM is a flag to decide weather systen is LSM (ZEN is LSM for instance). LIVE is 5Live not anymore in use?
+    If bLSM Then
+        SystemName = "LSM"
+        CheckBoxHighSpeed.Value = True
+        BSliderFrameSize.Min = 16
+        BSliderFrameSize.Max = 1024
+        BSliderFrameSize.Step = 8
+        BSliderFrameSize.StepSmall = 4
+        Lsm5Vba.Application.ThrowEvent eRootReuse, 0
+        DoEvents
+    ElseIf bLIVE Then
+        SystemName = "LIVE"
+        BSliderFrameSize.Min = 128
+        BSliderFrameSize.Max = 1024
+        BSliderFrameSize.Step = 128
+        BSliderFrameSize.StepSmall = 128
+        Lsm5Vba.Application.ThrowEvent eRootReuse, 0
+        DoEvents
+    ElseIf bCamera Then
+        SystemName = "Camera"
+    End If
+
+    ScanLineToggle.Value = True
+    BSliderZOffset.Value = 0
+    BSliderZRange.Value = 80
+    BSliderZStep.Value = 0.1
+    CheckBoxLowZoom.Value = False
+    CheckBoxActiveAutofocus.Value = True
+    
+    'Set standard values for Post-Acquisition tracking
+    TrackingToggle.Value = False
+    SwitchEnableTrackingToggle (False)
+ 
+    
+    'Set standard values for Looping
+    BSliderRepetitions = 300
+    BSliderTime = 1
+    
+  
+    'Set standard values for Micropilot
+    CheckBoxActiveOnlineImageAnalysis.Value = False
+    SwitchEnableOnlineImageAnalysisPage (False)
+    CheckBoxZoomAutofocus.Value = False
+    SwitchEnableZoomAutofocus (False)
+    
+    'Set standard values for Gridscan
+    CheckBoxActiveGridScan.Value = False
+    SwitchEnableGridScanPage (False)
+    
+    'Set standard values for Additional Acquisition
+    CheckBoxAlterImage.Value = False
+    SwitschEnableAlterImagePage (False)
+    
+    'Set Database name
+    DatabaseTextbox.Value = GetSetting(appname:="OnlineImageAnalysis", section:="macro", key:="OutputFolder")
+    
+    Re_Initialize
+    
+ 
+End Sub
+
+''''''
+'   CheckBoxActiveAutofocus_Click()
+'       Activates Autofocus. If not toggled only Acquisition track is used
+'''''
+Private Sub CheckBoxActiveAutofocus_Click()
+                                                    
+    If CheckBoxActiveAutofocus.Value Then
+        SwitchEnableAutofocusPage (True)
+        CheckBoxTrackZ.Value = False
+    Else
+        SwitchEnableAutofocusPage (False)
     End If
     
 End Sub
 
 ''''''
-' CheckBoxInactivateAutofocus_Click()
-'   Inactivates Autofocus. Only Acquisition track is used
-'   Changes look of inactivated button if checked
-'   Should also change aspect of z-stack for post-processing but it does not
-'''''
-Private Sub CheckBoxInactivateAutofocus_Click()
-                                                    
-    If CheckBoxInactivateAutofocus.Value = False Then
-        CheckBoxInactivateAutofocus.BackColor = &HFFFFFF
-        CheckBoxTrackZ.Enabled = False
-        CheckBoxTrackZ.Value = False
-    Else
-        CheckBoxInactivateAutofocus.BackColor = 33023
+'   SwitchEnableAutofocusPage(Enable As Boolean)
+'   Disable or enable all buttons and slider
+'       [Enable] In - Sets the mini page enable status
+''''''
+Private Sub SwitchEnableAutofocusPage(Enable As Boolean)
+
+    CheckBoxHighSpeed.Enabled = Enable
+    CheckBoxHRZ.Enabled = Enable
+    CheckBoxLowZoom.Enabled = Enable
+    AFeveryNth.Enabled = Enable
+    AFeveryNthLabel.Enabled = Enable
+    AFeveryNthLabel2.Enabled = Enable
+    ScanLineToggle.Enabled = Enable
+    ScanFrameToggle.Enabled = Enable
+    FrameSizeLabel.Enabled = Enable
+    BSliderFrameSize.Enabled = Enable
+    BSliderZOffset.Enabled = Enable
+    SliderZOffsetLabel.Enabled = Enable
+    BSliderZRange.Enabled = Enable
+    SliderZRangeLabel.Enabled = Enable
+    BSliderZStep.Enabled = Enable
+    SliderZStepLabel.Enabled = Enable
+    OptionButtonTrack1.Enabled = Enable
+    OptionButtonTrack2.Enabled = Enable
+    OptionButtonTrack3.Enabled = Enable
+    OptionButtonTrack4.Enabled = Enable
+    
+End Sub
+
+''''''
+'   CheckBoxActiveOnlineImageAnalysis_Click()
+'   Activate online image analysis, micropilot. Also enable the complete micropilot page
+''''''
+Private Sub CheckBoxActiveOnlineImageAnalysis_Click()
+
+    SwitchEnableOnlineImageAnalysisPage (CheckBoxActiveOnlineImageAnalysis.Value)
+    
+End Sub
+
+''''''
+'   SwitchEnableOnlineImageAnalysisPage(Enable As Boolean)
+'   Disable or enable all buttons and slider (aka Micropilot)
+'       [Enable] In -  Sets the mini page enable status
+''''''
+Private Sub SwitchEnableOnlineImageAnalysisPage(Enable As Boolean)
+    CheckBoxZoomTrack1.Enabled = Enable
+    CheckBoxZoomTrack2.Enabled = Enable
+    CheckBoxZoomTrack3.Enabled = Enable
+    CheckBoxZoomTrack4.Enabled = Enable
+    LabelZoom.Enabled = Enable
+    TextBoxZoom.Enabled = Enable
+    ZoomNumSlicesLabel.Enabled = Enable
+    TextBoxZoomNumSlices.Enabled = Enable
+    ZoomIntervalLabel.Enabled = Enable
+    TextBoxZoomInterval.Enabled = Enable
+    TextBoxZoomAutofocusZOffset.Enabled = Enable
+    CheckBoxZoomAutofocus.Enabled = Enable
+    ZoomFrameSizeLabel.Enabled = Enable
+    TextBoxZoomFrameSize.Enabled = Enable
+    ZoomCyclesLabel.Enabled = Enable
+    TextBoxZoomCycles.Enabled = Enable
+    ZoomCycleDelayLabel.Enabled = Enable
+    TextBoxZoomCycleDelay.Enabled = Enable
+End Sub
+
+''''''
+'   CheckBoxZoomAutofocus_Click()
+'   Activate extra autofocus for image analysis. Enable Z-offset box to be viewed
+''''''
+Private Sub CheckBoxZoomAutofocus_Click()
+    
+    SwitchEnableZoomAutofocus (CheckBoxZoomAutofocus.Value) 'Show Zoffset only when extra autofocus is clicked
+    
+End Sub
+
+''''''
+'   SwitchEnableZoomAutofocus(Enable As Boolean)
+'   Enable/disable Z-offset form for Micropilot minipage
+'       [Enable] In - Sets the visibility of box
+''''''
+Private Sub SwitchEnableZoomAutofocus(Enable As Boolean)
+
+    TextBoxZoomAutofocusZOffset.Visible = Enable
+    ZoomAutofocusZOffsetLabel.Visible = Enable
+    
+End Sub
+
+''''''
+'   CheckBoxAlterImage_Click()
+'   Activate additional image that is acquired only from time to time
+''''''
+Private Sub CheckBoxAlterImage_Click()
+
+    SwitschEnableAlterImagePage (CheckBoxAlterImage.Value)
+    
+End Sub
+
+''''''
+'   SwitschEnableAlterImagePage(Enable As Boolean)
+'   Enable/disable Additional acquisition page
+'       [Enable] In - Sets the enable Enable of minpage
+''''''
+Private Sub SwitschEnableAlterImagePage(Enable As Boolean)
+
+    CheckBox2ndTrack1.Enabled = Enable
+    CheckBox2ndTrack2.Enabled = Enable
+    CheckBox2ndTrack3.Enabled = Enable
+    CheckBox2ndTrack4.Enabled = Enable
+    AlterZoomLabel.Enabled = Enable
+    TextBoxAlterZoom.Enabled = Enable
+    AlterNumSlicesLabel.Enabled = Enable
+    TextBoxAlterNumSlices.Enabled = Enable
+    AlterIntervalLabel.Enabled = Enable
+    TextBoxAlterInterval.Enabled = Enable
+    RoundAlterTrackLabel.Enabled = Enable
+    TextBox_RoundAlterTrack.Enabled = Enable
+    AlterTrackDescriptionLabel.Enabled = Enable
+    
+End Sub
+
+''''
+' CheckBoxActiveGridScan_Click()
+'   Set the grid scan on or off. Changes also
+''
+Private Sub CheckBoxActiveGridScan_Click()
+
+    SwitchEnableGridScanPage (CheckBoxActiveGridScan.Value)
+    If CheckBoxActiveGridScan.Value Then
+        TrackingToggle.Value = False
+        MultipleLocationToggle.Value = False
     End If
+    
+End Sub
+
+''''
+'   SwitchEnableGridScanPage(Enable As Boolean)
+'   Disable or enable all buttons and slider
+'       [Enable] In - Sets the mini page enable status
+''''
+Private Sub SwitchEnableGridScanPage(Enable As Boolean)
+
+    CheckBoxActiveGridScan_Initialise.Enabled = Enable
+    CheckBoxGridScan_FindGoodPositions.Enabled = Enable
+    GridScan_posLabel.Enabled = Enable
+    GridScan_nLabel.Enabled = Enable
+    GridScan_nXLabel.Enabled = Enable
+    GridScan_nYLabel.Enabled = Enable
+    GridScan_nX.Enabled = Enable
+    GridScan_nY.Enabled = Enable
+    GridScan_dLabel.Enabled = Enable
+    GridScan_dXLabel.Enabled = Enable
+    GridScan_dYLabel.Enabled = Enable
+    GridScan_dX.Enabled = Enable
+    GridScan_dY.Enabled = Enable
+    GridScan_subLabel.Enabled = Enable
+    GridScan_nsubLabel.Enabled = Enable
+    GridScan_nXsubLabel.Enabled = Enable
+    GridScan_nYsubLabel.Enabled = Enable
+    GridScan_nXsub.Enabled = Enable
+    GridScan_nYsub.Enabled = Enable
+    GridScan_dsubLabel.Enabled = Enable
+    GridScan_dXsubLabel.Enabled = Enable
+    GridScan_dYsubLabel.Enabled = Enable
+    GridScan_dXsub.Enabled = Enable
+    GridScan_dYsub.Enabled = Enable
+    GridScanDescriptionLabel.Enabled = Enable
     
 End Sub
 
@@ -140,8 +344,9 @@ Private Sub CheckBoxTrackXY_Click()
 End Sub
 
 ''''''''
-' CommandButtonHelp_Click()
-' Look for Help file. This has not been tested
+'   CommandButtonHelp_Click()
+'   Look for Help file
+'   TODO: Test
 ''''''''
 Private Sub CommandButtonHelp_Click()
 
@@ -197,11 +402,73 @@ End Sub
 '''''''''
 '   StopButton_Click()
 '   ScanStop is used to tell different functions to stop execution and acquisition
+'   A second routine is called to stop the processes
 '       [ScanStop] Global/Out - Set to true
 '''''''
 Private Sub StopButton_Click()
     ScanStop = True
-    ChangeButtonStatus True
+End Sub
+
+''''''''
+'   StopAcquisition()
+'   Stop scan and reset buttons of the form
+''''''''
+Public Sub StopAcquisition()
+    If ScanStop Then
+        Lsm5.StopScan
+        DisplayProgress "Stopped", RGB(&HC0, 0, 0)
+        RestoreAcquisitionParameters
+        Sleep (1000)
+        DisplayProgress "Restore Settings", RGB(&HC0, 0, 0)
+        DoEvents
+        ' reset the buttons
+        Dim FileName As String
+        Running = False
+        ScanStop = False
+        RepetitionNumber = 1
+        ScanPause = False
+        PauseButton.Caption = "Pause"
+        PauseButton.BackColor = &H8000000F
+        ExtraBleach = False
+        ExtraBleachButton.Caption = "Bleach"
+        ExtraBleachButton.BackColor = &H8000000F
+        ReDim BleachTable(BlockRepetitions)
+        ReDim BleachStartTable(BlockRepetitions)
+        ReDim BleachStopTable(BlockRepetitions)
+        BleachingActivated = False
+        '
+    '   If LocationTracking Or FrameAutofocussing Then
+    '   what is this?
+    '        For i = 1 To PositionData.Sheets.count
+    '            PositionData.Sheets.Item(i).Select
+    '            Cells.Select
+    '            Selection.Columns.AutoFit
+    '        Next i
+    '        FileName = Left(DataBaseLabel, Len(DataBaseLabel) - 4) & ".xls"
+    '        PositionData.SaveAs FileName:=FileName, FileFormat:=xlNormal, Password:="", WriteResPassword:="", ReadOnlyRecommended:=False, CreateBackup:=False
+    '        PositionData.Close
+    '        Excel.Application.Quit
+    '    End If
+        ' TODO: How to check that the paramters has been restored ?
+        Sleep (1000)
+        DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
+        ChangeButtonStatus True
+    End If
+End Sub
+
+'''''
+'   CommandButtonNewDataBase_Click()
+'   Assigns output folder where files are stored in ZEN software
+'   TODO: Change name of function
+'''''
+Private Sub CommandButtonNewDataBase_Click()
+
+    GlobalDataBaseName = DatabaseTextbox.Value
+    If Not GlobalDataBaseName = "" Then
+        DatabaseLable.Caption = GlobalDataBaseName
+        SaveSetting "OnlineImageAnalysis", "macro", "OutputFolder", GlobalDataBaseName
+    End If
+    
 End Sub
 
 
@@ -439,96 +706,6 @@ Public Function ComputeCenterAndAxis(dx As Double, dy As Double)
  
 End Function
 
-Private Sub AutoExposureLaser()
-
-    Dim gvMaxNorm As Double
-    Dim fractionSat As Double
-    Dim exposureOK As Boolean
-    Dim laserPower As Double
-    Dim i As Integer
-    Dim localBackupRecording As DsRecording
-    Dim nRow As Integer
-    Dim nCol As Integer
-    
-           
-    ' remember acquistion parameters
-    nCol = Lsm5.DsRecording.LinesPerFrame
-    nRow = Lsm5.DsRecording.SamplesPerLine
-    
-    ' set new acquisition parameters
-    Lsm5.DsRecording.LinesPerFrame = AutoExposure_FrameSize.Value
-    Lsm5.DsRecording.SamplesPerLine = AutoExposure_FrameSize.Value
-    
-            
-    exposureOK = False
-    i = 1
-    Do While (exposureOK = False)
-        
-        TakeImage
-        
-        MeasureExposure gvMaxNorm, fractionSat
-        
-        ' show the user the current values
-        AutoExposure_fracSat.Value = fractionSat
-        AutoExposure_brightness.Value = gvMaxNorm
-        AutoExposure_Iterations.Value = i
-        DoEvents
-    
-        If (fractionSat > AutoExposure_fracSatMax.Value) Then
-        
-            DisplayProgress "Image too bright: reducing laser...", RGB(0, &HC0, 0)
-            'MsgBox "too many (" + CStr(fractionSat) + ") saturated pixels; reducting laser power."
-            
-            laserPower = -1 ' -1 just give back the current laser power
-            SetGetLaserPower laserPower
-            laserPower = laserPower / 2
-            SetGetLaserPower laserPower
-            
-        ElseIf (gvMaxNorm < AutoExposure_brightnessMin.Value) Then
-            
-            DisplayProgress "Image too dim: increasing laser...", RGB(0, &HC0, 0)
-            
-            laserPower = -1 ' -1 just give back the current laser power
-            SetGetLaserPower laserPower
-            laserPower = laserPower * AutoExposure_brightnessMin.Value / gvMaxNorm
-            SetGetLaserPower laserPower
-        
-        Else
-            
-            exposureOK = True
-            
-        End If
-        
-        If ScanStop Then
-            Exit Sub
-        End If
-        
-        If i > AutoExposure_maxIter.Value Then
-            DisplayProgress "Could not find good exposure settings...", RGB(0, &HC0, 0)
-            Exit Sub
-        End If
-    
-        i = i + 1
-        
-    Loop
-    
-    
-    ' reset all acquistion parameters
-    Lsm5.DsRecording.LinesPerFrame = nCol
-    Lsm5.DsRecording.SamplesPerLine = nRow
-                     
-    
-End Sub
-
-
-
-Private Sub CommandButtonStoreApply_Click()
-    StoreApplyForm.Show 0
-End Sub
-
-Private Sub Label31_Click()
-
-End Sub
 
 Private Sub CommonDialog_Enter()
 
@@ -545,7 +722,7 @@ Private Sub TakeImage()
     Set ScanImage = Lsm5.StartScan
 
     DisplayProgress "Taking Image.......", RGB(0, &HC0, 0)
-    Do While ScanImage.IsBusy ' Waiting untill the image acquisition is done
+    Do While ScanImage.IsBusy ' Waiting until the image acquisition is done
         Sleep (100)
         If GetInputState() <> 0 Then
             DoEvents
@@ -667,14 +844,6 @@ Public Function MeasureExposure(fractionMax As Double, fractionSat As Double)
 End Function
 
 
-Private Sub DatabaseTextbox_Change()
-
-End Sub
-
-Private Sub Label21_Click()
-
-End Sub
-
 Private Sub ScanLineToggle_Click()
     ScanFrameToggle.Value = Not ScanLineToggle.Value 'if ScanFrame is true ScanLine is false (you can only chose one of them)
     FrameAutofocussing = ScanFrameToggle.Value 'if ScanFrame is true than FrameAutofocusing (boolean variable) will be set true as well
@@ -734,8 +903,9 @@ End Sub
 
 '''''''
 '   AutofocusButton_Click()
-'   Perform Autofocus if Track are selected. If LineScan only Zstack is changed if
-'
+'   Perform Autofocus if Track is selected. If LineScan only Z is changed
+'   if FrameScan X and Y are changed
+'   TODO: No Check that ZShift make sense (original CheckRefControl has been removed because not properly working)
 '
 ''''''''
 Private Sub AutofocusButton_Click()
@@ -753,18 +923,12 @@ Private Sub AutofocusButton_Click()
     Success = Autofocus_StackShift(BlockZRange, BlockZStep, BlockHighSpeed, BlockZOffset, AutofocusDoc)
     
     If Not Success Then
+        StopAcquisition
         Exit Sub
     End If
     
-    ' check if Z shift makes sense
-    ' TODO: what is happening here?
-    CheckRefControl BlockZRange 'does nothing as box is not set
-    'Moves the focus according to BlockZOffset
-    If CheckBoxMoveHRZ.Value = True Then
-        Autofocus_MoveAcquisition_HRZ BlockZOffset ' TODO: This is not used why? Always move with focusdrive
-    Else
-        Autofocus_MoveAcquisition BlockZOffset
-    End If
+    ' fine focus is done with focuswheel of microscope
+    Autofocus_MoveAcquisition BlockZOffset
     
     If ScanStop Then
         StopAcquisition
@@ -823,7 +987,7 @@ Private Sub StartBleachButton_Click()
         
         If Lsm5.IsValidBleachRoi Then
             
-            If CheckBoxActivatedOnlineImageAnalysis Then
+            If CheckBoxActiveOnlineImageAnalysis Then
                 nt = TextBoxZoomCycles
             Else
                 nt = BlockRepetitions
@@ -858,7 +1022,7 @@ Private Sub FillBleachTable()  'Fills a table for the macro to know when the ble
     Set Track = Lsm5.DsRecording.TrackObjectBleach(Success)
     If Success Then
         
-        If CheckBoxActivatedOnlineImageAnalysis Then
+        If CheckBoxActiveOnlineImageAnalysis Then
             nt = TextBoxZoomCycles.Value
         Else
             nt = BlockRepetitions
@@ -915,7 +1079,6 @@ Private Sub StartAcquisition(BleachingActivated)
     Dim LocationNumber As Integer
     Dim iLoc As Integer
     Dim iLocMainGrid As Integer
-
     Dim name As String
     Dim alterName As String
     Dim tilename As String
@@ -926,6 +1089,7 @@ Private Sub StartAcquisition(BleachingActivated)
     Dim z As Double
     Dim ZCor As Double
     Dim Success As Integer
+    Dim SuccessAF As Boolean
     Dim RelativeLocation As Integer
     Dim StitchImage As RecordingDocument
     Dim ScanImage As RecordingDocument
@@ -975,15 +1139,14 @@ Private Sub StartAcquisition(BleachingActivated)
     
     
   
-    Grid = False  ' this is another Grid mode feature which is disabled
     
-    ' CheckBoxActivatedOnlineImageAnalysis  refers to the MicroPilot
-    If CheckBoxActivatedOnlineImageAnalysis.Value = True Then
+    ' CheckBoxActiveOnlineImageAnalysis  refers to the MicroPilot
+    If CheckBoxActiveOnlineImageAnalysis.Value = True Then
         
-        Dim HighResArrayX() As Double
+        Dim HighResArrayX() As Double ' this is an array of values
         Dim HighResArrayY() As Double
         Dim HighResArrayZ() As Double
-        ReDim Preserve HighResArrayX(100)
+        ReDim Preserve HighResArrayX(100) 'define 100 a priori (even if there are less)
         ReDim Preserve HighResArrayY(100)
         ReDim Preserve HighResArrayZ(100)
         OnlineImageAnalysis = True
@@ -999,41 +1162,12 @@ Private Sub StartAcquisition(BleachingActivated)
     
     End If
     
-
-    
-    '' create stiching database: start *********************************
-    TileX = AutofocusForm.TextBoxTileX.Value
-    TileY = AutofocusForm.TextBoxTileY.Value
-    
-    If TileX > 1 Or TileY > 1 Then
-        Start = 1
-        bslash = "\"
-        pos = Start
-        Do While pos > 0
-            pos = InStr(Start, GlobalDataBaseName, bslash)
-            If pos > 0 Then
-                Start = pos + 1
-            End If
-        Loop
-        Mypath = Strings.Left(GlobalDataBaseName, Start - 1)
-        NameLength = Len(GlobalDataBaseName)
-        Myname = Strings.Right(GlobalDataBaseName, NameLength - Start + 1)
-        NameLength = Len(Myname)
-        Myname = Strings.Left(Myname, NameLength - 4)
-        TileDatabaseName = Mypath & Myname & "_tile.mdb"
-        TileDatabaseName = TileDatabaseName & "\" & Myname & "_tile.mdb"
-        
-    
-        Lsm5.NewDatabase (TileDatabaseName) ' Todo: has to be changed for ZEN
-    End If
-    '' create stiching database: end *********************************
-    
     
     InitializeStageProperties
     SetStageSpeed 9, True
     
     GlobalPositionsStage = Lsm5.Hardware.CpStages.MarkCount
-    If MultipleLocation Or Grid Then
+    If MultipleLocation Then
         PutStagePositionsInArray
     End If
     
@@ -1054,7 +1188,7 @@ Private Sub StartAcquisition(BleachingActivated)
         
         LocationNumber = Lsm5.Hardware.CpStages.MarkCount       'Counts the locations stored in the Stage control window from the LSM
     
-    ElseIf (CheckBoxActivatedGridScan And CheckBoxActivatedGridScan_Initialise) Then ' Prepare the grid coordinates
+    ElseIf (CheckBoxActiveGridScan.Value And CheckBoxActiveGridScan_Initialise) Then ' Prepare the grid coordinates TODO: What is CheckBoxActiveGridScan_Initialise
         
         Dim tmpGridX As Double
         Dim tmpGridY As Double
@@ -1137,7 +1271,7 @@ Private Sub StartAcquisition(BleachingActivated)
         Next iy
     
     
-    ElseIf CheckBoxActivatedGridScan Then
+    ElseIf CheckBoxActiveGridScan Then
     
         LocationNumber = GridScan_nX.Value * GridScan_nY.Value * GridScan_nXsub.Value * GridScan_nYsub.Value
         
@@ -1155,12 +1289,7 @@ Private Sub StartAcquisition(BleachingActivated)
     
     
     Do While Running   'As long as the macro is running we're in this loop
-    
-    
-        ' Todo: what is happening here?
-        If CheckBoxZMap.Value Then
-            RecalibrationFocusZMap ' cleaned 31.06.2010
-        End If
+
         
         
         ' Todo: what is happening here?
@@ -1188,7 +1317,7 @@ Private Sub StartAcquisition(BleachingActivated)
                 
                 MoveToNextLocation ' in xy and z-positon
             
-            ElseIf CheckBoxActivatedGridScan.Value Then
+            ElseIf CheckBoxActiveGridScan.Value Then
                             
                 If CheckBoxGridScan_FindGoodPositions And (Location > 1) Then
                     
@@ -1305,14 +1434,10 @@ Private Sub StartAcquisition(BleachingActivated)
             
             If (RepetitionNumber - 1) Mod AFeveryNth = 0 Then
                      
-                If CheckBoxInactivateAutofocus Then  ' Looking if needs to perform an autofocus
+                If Not CheckBoxActiveAutofocus Then  ' Looking if needs to perform an autofocus
                      
                      ZShift = 0
-                
-                ElseIf CheckBoxZMap.Value Then
-                    
-                    ' do nothing
-                     
+                                    
                 Else ' perform AUTOFOCUS
                      
                      AutofocusForm.GetBlockValues
@@ -1320,13 +1445,12 @@ Private Sub StartAcquisition(BleachingActivated)
                      StopScanCheck
                      RestoreAcquisitionParameters ' has to be there, because after hires mode settings would be wrong for autofocus
                      ' take a z-stack and finds the brightest plane:
-                     Autofocus_StackShift BlockZRange, BlockZStep, BlockHighSpeed, BlockZOffset, RecordingDoc
-                     If ScanStop Then
+                     SuccessAF = Autofocus_StackShift(BlockZRange, BlockZStep, BlockHighSpeed, BlockZOffset, RecordingDoc)
+                     If Not SuccessAF Then
                         StopAcquisition
                         Exit Sub
                      End If
                      
-                     CheckRefControl BlockZRange
                      ' move the xyz to the right position
                      Autofocus_MoveAcquisition BlockZOffset
                                 
@@ -1341,11 +1465,12 @@ Private Sub StartAcquisition(BleachingActivated)
             CopyRecording Lsm5.DsRecording, BackupRecording
            
             
-            Lsm5.DsRecording.TimeSeries = True  ' This is for the concatenation I think: we're doing a timeseries with one timepoint. I'm not sure why is the reason for this
+            Lsm5.DsRecording.TimeSeries = True  ' This is for the concatenation I think: we're doing a timeseries with one timepoint. _
+            I'm not sure what is the reason for this
             Lsm5.DsRecording.StacksPerRecord = 1
             
             
-            If MultipleLocation Or Grid Or CheckBoxActivatedGridScan.Value Then                'Sets the name of the image to store in the database
+            If MultipleLocation Or Grid Or CheckBoxActiveGridScan.Value Then                'Sets the name of the image to store in the database
                 LocationName = "_L" & Location
             Else
                 LocationName = ""
@@ -1395,7 +1520,6 @@ Private Sub StartAcquisition(BleachingActivated)
                 If Not IsAcquisitionTrackSelected Then      'An additional control....
                     StopAcquisition
                     MsgBox "No track selected for Acquisition! Cannot Acquire!"
-                    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
                     Exit Sub
                 End If
                 
@@ -1612,8 +1736,12 @@ Private Sub StartAcquisition(BleachingActivated)
             Mypath = GlobalDataBaseName + bslash
             filepath = Mypath & name & ".lsm"
             
-            
+            'this is the name of the file to be saved
             fullpathname = GlobalDataBaseName & "\" & name & ".lsm"
+            If FileExist(fullpathname) Then
+                MsgBox fullpathname + " exist "
+            End If
+            'Check if file name exist
             
             If TileX > 1 Or TileY > 1 Then
                 
@@ -1710,13 +1838,9 @@ Private Sub StartAcquisition(BleachingActivated)
                     XCor = XMass
                     YCor = YMass
                 End If
-                
-                'Else
-                '    XCor = 0
-                '    YCor = 0
-                'End If
+
                     
-                If TrackZ Then
+                If CheckBoxTrackZ.Value Then
                     ZCor = ZMass
                 Else
                     If HRZ Then
@@ -1948,6 +2072,10 @@ DoneWithLocations:
 
 End Sub
 
+''''''
+'   MassCenter(Context As String)
+'   TODO: No test of Goodness of Mass estimation. what is the exact algorithm?
+''''''
 Public Sub MassCenter(Context As String)
     Dim scrline As Variant
     Dim spl As Long
@@ -2022,7 +2150,7 @@ Public Sub MassCenter(Context As String)
     'Select the image channel on which to do the calculations
     If Context = "Autofocus" Then       'Takes the first channel in the context of preacquisition focussing
         channel = 0
-    ElseIf Context = "Tracking" Then    'Takes the channle selected in the pop-up menue when doing postacquisition tracking
+    ElseIf Context = "Tracking" Then    'Takes the channel selected in the pop-up menue when doing postacquisition tracking
         For channel = 0 To Lsm5.DsRecordingActiveDocObject.GetDimensionChannels - 1
             If Lsm5.DsRecordingActiveDocObject.ChannelName(channel) = Left(TrackingChannelString, 4) Then
                 Exit For
@@ -2030,13 +2158,13 @@ Public Sub MassCenter(Context As String)
         Next channel
     End If
     
-   'lineMax = 1
+    'Tracking is not the correct word. It just does center of mass on an additional channel
 
     'Reads the pixel values and fills the tables with the projected (integrated) pixels values in the three directions
     For frame = 1 To FrameNumber
         For line = 1 To LineMax
             bpp = 0
-            channel = 0
+            'channel = 0: This will allow to do the tracking on a different channel
             scrline = Lsm5.DsRecordingActiveDocObject.ScanLine(channel, 0, frame - 1, line - 1, spl, bpp) 'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
             For Col = 2 To ColMax               'Now I'm scanning all the pixels in the line
                 Intline(line - 1) = Intline(line - 1) + scrline(Col - 1)
@@ -2047,7 +2175,7 @@ Public Sub MassCenter(Context As String)
     Next frame
     
     'First it finds the minimum and maximum porjected (integrated) pixel values in the 3 dimensions
-    MinColValue = 4095 * LineMax * FrameNumber           'The maximum values are initially set to the maximum possible value
+    MinColValue = 4095 * LineMax * FrameNumber          'The maximum values are initially set to the maximum possible value
     minLineValue = 4095 * ColMax * FrameNumber
     minFrameValue = 4095 * LineMax * ColMax
     MaxColValue = 0                                     'The maximun values are initialliy set to 0
@@ -2083,9 +2211,6 @@ Public Sub MassCenter(Context As String)
     LineSum = 0
     LineWeight = 0
     MidLine = (LineMax + 1) / 2
-    If CheckBoxRefControl.Value = True Then
-        If (MaxframeValue - minFrameValue) < minFrameValue * 0.5 Or MaxframeValue = 0 Then NoReflectionSignal = True
-    End If
     Threshold = minLineValue + (MaxLineValue - minLineValue) * 0.8         'Threshold calculation
     For line = 1 To LineMax
         LineValue = Intline(line - 1) - Threshold                           'Subtracs the threshold
@@ -2136,50 +2261,7 @@ End Sub
 
 
 
-''''''''
-'   StopAcquisition()
-'   Stop scan and reset buttons of the form
-''''''''
-Public Sub StopAcquisition()
-    If ScanStop Then
-        Lsm5.StopScan
-        DisplayProgress "Stopped", RGB(&HC0, 0, 0)
-        RestoreAcquisitionParameters
-        Sleep (1000)
-        DisplayProgress "Restore Settings", RGB(&HC0, 0, 0)
-        DoEvents
-        ' reset the buttons
-        Dim FileName As String
-        Running = False
-        ScanStop = False
-        RepetitionNumber = 1
-        ScanPause = False
-        PauseButton.Caption = "Pause"
-        PauseButton.BackColor = &H8000000F
-        ExtraBleach = False
-        ExtraBleachButton.Caption = "Bleach"
-        ExtraBleachButton.BackColor = &H8000000F
-        ReDim BleachTable(BlockRepetitions)
-        ReDim BleachStartTable(BlockRepetitions)
-        ReDim BleachStopTable(BlockRepetitions)
-        BleachingActivated = False
-    '   If LocationTracking Or FrameAutofocussing Then
-    ' what is this?
-    '        For i = 1 To PositionData.Sheets.count
-    '            PositionData.Sheets.Item(i).Select
-    '            Cells.Select
-    '            Selection.Columns.AutoFit
-    '        Next i
-    '        FileName = Left(DataBaseLabel, Len(DataBaseLabel) - 4) & ".xls"
-    '        PositionData.SaveAs FileName:=FileName, FileFormat:=xlNormal, Password:="", WriteResPassword:="", ReadOnlyRecommended:=False, CreateBackup:=False
-    '        PositionData.Close
-    '        Excel.Application.Quit
-    '    End If
-        ' TODO: How to check that the paramters has been restored ?
-        Sleep (1000)
-        DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-    End If
-End Sub
+
 
 Private Sub PauseButton_Click()
     If Running Then
@@ -2248,35 +2330,26 @@ Private Sub ExtraBleachButton_Click()
 
 End Sub
 
-
-
-Private Sub GridToggle_Change()
-
-
-    If GridToggle.Value = True Then
-        
-        If MultipleLocationToggle.Value = True Then MultipleLocationToggle.Value = Not GridToggle.Value
-        If SingleLocationToggle.Value = True Then SingleLocationToggle.Value = Not GridToggle.Value
-        GridObjectsandVarialbles True
-        CheckBoxScannAll.Visible = False
-        StartBleachButton.Visible = False
-        ExtraBleachButton.Visible = False
-        If MultipleLocationToggle.Value = True Then MultipleLocationToggle.Value = Not GridToggle.Value
-        If SingleLocationToggle.Value = True Then SingleLocationToggle.Value = Not GridToggle.Value
-        
-    End If
-
-End Sub
-
+'''''''
+'   MultipleLocationToggle_Change()
+'   Activate MultipleLocation and deactivate SingleLocation
+'''''''
 Private Sub MultipleLocationToggle_Change()
-    
+        
     If MultipleLocationToggle.Value = True Then
+        CheckBoxActiveGridScan.Value = False
         SetMultipleLocationToggle_True
     Else
         SingleLocationToggle.Value = True
     End If
     
 End Sub
+
+
+'''''''
+'   SingleLocationToggle_Change()
+'   Activate Singlelocation and deactivate MultipleLocation
+'''''''
 Private Sub SingleLocationToggle_Change()
     
     If SingleLocationToggle.Value = True Then
@@ -2294,7 +2367,7 @@ Private Sub SetSingleLocationToggle_True()
         SingleLocationToggle.Value = True
         MultipleLocationToggle.Value = False
         MultipleLocation = False
-        Label15.Caption = ""
+        LocationTextLabel.Caption = ""
         
         ' CheckBoxScannAll.Visible = False
         ' GridObjectsandVarialbles False
@@ -2312,9 +2385,9 @@ Private Sub SetMultipleLocationToggle_True()
         SingleLocationToggle.Value = False
         MultipleLocationToggle.Value = True
         MultipleLocation = True
-        Label15.Caption = "Define locations using the Stage (NOT the Positions) dialog !"
+        LocationTextLabel.Caption = "Define locations using the Stage (NOT the Positions) dialog !"
         
-        CheckBoxActivatedGridScan.Value = False ' currently not compatible
+        CheckBoxActiveGridScan.Value = False ' currently not compatible
         
         
         ' CheckBoxScannAll.Visible = False
@@ -2324,7 +2397,6 @@ Private Sub SetMultipleLocationToggle_True()
         ' ZMapButton.Top = 258
         ' CheckBoxZMap.Left = 80
         ' CheckBoxZMap.Top = 258
-        
         'ZMapButton.Visible = True
         'CheckBoxZMap.Visible = True
         'ExtraBleachButton.Visible = True
@@ -2342,46 +2414,7 @@ Private Sub SetMultipleLocationToggle_True()
 End Sub
   
   
-Private Sub GridObjectsandVarialbles(Activate As Boolean)
-   ' ZMapButton.Left = 198.05
-   ' ZMapButton.Top = 306
-    ZMapButton.Visible = Activate
-    CreateLocationsButton.Visible = Activate
-    CommandButtonRemove.Visible = Activate
-    CommandButtonGrid.Visible = Activate
-    CommandButtonStoreApply.Visible = Activate
-    TextBoxYGrid.Visible = Activate
-    TextBoxXGrid.Visible = Activate
-    TextBoxYStep.Visible = Activate
-    TextBoxXStep.Visible = Activate
-    Tileframe.Visible = Activate
-    Frame16.Visible = Activate
-    Frame15.Visible = Activate
-    Label1.Visible = Activate
-    Label2.Visible = Activate
-    Label3.Visible = Activate
-    Label4.Visible = Activate
-    Label5.Visible = Activate
-   ' Label16.Visible = Activate
-    Label7.Visible = Activate
-    Label17.Visible = Activate
-    Label18.Visible = Activate
-    Label20.Visible = Activate
-    TextBoxOverlap.Visible = Activate
-    TextBoxTileX.Visible = Activate
-    TextBoxTileY.Visible = Activate
-   ' CheckBoxKeepSteps.Visible = Activate
-    CheckBoxMeander.Visible = Activate
-  '  CheckBoxZMap.Left = 132
-   ' CheckBoxZMap.Top = 288
-    CheckBoxZMap.Visible = Activate
-    'LabelGrid.Visible = Activate
-    Label15.Visible = Not Activate
-    Grid = GridToggle.Value
-    MultipleLocation = MultipleLocationToggle.Value ' Sets the MultipleLocation Boolean to False
 
-
-End Sub
 
 Public Sub AutoFindTracks()
 
@@ -2491,12 +2524,12 @@ Public Sub AutoFindTracks()
                         
                         CheckBoxZoomTrack1.Visible = True
                         CheckBoxZoomTrack1.Caption = TrackName
-                        CheckBoxZoomTrack1.Enabled = True
+                        CheckBoxZoomTrack1.Enabled = CheckBoxActiveOnlineImageAnalysis.Value
                         CheckBoxZoomTrack1.BackColor = Color
                         
                         CheckBox2ndTrack1.Visible = True
                         CheckBox2ndTrack1.Caption = TrackName
-                        CheckBox2ndTrack1.Enabled = True
+                        CheckBox2ndTrack1.Enabled = CheckBoxAlterImage.Value
                         CheckBox2ndTrack1.BackColor = Color
                         
                     End If
@@ -2605,9 +2638,6 @@ Private Sub BSliderZOffset_Change()
     End If
 End Sub
 
-
-
-
 Private Sub BSliderZRange_Change()    ' It should be possible to change the limit of the range to bigger values than half of the working distance
 '    Dim Position As Long
 '    Dim Range As Double
@@ -2639,149 +2669,33 @@ Private Sub ReInitializeButton_Click()
     Re_Initialize
 End Sub
 
-Private Sub CommandButtonStore_Click()
-    StoreApply.Show
-End Sub
 
 Private Sub TextBox1_Change()
 
 End Sub
 
-Private Sub TextBoxAlterAutofocusZOffset_Change()
-
-End Sub
 
 
 
 
-Private Sub Re_Start()                      'Initializations that need to be performed only at the first start of the Macro
+
+
+'''''
+'   Re_Initialize()
+'   Initializations that need to be performed only when clicking the "Reinitialize" button
+'''''
+Public Sub Re_Initialize()
     Dim delay As Single
     Dim standType As String
     Dim Count As Long
-    Dim ImageDatabase As DsGuidedModeDatabase
-    Dim i As Long
-    Dim MruList As DsMruList
-    Dim cnt As Long
-    Dim lpReOpenBuff As OFSTRUCT
-    Dim wStyle As Long
-    Dim lpRootPathName As String
-    Dim lpSectorsPerCluster As Long
-    Dim lpBytesPerSector As Long
-    Dim lpNumberOfFreeClusters As Long
-    Dim lpTotalNumberOfClusters As Long
-    Dim lSpace As Long
-    Dim lFreeSpace As Double
-    Dim fSize As Double
-    Dim hFile As Long
-   
     
-    Set tools = Lsm5.tools
-    GlobalMacroKey = "Autofocus"
-   
-'    bRunning = False
- '   LbStatus = "inactive"
-    flgUserChange = True
-    delay = 1
-    flgEvent = 7
-    flg = 0
-    Lsm5.StopScan
-    Wait (delay)
-    TimerUnit = 1
-    CommandTimeSec.BackColor = &HFF8080
-    BlockRepetitions = 1
-    ReDim Preserve GlobalImageIndex(BlockRepetitions)
-    ScanLineToggle.Value = True
-    'SingleLocationToggle.Value = True
-    Label15.Caption = ""
-    GlobalProject = "AutofocusScreen1.7"
-    GlobalProjectName = GlobalProject + ".lvb"
-    HelpNamePDF = "AutofocusScreen_help.pdf"
-    Re_Initialize ' Continues the initialization process
-  
-     
-    
-End Sub
-
-
-Public Sub Re_Initialize()                  'Initializations that need to be performed only when clicling the "initialize" button
-    Dim delay As Single
-    Dim standType As String
-    Dim Count As Long
-    Dim bLSM As Boolean
-    Dim bLIVE As Boolean
-    Dim bCamera As Boolean
-    
-'    StopAcquisition
-'    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
     AutoFindTracks
   
-    BSliderZOffset.Value = 0
-    BSliderZRange.Value = 80
-    BSliderZStep.Value = 0.1
-    TextBoxXGrid.Value = 3
-    TextBoxYGrid.Value = 2
-    TextBoxXStep.Value = -1125
-    TextBoxYStep.Value = 1125
-    BSliderScanSpeed = 1000
-    BSliderRepetitions = 300
-    BSliderTime = 1
     
-    CheckBoxLowZoom = False
-    CheckBoxInactivateAutofocus = False
     PubSearchScan = False
     NoReflectionSignal = False
     PubSentStageGrid = False
-    GlobalZmapAquired = False
     
-    
-'    took this out, because at the LSM we have an HRZ but the LSM Software does not give the right signal for that, but now you can can use the HRZ
-'    If Lsm5.Hardware.CpHrz.Exist("HRZ") = True Then     'Check if an HRZ is available. If not the "HRZ checkbox is not available.
-'        CheckBoxHRZ.Visible = True
-'        CheckBoxHRZ.Value = True
-'    Else
-'    CheckBoxHRZ.Visible = False
-'    CheckBoxHRZ.Value = False
-'    End If
-    
-    ScanLineToggle.Value = True
-    ' SingleLocationToggle.Value = True
-    UsedDevices40 bLSM, bLIVE, bCamera
-    ' blSM is a flag to decide weather systen is LSM (ZEN is LSM for instance). LIVE is 5Live not anymore in use?
-    If bLSM Then
-        SystemName = "LSM"
-        CheckBoxHighSpeed.Value = True
-'        CheckBoxHighSpeed.Visible = True
-'        CheckBoxHighSpeed.Top = 48
-'        CheckBoxLowZoom.Top = 71.35
-'        CheckBoxHRZ.Top = 90.95
-'        CheckBoxRefControl.Top = 110.6
-     
-        BSliderFrameSize.Min = 16
-        BSliderFrameSize.Max = 1024
-        BSliderFrameSize.Step = 8
-        BSliderFrameSize.StepSmall = 4
-        Lsm5Vba.Application.ThrowEvent eRootReuse, 0
-    
-        DoEvents
-    ElseIf bLIVE Then
-        
-        SystemName = "LIVE"
-'            CheckBoxHighSpeed.Value = False
-'            CheckBoxHighSpeed.Visible = False
-'            CheckBoxHRZ.Top = 85
-'            CheckBoxRefControl.Top = 108
-'            CheckBoxLowZoom.Top = 60
-'            BSliderFrameSize.ValueEditable = False
-        BSliderFrameSize.Min = 128
-        BSliderFrameSize.Max = 1024
-        BSliderFrameSize.Step = 128
-        BSliderFrameSize.StepSmall = 128
-        Lsm5Vba.Application.ThrowEvent eRootReuse, 0
-    DoEvents
-                        
-    ElseIf bCamera Then
-        SystemName = "Camera"
-    End If
     '  AutofocusForm.Caption = GlobalProject + " for " + SystemName
     BleachingActivated = False
       
@@ -2791,35 +2705,56 @@ Private Sub CreditButton_Click()
     CreditForm.Show
 End Sub
 
-Private Sub TrackingToggle_Click()                                          ' Sets the parameters for postacquisition tracking
+''''''
+'  TrackingToggle_Click()
+'  Add extra tracking channel.
+'  Tracking is the wrong word. It just uses an extra channel for the calculation of center of mass which is then used to move the stage
+'''''
+Private Sub TrackingToggle_Click()
+    If TrackingToggle.Value Then
+        CheckBoxActiveGridScan.Value = False
+    End If
+    SwitchEnableTrackingToggle (TrackingToggle.Value)
+End Sub
+
+'''''
+'   SwitchEnableTrackingToggle(Enable As Boolean)
+'   Changes Enable visibility of AcquiistionForm Tracking part
+'       [Enable] In - Enable of tracking
+'       [LocationTracking]  GlobOut - Flag for doing LocationTracking (TODO: use TrackingToggle.Value instead)
+'''''
+Private Sub SwitchEnableTrackingToggle(Enable As Boolean)
+    LocationTracking = Enable
+    ComboBoxTrackingChannel.Visible = Enable
+    If Enable Then
+       FillTrackingChannelList
+
+    End If
+    CheckBoxTrackZ.Visible = Enable
     
-    LocationTracking = TrackingToggle.Value
-    ComboBoxTrackingChannel.Visible = TrackingToggle.Value
-    FillTrackingChannelList
-    CheckBoxTrackZ.Visible = TrackingToggle.Value
     If Lsm5.DsRecording.ScanMode = "Stack" Then
         CheckBoxTrackZ.Enabled = True
+        PostAcquisitionLabel.Visible = Enable
     Else
         CheckBoxTrackZ.Enabled = False
         CheckBoxTrackZ.Value = False
+        PostAcquisitionLabel.Visible = Enable
     End If
-
 End Sub
+    
 
 '''''''
 ' CheckBoxTrackZ_Click()
 '   Activate post-acquisition Z-tracking.
-'   Also inactivate Autofocus
+'   Inactivates Autofocus
 '''''''
 Private Sub CheckBoxTrackZ_Click()
-    TrackZ = CheckBoxTrackZ.Value
     If CheckBoxTrackZ.Value = True Then
-        CheckBoxInactivateAutofocus.Value = True 'inactivate Autofocus
-        CheckBoxInactivateAutofocus.BackColor = 33023
-        CheckBoxTrackZ.BackColor = 33023
+        CheckBoxActiveAutofocus.Value = False 'inactivate Autofocus
+        SwitchEnableAutofocusPage (False)
     Else
-        CheckBoxInactivateAutofocus.Value = True
-        CheckBoxTrackZ.BackColor = &H8000000F
+        CheckBoxActiveAutofocus.Value = True
+        SwitchEnableAutofocusPage (True)
     End If
 End Sub
 
@@ -2851,10 +2786,10 @@ Private Sub FillTrackingChannelList()
                 Next c
             End If
         Next t
-        
         ComboBoxTrackingChannel.Value = ComboBoxTrackingChannel.List(0) 'initially displayed text in popup menu is a blank line (first channel is 1).
     End If
 End Sub
+
 Private Sub ComboBoxTrackingChannel_Change()        'Sets the name of the channel for PostAcquisition tracking.
     TrackingChannelString = ActiveChannels(ComboBoxTrackingChannel.ListIndex + 1)
 End Sub
@@ -2903,74 +2838,33 @@ Private Sub TextBoxFileName_Change()
     GlobalFileName = TextBoxFileName.Value
 End Sub
 
-'which DataBase ist this? Is this for LSM software? the mdb is no more in use with LSM710 and up.
-'Obselete function
-Private Sub CommandButtonSelectDataBase_Click()
-    Dim lpReOpenBuff As OFSTRUCT
-    Dim wStyle As Long
-    Dim hFile As Long
-    Dim flgUserChangeSaved As Boolean
-    flgUserChangeSaved = flgUserChange
-    flgUserChange = False
-    'Another way to open a file
-    'Dim ZEN As Zeiss_Micro_AIM_ApplicationInterface.ApplicationInterface
-    'Set ZEN = Application.ApplicationInterface
-     
-    'ZEN.gui.File.Load.Execute
-
-    'CommonDialog is not anymore used in Windows7. Also it does not find the commonDialog reference
-    'even with full name
-    
-    'MSComDlg.CommonDialog.FileName = GlobalDataBaseName
-    'MSComDlg.CommonDialog.Filter = "Database files ( *.mdb ) |*.mdb"
-    'MSComDlg.CommonDialog.ShowOpen
-    CommonDialog.FileName = GlobalDataBaseName                         'remembers which was the latest Database that was opened
-    CommonDialog.Filter = "Database files ( *.mdb ) |*.mdb"         'filter to only display database files
-    CommonDialog.ShowOpen
-    hFile = OpenFile(CommonDialog.FileName, lpReOpenBuff, wStyle)
-    If hFile <> -1 Then
-        GlobalDataBaseName = CommonDialog.FileName                  'Store the path of the database in the GlobalDatabaseName variable
-        DataBaseLabel.Caption = CommonDialog.FileName
-    Else
-        MsgBox "Selected file does not exist"
-    End If
-    flgUserChange = flgUserChangeSaved
-End Sub
-
-Private Sub CommandButtonNewDataBase_Click()   'Creates a new database
-    'test for ZEN
-    GlobalDataBaseName = DatabaseTextbox.Value
-    DatabaseLable.Caption = GlobalDataBaseName
-
-'    Lsm5.NewDatabase (NewDatabase)              'Directly opens the LSM window to create a new database
-'    Lsm5.CloseAllDatabaseWindows                'Strange that this is there and not before the previous line...
-'    GlobalDataBaseName = Lsm5.MruDatabases.name(0)      'Write the name of the database in a varialbe (used afterwards for saving to the right database)
-'    DataBaseLabel.Caption = Lsm5.MruDatabases.name(0)   'Indicates the name of the databse for the user to check
-End Sub
  
 '''''''
 '   ActivateAutofocusTrack(HighSpeed As Boolean)
-'   Check which track has been activated and set the track properties accordingly
+'   Check which track has been activated for Autofocus and set the track properties accordingly
+'   TODO: Test
 ''''''
 Public Sub ActivateAutofocusTrack(HighSpeed As Boolean)
     Dim i As Integer
     IsAutofocusTrackSelected = False
-    Track.Acquire = 0
+    ' Set all tracks to non-aquisition
     For i = 1 To TrackNumber
         Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(i - 1, Success)
+        Track.Acquire = 0
+    Next i
+    For i = 1 To TrackNumber
+        Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(i - 1, Success)
+        Track.Acquire = 0
         If OptionButtonTrack1.Value = True And i = 1 Then
             IsAutofocusTrackSelected = True
             Exit For
-        End If
-        If OptionButtonTrack2.Value = True And i = 2 Then
+        ElseIf OptionButtonTrack2.Value = True And i = 2 Then
             IsAutofocusTrackSelected = True
             Exit For
-        End If
-        If OptionButtonTrack3.Value = True And i = 3 Then
+        ElseIf OptionButtonTrack3.Value = True And i = 3 Then
             IsAutofocusTrackSelected = True
             Exit For
-        End If
-        If OptionButtonTrack4.Value = True And i = 4 Then
+        ElseIf OptionButtonTrack4.Value = True And i = 4 Then
             IsAutofocusTrackSelected = True
             Exit For
         End If
@@ -2986,107 +2880,82 @@ Public Sub ActivateAutofocusTrack(HighSpeed As Boolean)
     
 End Sub
 
-
+'''''''
+'   ActivateAlterAcquisitionTrack
+'   Check which track has been activated and for AlternativeAcquisitionTrack set the track properties accordingly
+'   TODO: Test
+''''''
 Public Sub ActivateAlterAcquisitionTrack()
     Dim i As Integer
-         
     IsAcquisitionTrackSelected = False
-    
+    'Set all to zero
     For i = 1 To TrackNumber
         Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(i - 1, Success)
-        If i = 1 Then
-            If CheckBox2ndTrack1.Value = True Then
-                Track.Acquire = 1
-                IsAcquisitionTrackSelected = True
-            Else
-                Track.Acquire = 0
-            End If
-        End If
-        If i = 2 Then
-            If CheckBox2ndTrack2.Value = True Then
-                Track.Acquire = 1
-                IsAcquisitionTrackSelected = True
-            Else
-                Track.Acquire = 0
-            End If
-        End If
-        If i = 3 Then
-            If CheckBox2ndTrack3.Value = True Then
-                Track.Acquire = 1
-                IsAcquisitionTrackSelected = True
-            Else
-                Track.Acquire = 0
-            End If
-        End If
-        If i = 4 Then
-            If CheckBox2ndTrack4.Value = True Then
-                Track.Acquire = 1
-                IsAcquisitionTrackSelected = True
-            Else
-                Track.Acquire = 0
-            End If
+        Track.Acquire = 0
+    Next i
+    For i = 1 To TrackNumber
+        Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(i - 1, Success)
+        If CheckBox2ndTrack1.Value = True And i = 1 Then
+            IsAcquisitionTrackSelected = True
+            Track.Acquire = 1
+        ElseIf CheckBox2ndTrack2.Value = True And i = 2 Then
+            IsAcquisitionTrackSelected = True
+            Track.Acquire = 1
+        ElseIf CheckBox2ndTrack3.Value = True And i = 3 Then
+            IsAcquisitionTrackSelected = True
+            Track.Acquire = 1
+        ElseIf CheckBox2ndTrack4.Value = True And i = 4 Then
+            IsAcquisitionTrackSelected = True
+            Track.Acquire = 1
         End If
     Next i
 
 End Sub
 
 
-'''''''''''
+'''''''''
 ' ActivateAcquisitionTrack()
 ' If any of the checkboxes in the AutoFocusForm Acquisition are checked
 '        Track.Acquire = 1 and IsAcquisitionTrackSelected = True
 ' otherwise
 '       Track.Acquire = 0 and IsAcquisitionTrackSelected = False
 ' This sets the Macro to perform acquisition after Autofocus
-'
-' TODO: Write it in a shorter way and Track.Acquire and IsAcquisitionTrackSelected seem redundant.
-''''''''''''''''''
+' TODO: Test
+''''''''''
 Public Sub ActivateAcquisitionTrack()
     Dim i As Integer
     IsAcquisitionTrackSelected = False
-    For i = 1 To TrackNumber 'TrackNumber is maximum 4 or less (see definition with GoodTracks)
-        Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(i - 1, Success) 'choses track corresponding to track number
-        If i = 1 Then
-            If CheckBoxTrack1.Value = True Then
-                Track.Acquire = 1
-                IsAcquisitionTrackSelected = True
-            Else
-                Track.Acquire = 0
-            End If
-        End If
-        If i = 2 Then
-            If CheckBoxTrack2.Value = True Then
-                Track.Acquire = 1
-                IsAcquisitionTrackSelected = True
-            Else
-                Track.Acquire = 0
-            End If
-        End If
-        If i = 3 Then
-            If CheckBoxTrack3.Value = True Then
-                Track.Acquire = 1
-                IsAcquisitionTrackSelected = True
-            Else
-                Track.Acquire = 0
-            End If
-        End If
-        If i = 4 Then
-            If CheckBoxTrack4.Value = True Then
-                Track.Acquire = 1
-                IsAcquisitionTrackSelected = True
-            Else
-                Track.Acquire = 0
-            End If
+    'Set all track to zero
+    For i = 1 To TrackNumber
+        Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(i - 1, Success)
+        Track.Acquire = 0
+    Next i
+    For i = 1 To TrackNumber
+        Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(i - 1, Success)
+        If CheckBoxTrack1.Value = True And i = 1 Then
+            IsAcquisitionTrackSelected = True
+            Track.Acquire = 1
+        ElseIf CheckBoxTrack2.Value = True And i = 2 Then
+            IsAcquisitionTrackSelected = True
+            Track.Acquire = 1
+        ElseIf CheckBoxTrack3.Value = True And i = 3 Then
+            IsAcquisitionTrackSelected = True
+            Track.Acquire = 1
+        ElseIf CheckBoxTrack4.Value = True And i = 4 Then
+            IsAcquisitionTrackSelected = True
+            Track.Acquire = 1
         End If
     Next i
-
 End Sub
 
 
-
+'''''''''
+' ActivateZoomTrack()
+' Micropilotpage. This is extra track for micropilot
+' TODO: Test and change name
+''''''''''
 Private Sub ActivateZoomTrack()
     Dim i As Integer
-
     IsAcquisitionTrackSelected = False
     For i = 1 To TrackNumber
         Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(i - 1, Success)
@@ -3198,6 +3067,7 @@ Public Sub GetCurrentPositionOffset(ZRange As Double, ZStep As Double, HighSpeed
     ActivateAutofocusTrack HighSpeed                                'Sets the track for autofocussing (i.e. "selects" the track in the Zeiss config window )
     If Not IsAutofocusTrackSelected Then                                'The variable IsAutofocusTrackSelected has been updated in the ActivateAutofocausTrack function
         MsgBox "No track selected for Autofocus! Cannot Autofocus!"
+        StopAcquisition
         Exit Sub
     End If
   
@@ -3283,8 +3153,6 @@ Public Sub GetCurrentPositionOffset(ZRange As Double, ZStep As Double, HighSpeed
     YShift = YMass
     ZShift = ZMass
     
-    'check if Z shift makes sense
-    CheckRefControl BlockZRange
         
     If ZOffset <= Range * 0.9 Then
        Lsm5.Hardware.CpFocus.Position = Zbefore + GlobalCorrectionOffset + ZBacklash  'Move down 50um (=ZBacklash) below the position of the offset
@@ -3538,10 +3406,13 @@ Private Sub OptionButtonTrack4_Click()
 '    TotalTimeLeftFrame.Caption = TimeDisplay(TotalTimeLeft)
 End Sub
 
-
-'this Function checks whether the track that was selected for autofocusing only contains a single channel (alternetivly defines one of the checked channels)
-'and finds the name of the autofocusing channel
-Private Sub CheckAutofocusTrack(SelectedTrack)
+''''''
+'    CheckAutofocusTrack( SelectedTrack As Integer )
+'    Checks whether the track that was selected for autofocusing only contains a single channel (alternetivly defines one of the checked channels)
+'    and finds the name of the autofocusing channel
+'       [SelectedTrack] In - Number of selected track
+''''''
+Private Sub CheckAutofocusTrack(SelectedTrack As Integer)
     Dim Track As DsTrack 'a new track is defined
     Dim DataChannel As DsDataChannel    'a new interface to a data channel is defined
                                         'contains channel dependend parameters of the
@@ -3646,7 +3517,7 @@ Public Sub AutofocusSetting(HRZ As Boolean, HighSpeed As Boolean, ZStep As Doubl
         
             Lsm5.DsRecording.SpecialScanMode = "ZScanner"
             If SystemName = "LIVE" Then
-                Lsm5.DsRecording.RtLinePeriod = 1 / BSliderScanSpeed.Value
+                Lsm5.DsRecording.RtLinePeriod = 1 / 1000 'BSliderScanSpeed.Value
                 Lsm5.DsRecording.RtRegionWidth = 512
                 Lsm5.DsRecording.RtRegionHeight = 1
             ElseIf SystemName = "LSM" Then
@@ -3667,8 +3538,8 @@ Public Sub AutofocusSetting(HRZ As Boolean, HighSpeed As Boolean, ZStep As Doubl
         
         
         If SystemName = "LIVE" Then
-            
-            Lsm5.DsRecording.RtLinePeriod = 1 / BSliderScanSpeed.Value
+            'TODO: Legacy code
+            Lsm5.DsRecording.RtLinePeriod = 1 / 1000 'BSliderScanSpeed.Value
             Lsm5.DsRecording.RtRegionWidth = 512
             Lsm5.DsRecording.RtRegionHeight = 1
             
@@ -3688,776 +3559,19 @@ Public Sub AutofocusSetting(HRZ As Boolean, HighSpeed As Boolean, ZStep As Doubl
     
 End Sub
 
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-''''''''''''''''''''''''''''''''''Grid Definition'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Sub TextBoxXgrid_Change()
-        If IsNumeric(TextBoxXGrid.Value) Then
-            GlobalXGrid = TextBoxXGrid.Value
-        Else
-             MsgBox "Please enter the number of columns!"
-        End If
-        
-        ReDim GlobalDeActivatedLocations(GlobalMaximumPositions, GlobalXGrid * GlobalYGrid)
-        ReDim GlobalLocationsOrder(GlobalMaximumPositions, GlobalXGrid * GlobalYGrid)
-        GlobalOrderChanged = True
-    End Sub
-
-Private Sub TextBoxYGrid_Change()
-                  
-        If IsNumeric(TextBoxYGrid.Value) Then
-            GlobalYGrid = TextBoxYGrid.Value
-        Else
-             MsgBox "Please enter the number of rows!"
-        End If
-        
-        
-        ReDim GlobalDeActivatedLocations(GlobalMaximumPositions, GlobalXGrid * GlobalYGrid)
-        ReDim GlobalLocationsOrder(GlobalMaximumPositions, GlobalXGrid * GlobalYGrid)
-        GlobalOrderChanged = True
-
-End Sub
-    
-
-Private Sub TextBoxXStep_Change()
-        If IsNumeric(TextBoxXStep.Value) Then
-            GlobalXStep = TextBoxXStep.Value
-        Else
-             MsgBox "Please enter the horizontal distance between two neighbouring locations!"
-        End If
-    
-End Sub
 
 
-Private Sub TextBoxYStep_Change()
-
-        If IsNumeric(TextBoxYStep.Value) Then
-            GlobalYStep = TextBoxYStep.Value
-        Else
-             MsgBox "Please enter the vertical distance between two neighbouring locations!"
-        End If
-
-   
-End Sub
-Private Sub CommandButtonGrid_Click()
-    ShowGrid
-End Sub
 
 
-Public Sub ShowGrid()
-    Dim BitsPerSample As Long
-    Dim bpp As Long
-    Dim ImgName As String
-    Dim LsmMath As New LsmVectorMath
-    Dim SpareArray() As Single
-    Dim XPixels As Long
-    Dim YPixels As Long
-    Dim XGroup As Long
-    Dim YGroup As Long
-    Dim xIndx As Long
-    Dim yIndx As Long
-    Dim Start As Long
-    Dim ix As Long
-    Dim iy As Long
-    Dim PlaneSize As Long
-    
-    
-    If Not GlobalGridImage Is Nothing Then
-        If Not GlobalGridImage.IsValid Then
-            Set GlobalGridImage = Nothing
-        Else
-             GlobalGridImage.CloseAllWindows
-             Set GlobalGridImage = Nothing
-            
-        End If
-    End If
-    
-    
-    If GlobalGridImage Is Nothing Then
-        BitsPerSample = 12
-        bpp = 2
-        XPixels = 1024
-        YPixels = 1024
-        XGroup = Int(XPixels / (3 * GlobalXGrid + 1))
-        YGroup = Int(YPixels / (3 * GlobalYGrid + 1))
-        If XGroup <= YGroup Then
-            YGroup = XGroup
-        Else
-            XGroup = YGroup
-        End If
-        XPixels = XGroup * (3 * GlobalXGrid + 1)
-        YPixels = YGroup * (3 * GlobalYGrid + 1)
-        MakeBlankImage GlobalGridImage, BitsPerSample, bpp, True, ImgName, False, 1, XPixels, YPixels, 3
-        GlobalGridImage.SetTitle "Location Grid"
-        GlobalGridImage.NeverAgainScanToTheImage
-        RedrawGrid GlobalGridImage
-        GlobalGridImage.VectorOverlay.LineWidth = 1
-        GlobalGridImage.VectorOverlay.Color = RGB(0, 255, 0)
-        GlobalGridImage.VectorOverlay.RemoveAllDrawingElements
-        If GlobalReferencePoints = 2 Then
-            DrawCrossGrid GlobalGridX1, GlobalGridY1
-            DrawCrossGrid GlobalGridX2, GlobalGridY2
-        ElseIf GlobalReferencePoints = 1 Then
-            DrawCrossGrid GlobalGridX1, GlobalGridY1
-        End If
-        
-        GlobalGridImage.EnableImageWindowEvent Lsm5Vba.eImageWindowNoButtonMouseMoveEvent, 1
-        GlobalGridImage.EnableImageWindowEvent Lsm5Vba.eImageWindowLButtonMouseMoveEvent, 1
-        GlobalGridImage.EnableImageWindowEvent Lsm5Vba.eImageWindowLeftButtonDownEvent, 1
-        GlobalGridImage.EnableImageWindowEvent Lsm5Vba.eImageWindowLeftButtonUpEvent, 1
-        GlobalGridImage.EnableImageWindowEvent Ds.eImageWindowRightButtonUpEvent, 1
-        
-        DoEvents
-    End If
-End Sub
-
-Private Sub CommandButtonRemove_Click()
-Dim Msg, Style, Title, Help, Ctxt, Response, MyString
-    Msg = "Do You Want to Remove Selected Reference Points?"
-    Style = VbYesNo + VbQuestion + VbDefaultButton2   ' Define buttons.
-    Title = "Remove Reference Points"  ' Define title.
-    Response = MsgBox(Msg, Style, Title)
-    If Response = vbYes Then    ' User chose Yes.
-        GlobalReferencePoints = 0
-        If Not GlobalGridImage Is Nothing Then
-            If GlobalGridImage.IsValid Then
-                GlobalGridImage.VectorOverlay.RemoveAllDrawingElements
-            End If
-        End If
-    End If
-End Sub
-
-Private Sub CreateLocationsButton_Click()
-    Dim XPos As Double
-    Dim YPos As Double
-    Dim ZPos As Double
-    
-    Dim idx As Long
-    Dim idy As Long
-    Dim idt As Long
-    Dim x As Double
-    Dim y As Double
-    Dim det As Double
-    Dim A11 As Double
-    Dim A12 As Double
-    Dim A21 As Double
-    Dim A22 As Double
-    Dim x1 As Double
-    Dim Y1 As Double
-    
-    Dim result As Long
-    Dim ProgressString As String
-    Dim Color As Long
-    Dim ZeroChanged As Boolean
-    Dim SetZeroMarked As Boolean
-    Dim idpos As Long
-    Dim idold As Long
-    Dim OverWriteZ As Boolean
-    
-
-    If GridToggle Then
-    
-    OverWriteZ = PubFuncOverWriteZ
-   
-    ProgressString = "Please Wait..."
-    Color = RGB(&HC0, 0, 0)
-    DisplayProgress ProgressString, Color
-    DoEvents
-
-    If TextBoxYGrid.Value * TextBoxXGrid.Value <= GlobalMaximumPositions Then
-        flgUserChange = False
-        GlobalXGrid = TextBoxXGrid.Value
-        GlobalYGrid = TextBoxYGrid.Value
-        GlobalXStep = TextBoxXStep.Value
-        GlobalYStep = TextBoxYStep.Value
-        
-        'DisplayProgress GlobalXGrid, Color 'tischi
-        MsgBox "GlobalXGrid" + CStr(GlobalXGrid)
-        
-'       Stage.MarkClearAll
-        ZPos = GlobalGridStageZ1
-        If GlobalReferencePoints >= 1 Then
-            XPos = GlobalGridStageX1 - (GlobalGridX1 - 1) * GlobalXStep
-            YPos = GlobalGridStageY1 - (GlobalGridY1 - 1) * GlobalYStep
-'       Else does not wordk properly
-'           x = GetStagePositionX
-'           y = GetStagePositionY
-'           ConvertToStagePositionXY x, y, XPos, YPos
-        End If
-        GlobalPositionsRecalled = GlobalPositionsStage
-        GlobalPositionsStage = GlobalXGrid * GlobalYGrid
-        ReDim GlobalLocationsName(GlobalPositionsStage)
-        GlobalCurrentPosition = 1
-        If 1 = 0 Then 'GlobalPositionsStage <= 1 Then
-            ' MsgBox "hallo"
-            'GlobalPositionsStage = 1
-            'GlobalCurrentPosition = 1
-            'StartStopForm.ComboBoxLocation.AddItem "Present"
-        Else
-            det = -1 * 1 - 0 * 0
-          '  det = X11 * X22 - X21 * X12
-            If det = 0 Then
-                GlobalPositionsStage = 1
-                GlobalCurrentPosition = 1
-               ' StartStopForm.ComboBoxLocation.AddItem "Present"
-            
-            Else
-                SetZeroMarked = True
-                GetGlobalZZero SetZeroMarked, ZeroChanged
-                x1 = XPos
-                Y1 = YPos
-                ReDim GlobalXpos(GlobalXGrid * GlobalYGrid)
-                ReDim GlobalYpos(GlobalXGrid * GlobalYGrid)
-                If OverWriteZ Then ReDim GlobalZpos(GlobalXGrid * GlobalYGrid)
-            
-                
-                If GlobalMeander Then
-                    idpos = 0
-                    For idy = 1 To GlobalYGrid Step 2
-                        For idx = 1 To GlobalXGrid
-                            idt = (idy - 1) * GlobalXGrid + idx
-                            If Not GlobalDeActivatedLocations(idx, idy) Then
-                                idpos = idpos + 1
-                                
-                                GlobalLocationsOrder(idx, idy) = idpos
-                                GlobalLocationsName(idpos) = "Column" & idx & "_Row" & idy
-                                GlobalXpos(idpos) = x1 + (idx - 1) * GlobalXStep
-                                GlobalYpos(idpos) = Y1 + (idy - 1) * GlobalYStep
-                                If OverWriteZ Then
-                                    GlobalZpos(idpos) = ZPos
-                                Else
-                                    idold = GlobalLocationsOrderOld(idx, idy)
-                                    If idold = -1 Then
-                                        GlobalZpos(idpos) = ZPos
-                                    Else
-                                        GlobalZpos(idpos) = GlobalZposOld(idold)
-                                    End If
-                                End If
-                            Else
-                                GlobalLocationsOrder(idx, idy) = -1
-                            End If
-                        Next idx
-                        If idt >= GlobalXGrid * GlobalYGrid Then Exit For
-                        For idx = 1 To GlobalXGrid
-                            idt = idy * GlobalXGrid + GlobalXGrid - idx + 1
-                            If Not GlobalDeActivatedLocations(GlobalXGrid - idx + 1, idy + 1) Then
-                                idpos = idpos + 1
-                                
-                                GlobalLocationsOrder(GlobalXGrid - idx + 1, idy + 1) = idpos
-                                GlobalLocationsName(idpos) = "Column" & GlobalXGrid - idx + 1 & "_Row" & idy + 1
-                                GlobalXpos(idpos) = x1 + (GlobalXGrid - idx) * GlobalXStep
-                                GlobalYpos(idpos) = Y1 + idy * GlobalYStep
-                                If OverWriteZ Then
-                                    GlobalZpos(idpos) = ZPos
-                                Else
-                                idold = GlobalLocationsOrderOld(GlobalXGrid - idx + 1, idy + 1)
-                                    If idold = -1 Then
-                                        GlobalZpos(idpos) = ZPos
-                                    Else
-                                        GlobalZpos(idpos) = GlobalZposOld(idold)
-                                    End If
-                                End If
-                            Else
-                                GlobalLocationsOrder(GlobalXGrid - idx + 1, idy + 1) = -1
-                            End If
-                        Next idx
-                    Next idy
-                Else
-                    idpos = 0
-                    For idy = 1 To GlobalYGrid
-                        For idx = 1 To GlobalXGrid
-                            idt = (idy - 1) * GlobalXGrid + idx
-                            If Not GlobalDeActivatedLocations(idx, idy) Then
-                                idpos = idpos + 1
-                                GlobalLocationsName(idpos) = "Column" & idx & "_Row" & idy
-                                GlobalLocationsOrder(idx, idy) = idpos
-                                GlobalXpos(idpos) = x1 + (idx - 1) * GlobalXStep
-                                GlobalYpos(idpos) = Y1 + (idy - 1) * GlobalYStep
-                                If OverWriteZ Then
-                                    GlobalZpos(idpos) = ZPos
-                                Else
-                                    idold = GlobalLocationsOrderOld(idx, idy)
-                                    If idold = -1 Then
-                                        GlobalZpos(idpos) = ZPos
-                                    Else
-                                        GlobalZpos(idpos) = GlobalZposOld(idold)
-                                    End If
-                                End If
-                            Else
-                                GlobalLocationsOrder(idx, idy) = -1
-                            End If
-                        Next idx
-                    Next idy
-                End If
-            End If
-        End If
-        GlobalOrderChanged = False
-        GlobalPositionsStage = idpos
-        'GlobalPositions = GlobalPositionsStage
-        flgUserChange = False
-        flgUserChange = True
-        GlobalIsTile = False
-    Else
-        MsgBox "Number of locations in the grid cannot exceed " + CStr(GlobalMaximumPositions)
-    End If
-    Tile
-    DisplayProgress GlobalProgressString, GlobalColor
-    DoEvents
-     AutofocusForm.SetMarkedLocations GlobalPositionsStage
-     PubSentStageGrid = True
-     
-     ElseIf MultipleLocationToggle = True Then
-  
-    GlobalPositionsStage = Lsm5.Hardware.CpStages.MarkCount
-     PutStagePositionsInArray
-     Tile
-     AutofocusForm.SetMarkedLocations GlobalPositionsStage
-     End If
-End Sub
-
-Public Sub DisplayGridSelection(x As Long, y As Long, xIndx As Long, yIndx As Long)
-Dim XPixels As Long
-Dim YPixels As Long
-Dim XGroup As Long
-Dim YGroup As Long
-Dim Start As Long
-Dim ix As Long
-Dim iy As Long
-Dim Xmin As Long
-Dim Xmax As Long
-Dim Ymin As Long
-Dim Ymax As Long
-Dim xImage As Long
-Dim StartX As Long
-Dim yImage As Long
-Dim StartY As Long
-Dim Found As Boolean
-Dim EndX As Long
-Dim EndY As Long
-Dim XPosition As Long
-Dim YPosition As Long
-Dim xMod As Long
-Dim yMod As Long
-Dim xString As String
-Dim yString As String
-Dim MyString As String
-
-    If GlobalGridImage Is Nothing And GlobalZGridImage Is Nothing Then Exit Sub
-    
-    XPixels = GlobalGridImage.GetDimensionX
-    YPixels = GlobalGridImage.GetDimensionY
-    
-    XGroup = Int(XPixels / (3 * GlobalXGrid + 1))
-    YGroup = Int(YPixels / (3 * GlobalYGrid + 1))
-    XPosition = Int(x / XGroup) + 1
-    YPosition = Int(y / YGroup) + 1
-    xMod = XPosition Mod 3
-    yMod = YPosition Mod 3
-    xIndx = XPosition / 3
-    yIndx = YPosition / 3
-TileX = AutofocusForm.TextBoxTileX.Value
-TileY = AutofocusForm.TextBoxTileY.Value
-    If xMod = 1 Or yMod = 1 Then
-        xString = ""
-        yString = ""
-    Else
-        xString = CStr(xIndx)
-        yString = CStr(yIndx)
-    End If
-  '  LabelGrid.ForeColor = RGB(0, 0, 0)
-    MyString = "Column= " + xString + vbCrLf + "Row= " + yString
-    If Not GlobalOrderChanged Then
-        If GlobalLocationsOrder(xIndx, yIndx) > 0 Then
-            MyString = MyString + vbCrLf + "Mark= " + CStr((GlobalLocationsOrder(xIndx, yIndx) - 1) * TileX * TileY + 1) + " to " + CStr((GlobalLocationsOrder(xIndx, yIndx)) * TileX * TileY)
-        End If
-    End If
-    If GlobalZmapAquired Then
-         If GlobalLocationsOrder(xIndx, yIndx) > -1 Then
-            idpos = GlobalLocationsOrder(xIndx, yIndx)
-            MyString = MyString + vbCrLf + "z-Value= " + CStr(Round(GlobalZpos(idpos), 3))
-            End If
-         End If
-    DisplayProgress MyString, RGB(0, &HC0, 0)
-End Sub
-
-Public Sub DrawCrossGrid(xIndx As Long, yIndx As Long)
-    
-    Dim XPixels As Long
-    Dim YPixels As Long
-    Dim XGroup As Long
-    Dim YGroup As Long
-    Dim ix As Long
-    Dim iy As Long
-    Dim x1 As Long
-    Dim Y1 As Long
-    Dim X2 As Long
-    Dim Y2 As Long
-
-    If (GlobalGridImage Is Nothing) Then Exit Sub
-    XPixels = GlobalGridImage.GetDimensionX
-    YPixels = GlobalGridImage.GetDimensionY
-    XGroup = Int(XPixels / (3 * GlobalXGrid + 1))
-    YGroup = Int(YPixels / (3 * GlobalYGrid + 1))
-    x1 = XGroup + 3 * XGroup * (xIndx - 1)
-    Y1 = YGroup + 3 * YGroup * (yIndx - 1)
-    X2 = 3 * XGroup + 3 * XGroup * (xIndx - 1)
-    Y2 = 3 * YGroup + 3 * YGroup * (yIndx - 1)
-      
-    GlobalGridImage.VectorOverlay.Color = RGB(255, 255, 0)
-    GlobalGridImage.VectorOverlay.LineWidth = 1
-    GlobalGridImage.VectorOverlay.AddSimpleDrawingElement Lsm5Vba.eDrawingModeLine, x1, Y1, X2, Y2
-    GlobalGridImage.VectorOverlay.AddSimpleDrawingElement Lsm5Vba.eDrawingModeLine, x1, Y2, X2, Y1
-'    dsDoc.VectorOverlay.AddSimpleDrawingElement Lsm5Vba.eDrawingModeCircle, xCross, yCross, xCross, yCross + 30
-    GlobalGridImage.RedrawImage
-    
-End Sub
-
-Public Sub DrawRectangleGrid(x1 As Long, Y1 As Long, X2 As Long, Y2 As Long)
-
-    If (GlobalGridImage Is Nothing) Then Exit Sub
-      
-    GlobalGridImage.VectorOverlay.Color = RGB(0, 255, 0)
-    GlobalGridImage.VectorOverlay.LineWidth = 1
-    GlobalGridImage.VectorOverlay.AddSimpleDrawingElement Lsm5Vba.eDrawingModeRectangle, x1, Y1, X2, Y2
-    GlobalGridImage.RedrawImage
-    
-End Sub
-
-
-Public Sub SetMarkedLocations(Positions As Long)
-    Dim idx As Long
-    Dim ZeroChanged As Boolean
-    Dim SetZeroMarked As Boolean
-    SetZeroMarked = False
- '   If GlobalIsStage And GlobalMultiLocation Then
-        If Positions > 1 Then
-            GetGlobalZZero SetZeroMarked, ZeroChanged
-'            If ZeroChanged Then
-'                FillLocationList
-'            End If
-            Lsm5.Hardware.CpStages.MarkClearAll
-            For idx = 1 To Positions
-                Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).lAddMarkZ GlobalXpos(idx), GlobalYpos(idx), GlobalZpos(idx)
-            Next idx
-        End If
- '   End If
-End Sub
-
-''''''
-'   CheckBoxMeander_Click()
-'   This is bidirectional click on form
-'   TODO: This is not used now. Remove it?
-''''''
-Private Sub CheckBoxMeander_Click()
-    If flgUserChange Then
-        GlobalMeander = CheckBoxMeander.Value
-    End If
-End Sub
-
-
-''''''
-'   StartZMap_Click()
-'   TODO: is this function still used?
-'   what does it do?
-''''''
-Private Sub StartZMap_Click()
-    Dim text As String
-    Dim x As Double
-    Dim y As Double
-    Dim z As Double
-    Dim Zbefore As Double
-    Dim BitsPerSample As Long
-    Dim bpp As Long
-    Dim ImgName As String
-    Dim SpareArray() As Single
-    Dim XPixels As Long
-    Dim YPixels As Long
-    Dim XGroup As Long
-    Dim YGroup As Long
-    Dim xIndx As Long
-    Dim yIndx As Long
-    Dim Start As Long
-    Dim ix As Long
-    Dim iy As Long
-    Dim PlaneSize As Long
-    Dim idold As Long
-    
-    ZValues.Show
-    InitializeStageProperties
-    SetStageSpeed 8, True
-
-    If PubSentStageGrid = False And (Grid Or StripeScanToggle.Value) Then
-        MsgBox "Please send the grid information to stage first!", VbExclamation
-        Exit Sub
-    End If
-
-    AutofocusForm.GetBlockValues 'Updates the parameters value for BlockZRange, BlockZStep..
-    'DisplayProgress "Aquiring Reference", RGB(0, &HC0, 0)
-    StopScanCheck
-    StoreAcquisitionParameters
-
-    'got to Refcor1
-    
-    
-    'Lsm5.Hardware.CpStages.PositionX = GlobalGridStageX1
-    'Lsm5.Hardware.CpStages.PositionY = GlobalGridStageY1
-    'While Lsm5.Hardware.CpStages.IsBusy
-    '    DoEvents
-    'Wend
-    'Lsm5.Hardware.CpFocus.Position = GlobalGridStageZ1
-    'While Lsm5.Hardware.CpFocus.IsBusy
-    '    DoEvents
-    'Wend
-    'Sleep (20)
-    ''Aquire Z-Stack,Caluclate shift
-    '
-    '
-    ' Autofocus_StackShift BlockZRange, BlockZStep, BlockHighSpeed, BlockZOffset
-    ' If PubAbort Then GoTo Abort
-    ''Caluclate new z Position, Store Z in Array
-    'GlobalGridStageZ1 = GlobalGridStageZ1 + ZShift
-    GettingZmap = True
-    GlobalPositionsStage = Lsm5.Hardware.CpStages.MarkCount
-    If MultipleLocation Then
-        PutStagePositionsInArray
-    End If
-    
-
-    If Grid Then
-        If GlobalMeander Then
-            For idpos = 1 To GlobalPositionsStage
-                If ScanStop Then
-                    DisplayProgress "Stopped", RGB(&HC0, 0, 0)
-                    GoTo Abort
-                End If
-                If GlobalStageControlZValues = False Then
-                    If idpos = 1 Then
-                        Lsm5.Hardware.CpFocus.Position = GlobalGridStageZ1
-                        Zbefore = GlobalGridStageZ1
-                    Else
-                        Zbefore = GlobalZpos(idpos - 1)
-                        Lsm5.Hardware.CpFocus.Position = GlobalZpos(idpos - 1)
-                    End If
-                Else                                'GlobalStageControlZValues = True
-                    Lsm5.Hardware.CpFocus.Position = GlobalZpos(idpos)
-                End If
-                
-                While Lsm5.Hardware.CpFocus.IsBusy  'Wait movement focus wheel is finished
-                    Sleep (20)
-                    DoEvents
-                Wend
-                
-                'Move X and Y.
-                Lsm5.Hardware.CpStages.PositionX = GlobalXpos(idpos)
-                Lsm5.Hardware.CpStages.PositionY = GlobalYpos(idpos)
-                
-                Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy ' Wait that the movement is done
-                    If ScanStop Then
-                        DisplayProgress "Stopped", RGB(&HC0, 0, 0)
-                        GoTo Abort
-                    End If
-                    DoEvents
-                    Sleep (5)
-                Loop
-                DisplayProgress "Aquiring idpos " & idpos & ", z= " & GlobalZpos(idpos), RGB(0, &HC0, 0)
-                Autofocus_StackShift BlockZRange, BlockZStep, BlockHighSpeed, BlockZOffset
-                If ScanStop Then
-                    DisplayProgress "Stopped", RGB(&HC0, 0, 0)
-                    GoTo Abort
-                End If
-                'check if Z shift makes sense
-                CheckRefControl BlockZRange
-                'Calculate new Z and Store in Array
-                GlobalZpos(idpos) = Lsm5.Hardware.CpFocus.Position + BlockZOffset + ZShift
-            Next idpos ' idpos = 1 To GlobalPositionsStage
-        Else ' GlobalMeander = False
-            For Row = 1 To GlobalYGrid
-                For column = 1 To GlobalXGrid
-                    If Not GlobalDeActivatedLocations(column, Row) Then
-                        idpos = GlobalLocationsOrder(column, Row)
-                        Lsm5.Hardware.CpStages.PositionX = GlobalXpos(idpos)
-                        Lsm5.Hardware.CpStages.PositionY = GlobalYpos(idpos)
-                        If Row = 1 And column = 1 Then
-                            Lsm5.Hardware.CpFocus.Position = GlobalGridStageZ1
-                            Zbefore = GlobalGridStageZ1
-                        ElseIf Row <> 1 And column = 1 Then
-                            idold = GlobalLocationsOrder(column, Row - 1)
-                            If idold = -1 Then
-                                Zbefore = GlobalZpos(idpos - 1)
-                            Else
-                                Zbefore = GlobalZpos(idold)
-                            End If
-                            Lsm5.Hardware.CpFocus.Position = Zbefore
-                        Else
-                            Zbefore = GlobalZpos(idpos - 1)
-                            Lsm5.Hardware.CpFocus.Position = GlobalZpos(idpos - 1)
-                        End If
-                        Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy ' Wait that the movement is done
-                                If ScanStop Then
-                                    DisplayProgress "Stopped", RGB(&HC0, 0, 0)
-                                GoTo Abort
-                            End If
-                            DoEvents
-                            Sleep (5)
-                        Loop
-                        DisplayProgress "Aquiring idpos " & idpos & ", z= " & GlobalZpos(idpos), RGB(0, &HC0, 0)
-                        'Aquire Z-Stack,Caluclate shift
-                        Autofocus_StackShift BlockZRange, BlockZStep, BlockHighSpeed, BlockZOffset
-                        If ScanStop Then
-                            DisplayProgress "Stopped", RGB(&HC0, 0, 0)
-                            GoTo Abort
-                        End If
-                        
-                        CheckRefControl BlockZRange 'check if Z shift makes sense
-                        GlobalZpos(idpos) = Lsm5.Hardware.CpFocus.Position + BlockZOffset + ZShift  'Calculate new Z and Store in Array
-                    End If
-                Next column
-            Next Row
-        End If
-        Lsm5.Hardware.CpStages.MarkClearAll
-        For idpos = 1 To GlobalPositionsStage
-     '    GlobalZpos(idpos) = GlobalZpos(idpos)  + ZShift '?????? suchmarke
-            Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).lAddMarkZ GlobalXpos(idpos), GlobalYpos(idpos), GlobalZpos(idpos)
-        Next idpos
-    Else ' Grid = False? Zmap in multilocation modus
-        GlobalPositionsStage = Lsm5.Hardware.CpStages.MarkCount
-        For idpos = 1 To GlobalPositionsStage
-            If ScanStop Then
-                DisplayProgress "Stopped", RGB(&HC0, 0, 0)
-                GoTo Abort
-            End If
-            Lsm5.Hardware.CpStages.PositionX = GlobalXpos(idpos)
-            Lsm5.Hardware.CpStages.PositionY = GlobalYpos(idpos)
-            Lsm5.Hardware.CpFocus.Position = GlobalZpos(idpos)
-'           Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToMarkZ GlobalXpos(idpos), GlobalYpos(idpos), GlobalZpos(idpos)
-'           Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToMarkZ (0) 'Moves to the first location marked in the stage control
-            Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy ' Wait that the movement is done
-                If ScanStop Then
-                    DisplayProgress "Stopped", RGB(&HC0, 0, 0)
-                    GoTo Abort
-                End If
-                DoEvents
-                Sleep (5)
-            Loop
-            DisplayProgress "Aquiring idpos " & idpos, RGB(0, &HC0, 0)
-            Autofocus_StackShift BlockZRange, BlockZStep, BlockHighSpeed, BlockZOffset
-            If ScanStop Then
-                DisplayProgress "Stopped", RGB(&HC0, 0, 0)
-                GoTo Abort
-            End If
-            CheckRefControl BlockZRange 'check if Z shift makes sense
-             GlobalZpos(idpos) = Lsm5.Hardware.CpFocus.Position + BlockZOffset + ZShift            'Calculate new Z and Store in Array
-           
-        
-'           success = Lsm5.Hardware.CpStages.MarkGet(0, x, y)
- '          success = Lsm5.Hardware.CpStages.MarkClear(0)
-'
-'            Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).lAddMarkZ x, y, z
-        Next idpos
-        Lsm5.Hardware.CpStages.MarkClearAll
-        For idpos = 1 To GlobalPositionsStage
-            Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).lAddMarkZ GlobalXpos(idpos), GlobalYpos(idpos), GlobalZpos(idpos)
-        Next idpos
-    End If
-'Lsm5.Hardware.CpStages.MarkClearAll
-'        For idpos = 1 To GlobalPositionsStage
-'         GlobalZpos(idpos) = GlobalZpos(idpos) + ZShift
-'           Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).lAddMarkZ GlobalXpos(idpos), GlobalYpos(idpos), GlobalZpos(idpos)
-'        Next idpos
-    GlobalZmapAquired = True
-    DisplayProgress "Zmap ready", RGB(0, &HC0, 0)
-    If Grid Then
-        If Not GlobalZGridImage Is Nothing Then
-            If Not GlobalZGridImage.IsValid Then
-                Set GlobalZGridImage = Nothing
-            Else
-                 GlobalZGridImage.CloseAllWindows
-                 Set GlobalZGridImage = Nothing
-            End If
-        End If
-        If GlobalZGridImage Is Nothing Then
-            BitsPerSample = 12
-            bpp = 2
-            XPixels = 1024
-            YPixels = 1024
-            XGroup = Int(XPixels / (3 * GlobalXGrid + 1))
-            YGroup = Int(YPixels / (3 * GlobalYGrid + 1))
-            If XGroup <= YGroup Then
-                YGroup = XGroup
-            Else
-                XGroup = YGroup
-            End If
-            XPixels = XGroup * (3 * GlobalXGrid + 1)
-            YPixels = YGroup * (3 * GlobalYGrid + 1)
-            MakeBlankImage GlobalZGridImage, BitsPerSample, bpp, True, ImgName, False, 1, XPixels, YPixels, 3
-            GlobalZGridImage.SetTitle "Z Values"
-            GlobalZGridImage.NeverAgainScanToTheImage
-            
-            GlobalZGridImage.EnableImageWindowEvent Lsm5Vba.eImageWindowNoButtonMouseMoveEvent, 1
-            GlobalZGridImage.EnableImageWindowEvent Lsm5Vba.eImageWindowLButtonMouseMoveEvent, 1
-            GlobalZGridImage.EnableImageWindowEvent Lsm5Vba.eImageWindowLeftButtonDownEvent, 1
-            GlobalZGridImage.EnableImageWindowEvent Lsm5Vba.eImageWindowLeftButtonUpEvent, 1
-            GlobalZGridImage.EnableImageWindowEvent Ds.eImageWindowRightButtonUpEvent, 1
-        End If
-        RedrawZGrid GlobalZGridImage
-    End If
-    'RestoreAcquisitionParameters
-    'GettingZmap = False
-    CheckBoxZMap.Value = True
-Abort:
-    RestoreAcquisitionParameters
-    GettingZmap = False
-    PubAbort = False
-    If ScanStop = True Then
-        DisplayProgress "Stopped", RGB(&HC0, 0, 0)
-        ScanStop = False
-    End If
-End Sub
-'''''''' End StartZMap_Click()
-
-
+'''''
+'   ChangeButtonStatus(Enable As Boolean)
+'   Reset status of buttons on rightside of form
+'''''
 Private Sub ChangeButtonStatus(Enable As Boolean)
     StartButton.Enabled = Enable
     StartBleachButton.Enabled = Enable
     CloseButton.Enabled = Enable
     ReinitializeButton.Enabled = Enable
-End Sub
-
-
-Private Sub RecalibrationFocusZMap()
-Location = 1
-        MoveToNextLocation
-   
-        AutofocusForm.GetBlockValues                                'Updates the parameters value for BlockZRange, BlockZStep..
-        StopScanCheck
-        StoreAcquisitionParameters
-        Autofocus_StackShift BlockZRange, BlockZStep, BlockHighSpeed, BlockZOffset
-        'check if Z shift makes sense
-        CheckRefControl BlockZRange
-        'Caluclate new z Position, Store Z in Array
-'        If Grid Or MultipleLocation Then
-'        Lsm5.Hardware.CpStages.MarkClearAll
-'        For idpos = 1 To GlobalPositionsStage
-'            GlobalZpos(idpos) = GlobalZpos(idpos) + ZShift
-'            Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).lAddMarkZ GlobalXpos(idpos), GlobalYpos(idpos), GlobalZpos(idpos)
-'        Next idpos
-'        Else
-'        GlobalPositionsStage = Lsm5.Hardware.CpStages.MarkCount
-'            For idpos = 1 To GlobalPositionsStage
-'            success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).GetMarkZ(0, x, y, z)
-'           success = Lsm5.Hardware.CpStages.MarkClear(0)
-'            z = z + ZShift
-'            Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).lAddMarkZ x, y, z
-'        Next idpos
-'        End If
-        Sleep (100)
-        'Lsm5Vba.Application.ThrowEvent eRootReuse, 0
-                 DoEvents
-         Sleep (100)
-                  
-        RestoreAcquisitionParameters
-        'Lsm5Vba.Application.ThrowEvent eRootReuse, 0
-                 DoEvents
 End Sub
 
 
@@ -4575,8 +3689,13 @@ Private Sub CreateAlterImageDatabase(AlterDatabaseName, Mypath)
          
 End Sub
 
-
-Private Sub MicroscopePilot(RecordingDoc As DsRecordingDoc, BleachingActivated, HighResExperimentCounter, HighResCounter, HighResArrayX, HighResArrayY, HighResArrayZ)
+''''''
+'   MicroscopePilot(RecordingDoc As DsRecordingDoc, BleachingActivated As Boolean, HighResExperimentCounter As Integer, HighResCounter As Integer _
+'   HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double)
+'   TODO: test stricter way of passing arguments
+''''''
+Private Sub MicroscopePilot(RecordingDoc As DsRecordingDoc, ByVal BleachingActivated As Boolean, HighResExperimentCounter As Integer, HighResCounter As Integer _
+, HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double)
     
     Dim ZoomNumber As Integer
     Dim code As String
@@ -4671,36 +3790,31 @@ Mark:
             
 End Sub
 
-
-Private Sub StartAlternativeImaging(RecordingDoc As DsRecordingDoc, StartTime As Double, AlterDatabaseName As String, name As String)
-        
-     'Alternative Acquisition in every .. round
-     'Dim zStageOld As Double
-     'Dim SampleOZold As Double
-    
-     If RepetitionNumber Mod TextBox_RoundAlterTrack = 0 Then
-           
-         'SampleOZold = Lsm5.DsRecording.Sample0Z
-        
-         Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
-         If RecordingDoc Is Nothing Then
-              Set RecordingDoc = Lsm5.NewScanWindow
-              While RecordingDoc.IsBusy
-                   Sleep (20)
-                   DoEvents
-               Wend
-         End If
-            
+'''''
+'   Private Sub StartAlternativeImaging(RecordingDoc As DsRecordingDoc, StartTime As Double, _
+'   AlterDatabaseName As String, name As String)
+'   Alternative Acquisition in every .. round
+'   TODO: What are all the parameters
+'''''
+Private Sub StartAlternativeImaging(RecordingDoc As DsRecordingDoc, StartTime As Double, _
+AlterDatabaseName As String, name As String)
+    If RepetitionNumber Mod TextBox_RoundAlterTrack = 0 Then
+        Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
+        If RecordingDoc Is Nothing Then
+            Set RecordingDoc = Lsm5.NewScanWindow
+            While RecordingDoc.IsBusy
+                Sleep (20)
+                DoEvents
+            Wend
+        End If
+        DisplayProgress "Acquiring Additional Track...", RGB(0, &HC0, 0)
          
-         DisplayProgress "Acquiring Additional Track...", RGB(0, &HC0, 0)
-         
-         ActivateAlterAcquisitionTrack
+        ActivateAlterAcquisitionTrack
          Sleep (100)
               
          If Not IsAcquisitionTrackSelected Then      'An additional control....
-             StopAcquisition
              MsgBox "No track selected for Acquisition! Cannot Acquire!"
-             DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
+             StopAcquisition
              Exit Sub
          End If
                 
@@ -4768,7 +3882,11 @@ Private Sub StartAlternativeImaging(RecordingDoc As DsRecordingDoc, StartTime As
 
 End Sub
 
-Private Sub StorePositioninHighResArray(HighResArrayX, HighResArrayY, HighResArrayZ, HighResCounter)
+'''
+'   StorePositioninHighResArray(HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double, HighResCounter As Integer)
+'   TODO: Test stricter way of passing arguments
+''''
+Private Sub StorePositioninHighResArray(HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double, HighResCounter As Integer)
     
     ' store postion from windows registry in array
     
@@ -4824,8 +3942,13 @@ Private Sub StorePositioninHighResArray(HighResArrayX, HighResArrayY, HighResArr
 End Sub
 
 
-
-Private Sub BatchHighresImagingRoutine(RecordingDoc As DsRecordingDoc, HighResArrayX, HighResArrayY, HighResArrayZ, HighResCounter, HighResExperimentCounter)
+'''''
+'   BatchHighresImagingRoutine(RecordingDoc As DsRecordingDoc, HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double, _
+'   HighResCounter As Integer, HighResExperimentCounter As Integer)
+'   TODO: Test stricter way of passing arguments
+'''''
+Private Sub BatchHighresImagingRoutine(RecordingDoc As DsRecordingDoc, HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double, _
+HighResCounter As Integer, HighResExperimentCounter As Integer)
     
     Dim PixelSize As Double
     Dim Succes As Integer
@@ -4916,12 +4039,11 @@ Private Sub BatchHighresImagingRoutine(RecordingDoc As DsRecordingDoc, HighResAr
                     DoEvents
                 Loop
                 
-                'Autofocus
+                'Autofocus. This does an extra Autofocus also for the HighresImaging
                 If CheckBoxZoomAutofocus.Value = True Then
                     BlockZOffset = TextBoxZoomAutofocusZOffset.Value
                     DisplayProgress "Micropilot Code 5 - Do Autofocus", RGB(0, &HC0, 0)
                     Autofocus_StackShift BlockZRange, BlockZStep, BlockHighSpeed, BlockZOffset, RecordingDoc
-                    CheckRefControl BlockZRange
                     Autofocus_MoveAcquisition BlockZOffset
                 End If
         
@@ -5198,3 +4320,5 @@ Done:
     StopAcquisition
     
 End Function
+
+

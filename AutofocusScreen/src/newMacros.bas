@@ -90,7 +90,6 @@ Public RepetitionNumber As Long
 Public ZOffset As Double
 Public MultipleLocation As Boolean
 Public LocationTracking As Boolean
-Public TrackZ As Boolean
 Public TrackingChannelString As String
 'Public PositionData As Workbook
 Public FrameAutofocussing As Boolean
@@ -255,18 +254,22 @@ Sub A_Setup()
 End Sub
 
 
-Public Sub DisplayProgress(state As String, Color As Long)       'Used to display in the progress bar what the macro is doing
+Public Sub DisplayProgress(State As String, Color As Long)       'Used to display in the progress bar what the macro is doing
     If (Color & &HFF) > 128 Or ((Color / 256) & &HFF) > 128 Or ((Color / 256) & &HFF) > 128 Then
         AutofocusForm.ProgressLabel.ForeColor = 0
     Else
         AutofocusForm.ProgressLabel.ForeColor = &HFFFFFF
     End If
     AutofocusForm.ProgressLabel.BackColor = Color
-    AutofocusForm.ProgressLabel.Caption = state
+    AutofocusForm.ProgressLabel.Caption = State
 End Sub
 
-
-Public Sub AutoStore()    ' This was used to store values of the macro parameteres in the registry. This could be used for saving of the macro and resuisng them but is not working in its present state.
+''''
+'   AutoStore()
+'   This was used to store values of the macro parameteres in the registry.
+'   This could be used for saving of the macro and resuisng them but is not working in its present state.
+''''
+Public Sub AutoStore()
     Dim myKey As String
     Dim Success As Boolean
     Dim storeOK As Boolean
@@ -293,7 +296,9 @@ Public Sub AutoStore()    ' This was used to store values of the macro parameter
     tools.RegDoubleValue(myKey, "BlockZStep") = BlockZStep
 End Sub
 
-
+''''
+' TODO: Why not use Lsm5.StartScan?
+''''
 Public Sub ScanToImage(RecordingDoc As DsRecordingDoc) ' new routine to scan overwrite the same image, even with several z-slices
    ' Dim AcquisitionController As AimAcquisitionController40.AimScanController 'now public
     Dim image As AimImage
@@ -331,15 +336,20 @@ Public Sub ScanToImageNew(RecordingDoc As DsRecordingDoc) ' new routine to scan 
         AcquisitionController.DestinationImage(1) = Nothing
         Set ProgressFifo = AcquisitionController.DestinationImage(0)
         Lsm5.tools.CheckLockControllers True
-        AcquisitionController.StartGrab eGrabModeSingle
+        AcquisitionController.StartGrab eGrabModeSingle 'TODO why not use Lsm5.Start
+        'Set RecordingDoc = Lsm5.StartScan
         If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
     End If
     
 End Sub
 
 
-
-Public Sub AutoRecall()   ' This was used to read values of the macro parameteres in the registry. This could be used for saving of the macro and resuisng them but is not working in its present state.
+'''''
+'  AutoRecall()
+'  This was used to read values of the macro parameteres in the registry. This could be used for saving of the macro and resuisng them but
+'  is not working in its present state.
+'''''
+Public Sub AutoRecall()
     Dim myKey As String
     Dim Success As Boolean
     Dim idx As Long
@@ -629,7 +639,6 @@ ZStackagain: 'this refers to goto lines (not used anymore)
     
     'check if Z shift makes sense
     If PubSearchScan = True Then Exit Function ' TODO What is this?
-    CheckRefControl BlockZRange ' this does not do anything as Focuscontrolis not set
     Autofocus_StackShift = True
 
 End Function
@@ -815,58 +824,7 @@ Public Sub Autofocus_MoveAcquisition_HRZ(ZOffset As Double)
     DisplayProgress "Autofocus 15", RGB(0, &HC0, 0)
 End Sub
 
-Public Sub CheckRefControl(BlockZRange As Double)
-    ' TODO: what is happening here?
-    If Try = Empty Then Try = 1
-        
-    'checkif Z shift makes sense
-    ' Todo: where is AutofocusForm.CheckBoxRefControl.Value  set?
-    If AutofocusForm.CheckBoxRefControl.Value = True Then
-        If Abs(ZShift) > (BlockZRange * 0.8 / 2) Or NoReflectionSignal Then
-            PubSearchScan = True
-            DoNotGoOn = False
-            Try = Try + 1
-           
-            If Try >= 4 Then
-                CountDownBox
-                PubSearchScan = False
-                NoReflectionSignal = False
-                AutofocusForm.GetBlockValues 'Updates the parameters value for BlockZRange, BlockZStep..
-                DisplayProgress "Autofocus 0", RGB(0, &HC0, 0)
-                Lsm5.StopScan
-            End If
-            
-            If Not FocusChanged Then
-                If Try >= 4 Then
-                   Try = 1
-                   Exit Sub
-                End If
-            End If
-            'Scan with Focuswheel abigger region,move to the brightest region and do the Piezoscanning again
-              
-            'Lsm5.Hardware.CpFocus.Position = Zbefore
-            Autofocus_StackShift BlockZRange, BlockZStep, BlockHighSpeed, BlockZOffset, RecordingDocpub
-            MovetoCorrectZPosition BlockZOffset
-            'Zbefore = Zbefore + ZShift
-            PubSearchScan = False
-            NoReflectionSignal = False
-              
-            Autofocus_StackShift BlockZRange, BlockZStep, BlockHighSpeed, BlockZOffset, RecordingDocpub
-        End If
-    End If
-    Try = 1
-End Sub
 
-Private Sub CountDownBox()
-    DoNotGoOn = True
-    Load CorrectFocusForm
-    CorrectFocusForm.Show
-    While DoNotGoOn = True
-    DoEvents
-    Sleep (10)
-    Wend
-    
-End Sub
 
 Public Sub PutStagePositionsInArray()
     ReDim GlobalXpos(GlobalPositionsStage)

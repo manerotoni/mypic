@@ -3,5 +3,17 @@ Version 2.1
 	* Autofocus in the absence of piezo works for large z-Step. This is however quite slow. (not finished)
 	* Code clean up and comments
 	* Improved check for Stop button using GetInputState() that checks for inputs only when something happens to mouse or keyboards
+	* Improved choice of tracks (to be tested)
+Commit message:
+	Removed old code for Grid which is not used anymore	
+	Proper declaration of variables in Sub BatchHighresImagingRoutine and other for Micropilot part of code
+	Reload previous value outputfolder (this is saved in the registry OutputFolder)
 
-	
+* Removed old code for Grid which is not used anymore (large clean up of Stage_Grid.bas)
+* Outputflder is saved in registry and is automatically reloaded 
+* Proper declaration of variables type  in Sub BatchHighresImagingRoutine and other for   Micropilot part of code 
+* Improved choice of tracks in the code
+* Re-initialize now just look for new tracks
+* Activation of acquisition mode is done by the same active button. This automatically enable/disables minipages.
+* Cross dependency of acquisition modes is now visual in the form via enable/disable features
+ 
