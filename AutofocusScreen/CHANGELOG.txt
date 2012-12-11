@@ -16,4 +16,6 @@ Commit message:
 * Re-initialize now just look for new tracks
 * Activation of acquisition mode is done by the same active button. This automatically enable/disables minipages.
 * Cross dependency of acquisition modes is now visual in the form via enable/disable features
- 
+* Changed alternative imaging function saving
+* Changed reading of multiple locations from stage menu. Now it reads all positions at beginning of scan and puts into an array. 
+* After stop system returns to first position or continue from current position (extra button)
