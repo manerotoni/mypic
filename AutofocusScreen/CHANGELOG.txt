@@ -19,3 +19,5 @@ Commit message:
 * Changed alternative imaging function saving
 * Changed reading of multiple locations from stage menu. Now it reads all positions at beginning of scan and puts into an array. 
 * After stop system returns to first position or continue from current position (extra button)
+* Saving format changed to W00001_P00001_T00001.lsm
+* Saving checks for overwriting of files

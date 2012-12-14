@@ -1,8 +1,8 @@
 Attribute VB_Name = "Stage_Grid"
 Public GlobalPositionsStage As Long 'is used
-Public GlobalXpos() As Double ' not really used check
-Public GlobalYpos() As Double ' not really used check
-Public GlobalZpos() As Double ' not really used check
+Public GlobalXpos() As Double ' not really used check this is now posMultiLocationX
+Public GlobalYpos() As Double ' not really used check posMultiLocationY
+Public GlobalZpos() As Double ' not really used check posMultiLocationZ
 Public GlobalLocationsName() As String  ' not really used check
 Public GlobalLocationsNameOld() As String ' not really used check
 Public GlobalZposOld() As Double ' not really used check
@@ -25,7 +25,7 @@ Public GlobalLocationsOrderOld() As Long
 
 
 
-Public Const ZBacklash = -50 'Has to do with the movements of the focus wheel that are "better" if they are long enough.
+Public Const ZBacklash = -50 'TODO: is it still recquired?. Has to do with the movements of the focus wheel that are "better" if they are long enough.
 
 
 Public Sub MakeBlankImage(DestImage As DsRecordingDoc, _

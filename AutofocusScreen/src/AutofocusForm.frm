@@ -26,6 +26,22 @@ Private Const Version = " v2.0.1"
 
 
 
+
+
+
+
+Private Sub CommandButton1_Click()
+
+End Sub
+
+
+
+
+
+Private Sub SliderZStepLabel_Click()
+
+End Sub
+
 ''''''
 ' UserForm_Initialize()
 '   Function called from e.g. AutoFocusForm.Show
@@ -47,7 +63,7 @@ End Sub
 Private Sub Re_Start()
     Dim delay As Single
     Dim standType As String
-    Dim Count As Long
+    Dim count As Long
     Dim ImageDatabase As DsGuidedModeDatabase
     Dim i As Long
     Dim MruList As DsMruList
@@ -110,7 +126,10 @@ Private Sub Re_Start()
     ElseIf bCamera Then
         SystemName = "Camera"
     End If
+    
+    'Check if GUI is available (ZEN2011 onward)
 
+    
     ScanLineToggle.Value = True
     BSliderZOffset.Value = 0
     BSliderZRange.Value = 80
@@ -127,7 +146,6 @@ Private Sub Re_Start()
     BSliderRepetitions = 300
     BSliderTime = 1
     
-  
     'Set standard values for Micropilot
     CheckBoxActiveOnlineImageAnalysis.Value = False
     SwitchEnableOnlineImageAnalysisPage (False)
@@ -145,6 +163,9 @@ Private Sub Re_Start()
     'Set Database name
     DatabaseTextbox.Value = GetSetting(appname:="OnlineImageAnalysis", section:="macro", key:="OutputFolder")
     
+    'Set repetition and locations
+    RepetitionNumber = 1
+    locationNumber = 1
     Re_Initialize
     
  
@@ -192,7 +213,7 @@ Private Sub SwitchEnableAutofocusPage(Enable As Boolean)
     OptionButtonTrack2.Enabled = Enable
     OptionButtonTrack3.Enabled = Enable
     OptionButtonTrack4.Enabled = Enable
-    
+
 End Sub
 
 ''''''
@@ -229,6 +250,7 @@ Private Sub SwitchEnableOnlineImageAnalysisPage(Enable As Boolean)
     TextBoxZoomCycles.Enabled = Enable
     ZoomCycleDelayLabel.Enabled = Enable
     TextBoxZoomCycleDelay.Enabled = Enable
+    SwitchEnableGridScanPage (CheckBoxActiveGridScan.Value)
 End Sub
 
 ''''''
@@ -307,8 +329,12 @@ End Sub
 ''''
 Private Sub SwitchEnableGridScanPage(Enable As Boolean)
 
-    CheckBoxActiveGridScan_Initialise.Enabled = Enable
-    CheckBoxGridScan_FindGoodPositions.Enabled = Enable
+    CheckBoxGridScan_Initialise.Enabled = Enable
+    If CheckBoxActiveOnlineImageAnalysis.Value Then
+        CheckBoxGridScan_FindGoodPositions.Enabled = Enable
+    Else
+        CheckBoxGridScan_FindGoodPositions.Enabled = False
+    End If
     GridScan_posLabel.Enabled = Enable
     GridScan_nLabel.Enabled = Enable
     GridScan_nXLabel.Enabled = Enable
@@ -359,7 +385,7 @@ Private Sub CommandButtonHelp_Click()
     Dim Success As Integer
     Dim pos As Integer
     Dim Start As Integer
-    Dim Count As Long
+    Dim count As Long
     Dim ProjName As String
     Dim indx As Integer
     Dim AcrobatObject As Object
@@ -368,8 +394,8 @@ Private Sub CommandButtonHelp_Click()
     Dim StrPath As String
     Dim ExecName As String
         
-    Count = ProjectCount()
-    For indx = 0 To Count - 1
+    count = ProjectCount()
+    For indx = 0 To count - 1
         MacroPath = ProjectPath(indx, Success)
         ProjName = ProjectTitle(indx, Success)
         If StrComp(ProjName, GlobalProjectName, vbTextCompare) = 0 Then
@@ -425,7 +451,6 @@ Public Sub StopAcquisition()
         Dim FileName As String
         Running = False
         ScanStop = False
-        RepetitionNumber = 1
         ScanPause = False
         PauseButton.Caption = "Pause"
         PauseButton.BackColor = &H8000000F
@@ -437,7 +462,7 @@ Public Sub StopAcquisition()
         ReDim BleachStopTable(BlockRepetitions)
         BleachingActivated = False
         '
-    '   If LocationTracking Or FrameAutofocussing Then
+    '   If TrackingToggle Or FrameAutofocussing Then
     '   what is this?
     '        For i = 1 To PositionData.Sheets.count
     '            PositionData.Sheets.Item(i).Select
@@ -541,7 +566,7 @@ Private Sub BleachRegion(XShift As Double, YShift As Double)
         
 End Sub
 
-Public Function ComputeCenterAndAxis(dx As Double, dy As Double)
+Public Function ComputeCenterAndAxis(dX As Double, dY As Double)
 
     Dim i, j, iFrame, channel, ni, bitDepth As Long
     Dim nj As Long
@@ -653,8 +678,8 @@ Public Function ComputeCenterAndAxis(dx As Double, dy As Double)
     jc = jc / tot
     'MsgBox "ic = " + CStr(ic) + " jc = " + CStr(jc) + " tot = " + CStr(tot)
     
-    dx = (ic - ni / 2) * PixelSize
-    dy = (jc - nj / 2) * PixelSize
+    dX = (ic - ni / 2) * PixelSize
+    dY = (jc - nj / 2) * PixelSize
     
     ' compute displacement vector
     di = 0
@@ -859,7 +884,8 @@ Private Sub ScanFrameToggle_Click()
     FrameAutofocussing = ScanFrameToggle.Value 'if ScanFrame is true than FrameAutofocusing (boolean variable) will be set true
     FrameSizeLabel.Visible = ScanFrameToggle.Value
     BSliderFrameSize.Visible = ScanFrameToggle.Value
-    
+    CheckBoxAutofocusTrackXY.Visible = ScanFrameToggle.Value
+
 '    ScanSpeedLabel.Visible = ScanLineToggle.Value
 
 '         If SystemName = "LSM" Then
@@ -963,11 +989,11 @@ Private Sub StartBleachButton_Click()
     BleachingActivated = True
     AutomaticBleaching = False
     
-    If LocationTracking And TrackingChannelString = "" Then
+    If TrackingToggle And TrackingChannelString = "" Then
         MsgBox ("Select a channel for tracking, or uncheck the tracking button")
         Exit Sub
     End If
-    If MultipleLocation And Lsm5.Hardware.CpStages.MarkCount < 1 Then
+    If MultipleLocationToggle.Value And Lsm5.Hardware.CpStages.Markcount < 1 Then
         MsgBox ("Select at least one location in the stage control window, or uncheck the multiple location button")
         Exit Sub
     End If
@@ -1042,82 +1068,133 @@ Private Sub FillBleachTable()  'Fills a table for the macro to know when the ble
     End If
 End Sub
 
-Private Sub StartButton_Click()
-    
-    ScanStop = False
 
-    Try = 1
+'''''
+'   StartButton_Click()
+'''''
+Private Sub StartButton_Click()
+    Dim Success As Boolean
+    Success = StartSetting
+    If Not Success Then
+        ScanStop = True
+        StopAcquisition
+        Exit Sub
+    End If
+    
+    'Set counters back to 1
+    locationNumber = 1    ' first location
+    RepetitionNumber = 1 ' first time point
+    
+    StartAcquisition BleachingActivated 'This is the main function of the macro
+End Sub
+
+
+Private Sub ContinueFromCurrentLocation_Click()
+    Dim Success As Boolean
+    Success = StartSetting
+    If Not Success Then
+        ScanStop = True
+        StopAcquisition
+        Exit Sub
+    End If
+    StartAcquisition BleachingActivated 'This is the main function of the macro
+End Sub
+
+Private Function StartSetting() As Boolean
+    StartSetting = False
     BleachingActivated = False
     AutomaticBleaching = False                                  'We do not do FRAps or FLIPS in this case. Bleaches can still be done with the "ExtraBleach" button.
-    If LocationTracking And TrackingChannelString = "" Then
+    If TrackingToggle And TrackingChannelString = "" Then
         MsgBox ("Select a channel for tracking, or uncheck the tracking button")
-        Exit Sub
+    
+        Exit Function
     End If
-    If MultipleLocation And Lsm5.Hardware.CpStages.MarkCount < 1 Then
+    If MultipleLocationToggle.Value And Lsm5.Hardware.CpStages.Markcount < 1 Then
         MsgBox ("Select at least one location in the stage control window, or uncheck the multiple location button")
-        Exit Sub
+        Exit Function
     End If
     If GlobalDataBaseName = "" Then
-        MsgBox ("No Database selected ! Cannot start acquisition.")
-        Exit Sub
+        MsgBox ("No outputfolder selected ! Cannot start acquisition.")
+        Exit Function
     End If
     
     StoreAcquisitionParameters
     
-    StartAcquisition BleachingActivated 'This is the main function of the macro
+    'As default we do not overwrite files
+    OverwriteFiles = False
     
-End Sub
+    ' load starting position from stage for GridScan
+    If CheckBoxActiveGridScan Then
+        If Lsm5.Hardware.CpStages.Markcount = 0 Then  ' No marked position
+            MsgBox " GridScan: Use stage to Mark at the initial position "
+            ScanStop = True
+            StopAcquisition
+            Exit Function
+        End If
+        ' Store starting position for later restart. This is the first marked point
+        Lsm5.Hardware.CpStages.MarkGetZ 0, XStart, YStart, ZStart
+    End If
+       
+    ' fill positions for MultipleLocations
+    If MultipleLocationToggle Then
+        Dim i As Integer
+        If Lsm5.Hardware.CpStages.Markcount > 0 Then
+            ReDim posMultiLocationX(1 To Lsm5.Hardware.CpStages.Markcount)
+            ReDim posMultiLocationY(1 To Lsm5.Hardware.CpStages.Markcount)
+            ReDim posMultiLocationZ(1 To Lsm5.Hardware.CpStages.Markcount)
+            For i = 1 To Lsm5.Hardware.CpStages.Markcount
+                Lsm5.Hardware.CpStages.MarkGetZ i - 1, posMultiLocationX(i), posMultiLocationY(i), _
+                posMultiLocationZ(i)
+            Next i
+        End If
+    End If
+    StartSetting = True
+End Function
+
 
 
 ''''''
-'   TODO: CLEAN UP Separate FUNCTIONS!!
+'   StartAcquisition(BleachingActivated)
+'   Perform many things (TODO: write more). Pretty much the whole macro runs through here
 ''''''
 Private Sub StartAcquisition(BleachingActivated)
+    'measure time required
     Dim rettime, difftime As Double
     Dim GlobalPrvTime As Double
-    Dim Location As Integer
-    Dim LocationNumber As Integer
-    Dim iLoc As Integer
-    Dim iLocMainGrid As Integer
-    Dim name As String
-    Dim alterName As String
-    Dim tilename As String
-    Dim x As Double
-    Dim XCor As Double
-    Dim y As Double
-    Dim YCor As Double
-    Dim z As Double
-    Dim ZCor As Double
-    Dim Success As Integer
-    Dim SuccessAF As Boolean
-    Dim RelativeLocation As Integer
-    Dim StitchImage As RecordingDocument
-    Dim ScanImage As RecordingDocument
-    Dim RecordingDoc As DsRecordingDoc
-    Dim ImageCopy As New AimImageCopy
-    Dim Progress As AimProgress
-    Dim Scancontroller As AimScanController
-    Dim TileDatabaseName As String
-    Dim NameLength As Integer
-    Dim Myname As String
-    Dim Mypath As String
-    Dim TileXOld As Integer
-    Dim r As Integer
-    Dim Start As Long
-    Dim bslash As String
-    Dim pos As Long
-    Dim Bytesperpixel As Long
     Dim StartTime As Double
-    Dim OnlineImageAnalysis As Boolean
-    Dim AlterDatabaseName As String
-    Dim filepath As String
-    Dim AlterImage As Boolean
+    
+    'Counters
+    Dim Location As Long         ' Location counter
+    Dim iLoc As Integer          ' second location counter (could eventually be removed)
+    Dim MaxNrLocations As Long   ' Maximal number of locations
+    Dim iPosition As Long        ' id of Well/position
+    Dim iPositionMax As Long     ' Maximal number of Well/position
+    Dim iSubposition As Long     ' id of subposition
+    Dim iSubpositionMax As Long  ' Maximal number of subpositions per Position
     Dim HighResExperimentCounter As Integer
     Dim HighResCounter As Integer
-    Dim fullpathname As String
+
+    'Coordinates
+    Dim x As Double              ' x value where to move the stage
+    Dim y As Double              ' y value where to move the stage
+    Dim z As Double              ' z value where to move the stage
+    Dim XCor As Double           ' Shift in X calculated from Autofocus
+    Dim YCor As Double           ' Shift in Y calculated from autofocus
+    Dim ZCor As Double           ' Shift in Z calculated from autofocus
+    
+    'test variables
+    Dim Success As Integer       ' Check if something was sucessfull
+    Dim SuccessAF As Boolean     ' Check if AF was succesful
     Dim LocationSoFarBest As Integer
     Dim soFarBestGoodCellsPerImage As Integer
-                   
+    
+    'Recording stuff
+    Dim FileNameId As String ' ID name of file (Well/Position, Subpositio, Timepoint)
+    Dim filepath As String   ' full path of file to save (changes through function)
+    Dim RecordingDoc As DsRecordingDoc  ' contains the images
+    Dim Scancontroller As AimScanController ' the controller
+  
+    
     ' Set the offset in z-stack to 0; otherwise there can be errors...
     Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.FrameSpacing * Int(Lsm5.DsRecording.FramesPerStack / 2)
                        
@@ -1128,7 +1205,7 @@ Private Sub StartAcquisition(BleachingActivated)
     ' set up the imaging
     Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
     Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
-    
+    ' set up RecordingDoc
     If RecordingDoc Is Nothing Then
         Set RecordingDoc = Lsm5.NewScanWindow
         While RecordingDoc.IsBusy
@@ -1136,313 +1213,189 @@ Private Sub StartAcquisition(BleachingActivated)
             DoEvents
         Wend
     End If
-    
-    
-  
-    
+     
     ' CheckBoxActiveOnlineImageAnalysis  refers to the MicroPilot
-    If CheckBoxActiveOnlineImageAnalysis.Value = True Then
+    If CheckBoxActiveOnlineImageAnalysis Then
         
-        Dim HighResArrayX() As Double ' this is an array of values
+        Dim HighResArrayX() As Double ' this is an array of values why do you need to store values?
         Dim HighResArrayY() As Double
         Dim HighResArrayZ() As Double
         ReDim Preserve HighResArrayX(100) 'define 100 a priori (even if there are less)
         ReDim Preserve HighResArrayY(100)
         ReDim Preserve HighResArrayZ(100)
-        OnlineImageAnalysis = True
         HighResExperimentCounter = 0
         HighResCounter = 0
         SaveSetting "OnlineImageAnalysis", "macro", "code", 0
         SaveSetting "OnlineImageAnalysis", "macro", "offsetx", 0
         SaveSetting "OnlineImageAnalysis", "macro", "offsety", 0
         
-    Else
-        
-        OnlineImageAnalysis = False
-    
     End If
     
     
     InitializeStageProperties
     SetStageSpeed 9, True
-    
-    GlobalPositionsStage = Lsm5.Hardware.CpStages.MarkCount
-    If MultipleLocation Then
-        PutStagePositionsInArray
-    End If
-    
+        
     
             
-    RepetitionNumber = 1
     Running = True  'Now we're starting. This will be set to false if the stop button is pressed or if we reached the total number of repetitions.
     ChangeButtonStatus False ' disable buttons
-   
-    If TileX > 1 Or TileY > 1 Then
-        
-        Set Scancontroller = Lsm5.ExternalDsObject.Scancontroller
-    
-    End If
+    MaxNrLocations = 1  'If using the single location you do not have to mark it in the stage control window.
     
 
-    If MultipleLocation Or Grid Then                    'Defines the Location Number parameter
-        
-        LocationNumber = Lsm5.Hardware.CpStages.MarkCount       'Counts the locations stored in the Stage control window from the LSM
+    If MultipleLocationToggle.Value Then                    'Defines the Location Number parameter
+        MaxNrLocations = Lsm5.Hardware.CpStages.Markcount       'Counts the locations stored in the Stage control window from the LSM
+    End If
     
-    ElseIf (CheckBoxActiveGridScan.Value And CheckBoxActiveGridScan_Initialise) Then ' Prepare the grid coordinates TODO: What is CheckBoxActiveGridScan_Initialise
-        
-        Dim tmpGridX As Double
-        Dim tmpGridY As Double
-        
-        Dim tmpGridXsub As Double
-        Dim tmpGridYsub As Double
-                
-        Dim iy As Integer
-        Dim ix As Integer
-        Dim iWell As Integer
-        Dim iyy As Integer
-        Dim ixx As Integer
-        Dim xDirection As Integer
-        Dim xxDirection As Integer
-        
-        MsgBox "Initialize all grid positions."
-        
-        
-        LocationNumber = GridScan_nX.Value * GridScan_nY.Value * GridScan_nXsub.Value * GridScan_nYsub.Value
-        
-        If LocationNumber > 10000 Then
-            MsgBox "Sorry. Maximal number of locations is 10000. Please change nX and/or nY."
+    '''''''''''''''''''''''
+    '***Set up GridScan***'
+    '''''''''''''''''''''''
+    If CheckBoxActiveGridScan Then
+        MaxNrLocations = GridScan_nX.Value * GridScan_nY.Value * GridScan_nXsub.Value * GridScan_nYsub.Value
+        If MaxNrLocations > 10000 Then
+            MsgBox "GridScan: Maximal number of locations is 10000. Please change Numbers  X and/or Y."
+            ScanStop = True
+            StopAcquisition
+            Exit Sub
+        End If
+    End If
+    
+    If CheckBoxActiveGridScan Then
+    
+        Dim GridInit As Boolean 'initialize grid
+        If CheckBoxGridScan_Initialise Then 'forced initialization
+            GridInit = True
+        ElseIf isArrayEmpty(posGridX) Then  'when empty grid
+            GridInit = True
+        ElseIf UBound(posGridX) < MaxNrLocations Then 'when change in number of grid points
+            GridInit = True
+        Else
+            GridInit = False
         End If
         
-        tmpGridX = Lsm5.Hardware.CpStages.PositionX
-        tmpGridY = Lsm5.Hardware.CpStages.PositionY
+        If GridInit Then
+            ReDim posGridX(1 To MaxNrLocations)
+            ReDim posGridY(1 To MaxNrLocations)
+            ReDim posGridXY_valid(1 To MaxNrLocations)
+            ReDim locationNumbersMainGrid(1 To MaxNrLocations)
+            DisplayProgress "Initialize all grid positions....", RGB(0, &HC0, 0)
+            Sleep (1000)
+            MakeGrid posGridX, posGridY, posGridXY_valid, locationNumbersMainGrid
+            DisplayProgress "Initialize all grid positions...DONE", RGB(0, &HC0, 0)
+        End If
         
-        iLoc = 1
-        iLocMainGrid = 0
-        xDirection = 1 ' meander
-        
-        For iy = 1 To GridScan_nY.Value
-            
-            For ix = 1 To GridScan_nX.Value
-                
-                If ix = 1 Then
-                    tmpGridX = tmpGridX
-                Else
-                    tmpGridX = tmpGridX + xDirection * GridScan_dX.Value
-                End If
-                    
-                iLocMainGrid = iLocMainGrid + 1
-                locationNumbersMainGrid(iLocMainGrid) = iLoc  ' remember where the main positions are
-                
-                ' Sub-Positions: start
-                tmpGridXsub = tmpGridX
-                tmpGridYsub = tmpGridY
-                
-                xxDirection = 1 ' meander
-                
-                For iyy = 1 To GridScan_nYsub.Value
-                    
-                    For ixx = 1 To GridScan_nXsub.Value
-                        
-                        If ixx = 1 Then
-                            tmpGridXsub = tmpGridXsub
-                        Else
-                            tmpGridXsub = tmpGridXsub + xxDirection * GridScan_dXsub.Value
-                        End If
-                            
-                        posGridX(iLoc) = tmpGridXsub
-                        posGridY(iLoc) = tmpGridYsub
-                        posGridXY_valid(iLoc) = 1 ' image this position
-                    
-                        iLoc = iLoc + 1
-                
-                    Next ixx
-                    
-                    xxDirection = xxDirection * (-1) ' meander
-                    tmpGridYsub = tmpGridYsub + GridScan_dYsub.Value
-                
-                Next iyy
-                ' Sub-Positions: end
-                
-            Next ix
-            
-            xDirection = xDirection * (-1) ' meander
-            tmpGridY = tmpGridY + GridScan_dY.Value
-        
-        Next iy
-    
-    
-    ElseIf CheckBoxActiveGridScan Then
-    
-        LocationNumber = GridScan_nX.Value * GridScan_nY.Value * GridScan_nXsub.Value * GridScan_nYsub.Value
-        
-    Else
-        
-        LocationNumber = 1  'If using the single location you do not have to mark it in the stage control window.
-    
     End If
+    '''''''''''''''''''''''''''
+    '***End Set up GridScan***'
+    '''''''''''''''''''''''''''
+
             
-            
-    If LocationTracking Or FrameAutofocussing Then
+    If TrackingToggle Or FrameAutofocussing Then
         'Here you could add code for storing the XYZ position of the cells at each time point in Excel
         'code is in "unused code" ExcelXYZstoring
     End If
     
     
-    Do While Running   'As long as the macro is running we're in this loop
+    Do While Running   'As long as the macro is running we're in this loop. At everystop one will save actual location, and repetition
 
-        
-        
         ' Todo: what is happening here?
-        ' Todo: remember the last focus position for each location!
+        ' Todo: remember the last focus position for each location! (this automatically would create a ZMap)
         ' Tischi: i commented the following lines, because the z-positions for multiple location are updated already within the location loop..
         ' ..so i do not understand what is happening here
-        'If Not (LocationTracking Or FrameAutofocussing) Then
-        '   UpdateZvalues Grid, MultipleLocation, z ' cleaned 2010.07.15
+        'If Not (TrackingToggle Or FrameAutofocussing) Then
+        '   UpdateZvalues Grid, MultipleLocationToggle.Value, z ' cleaned 2010.07.15
         'End If
         
-        
-        iLocMainGrid = 1
         nGoodCellsPerWell = 0
-        iWell = 1
-        
+        iPosition = 1 ' not consisten with name used before
+        iSubposition = 1  ' this is the local position according to submask
         ' start counting how long it takes
-        
+
+        iPositionMax = MaxNrLocations / (GridScan_nXsub.Value * GridScan_nYsub.Value)
+        iSubpositionMax = GridScan_nXsub.Value * GridScan_nYsub.Value
         GlobalPrvTime = CDbl(GetTickCount) * 0.001
         
-        For Location = 1 To LocationNumber    'This loops all the locations (only one if Single location is selected)
-                
-                
-                
-            If MultipleLocation Or Grid Then
-                
-                MoveToNextLocation ' in xy and z-positon
+        For Location = locationNumber To MaxNrLocations    'This loops all the locations (only one if Single location is selected)
+                              
+            ''''''''Start stage movement to a different position
+            If MultipleLocationToggle.Value Then
+                Success = FailSafeMoveStage(posMultiLocationX(Location), posMultiLocationY(Location), posMultiLocationZ(Location))
+                LocationTextLabel.Caption = "Now at X= " & posMultiLocationX(Location) & ", Y = " & posMultiLocationY(Location) & ", Z = " & posMultiLocationZ(Location)
+                iPosition = Location
+            End If
             
-            ElseIf CheckBoxActiveGridScan.Value Then
-                            
+            If CheckBoxActiveGridScan.Value Then
+                ' TODO: check for good cells. The check is done in Micropilot but afterwards. Default? However this should be done in the workflow manager
                 If CheckBoxGridScan_FindGoodPositions And (Location > 1) Then
-                    
                     If nGoodCellsPerWell >= minGoodCellsPerWell Then
-                        
                         MsgBox "Enough Cells Per Well " + CStr(nGoodCellsPerWell) + "/" + CStr(minGoodCellsPerWell) + ". Going to Next Well. "
-                          
-                                  
-                        If (iWell + 1 > GridScan_nX.Value * GridScan_nY.Value) Then ' we are in the last well
-                        
+                        If (iPosition + 1 > GridScan_nX.Value * GridScan_nY.Value) Then ' we are in the last well
                             ' set all remaining positions to 0
-                            For iLoc = Location To LocationNumber
+                            For iLoc = Location To MaxNrLocations
                                 posGridXY_valid(iLoc) = 0
                             Next iLoc
-                        
                         Else
-                            
                             ' only set all positions till the next well to 0
-                            For iLoc = Location To locationNumbersMainGrid(iWell + 1) - 1
+                            For iLoc = Location To locationNumbersMainGrid(iPosition + 1) - 1
                                 posGridXY_valid(iLoc) = 0
                             Next iLoc
-                            
                         End If
-                            
-                            
-                        ' select next position
-                        Location = locationNumbersMainGrid(iWell + 1)
-                           
+                        ' select next position/next Well
+                        Location = locationNumbersMainGrid(iPosition + 1)
                         ' stop if done
-                        
-                        If (Location > LocationNumber) Or (iWell + 1 > GridScan_nX.Value * GridScan_nY.Value) Then
+                        If (Location > MaxNrLocations) Or (iPosition + 1 > GridScan_nX.Value * GridScan_nY.Value) Then
                             MsgBox "Done with the Location Checking."
                             GoTo DoneWithLocations
                         End If
-                            
                     End If
-                    
-                End If
-                                
-                                
-                ' move to next Grid location
-                
-                ' compute whether we are entering a new well
+                End If 'CheckBoxGridScan_FindGoodPositions And (Location > 1)
+                ' compute whether we are entering a new position (Well) and do iPosition + 1
                 If ((Location - 1) Mod (GridScan_nXsub.Value * GridScan_nYsub.Value)) = 0 Then
-                        
                     If CheckBoxGridScan_FindGoodPositions And (Location > 1) Then
                         If nGoodCellsPerWell < minGoodCellsPerWell Then ' still the values for the last well
                             MsgBox "New Well: Not enough cells in last well, making valid position " + CStr(LocationSoFarBest) + " with " + CStr(soFarBestGoodCellsPerImage) + " cells."
                             posGridXY_valid(LocationSoFarBest) = 1  ' set the so far best position as valid
                         End If
                     End If
-                
-                    
                     If CheckBoxGridScan_FindGoodPositions Then
                         ' init for the new well
                         nGoodCellsPerWell = 0
                         LocationSoFarBest = Location
                         soFarBestGoodCellsPerImage = 0
                     End If
-                        
-                    
-                    
-                    If Location > 1 Then  ' iWell is already initialised with 1
-                        
-                        iWell = iWell + 1
-                    
+                    If Location > 1 Then  ' iPosition is already initialised with 1
+                        iPosition = iPosition + 1
                     End If
-                    
-                    ' MsgBox "Entered new well #" + CStr(iWell)
-                    
-                    
-                    
-                End If
+                End If '((Location - 1) Mod (GridScan_nXsub.Value * GridScan_nYsub.Value)) = 0
                 
-                
+                iSubposition = Location - (iPosition - 1) * (GridScan_nXsub.Value * GridScan_nYsub.Value)
+                ' setting value of x and y according to grid
                 If posGridXY_valid(Location) Then
-                
-                    'MsgBox "Imaging next position " + CStr(Location) + "/" + CStr(LocationNumber) + "; well " + CStr(iWell) + "; status " + CStr(posGridXY_valid(Location))
                     x = posGridX(Location)
                     y = posGridY(Location)
-                    'GoTo NextLocation ' skip this position
-                    
                 Else
-                    
-                    'MsgBox "Skipping next position " + CStr(Location) + "/" + CStr(LocationNumber) + "; well " + CStr(iWell) + "; status " + CStr(posGridXY_valid(Location))
-                    'x = posGridX(Location)
-                    'y = posGridY(Location)
                     GoTo NextLocation ' skip this position
-                    
                 End If
-                    
+               
+                '** Here we finally move to next Grid location**'
+                Success = FailSafeMoveStage(x, y)
+                If Not Success Then
+                    ScanStop = True
+                    StopAcquisition
+                    Exit Sub
+                End If
                 
-                'MsgBox "GridScan: x = " + CStr(x) + " y = " + CStr(y)
-                
-                Success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition(x, y)
-                
-                'TODO Check this
-                Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
-                    Sleep (100)
-                    If GetInputState() <> 0 Then
-                        DoEvents
-                        If ScanStop Then
-                            StopAcquisition
-                            Exit Sub
-                        End If
-                    End If
-                Loop
+            End If 'CheckBoxActiveGridScan.Value
+            ''''''''end stage movement to a different position
             
-            End If
-        
-        
-            'MsgBox "Rep-1 = " + CStr(RepetitionNumber - 1) + " AFeveryNth = " + CStr(AFeveryNth)
-            'MsgBox "(Rep-1) Mod AFeveryNth = " + CStr((RepetitionNumber - 1) Mod AFeveryNth)
-            
+            ' At every positon and repetition  check if Autofocus needs to be required
             If (RepetitionNumber - 1) Mod AFeveryNth = 0 Then
                      
                 If Not CheckBoxActiveAutofocus Then  ' Looking if needs to perform an autofocus
-                     
                      ZShift = 0
-                                    
                 Else ' perform AUTOFOCUS
-                     
                      AutofocusForm.GetBlockValues
                      DisplayProgress "Autofocus 0", RGB(0, &HC0, 0)
-                     StopScanCheck
+                     StopScanCheck 'stop any running jobs
                      RestoreAcquisitionParameters ' has to be there, because after hires mode settings would be wrong for autofocus
                      ' take a z-stack and finds the brightest plane:
                      SuccessAF = Autofocus_StackShift(BlockZRange, BlockZStep, BlockHighSpeed, BlockZOffset, RecordingDoc)
@@ -1450,320 +1403,126 @@ Private Sub StartAcquisition(BleachingActivated)
                         StopAcquisition
                         Exit Sub
                      End If
-                     
                      ' move the xyz to the right position
+                     DisplayProgress "Autofocus move stage", RGB(0, &HC0, 0)
                      Autofocus_MoveAcquisition BlockZOffset
-                                
                 End If
-                  
-            End If
-          
-            ' AfterAutofocus:
+            End If '(RepetitionNumber - 1) Mod AFeveryNth = 0
+ 
+            Lsm5.DsRecording.TimeSeries = True  ' This is for the concatenation I think: we're doing a timeseries with one timepoint. I'm not sure what is the reason for this
+            Lsm5.DsRecording.StacksPerRecord = 1 ' This is time series stack!
             
-            
-            ' Restore settings, which are changed during the AF
-            CopyRecording Lsm5.DsRecording, BackupRecording
-           
-            
-            Lsm5.DsRecording.TimeSeries = True  ' This is for the concatenation I think: we're doing a timeseries with one timepoint. _
-            I'm not sure what is the reason for this
-            Lsm5.DsRecording.StacksPerRecord = 1
-            
-            
-            If MultipleLocation Or Grid Or CheckBoxActiveGridScan.Value Then                'Sets the name of the image to store in the database
-                LocationName = "_L" & Location
+            ' Set FileNameId. In case of no subpositions then there is also no well
+            If GridScan_nXsub.Value * GridScan_nYsub.Value = 1 Then
+                FileNameId = FileName(1, iPosition, RepetitionNumber)
             Else
-                LocationName = ""
+                FileNameId = FileName(iPosition, iSubposition, RepetitionNumber)
             End If
-              
-            If Grid Then
-                LocationName = "_" & GlobalLocationsName(Location) & LocationName
+            
+            ''''''''''''''''''''''''''''''
+            '*Begin Alternative imaging**'
+            ''''''''''''''''''''''''''''''
+            If CheckBoxAlterLocation.Value = True Then  'this is not in use at the moment? Would use a different alternative imaging
+                If Location Mod TextBox_RoundAlterLocation = 0 Then
+                    ActivateAlterAcquisitionTrack
+                    DisplayProgress "using alternative tracks", RGB(0, 0, &HC0)
+                End If
             End If
-        
-            If TileX > 1 Or TileY > 1 Then
-                
-                'name = GlobalFileName & LocationName & "_R" & RepetitionNumber
-                'ScanImage.SetTitle name
-                
-            Else ' no tiling
             
-                      
-                ' Alternative Acquisitions
-                
-                If CheckBoxAlterLocation.Value = True Then
-                    If Location Mod TextBox_RoundAlterLocation = 0 Then
-                        ActivateAlterAcquisitionTrack
-                        DisplayProgress "using alternative tracks", RGB(0, 0, &HC0)
-                    End If
-                End If
-                
-                If CheckBoxAlterImage = True Then
-                    alterName = GlobalFileName & LocationName & "_R" & RepetitionNumber & "_Add"
-                    StartAlternativeImaging RecordingDoc, StartTime, GlobalDataBaseName, alterName
-                End If
-            
-                
-                ' Normal Acquisitions
-                
-                ' restore acquisition parameters again which have changed during the Additional Acquisition
-                CopyRecording Lsm5.DsRecording, BackupRecording  ' done already above
-                Sleep (100)
-                
-                name = GlobalFileName & LocationName & "_R" & RepetitionNumber
-                
-                ' set the tracks to be imaged
-                DisplayProgress "Acquiring location " & Location & "(" & LocationNumber & "), repetition " & RepetitionNumber, RGB(&HC0, &HC0, 0) 'Now we're going to do the acquisition
-            
-                AutofocusForm.ActivateAcquisitionTrack
-                Sleep (100)
-                
-                If Not IsAcquisitionTrackSelected Then      'An additional control....
-                    StopAcquisition
-                    MsgBox "No track selected for Acquisition! Cannot Acquire!"
-                    Exit Sub
-                End If
-                
-                     
-                ' **** HERE THE IMAGE IS ACQUIRED ****
-                'Set RecordingDoc = Lsm5.StartScan()
-                'If RecordingDoc Is Nothing Then  ' just to be sure...open another one if needed
-                '    Set RecordingDoc = Lsm5.NewScanWindow
-                '    While RecordingDoc.IsBusy
-                '        Sleep (20)
-                '        DoEvents
-                '    Wend
-                'End If
-                'MsgBox "new image"
-                ScanToImageNew RecordingDoc
-                ' ************************************
-                
+            If CheckBoxAlterImage.Value = True Then
+                CopyRecording Lsm5.DsRecording, BackupRecording
+                filepath = GlobalDataBaseName & "\" & GlobalFileName & "_" & FileNameId & "_Alt" & ".lsm" ' fullpath of alternative file
+                StartAlternativeImaging RecordingDoc, StartTime, filepath, _
+                GlobalFileName & "_" & FileNameId & "_Alt" & ".lsm"
             End If
-                
-           
+            '****************************'
+            
+                        
+            '''''''''''''''''''''''''''''''''''''
+            '*Begin Normal acquisition imaging**'
+            '''''''''''''''''''''''''''''''''''''
+            CopyRecording Lsm5.DsRecording, BackupRecording  ' restore acquisition parameters
+            Sleep (100)
+            
+            AutofocusForm.ActivateAcquisitionTrack           ' set the tracks to be imaged
+            Sleep (100)
+            
+            If Not IsAcquisitionTrackSelected Then           'An additional control....
+                MsgBox "No track selected for Acquisition! Cannot Acquire!"
+                ScanStop = True
+                StopAcquisition
+                Exit Sub
+            End If
+            
+            ScanToImageNew RecordingDoc                       ' **** HERE THE IMAGE IS ACQUIRED ****
+            
+            If GridScan_nXsub.Value * GridScan_nYsub.Value = 1 Then
+                DisplayProgress "Acquiring Position " & iPosition & "(" & iPositionMax & "), Repetition " & RepetitionNumber _
+                & "(" & BlockRepetitions & ")", RGB(&HC0, &HC0, 0)  'Now we're going to do the acquisition
+            Else
+                DisplayProgress "Acquiring Position " & iPosition & "(" & iPositionMax & "), Sub-position " & iSubposition & "(" & iSubpositionMax & ")," _
+                & vbCrLf & "Repetition " & RepetitionNumber & "(" & BlockRepetitions & ")", RGB(&HC0, &HC0, 0)       'Now we're going to do the acquisition
+            End If
+            
             If RepetitionNumber = 1 Then
                 StartTime = GetTickCount    'Get the time when the acquisition was started
             End If
-            
-            'TODO: test function
-            While AcquisitionController.IsGrabbing
+
+            While AcquisitionController.IsGrabbing 'TODO: test function
                 Sleep (100)
                 If GetInputState() <> 0 Then
                     DoEvents
                     If ScanStop Then
                         StopAcquisition
+                        locationNumber = Location
                         Exit Sub
                     End If
                 End If
             Wend
-
-      
-
+            ' ************************************'
             
-            ' store all normal acquistion parameters
-            ' CopyRecording Lsm5.DsRecording, BackupRecording
-                
-            RecordingDoc.SetTitle name
-            
-            Lsm5.tools.WaitForScanEnd False, 10
-             
-          
-            '' stitching of tiles: start ********************************************************************
-            
-            If TileX > 1 Or TileY > 1 Then
-                
-                RelativeLocation = Location Mod (TileX * TileY)
-                If RelativeLocation = 0 Then RelativeLocation = (TileX * TileY)
-                
-                If Lsm5.DsRecording.TrackObjectByIndex(0, Success).DataChannelObjectByIndex(0, Success).BitsPerSample > 8 Then
-                    Bytesperpixel = 2
-                Else
-                    Bytesperpixel = 1
-                End If
-                
-                If RelativeLocation = 1 Then 'at each first frame of a new tile group define a new image
-                    
-                    If AreStageCoordinateExchanged Then
-                        
-                        If Lsm5.DsRecording.ScanMode = "Stack" Then
-                            Set StitchImage = Lsm5.ExternalDsObject.MakeNewImageDocument(CLng(Lsm5.DsRecording.RtRegionWidth * TileY), _
-                                                                         CLng(Lsm5.DsRecording.RtRegionHeight * TileX), _
-                                                                         Lsm5.DsRecording.FramesPerStack, _
-                                                                         1, _
-                                                                         Lsm5.DsRecording.NumberOfChannels, _
-                                                                         Bytesperpixel, _
-                                                                         1)
-                        Else
-                            Set StitchImage = Lsm5.ExternalDsObject.MakeNewImageDocument(CLng(Lsm5.DsRecording.RtRegionWidth * TileY), _
-                                                                         CLng(Lsm5.DsRecording.RtRegionHeight * TileX), _
-                                                                         1, _
-                                                                         1, _
-                                                                         Lsm5.DsRecording.NumberOfChannels, _
-                                                                         Bytesperpixel, _
-                                                                         1)
-                        End If
-                
-                
-                    Else
-                    
-                        If Lsm5.DsRecording.ScanMode = "Stack" Then
-                            Set StitchImage = Lsm5.ExternalDsObject.MakeNewImageDocument(CLng(Lsm5.DsRecording.RtRegionWidth * TileX), _
-                                                                         CLng(Lsm5.DsRecording.RtRegionHeight * TileY), _
-                                                                         Lsm5.DsRecording.FramesPerStack, _
-                                                                         1, _
-                                                                         Lsm5.DsRecording.NumberOfChannels, _
-                                                                         Bytesperpixel, _
-                                                                         1)
-                        Else
-                            Set StitchImage = Lsm5.ExternalDsObject.MakeNewImageDocument(CLng(Lsm5.DsRecording.RtRegionWidth * TileX), _
-                                                                         CLng(Lsm5.DsRecording.RtRegionHeight * TileY), _
-                                                                         1, _
-                                                                         1, _
-                                                                         Lsm5.DsRecording.NumberOfChannels, _
-                                                                         Bytesperpixel, _
-                                                                         1)
-                        End If
-                
-                    End If ' AreStageCoordinateExchanged
-                
-                
-                    ' Todo: overlap is still missing ??
-                                                                         
-                    If StitchImage Is Nothing Then Exit Sub
-                        
-                    
-                End If ' RelativeLocation = 1
-                  
-                
-                StitchImage.NeverAgainScanToTheImage
-                
-                ' ImageCopy.SourceImage = RecordingDoc.Image(0, False)
-      
-                ImageCopy.SourceImage = ScanImage.image(0, False)
-                ImageCopy.DestinationImage = StitchImage.image(0, False)
-            
-                '        If RelativeLocation Mod TileY = 0 Then
-                '        ImageCopy.DestinationY = 0
-                '        Else
-                If AreStageCoordinateExchanged Then
-                    
-                    If RelativeLocation = 1 Then r = 1
-                        
-                    ImageCopy.DestinationX = (TileY - r) * Lsm5.DsRecording.RtRegionWidth
-                        
-                    If RelativeLocation Mod TileX = 0 Then r = r + 1
-                        'If RelativeLocation Mod TileX = 0 Then
-                        '            ImageCopy.DestinationX = 0
-                        '        Else
-                        '
-                        ' ImageCopy.DestinationX = CLng(Abs(1 - Int((RelativeLocation - 1) / TileX)) * Lsm5.DsRecording.RtRegionWidth)
-                        '
-                        '      End If
-                        If RelativeLocation Mod TileX = 0 Then
-                            ImageCopy.DestinationY = 0
-                        Else
-                            ImageCopy.DestinationY = CLng((TileX - (RelativeLocation Mod TileX)) * Lsm5.DsRecording.RtRegionWidth)
-                        End If
-                
-                    Else
-                        
-                        ImageCopy.DestinationY = CLng(Int((RelativeLocation - 1) / TileX) * Lsm5.DsRecording.RtRegionWidth)
-                            
-                        If RelativeLocation Mod TileX = 0 Then
-                            ImageCopy.DestinationX = 0
-                        Else
-                            ImageCopy.DestinationX = CLng(Abs((RelativeLocation Mod TileX) - TileX) * Lsm5.DsRecording.RtRegionWidth)
-                        End If
-                    
-                    End If ' RelativeLocation Mod TileX = 0 Then r = r + 1
-                            
-                    If RelativeLocation = 1 Then
-                        ImageCopy.ImageParameterCopyFlags = eAimImageParameterCopyAll
-                        StitchImage.SetVoxelSizeX CLng(Lsm5.DsRecording.RtRegionWidth * TileX)
-                        StitchImage.SetVoxelSizeY CLng(Lsm5.DsRecording.RtRegionHeight * TileY)
-                        
-                    Else
-                        ImageCopy.ImageParameterCopyFlags = 0
-                    End If
-                        
-                    ImageCopy.Start
-                    Set Progress = ImageCopy
-                    
-                    'stop during image copy. TODO Check!
-                    While Not Progress.Ready
-                        Sleep (100)
-                        If GetInputState() <> 0 Then
-                            DoEvents
-                            If ScanStop Then
-                                Exit Sub
-                            End If
-                        End If
-                    Wend
-                                
-                                
-                    ' Save the stitched image
-                    If RelativeLocation = TileX * TileY Then
-                        tilename = "Tile_" & GlobalLocationsName(Location) & "_L" & (Location / RelativeLocation) & "_R" & RepetitionNumber
-                        StitchImage.SetTitle tilename
-                        ' GlobalImageIndex(RepetitionNumber) = StitchImage.SaveToDatabase(TileDatabaseName, tilename)
-                        
-                        fullpathname = TileDatabaseName & "\" & tilename & ".lsm"
-                        SaveDsRecordingDoc StitchImage, fullpathname
-                        StitchImage.CloseAllWindows
-                    End If
-            
-            
-            End If
-            
-            
-            ''end stitching ********************************
-                
-                
-            ' Todo: check: will it overwrite the other image?
-            
-                    
-                    
+            ''''''''''''''''''''''''''
+            '*** Store bleachTable ***'
+            ''''''''''''''''''''''''''
             If BleachStartTable(RepetitionNumber) > 0 Then          'If a bleach was performed we add the information to the image metadata
-                
                 Lsm5.DsRecordingActiveDocObject.AddEvent (BleachStartTable(RepetitionNumber) - StartTime) / 1000, eEventTypeBleachStart, "Bleach Start"
                 Lsm5.DsRecordingActiveDocObject.AddEvent (BleachStopTable(RepetitionNumber) - StartTime) / 1000, eEventTypeBleachStop, "Bleach End"
-            
             End If
             
             
-            ' Now we save the image ********************
-            
-            bslash = "\"
-            Mypath = GlobalDataBaseName + bslash
-            filepath = Mypath & name & ".lsm"
-            
+            ''''''''''''''''''''''''
+            '*** Save Image *******'
+            ''''''''''''''''''''''''
+            RecordingDoc.SetTitle GlobalFileName & "_" & FileNameId
             'this is the name of the file to be saved
-            fullpathname = GlobalDataBaseName & "\" & name & ".lsm"
-            If FileExist(fullpathname) Then
-                MsgBox fullpathname + " exist "
-            End If
-            'Check if file name exist
-            
-            If TileX > 1 Or TileY > 1 Then
-                
-                SaveDsRecordingDoc ScanImage, fullpathname
-            
-            Else
-                
-                ' HERE THE IMAGE IS FINALLY SAVED
-                SaveDsRecordingDoc RecordingDoc, fullpathname
-                ' *******************************
-                
-            End If
-            
-            'TODO Check this!
-            If ScanStop Then
-                StopAcquisition
-                Exit Sub
+            filepath = GlobalDataBaseName & "\" & GlobalFileName & "_" & FileNameId & ".lsm"
+            'Check existance of file and warn
+            If Not OverwriteFiles Then
+                If FileExist(filepath) Then
+                    If MsgBox("File " & filepath & " exists. Do you want to overwrite this and subsequent files? ", VbYesNo) = vbYes Then
+                        OverwriteFiles = True
+                    Else
+                        ScanStop = True
+                        StopAcquisition
+                        locationNumber = Location
+                        Exit Sub
+                    End If
+                End If
             End If
            
+            SaveDsRecordingDoc RecordingDoc, filepath  ' HERE THE IMAGE IS FINALLY SAVED
             
-               
-            If OnlineImageAnalysis = False Then ' without MicroPilot
+            If ScanStop Then    'TODO Check this!
+                StopAcquisition
+                locationNumber = Location
+                Exit Sub
+            End If
+            ' *******************************
+            
+            
+
+              
+            If Not CheckBoxActiveOnlineImageAnalysis Then ' without MicroPilot
                 
                 If BleachTable(RepetitionNumber) = True Then   'Check if we're performing a bleach before image acquisition
                     
@@ -1782,7 +1541,7 @@ Private Sub StartAcquisition(BleachingActivated)
                     Else
                         MsgBox ("Could not set bleach track. Did not bleach.")
                     End If
-                    If Location = LocationNumber Then   'Alowas again to do an extrableach at the en
+                    If Location = MaxNrLocations Then   'Alowas again to do an extrableach at the en
                         ExtraBleachButton.Caption = "Bleach"
                         ExtraBleachButton.BackColor = &H8000000F
                     End If
@@ -1791,11 +1550,10 @@ Private Sub StartAcquisition(BleachingActivated)
                 
                 ' todo:
                 ' but where is the bleaching image stored ??
-                
             End If
                         
                         
-            If OnlineImageAnalysis = True Then ' MicroPilot Active
+            If CheckBoxActiveOnlineImageAnalysis Then ' MicroPilot Active
                             
                 SaveSetting "OnlineImageAnalysis", "macro", "filepath", filepath
                 'TODO Check this!
@@ -1805,6 +1563,7 @@ Private Sub StartAcquisition(BleachingActivated)
                         DoEvents
                         If ScanStop Then
                             StopAcquisition
+                            locationNumber = Location
                             Exit Sub
                         End If
                     End If
@@ -1818,14 +1577,15 @@ Private Sub StartAcquisition(BleachingActivated)
             End If
                
                 
-            If LocationTracking Or FrameAutofocussing Then
+            If TrackingToggle Or FrameAutofocussing Then
                 'not used at the moment find code in unusedCode: ExcelXYZstoring II
             End If
                 
-                
-            ' Defining new (x,y)z positions *****************************
-            If LocationTracking Then 'This is if we're doing some postacquisition tracking
-                
+            '''''''''''''''''''''''''''''''''''''''''''''''''''''
+            '**** Updatepositions (x,y)z *********************'''
+            '''''''''''''''''''''''''''''''''''''''''''''''''''''
+            If TrackingToggle Then 'This is if we're doing some postacquisition tracking
+            
                 DisplayProgress "Analysing the new position of location " & Location, &H80FF&
                 DoEvents
                 MassCenter ("Tracking")
@@ -1874,6 +1634,7 @@ Private Sub StartAcquisition(BleachingActivated)
                     DoEvents
                     If ScanStop Then
                         StopAcquisition
+                        locationNumber = Location
                         Exit Sub
                     End If
                 End If
@@ -1887,34 +1648,34 @@ Private Sub StartAcquisition(BleachingActivated)
             'If Not CheckBoxInactivateAutofocus Then
             '    z = z - BlockZOffset
             'End If
-                
-             
+    
+            ' Updating positions during tracking (x,y)z positions ***************************
+            If MultipleLocationToggle.Value Then
             
-            ' Setting new (x,y)z positions ***************************
-            ' Todo: what is this doing ??? probably updating the positions
-            If MultipleLocation Or Grid Then
-            
-                Success = Lsm5.Hardware.CpStages.MarkClear(0)                   'Deletes the first mark location in the stage control (the current one)
-                                                                                'This deletion and new addition of the location was necessary to change the X, Y and Z properties of that location. I did not know how to do it otherwise
-                Lsm5.Hardware.CpStages.MinMarkDistance = 0.1                    'Put a very small mark distance to make it possible to have two cells coming close together. This parameter can be cahnged with the macro but is not accessible from the main software !
-                While Lsm5.Hardware.CpStages.MarkGetIndex(x, y) <> -1
-                    x = x + 0.1
-                    y = y + 0.1
-                Wend
-                
-                ' update the stage positions (particularly important for Location Tracking)
-                Success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).lAddMarkZ(x, y, z) 'Adds the location again,at the end of the list
-                
-                Lsm5.Hardware.CpStages.MinMarkDistance = 10                     'Put back the minimal marking distance to its default value
-                'test if this is working
-                Do While Lsm5.Info.IsAnyHardwareBusy
-                    Sleep (20)
-                    DoEvents
-                Loop
+'                Success = Lsm5.Hardware.CpStages.MarkClear(0)                   ' Deletes the first mark location in the stage control (the current one)
+'                                                                                ' This deletion and new addition of the location
+'                                                                                ' was necessary to change the X, Y and Z properties of that location.
+'                                                                                ' I did not know how to do it otherwise
+'                Lsm5.Hardware.CpStages.MinMarkDistance = 0.1                    ' Put a very small mark distance to make it possible to have two cells coming close together.
+'                                                                                ' This parameter can be cahnged with the macro but is not accessible from the main software !
+'                While Lsm5.Hardware.CpStages.MarkGetIndex(x, y) <> -1
+'                    x = x + 0.1
+'                    y = y + 0.1
+'                Wend
+'
+'                ' update the stage positions (particularly important for Location Tracking)
+'                Success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).lAddMarkZ(x, y, z) 'Adds the location again,at the end of the list
+'
+'                Lsm5.Hardware.CpStages.MinMarkDistance = 10                     'Put back the minimal marking distance to its default value
+'                'test if this is working
+'                Do While Lsm5.Info.IsAnyHardwareBusy
+'                    Sleep (20)
+'                    DoEvents
+'                Loop
                 
             Else  ' In the single location case with postacquisition tracking one still has to move to the new focus before next acquisition
                 
-                Lsm5.Hardware.CpFocus.Position = z + ZBacklash          'Note that ZBacklash was not initialized to -50
+                Lsm5.Hardware.CpFocus.Position = z + ZBacklash
                 Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
                     Sleep (20)
                     DoEvents
@@ -1925,8 +1686,8 @@ Private Sub StartAcquisition(BleachingActivated)
                     DoEvents
                 Loop
                 
-                If LocationTracking Then   ' In the single location case one also neess to correct for the XY movements if location tracking is activated
-                    Success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition(x, y)
+                If TrackingToggle Then   ' In the single location case one also neess to correct for the XY movements if location tracking is activated
+                    Success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition(x, y) ' moves here
                     Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
                          'check this
                          Sleep (100)
@@ -1934,6 +1695,7 @@ Private Sub StartAcquisition(BleachingActivated)
                             DoEvents
                             If ScanStop Then
                                 StopAcquisition
+                                locationNumber = Location
                                 Exit Sub
                             End If
                         End If
@@ -1948,7 +1710,7 @@ Private Sub StartAcquisition(BleachingActivated)
              
             ' COMMUNICATION WITH MICROPILOT: START *****************
               
-            If OnlineImageAnalysis Then
+            If CheckBoxActiveOnlineImageAnalysis Then
                 
                 MicroscopePilot RecordingDoc, BleachingActivated, HighResExperimentCounter, HighResCounter, HighResArrayX, HighResArrayY, HighResArrayZ
             
@@ -1976,7 +1738,7 @@ Private Sub StartAcquisition(BleachingActivated)
                 End If
                 
                 
-                If Location = LocationNumber Then ' we are at the last image, check whether this well has enough cells
+                If Location = MaxNrLocations Then ' we are at the last image, check whether this well has enough cells
                     If nGoodCellsPerWell < minGoodCellsPerWell Then ' still the values for the last well
                         MsgBox "Last image: Not enough cells in this well, making valid position " + CStr(LocationSoFarBest) + " with " + CStr(soFarBestGoodCellsPerImage) + " cells."
                         posGridXY_valid(LocationSoFarBest) = 1  ' set the so far best position as valid
@@ -2006,7 +1768,8 @@ NextLocation:
         
         
         Next Location
-            
+        'reset location to first location for a new round of repetition
+        locationNumber = 1
             
 DoneWithLocations:
             
@@ -2043,6 +1806,7 @@ DoneWithLocations:
                     End If
                     If ScanStop Then
                         StopAcquisition
+                        locationNumber = Location
                         Exit Sub
                     End If
                 End If
@@ -2053,7 +1817,7 @@ DoneWithLocations:
             
         Else
             
-            Running = False  ' done with everything
+            Running = False  ' done with everything done all repetitions
         
         End If
         
@@ -2071,6 +1835,92 @@ DoneWithLocations:
 
 
 End Sub
+
+'''''
+'   MakeGrid( posGridX() As Double, posGridY() As Double, posGridXY_valid() )
+'   Create a grid
+'       [posGridX] In/Out - Array where X grid positions are stored
+'       [posGridY] In/Out - Array where Y grid positions are stored
+'       [posGridXY_valid] In/Out - Array that says if position is valid
+'       [locationNumbersMainGrid] In/Out - location number on main grid
+'''''
+Private Sub MakeGrid(posGridX() As Double, posGridY() As Double, posGridXY_valid() As Integer _
+, locationNumbersMainGrid() As Long)
+    
+        'Positions
+        Dim tmpGridX As Double
+        Dim tmpGridY As Double
+        'subPosition
+        Dim tmpGridXsub As Double
+        Dim tmpGridYsub As Double
+                
+        'counters
+        Dim iy As Long
+        Dim ix As Long
+        Dim iyy As Long
+        Dim ixx As Long
+        Dim iLoc As Long
+        Dim iLocMainGrid As Long
+        'for changing direction, Meander
+        Dim xDirection As Integer
+        Dim xxDirection As Integer
+        
+                
+        tmpGridX = XStart
+        tmpGridY = YStart
+        
+        iLoc = 1
+        iLocMainGrid = 0
+        xDirection = 1 ' meander
+        
+        For iy = 1 To GridScan_nY.Value
+            
+            For ix = 1 To GridScan_nX.Value
+                If ix = 1 Then
+                    tmpGridX = tmpGridX
+                Else
+                    tmpGridX = tmpGridX + xDirection * GridScan_dX.Value
+                End If
+                    
+                iLocMainGrid = iLocMainGrid + 1
+                locationNumbersMainGrid(iLocMainGrid) = iLoc  ' remember where the start position of sub is with respect to global position
+                
+                ' Sub-Positions: start
+                tmpGridXsub = tmpGridX
+                tmpGridYsub = tmpGridY
+                
+                xxDirection = 1 ' meander
+                
+                For iyy = 1 To GridScan_nYsub.Value
+                    
+                    For ixx = 1 To GridScan_nXsub.Value
+                        
+                        If ixx = 1 Then
+                            tmpGridXsub = tmpGridXsub
+                        Else
+                            tmpGridXsub = tmpGridXsub + xxDirection * GridScan_dXsub.Value
+                        End If
+                            
+                        posGridX(iLoc) = tmpGridXsub
+                        posGridY(iLoc) = tmpGridYsub
+                        posGridXY_valid(iLoc) = 1 ' image this position
+                    
+                        iLoc = iLoc + 1
+                
+                    Next ixx
+                    
+                    xxDirection = xxDirection * (-1) ' meander back and forth
+                    tmpGridYsub = tmpGridYsub + GridScan_dYsub.Value
+                
+                Next iyy
+                ' Sub-Positions: end
+                
+            Next ix
+            xDirection = xDirection * (-1) ' meander
+            tmpGridY = tmpGridY + GridScan_dY.Value ' update Y position
+        Next iy
+End Sub
+
 
 ''''''
 '   MassCenter(Context As String)
@@ -2205,7 +2055,7 @@ Public Sub MassCenter(Context As String)
             MaxframeValue = IntFrame(frame - 1)
         End If
     Next frame
-
+    ' Why do you need to threshold the image? (this is probably to remove noise
     'Calculates the threshold values. It is set to an arbitrary value of the minimum projected value plus 20% of the difference between the minimum and the maximum projected value.
     'Then calculates the center of mass
     LineSum = 0
@@ -2259,6 +2109,192 @@ Public Sub MassCenter(Context As String)
         
 End Sub
 
+''''''
+'   MassCenterF(Context As String)
+'   TODO: Make a faster procedure here
+''''''
+Public Sub MassCenterF(Context As String)
+    Dim scrline As Variant
+    Dim spl As Long ' samples per line
+    Dim bpp As Long ' bytes per pixel
+    Dim ColMax As Long
+    Dim LineMax As Long
+    Dim FrameNumber As Integer
+    Dim PixelSize As Double
+    Dim FrameSpacing As Double
+    Dim Intline() As Long
+    Dim IntCol() As Long
+    Dim IntFrame() As Long
+    Dim channel As Integer
+    Dim frame As Long
+    Dim line As Long
+    Dim Col As Long
+    Dim MinColValue As Single
+    Dim minLineValue As Single
+    Dim minFrameValue As Single
+    Dim MaxColValue As Single
+    Dim MaxLineValue As Single
+    Dim MaxframeValue As Single
+    Dim LineSum As Double
+    Dim LineWeight As Single
+    Dim MidLine As Single
+    Dim Threshold As Single
+    Dim LineValue As Single
+    Dim PosValue As Single
+    Dim ColSum As Single
+    Dim ColWeight As Single
+    Dim MidCol As Single
+    Dim ColValue As Single
+    Dim FrameSum As Single
+    Dim FrameWeight As Single
+    Dim MidFrame As Single
+    Dim FrameValue As Single
+    
+   
+    'Lsm5Vba.Application.ThrowEvent eRootReuse, 0                   'Was there in the initial Zeiss macro, but it seems notnecessary
+    DoEvents
+    'Gets the dimensions of the image in X (Columns), Y (lines) and Z (Frames)
+    If FrameAutofocussing And SystemName = "LIVE" Then ' binning only with LIVE device
+        ColMax = Lsm5.DsRecordingActiveDocObject.Recording.RtRegionWidth '/ Lsm5.DsRecordingActiveDocObject.Recording.RtBinning
+        LineMax = Lsm5.DsRecordingActiveDocObject.Recording.RtRegionHeight
+    Else
+        If SystemName = "LIVE" Then
+            ColMax = Lsm5.DsRecordingActiveDocObject.Recording.RtRegionWidth
+            LineMax = Lsm5.DsRecordingActiveDocObject.Recording.RtRegionHeight
+        ElseIf SystemName = "LSM" Then
+            ColMax = Lsm5.DsRecordingActiveDocObject.Recording.SamplesPerLine
+            LineMax = Lsm5.DsRecordingActiveDocObject.Recording.LinesPerFrame
+        Else
+            MsgBox "The System is not LIVE or LSM! SystemName: " + SystemName
+            Exit Sub
+        End If
+    End If
+    If Lsm5.DsRecordingActiveDocObject.Recording.ScanMode = "ZScan" Or Lsm5.DsRecordingActiveDocObject.Recording.ScanMode = "Stack" Then
+        FrameNumber = Lsm5.DsRecordingActiveDocObject.Recording.FramesPerStack
+    Else
+        FrameNumber = 1
+    End If
+    'Gets the pixel size
+    PixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing * 1000000
+    'Gets the distance between frames in Z
+    FrameSpacing = Lsm5.DsRecordingActiveDocObject.Recording.FrameSpacing
+    
+    'Initiallize tables to store projected (integrated) pixels values in the 3 dimensions
+    ReDim Intline(LineMax) As Long
+    ReDim IntCol(ColMax) As Long
+    ReDim IntFrame(FrameNumber) As Long
+
+    'Select the image channel on which to do the calculations
+    If Context = "Autofocus" Then       'Takes the first channel in the context of preacquisition focussing
+        channel = 0
+    ElseIf Context = "Tracking" Then    'Takes the channel selected in the pop-up menue when doing postacquisition tracking
+        For channel = 0 To Lsm5.DsRecordingActiveDocObject.GetDimensionChannels - 1
+            If Lsm5.DsRecordingActiveDocObject.ChannelName(channel) = Left(TrackingChannelString, 4) Then
+                Exit For
+            End If
+        Next channel
+    End If
+    
+    'Tracking is not the correct word. It just does center of mass on an additional channel
+
+    'Reads the pixel values and fills the tables with the projected (integrated) pixels values in the three directions
+    For frame = 1 To FrameNumber
+        For line = 1 To LineMax
+            bpp = 0 ' bytesperpixel
+            'channel = 0: This will allow to do the tracking on a different channel
+            scrline = Lsm5.DsRecordingActiveDocObject.ScanLine(channel, 0, frame - 1, line - 1, spl, bpp) 'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
+            For Col = 2 To ColMax               'Now I'm scanning all the pixels in the line
+                Intline(line - 1) = Intline(line - 1) + scrline(Col - 1)
+                IntCol(Col - 1) = IntCol(Col - 1) + scrline(Col - 1)
+                IntFrame(frame - 1) = IntFrame(frame - 1) + scrline(Col - 1)
+            Next Col
+        Next line
+    Next frame
+    
+    'First it finds the minimum and maximum projected (integrated) pixel values in the 3 dimensions
+    MinColValue = 4095 * LineMax * FrameNumber          'The maximum values are initially set to the maximum possible value
+    minLineValue = 4095 * ColMax * FrameNumber
+    minFrameValue = 4095 * LineMax * ColMax
+    MaxColValue = 0                                     'The maximun values are initialliy set to 0
+    MaxLineValue = 0
+    MaxframeValue = 0
+    For line = 1 To LineMax
+        If Intline(line - 1) < minLineValue Then
+            minLineValue = Intline(line - 1)
+        End If
+        If Intline(line - 1) > MaxLineValue Then
+            MaxLineValue = Intline(line - 1)
+        End If
+    Next line
+    For Col = 1 To ColMax
+        If IntCol(Col - 1) < MinColValue Then
+            MinColValue = IntCol(Col - 1)
+        End If
+        If IntCol(Col - 1) > MaxColValue Then
+            MaxColValue = IntCol(Col - 1)
+        End If
+    Next Col
+    For frame = 1 To FrameNumber
+        If IntFrame(frame - 1) < minFrameValue Then
+            minFrameValue = IntFrame(frame - 1)
+        End If
+        If IntFrame(frame - 1) > MaxframeValue Then
+            MaxframeValue = IntFrame(frame - 1)
+        End If
+    Next frame
+    ' Why do you need to threshold the image? (this is probably to remove noise
+    'Calculates the threshold values. It is set to an arbitrary value of the minimum projected value plus 20% of the difference between the minimum and the maximum projected value.
+    'Then calculates the center of mass
+    LineSum = 0
+    LineWeight = 0
+    MidLine = (LineMax + 1) / 2
+    Threshold = minLineValue + (MaxLineValue - minLineValue) * 0.8         'Threshold calculation
+    For line = 1 To LineMax
+        LineValue = Intline(line - 1) - Threshold                           'Subtracs the threshold
+        PosValue = LineValue + Abs(LineValue)                               'Makes sure that the value is positive or zero. If LineValue is negative, the Posvalue = 0; if Line value is positive, then Posvalue = 2*LineValue
+        LineWeight = LineWeight + (PixelSize * (line - MidLine)) * PosValue 'Calculates the weight of the Thresholded projected pixel values according to their position relative to the center of the image and sums them up
+        LineSum = LineSum + PosValue                                        'Calculates the sum of the thresholded pixel values
+    Next line
+    If LineSum = 0 Then
+        YMass = 0
+    Else
+        YMass = LineWeight / LineSum                                       'Normalizes the weights to get the center of mass
+    End If
+
+    ColSum = 0
+    ColWeight = 0
+    MidCol = (ColMax + 1) / 2
+    Threshold = MinColValue + (MaxColValue - MinColValue) * 0.8
+    For Col = 1 To ColMax
+        ColValue = IntCol(Col - 1) - Threshold
+        PosValue = ColValue + Abs(ColValue)
+        ColWeight = ColWeight + (PixelSize * (Col - MidCol)) * PosValue
+        ColSum = ColSum + PosValue
+    Next Col
+    If ColSum = 0 Then
+        XMass = 0
+    Else
+        XMass = ColWeight / ColSum
+    End If
+
+    FrameSum = 0
+    FrameWeight = 0
+    MidFrame = (FrameNumber + 1) / 2
+    Threshold = minFrameValue + (MaxframeValue - minFrameValue) * 0.8
+    For frame = 1 To FrameNumber
+        FrameValue = IntFrame(frame - 1) - Threshold
+        PosValue = FrameValue + Abs(FrameValue)
+        FrameWeight = FrameWeight + (FrameSpacing * (frame - MidFrame)) * PosValue
+        FrameSum = FrameSum + PosValue
+    Next frame
+    
+    If FrameSum = 0 Then
+        ZMass = 0
+    Else
+        ZMass = FrameWeight / FrameSum
+    End If
+        
+End Sub
 
 
 
@@ -2366,7 +2402,6 @@ Private Sub SetSingleLocationToggle_True()
         
         SingleLocationToggle.Value = True
         MultipleLocationToggle.Value = False
-        MultipleLocation = False
         LocationTextLabel.Caption = ""
         
         ' CheckBoxScannAll.Visible = False
@@ -2384,7 +2419,6 @@ Private Sub SetMultipleLocationToggle_True()
         
         SingleLocationToggle.Value = False
         MultipleLocationToggle.Value = True
-        MultipleLocation = True
         LocationTextLabel.Caption = "Define locations using the Stage (NOT the Positions) dialog !"
         
         CheckBoxActiveGridScan.Value = False ' currently not compatible
@@ -2687,7 +2721,7 @@ End Sub
 Public Sub Re_Initialize()
     Dim delay As Single
     Dim standType As String
-    Dim Count As Long
+    Dim count As Long
     
     AutoFindTracks
   
@@ -2721,17 +2755,14 @@ End Sub
 '   SwitchEnableTrackingToggle(Enable As Boolean)
 '   Changes Enable visibility of AcquiistionForm Tracking part
 '       [Enable] In - Enable of tracking
-'       [LocationTracking]  GlobOut - Flag for doing LocationTracking (TODO: use TrackingToggle.Value instead)
 '''''
 Private Sub SwitchEnableTrackingToggle(Enable As Boolean)
-    LocationTracking = Enable
     ComboBoxTrackingChannel.Visible = Enable
     If Enable Then
        FillTrackingChannelList
-
     End If
+    CheckBoxPostTrackXY.Visible = Enable
     CheckBoxTrackZ.Visible = Enable
-    
     If Lsm5.DsRecording.ScanMode = "Stack" Then
         CheckBoxTrackZ.Enabled = True
         PostAcquisitionLabel.Visible = Enable
@@ -2872,7 +2903,8 @@ Public Sub ActivateAutofocusTrack(HighSpeed As Boolean)
     
     If IsAutofocusTrackSelected Then
         AutofocusTrack = i - 1
-        Track.Acquire = 1
+        Track.Acquire = 1 ' this basically sets the track belonging to DsRecording to acquire.
+                          ' This can be cleaned up by creating a DsRecording for each operation
         If HighSpeed Then
             Track.SamplingNumber = 1
         End If
@@ -3204,11 +3236,14 @@ Public Sub SetBlockValues()
 End Sub
 
 
+'''''
+' TODO: All block values should use the checkboxes directly
+'''''
 Public Sub GetBlockValues()
    
     BlockHighSpeed = CheckBoxHighSpeed.Value
     BlockLowZoom = CheckBoxLowZoom.Value
-    HRZ = CheckBoxHRZ.Value
+    HRZ = CheckBoxHRZ.Value ' this is for the piezo
     BlockZOffset = BSliderZOffset.Value
     BlockZRange = BSliderZRange.Value
     BlockZStep = BSliderZStep.Value
@@ -3450,7 +3485,8 @@ Public Function TotalTimeLeft() As Double
     TotalTimeLeft = (AcquisitionTime + AutofocusTime + BlockTimeDelay) * (BlockRepetitions - RepetitionNumber + 1) - BlockTimeDelay
 End Function
 
-
+'''''
+' this should all move to a single
 Public Sub AutofocusSetting(HRZ As Boolean, HighSpeed As Boolean, ZStep As Double)
     
     If BlockLowZoom Then                                         'Changes the zoom if necessary
@@ -3574,10 +3610,62 @@ Private Sub ChangeButtonStatus(Enable As Boolean)
     ReinitializeButton.Enabled = Enable
 End Sub
 
+'''''
+'   FailSafeMoveStage(Optional Mark As Integer = 0)
+'   Moves stage and wait till it is finished
+'       [x] In - x-position
+'       [y] In - y-position
+'       [z] In - z-position (this is optional)
+'''''
+Private Function FailSafeMoveStage(x As Double, y As Double, Optional z As Double = -10000) As Boolean
 
-Private Sub MoveToNextLocation()
-        ' below command moves in x,y, and z
-        Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToMarkZ (0)  'Moves to the first location marked in the stage control
+    If z <> -10000 Then ' also sets first move down
+         Lsm5.Hardware.CpFocus.Position = z + ZBacklash  ' move backward and then forward again (this should be apparently better than direct movement)
+    End If
+    'Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition x, y
+    Lsm5.Hardware.CpStages.SetXYPosition x, y
+    'TODO Check this
+    Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
+        Sleep (200)
+        If GetInputState() <> 0 Then
+            DoEvents
+            If ScanStop Then
+                FailSafeMoveStage = False
+                StopAcquisition
+                Exit Function
+            End If
+        End If
+    Loop
+    
+    If z <> -10000 Then ' move to actual position
+        Lsm5.Hardware.CpFocus.Position = z
+        Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy      'Waits that the objective movement is finished
+           Sleep (20)
+           DoEvents
+        Loop
+    End If
+    FailSafeMoveStage = True
+    
+End Function
+
+
+'''''
+'   MoveToNextLocation(Optional Mark As Integer = 0)
+'   Moves to next location as set in the stage (mark)
+'   Default will cycle through all positions sequentially starting from actual position
+'       [Mark] In - Number of position where to move.
+'''''
+Private Sub MoveToNextLocation(Optional Mark As Integer = 0)
+        Dim Markcount As Long
+        Dim count As Long
+        Dim idx As Long
+        Dim dX As Double
+        Dim dY As Double
+        Dim dZ As Double
+        Dim i As Integer
+        Lsm5.Hardware.CpStages.MarkMoveToZ (0)
+        'Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToMarkZ (0)  'old code Moves to the first location marked in the stage control. How to move to next point?
+        ' the points were deleted and readded at the end of list in the Acquisition function
         'TODO: Check code
         Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy ' Wait that the movement is done
             Sleep (100)
@@ -3591,6 +3679,7 @@ Private Sub MoveToNextLocation()
         Loop
 End Sub
 
+
 '''''
 ' Sub StopScanCheck()
 ' This stop all running scans. Check is the wrong name
@@ -3600,13 +3689,17 @@ Private Sub StopScanCheck()
     DoEvents
 End Sub
 
+'''''
+'   UpdateZvalues(Grid, MultipleLocation, z)
+'   Adds a ZShift to all positions from MultiLocation (the ZShift is the one determined by the Autofocus)
+'''''
 Private Sub UpdateZvalues(Grid, MultipleLocation, z)
         
         
         Dim idpos As Integer
         Dim Sucess As Integer
    
-        If Grid Or MultipleLocation Then
+        If Grid Or MultipleLocationToggle.Value Then
             
             Lsm5.Hardware.CpStages.MarkClearAll
             For idpos = 1 To GlobalPositionsStage
@@ -3723,7 +3816,7 @@ Private Sub MicroscopePilot(RecordingDoc As DsRecordingDoc, ByVal BleachingActiv
     
     DisplayProgress "Received Code " + CStr(code), RGB(0, &HC0, 0)
     
-    
+    'TODO: create a better procedure to check for cells
     If (CheckBoxGridScan_FindGoodPositions) Then
         
         codeArray = Split(code, "_")
@@ -3797,7 +3890,7 @@ End Sub
 '   TODO: What are all the parameters
 '''''
 Private Sub StartAlternativeImaging(RecordingDoc As DsRecordingDoc, StartTime As Double, _
-AlterDatabaseName As String, name As String)
+filepath As String, name As String)
     If RepetitionNumber Mod TextBox_RoundAlterTrack = 0 Then
         Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
         If RecordingDoc Is Nothing Then
@@ -3849,37 +3942,13 @@ AlterDatabaseName As String, name As String)
                 End If
             End If
          Wend
-
-        
-         If RepetitionNumber = 1 Then
-             StartTime = GetTickCount
-         End If
-         
-         Lsm5.tools.WaitForScanEnd False, 10
-         
-         
-         'MsgBox "Piezo Position = " + CStr(Lsm5.Hardware.CpHrz.Position)
-         
-         'Lsm5.Hardware.CpHrz.Position = 0  ' ReCenter Piezo
-         'Sleep (100)
-         
-         'MsgBox "done Alter"
-         
          
          RecordingDoc.SetTitle name
         
-         
-         Dim fullpathname As String
-         fullpathname = AlterDatabaseName & "\" & name & ".lsm"
-         SaveDsRecordingDoc RecordingDoc, fullpathname
+         SaveDsRecordingDoc RecordingDoc, filepath
          
          'Lsm5.DsRecording.Sample0Z = SampleOZold
-         
-         
       End If
-
-
-
 End Sub
 
 '''
@@ -4060,7 +4129,6 @@ HighResCounter As Integer, HighResExperimentCounter As Integer)
                     DisplayProgress "Bleaching...", &HFF00FF
                         
                     Set Track = Lsm5.DsRecording.TrackObjectBleach(Success)
-                    
                     If Success Then
                         Track.Acquire = True
                         Lsm5.DsRecording.TimeSeries = True

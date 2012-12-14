@@ -21,6 +21,10 @@ Public Declare Function RegQueryValueEx _
     ByVal lpReserved As Long, lpType As Long, _
     lpData As Any, lpcbData As Long) As Long         ' Note that if you declare the lpData parameter as String, you must pass it By Value.
 
+
+''''''''''''''''''''
+'''''CONSTANTS''''''
+''''''''''''''''''''
 Public Const VK_SPACE = &H20
 Public Const VK_RETURN = &HD
 Public Const VK_CANCEL = &H3
@@ -72,6 +76,9 @@ Public Const vbYes = 6  '  Yes
 Public Const vbNo = 7    ' No
 
 
+'''''''''''''''''''''
+'''GLOBAL VARIABLE'''
+'''''''''''''''''''''
 Public X11 As Double
 Public X12 As Double
 Public X21 As Double
@@ -85,23 +92,29 @@ Public AutomaticBleaching As Boolean
 Public BleachTable() As Boolean
 Public BleachStartTable() As Double
 Public BleachStopTable() As Double
-Public RepetitionNumber As Long
+Public RepetitionNumber As Integer ' number of repetition
+Public locationNumber As Long 'number of location global
 
 Public ZOffset As Double
-Public MultipleLocation As Boolean
-Public LocationTracking As Boolean
 Public TrackingChannelString As String
 'Public PositionData As Workbook
 Public FrameAutofocussing As Boolean
+'position variables
 Public XMass As Double
 Public YMass As Double
 Public ZMass As Double
 Public ZShift As Double
 Public XShift As Double
 Public YShift As Double
+Public XStart As Double ' Stores starting X position of Acquisition
+Public YStart As Double ' Stores starting Y position of Acquisition
+Public ZStart As Double
 Public Zbefore As Double
 Public HRZBefore As Double
 Public HRZ As Boolean
+
+'Filehandling variables
+Public OverwriteFiles As Boolean
 Public NoReflectionSignal As Boolean
 Public PubSentStageGrid As Boolean
 Public BleachingActivated As Boolean
@@ -110,6 +123,7 @@ Public flgUserChange As Boolean
 Public flgEvent As Integer
 Public flg As Integer
 Public toContinue As Integer
+
 
 Public GlobalProjectName As String
 Public GlobalProject As String
@@ -180,6 +194,10 @@ Public SystemName As String
           
 Public GlobalBackupRecording As DsRecording ' TODO: why two variables
 Public BackupRecording As DsRecording       ' TODO: why two variables
+
+Public GlobalAFRecording As DsRecording
+Public GlobalAcquisitionRecording As DsRecording
+
 Public ImageNumber As Long
 Public Const OFS_MAXPATHNAME = 128
 Public Const OF_EXIST = &H4000
@@ -197,17 +215,21 @@ Public AcquisitionController As AimAcquisitionController40.AimScanController  'D
 Public RecordingDocpub As DsRecordingDoc
 
 
-
-Public posGridX(10000) As Double
-Public posGridY(10000) As Double
-Public locationNumbersMainGrid(10000) As Integer
-Public posGridXY_valid(10000) As Integer
+'Grid positions
+Public posGridX() As Double ' they are initiated during acquisition
+Public posGridY() As Double ' they are initiated during acquisition
+Public locationNumbersMainGrid() As Long ' they are initiated during acquisition
+Public posGridXY_valid() As Integer ' they are initiated during acquisition
 Public nGoodCells As Integer
 Public minGoodCellsPerImage As Integer
 Public minGoodCellsPerWell As Integer
 Public nGoodCellsPerWell As Integer
 
-        
+'MultipleLocations positions (the size of array is defined in Re_Start
+Public posMultiLocationX() As Double
+Public posMultiLocationY() As Double
+Public posMultiLocationZ() As Double
+
 Public HelpNamePDF As String
 
 Public GlobalStageControlZValues As Boolean
@@ -387,9 +409,6 @@ Public Sub AutoRecall()
         End If
         
         AutofocusForm.SetBlockValues
-      
-'        AutofocusForm.Re_Initialize
-    Else
     End If
 End Sub
 
@@ -422,7 +441,9 @@ End Sub
 '   Lsm5.DsRecording Out - Recording setting
 ''''''
 Public Sub RestoreAcquisitionParameters()
-     CopyRecording Lsm5.DsRecording, GlobalBackupRecording
+    If Not GlobalBackupRecording Is Nothing Then
+        CopyRecording Lsm5.DsRecording, GlobalBackupRecording
+    End If
 End Sub
 
 '''''
@@ -470,7 +491,6 @@ Public Sub SystemVersionOffset()
             GlobalCorrectionOffset = 0
         End If
     End If
-
 End Sub
 
 '''''''
@@ -522,16 +542,14 @@ Public Function Autofocus_StackShift(ZRange As Double, ZStep As Double, HighSpee
     'Now this is a code specific for the DoAutofocus (is not in the SetAutofocus).
     'This is to move to the offset position, with the focuswheel
     
-    If Not GettingZmap Then DisplayProgress "Autofocus 1", RGB(0, &HC0, 0)       'I added this at some points for troubleshooting.
     
     Lsm5.Hardware.CpHrz.Position = 0  ' center the piezo focus
   
     
 ZStackagain: 'this refers to goto lines (not used anymore)
-
+    DisplayProgress "Autofocus prepare", RGB(0, &HC0, 0)
     Zbefore = Lsm5.Hardware.CpFocus.Position        'To remember the position of the focuswheel
-    'Lsm5.DsRecording.SpecialScanMode = "ZScanner" ' is taken care of in AutofocusForm.AutofocusSetting
-   
+
     If ZOffset <= Range * 0.9 Then
         
         Lsm5.Hardware.CpFocus.Position = Zbefore - ZOffset + GlobalCorrectionOffset + ZBacklash 'Move down 50um (=ZBacklash) below the position of the offset
@@ -555,7 +573,6 @@ ZStackagain: 'this refers to goto lines (not used anymore)
     'End If
     'Lsm5.DsRecording.Sample0Z = ZStep * NoFrames / 2        'Distance of the actual focus to the first Z position of the image (or line) to acquire in the stack.
                                                             'I think this is only valid for the focus wheel and not the HRZ
-    
     AutofocusForm.AutofocusSetting HRZ, BlockHighSpeed, BlockZStep
 
     Lsm5.DsRecording.FrameSpacing = ZStep
@@ -602,7 +619,7 @@ ZStackagain: 'this refers to goto lines (not used anymore)
         End If
     
     End If
-        
+    DisplayProgress "Autofocus acquire", RGB(0, &HC0, 0)
     ' Here the Stack is acquired ***
     'DisplayProgress "Acquiring AF stack...", RGB(&HC0, 0, 0)
     'Set NewPicture = Lsm5.StartScan
@@ -622,8 +639,7 @@ ZStackagain: 'this refers to goto lines (not used anymore)
     ' ******************************
     
 
-    If Not GettingZmap Then DisplayProgress "Autofocus 6", RGB(0, &HC0, 0)
-    
+    DisplayProgress "Autofocus compute mass", RGB(0, &HC0, 0)
     AutofocusForm.MassCenter ("Autofocus")
     
     If AreStageCoordinateExchanged Then
@@ -714,11 +730,6 @@ Public Sub Autofocus_MoveAcquisition(ZOffset As Double)
     ' center all z-stacks again!
     Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.FrameSpacing * Int(Lsm5.DsRecording.FramesPerStack / 2)
     
-    DisplayProgress "Autofocus 14", RGB(0, &HC0, 0)
-    'Lsm5Vba.Application.ThrowEvent eRootReuse, 0
-    DoEvents
-    DisplayProgress "Autofocus 15", RGB(0, &HC0, 0)
-
 End Sub
 
 Private Sub MovetoCorrectZPosition(ZOffset As Double)
@@ -826,15 +837,3 @@ End Sub
 
 
 
-Public Sub PutStagePositionsInArray()
-    ReDim GlobalXpos(GlobalPositionsStage)
-    ReDim GlobalYpos(GlobalPositionsStage)
-    ReDim GlobalZpos(GlobalPositionsStage)
-    For idpos = 0 To GlobalPositionsStage - 1
-    Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).GetMarkZ idpos, GlobalXpos(idpos + 1), GlobalYpos(idpos + 1), GlobalZpos(idpos + 1)
-    '           GlobalXpos(idpos) = Lsm5.Hardware.CpStages.PositionX
-    '           GlobalYpos(idpos) = Lsm5.Hardware.CpStages.PositionY
-    '           GlobalZpos(idpos) = Lsm5.Hardware.CpFocus.Position
-                
-    Next idpos
-End Sub
