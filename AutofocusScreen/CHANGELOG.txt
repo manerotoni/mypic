@@ -1,23 +1,37 @@
 Version 2.1
 
-	* Autofocus in the absence of piezo works for large z-Step. This is however quite slow. (not finished)
-	* Code clean up and comments
-	* Improved check for Stop button using GetInputState() that checks for inputs only when something happens to mouse or keyboards
-	* Improved choice of tracks (to be tested)
-Commit message:
-	Removed old code for Grid which is not used anymore	
-	Proper declaration of variables in Sub BatchHighresImagingRoutine and other for Micropilot part of code
-	Reload previous value outputfolder (this is saved in the registry OutputFolder)
+Relevant changes to the user:
 
-* Removed old code for Grid which is not used anymore (large clean up of Stage_Grid.bas)
-* Outputflder is saved in registry and is automatically reloaded 
-* Proper declaration of variables type  in Sub BatchHighresImagingRoutine and other for   Micropilot part of code 
-* Improved choice of tracks in the code
-* Re-initialize now just look for new tracks
-* Activation of acquisition mode is done by the same active button. This automatically enable/disables minipages.
-* Cross dependency of acquisition modes is now visual in the form via enable/disable features
-* Changed alternative imaging function saving
-* Changed reading of multiple locations from stage menu. Now it reads all positions at beginning of scan and puts into an array. 
-* After stop system returns to first position or continue from current position (extra button)
-* Saving format changed to W00001_P00001_T00001.lsm
-* Saving checks for overwriting of files
+	* Setting for acquistion are read at the start of the macro. Any changes to pixel dwell time, Z-stacks etc 
+	  must now be updated using Re-Initialize
+	* Postfix for saving files uses a different format that conforms with Cellbase
+		e.g. Position ("W"ell) 2 subposition ("P"osition) 1 and Repetion 3 ("T"time) reads --W00002--P00001--T00003.lsm
+	* Cellbase format is also used for Additional acquisition and Micropilot acquistion
+
+New features/Bug fixes (visible to user)
+	* Re-initialize updates the imaging setting not the macro parameters
+	* Autofocus MaxSpeed setting is independet of acquisition setting. The macro tries to set minimal pixel dwell time for given imaging
+	* Autofocus in the absence of piezo works als large z-Step. To use Fast Z-line pixel dwell time is adapted to the Z-step
+	* More reliable StopButton and recovery of imaging setting 
+	* Default output folder is loaded from registry ("OutputFolder"). If macro is used for the first time no default output folder 
+	* Activation of Autofocus/Micropilot/Additional Acquisition etc. is now done by a similar "Active" checkbox. This automatically enable/disables minipages.
+	* Crossdependency of modes is implemented by enabling/disabling features
+	* The actual position is shown in  locations
+	* After pressing start button acquistion always start at first position, first subPosition, first repetition. 
+	* Continue from current location will start from current physical location (with correct numbering), and current repetition
+	* Macro asks once if files should be overwritten
+	* Micropilot and Additional acquistion work without piezo
+
+Code changes (visible to developers)
+	* Heavily clean up of unused and obsolete code commenting of (nearly) all functions. Function/Sub declartion and variable passing is now consistent.
+	* Removing of many not necessary global variables.
+	* Improved choice of tracks
+	* MultipleLocation reads positions from stage when start is pressed (then stored in array). These positions are also updated. 
+	  Previously it was continuously permuting marked position from stage 
+	* GetOffssetValue uses now Autofocus_StackShift.
+	* Tracking has been modified so that it does move in the same way as during Autofocusin (see next point)
+	* All functions use for computing new coordinates and moving the same subroutine. This should simplify any problems in mapping
+	  physical and image position
+	
+
+

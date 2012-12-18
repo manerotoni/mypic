@@ -29,9 +29,13 @@ Feature: Check that AF is done correctly. This was done in version 1.7 has been 
 
 Feature: Faster Mass calculation. Now it takes ages (what it should not)
 
+Feature: Higheres tracking
+
 Clean up the code for unused stuff
 
 
+Minor Feature: Update GUI when changed setting (the update only occurs when recording starts)
+		how to check that ZEN.GUI is present?
 
 Manual should be put up to date edited to explain better zoom-1 piezo, inactivated (?). These are all not very clear.
 Explain how to start the macro with an example image
