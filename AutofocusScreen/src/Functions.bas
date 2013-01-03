@@ -3,7 +3,7 @@ Option Explicit
 
 
 '''''''''
-'Introduce minimize button for Macro window
+'Minimize button for Macro window
 ''''''
 Private Declare Function FindWindowA Lib "user32" _
 (ByVal lpClassName As String, _
@@ -48,7 +48,7 @@ End Function
 
 '''''
 '   FileName(iPosition As Integer, iSubposition As Integer, iRepetition As Integer ) As String
-'   Returns string by concatanating well, and sublocation and timepoint
+'   Returns string by concatanating well, and sublocation and timepoint. A negative point will omit the string
 '       [iPosition] In - Well or large grid position
 '       [iSubPosition] In - Meandering grid position
 '       [iRepetition]  In - Timepoint/repetition
@@ -58,14 +58,20 @@ Public Function FileName(iPosition As Long, iSubposition As Long, iRepetition As
     Dim name As String
     Dim nrZero As Integer
     Dim maxZeros As Integer
-    maxZeros = 4
+    maxZeros = 5
     name = ""
-    nrZero = maxZeros - Len(CStr(iPosition))
-    name = name + "W" + ZeroString(nrZero) + CStr(iPosition) + "_"
-    nrZero = maxZeros - Len(Chr(iSubposition))
-    name = name + "P" + ZeroString(nrZero) + CStr(iSubposition) + "_"
-    nrZero = maxZeros - Len(Chr(iRepetition))
-    name = name + "T" + ZeroString(nrZero) + CStr(iRepetition)
+    If iPosition >= 0 Then
+        nrZero = maxZeros - Len(CStr(iPosition))
+        name = name + "--W" + ZeroString(nrZero) + CStr(iPosition)
+    End If
+    If iSubposition >= 0 Then
+        nrZero = maxZeros - Len(CStr(iSubposition))
+        name = name + "--P" + ZeroString(nrZero) + CStr(iSubposition)
+    End If
+    If iRepetition >= 0 Then
+        nrZero = maxZeros - Len(CStr(iRepetition))
+        name = name + "--T" + ZeroString(nrZero) + CStr(iRepetition)
+    End If
     FileName = name
 End Function
 
@@ -74,7 +80,7 @@ End Function
 '   Returns a string of zeros
 '       [NrofZeros] In - Length of string
 '''''
-Private Function ZeroString(NrofZeros As Integer) As String
+Public Function ZeroString(NrofZeros As Integer) As String
     'convert numbers into a string
     Dim i As Integer
     Dim name As String

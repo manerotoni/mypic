@@ -13,8 +13,8 @@ Public Stage As CpStages ' has been defined twice
 Public GettingZmap As Boolean ' not really used
 Public idpos As Long
 
-Public x As Long ' does it make sense to have it as global variable?
-Public y As Long ' does it make sense to have it as global variable?
+Public X As Long ' does it make sense to have it as global variable?
+Public Y As Long ' does it make sense to have it as global variable?
     
 
 
@@ -100,7 +100,7 @@ Finish:
 End Sub
 
 
-Public Sub ReadLoc(x As Double, y As Double)
+Public Sub ReadLoc(X As Double, Y As Double)
     Dim cnt As Long
     
     cnt = 0
@@ -108,8 +108,8 @@ Public Sub ReadLoc(x As Double, y As Double)
 retry:
     If cnt > 1000 Then GoTo Finish
     cnt = cnt + 1
-    x = Lsm5.Hardware.CpStages.PositionX
-    y = Lsm5.Hardware.CpStages.PositionY
+    X = Lsm5.Hardware.CpStages.PositionX
+    Y = Lsm5.Hardware.CpStages.PositionY
 Finish:
 End Sub
 

@@ -7,6 +7,8 @@ Relevant changes to the user:
 	* Postfix for saving files uses a different format that conforms with Cellbase
 		e.g. Position ("W"ell) 2 subposition ("P"osition) 1 and Repetion 3 ("T"time) reads --W00002--P00001--T00003.lsm
 	* Cellbase format is also used for Additional acquisition and Micropilot acquistion
+	* Corrected autofocus_button: Only the Z0Slice is changed during the acquisition. At the end the Zposition is updated if AutofocusTrackZ is on
+
 
 New features/Bug fixes (visible to user)
 	* Re-initialize updates the imaging setting not the macro parameters
@@ -20,8 +22,8 @@ New features/Bug fixes (visible to user)
 	* After pressing start button acquistion always start at first position, first subPosition, first repetition. 
 	* Continue from current location will start from current physical location (with correct numbering), and current repetition
 	* Macro asks once if files should be overwritten
-	* Micropilot and Additional acquistion work without piezo
-
+	* Micropilot and Additional acquistion works without piezo
+	
 Code changes (visible to developers)
 	* Heavily clean up of unused and obsolete code commenting of (nearly) all functions. Function/Sub declartion and variable passing is now consistent.
 	* Removing of many not necessary global variables.
@@ -33,5 +35,3 @@ Code changes (visible to developers)
 	* All functions use for computing new coordinates and moving the same subroutine. This should simplify any problems in mapping
 	  physical and image position
 	
-
-

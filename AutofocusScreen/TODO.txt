@@ -1,42 +1,57 @@
 To do for version 2.1 
 
+Major: All functions need to be updated as autofocus Button. Z movement is done at the end of the imaging protocol
+
 Major bug: Password protection does not work
-
-Major bug: autofocus on ScanFrame moves also x-y position (on Five-live ZEN2009)
-	- in principle the macro works you just need to set properly how x and y are mirrored on the different microscopes
-Minor bug: Sometime does not return to orginal setting. These get then lost.
-
-Major bug: Z-spacing without piezo for dz larger than a maximal size gave wrong results. The z-spacing was wrong with respect to the size that one wanted to span.
-	- solved by implementing an extra check in the autofocus routine
-
-Bug?: Change the z-scan parameters within an acquisition. Is this possible (it seems but must look at it again). 
 
 Bug?: Find good positions in grid scan has not been checked and requires further test (probably in workflow manager)
 
-Feature: Ask if overwriting images after Save. This should be done either for one or all the images (ask only once) 
-	 Number files always with location. This keeps the overall structure the same. Add number of location
-
-Feature: Multiposition ZEN position soll mit position number one start when stopped
-
 Feature: mirror of axes
 
-Feature: Speed of AF can't be set independently. Revert to similar setting as in version 1.7 where you have separate speed setting for the AF. 
-	Alternatively max speed should be set everything to highest speed. 
-
 Feature: Update also the menu when the values are updated for the acquisition setup
-
+	
 Feature: Check that AF is done correctly. This was done in version 1.7 has been removed and should be reimplemented at a certain point (CheckRe
 
 Feature: Faster Mass calculation. Now it takes ages (what it should not)
 
 Feature: Higheres tracking
 
-Clean up the code for unused stuff
+Feature: Subpositions are recreated at each main position. This does not allow to track good bad cells in different wells.
 
 
 Minor Feature: Update GUI when changed setting (the update only occurs when recording starts)
 		how to check that ZEN.GUI is present?
 
-Manual should be put up to date edited to explain better zoom-1 piezo, inactivated (?). These are all not very clear.
-Explain how to start the macro with an example image
+Major: Manual should be put up to date edited to explain better zoom-1 piezo, inactivated (?). These are all not very clear.
+       Explain how to start the macro with an example image
 
+----------------------------------------
+
+Done:
+
+Major bug: Z-spacing without piezo for dz larger than a maximal size gave wrong results. The z-spacing was wrong with respect to the size that one wanted to span.
+	- solved by implementing an extra check in the autofocus routine and changing the pixeldwell time accordingly
+
+
+Minor: Clean up the code for unused stuff
+	- vastly done
+
+
+Bug?: Change the z-scan parameters within an acquisition. Is this possible.
+	-This works 
+
+Major bug: autofocus on ScanFrame moves also x-y position (on Five-live ZEN2009)
+	- in principle the macro works you just need to set properly how x and y are mirrored on the different microscopes
+
+Feature: Ask if overwriting images after Save. This should be done either for one or all the images (ask only once) 
+	 Number files always with location. This keeps the overall structure the same. Add number of location
+	- Done
+
+
+Feature: Multiposition ZEN position soll mit position number one start when stopped
+	- Done: when using multiposition or grid system always returns to point one
+
+
+Feature: Speed of AF can't be set independently. Revert to similar setting as in version 1.7 where you have separate speed setting for the AF. 
+	Alternatively max speed should be set everything to highest speed. 
+	- Speed is now maximal for AF and independent of acquisition settings
