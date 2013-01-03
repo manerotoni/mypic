@@ -55,3 +55,6 @@ Feature: Multiposition ZEN position soll mit position number one start when stop
 Feature: Speed of AF can't be set independently. Revert to similar setting as in version 1.7 where you have separate speed setting for the AF. 
 	Alternatively max speed should be set everything to highest speed. 
 	- Speed is now maximal for AF and independent of acquisition settings
+
+Minor bug: Sometime does not return to orginal setting. These get then lost.
+	- Failsafe recovery of settings
