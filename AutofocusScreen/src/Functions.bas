@@ -38,12 +38,23 @@ End Sub
 '   FileExist(ByVal Pathname)
 '   Check if file is present or not
 '''''
-Public Function FileExist(ByVal Pathname) As Boolean
-    If (Dir(Pathname) = "") Then
+Public Function FileExist(ByVal PathName) As Boolean
+    If (Dir(PathName) = "") Then
         FileExist = False
      Else
         FileExist = True
      End If
+End Function
+
+Public Function CheckDir(ByVal PathName) As Boolean
+    On Error GoTo ErrorDir
+    If Dir(GlobalDataBaseName, vbDirectory) = "" Then
+        MkDir GlobalDataBaseName
+    End If
+    CheckDir = True
+    Exit Function
+ErrorDir:
+    MsgBox "Was not able to create OutputDirectory! Please check disc/pathname!"
 End Function
 
 '''''
