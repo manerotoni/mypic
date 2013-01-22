@@ -38,12 +38,36 @@ End Sub
 '   FileExist(ByVal Pathname)
 '   Check if file is present or not
 '''''
-Public Function FileExist(ByVal Pathname) As Boolean
-    If (Dir(Pathname) = "") Then
+Public Function FileExist(ByVal PathName As String) As Boolean
+    If (Dir(PathName) = "") Then
         FileExist = False
      Else
         FileExist = True
      End If
+End Function
+
+Public Function CheckDir(ByVal PathName As String) As Boolean
+    On Error GoTo ErrorDir
+    If Dir(GlobalDataBaseName, vbDirectory) = "" Then
+        MkDir GlobalDataBaseName
+    End If
+    CheckDir = True
+    Exit Function
+ErrorDir:
+    MsgBox "Was not able to create OutputDirectory! Please check disc/pathname!"
+End Function
+
+''''
+' Tries to open a file. If already open resume to next command
+''''
+Public Function SafeOpenTextFile(ByVal PathName As String, ByRef File As TextStream, ByVal FileSystem As FileSystemObject) As Boolean
+    On Error Resume Next
+    Set File = FileSystem.OpenTextFile(PathName, 8, True)
+    On Error GoTo ErrorHandle
+    SafeOpenTextFile = True
+    Exit Function
+ErrorHandle:
+    SafeOpenTextFile = False 'file is already open
 End Function
 
 '''''

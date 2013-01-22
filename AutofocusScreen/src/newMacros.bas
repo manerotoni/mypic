@@ -21,6 +21,16 @@ Public Declare Function RegQueryValueEx _
     ByVal lpReserved As Long, lpType As Long, _
     lpData As Any, lpcbData As Long) As Long         ' Note that if you declare the lpData parameter as String, you must pass it By Value.
 
+''''''''''''''''''''''''
+'Debug and LogVariables'
+''''''''''''''''''''''''
+Public LogFile As TextStream 'This is the file where a log of the procedure is saved
+Public LogFileName As String
+Public LogFileNameBase As String
+Public FileSystem As FileSystemObject
+Public Log     As Boolean          'If true we log data during the macro
+
+
 
 ''''''''''''''''''''
 '''''CONSTANTS''''''
@@ -98,7 +108,6 @@ Public locationNumber As Long      ' number of location global
 Public ZOffset As Double
 Public TrackingChannelString As String
 'Public PositionData As Workbook
-Public FrameAutofocussing As Boolean
 'position variables
 Public XMass As Double
 Public YMass As Double
@@ -109,7 +118,6 @@ Public YShift As Double
 Public XStart As Double ' Stores starting X position of Acquisition
 Public YStart As Double ' Stores starting Y position of Acquisition
 Public ZStart As Double
-Public Zbefore As Double
 Public HRZBefore As Double
 Public HRZ As Boolean
 
@@ -252,7 +260,7 @@ End Type
 Public Type OVERLAPPED
         Internal As Long
         InternalHigh As Long
-        offset As Long
+        Offset As Long
         OffsetHigh As Long
         hEvent As Long
 End Type
@@ -291,6 +299,7 @@ Public Sub DisplayProgress(State As String, Color As Long)       'Used to displa
     End If
     AutofocusForm.ProgressLabel.BackColor = Color
     AutofocusForm.ProgressLabel.Caption = State
+    DoEvents
 End Sub
 
 ''''
@@ -491,8 +500,8 @@ End Sub
 
 '''''''
 ' Autofocus_StackShift ( NewPicture As DsRecordingDoc )
-' Performs image scan as in GlobalAutofocusRecording, calculation of signal centroid (mass) and assign global variables
-' global variables [ZShift] (LineScan) + [XShift] and [YShift] (FrameScan).
+' Performs image scan as in GlobalAutofocusRecording, calculation of signal centroid (mass)
+' global variables [ZMass] and [XMass], [YMasss] (FrameScan).
 '                  GlobalAutofocusRecording is set in function
 ' This function does not change the focus just computes it
 '       [NewPicture] In/Out - Contains the image
@@ -500,6 +509,9 @@ End Sub
 Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
     Dim pixelDwell As Double
     Dim BigZStep As Double
+    Dim Time As Double
+    Dim Cnt As Integer
+    
     Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
     DisplayProgress "Autofocus SetupScanWindow", RGB(0, &HC0, 0)
     If NewPicture Is Nothing Then
@@ -510,26 +522,15 @@ Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
         Wend
     End If
     
-    Zbefore = Lsm5.Hardware.CpFocus.Position        ' remember the position of the focuswheel
+    'Dim FramesPerStack As Double
+    'FramesPerStack = Lsm5.DsRecording.FramesPerStack
+    'Lsm5.DsRecording.FramesPerStack = 1
     
-    'Move to Zbefore - ZOffset + GlobalCorrectionOffset
-'    Lsm5.Hardware.CpFocus.Position = Zbefore - AutofocusForm.BSliderZOffset + GlobalCorrectionOffset + ZBacklash 'Move down (=ZBacklash) below the position of the offset
-'    Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy                 'Waits that the objective movement is finished, code from the original macro
-'        Sleep (20)  '20ms
-'        DoEvents
-'    Loop
-    Lsm5.Hardware.CpFocus.Position = Zbefore - AutofocusForm.BSliderZOffset + GlobalCorrectionOffset            'Moves up to the position of the offset
-    Do While Lsm5.Hardware.CpFocus.IsBusy               'Waits that the objective movement is finished, code from the original macro
-        Sleep (200)
-        DoEvents
-    Loop
+    'If Not ScanToImageNew(NewPicture) Then
+    '    Exit Function
+    'End If
     
-    DisplayProgress "Autofocus Activate Tracks", RGB(0, &HC0, 0)
-    If Not AutofocusForm.ActivateAutofocusTrack(GlobalAutoFocusRecording, pixelDwell) Then
-        MsgBox "No track selected for Autofocus! Cannot Autofocus!"
-        Autofocus_StackShift = False
-        Exit Function
-    End If
+    'Lsm5.DsRecording.FramesPerStack = FramesPerStack
     
     DisplayProgress "Autofocus CheckZRange", RGB(0, &HC0, 0)
     'checks again if Zranges are good
@@ -549,11 +550,9 @@ Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
         Lsm5.Hardware.CpHrz.Position = 0                ' center the piezo focus (or bring it down again ?)
     End If
     
-
+    Time = Timer
     DisplayProgress "Autofocus acquire", RGB(0, &HC0, 0)
-    'Dim Recording As DsRecording
-    'Set Recording = Lsm5.CreateBackupRecording
-'    '''Check a last time that AF stack number and step is correct when in Fast Z-line mode
+    '''Check a last time that AF stack number and step is correct when in Fast Z-line mode
     If (Not AutofocusForm.CheckBoxHRZ.Value) And AutofocusForm.ScanLineToggle.Value And AutofocusForm.CheckBoxHighSpeed.Value Then
         If Lsm5.DsRecording.SpecialScanMode = "FocusStep" Then
              DisplayProgress "Highest Z Step of 1.54 um with no piezo and Fast Z line has been reached. Autofocus uses slower Focus Step", RGB(&HC0, &HC0, 0)
@@ -564,33 +563,27 @@ Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
             Lsm5.DsRecording.FrameSpacing = AutofocusForm.BSliderZStep.Value
         End If
     End If
-    'TestRecord.Copy Lsm5.DsRecording
-    ScanToImageNew NewPicture
-    
-    While AcquisitionController.IsGrabbing
-        Sleep (100)
-        DoEvents
-        If ScanStop Then
-            Autofocus_StackShift = False
-            Exit Function
-        End If
-    Wend
-    
-   
-    DisplayProgress "Autofocus compute", RGB(0, &HC0, 0)
-    'Set TestRecord = Lsm5.CreateBackupRecording
-    ' Computes XMass, YMass and ZMass
-    AutofocusForm.MassCenter ("Autofocus")
-    
-    If AreStageCoordinateExchanged Then
-           XShift = YMass
-           YShift = XMass
-    Else
-           XShift = -XMass
-           YShift = YMass
+
+    If Not ScanToImageNew(NewPicture) Then
+        Exit Function
     End If
     
-    ZShift = ZMass
+    If Log Then
+        SafeOpenTextFile LogFileName, LogFile, FileSystem
+        LogFile.WriteLine "% Autofocus_stackshift: acquire time: " & Timer - Time
+    End If
+    
+    Time = Timer
+    DisplayProgress "Autofocus compute", RGB(0, &HC0, 0)
+    
+    ' Computes XMass, YMass and ZMass
+    AutofocusForm.MassCenter ("Autofocus")
+
+    If Log Then
+        LogFile.WriteLine "% Autofocus_stackshift compute time: " & Timer - Time
+        LogFile.Close
+    End If
+    
     Autofocus_StackShift = True
 End Function
 
@@ -603,16 +596,15 @@ End Function
 ''''''
 Public Function ComputeShiftedCoordinates(ByVal XMass As Double, ByVal YMass As Double, ByVal ZMass As Double, ByRef X As Double, ByRef Y As Double, ByRef Z As Double)
 
-    
     If AreStageCoordinateExchanged Then
-        X = Lsm5.Hardware.CpStages.PositionX - YMass
-        Y = Lsm5.Hardware.CpStages.PositionY - XMass
+        X = X - YMass
+        Y = Y - XMass
     Else
-        X = Lsm5.Hardware.CpStages.PositionX + XMass
-        Y = Lsm5.Hardware.CpStages.PositionY - YMass
+        X = X + XMass
+        Y = Y - YMass
     End If
         
-    Z = Lsm5.Hardware.CpFocus.Position + ZMass
+    Z = Z + ZMass
     
 End Function
 
@@ -621,18 +613,11 @@ End Function
 '   Moves stage and wait till it is finished
 '       [x] In - x-position
 '       [y] In - y-position
-'       [z] In - z-position (this is optional)
 '''''
-Public Function FailSafeMoveStageXYZ(X As Double, Y As Double, Optional Z As Double = -10000) As Boolean
+Public Function FailSafeMoveStageXY(X As Double, Y As Double) As Boolean
+    
+    FailSafeMoveStageXY = False
 
-    If Z <> -10000 Then ' also sets first move down
-        If Not FailSafeMoveStageZ(Z) Then   ' move backward and then forward again (this should be apparently better than direct movement)
-            FailSafeMoveStageXYZ = False
-            ScanStop = True
-            AutofocusForm.StopAcquisition
-            Exit Function
-        End If
-    End If
 
     Lsm5.Hardware.CpStages.SetXYPosition X, Y
     'TODO Check this
@@ -641,42 +626,40 @@ Public Function FailSafeMoveStageXYZ(X As Double, Y As Double, Optional Z As Dou
         If GetInputState() <> 0 Then
             DoEvents
             If ScanStop Then
-                FailSafeMoveStageXYZ = False
                 ScanStop = True
-                AutofocusForm.StopAcquisition
                 Exit Function
             End If
         End If
     Loop
     
-    FailSafeMoveStageXYZ = True
+    FailSafeMoveStageXY = True
     
 End Function
 
 
-''''' ' This should move to function
+'''''
 '   FailSafeMoveStageZ(z As Double)
 '   Moves focus and wait till it is finished
 '       [z] In - z-position )
 '''''
 Public Function FailSafeMoveStageZ(Z As Double) As Boolean
-
-    
-'    Lsm5.Hardware.CpFocus.Position = Z + ZBacklash  ' move backward and then forward again (this should be apparently better than direct movement)
-'    Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
-'        Sleep (200)
-'        If GetInputState() <> 0 Then
-'            DoEvents
-'            If ScanStop Then
-'                FailSafeMoveStageZ = False
-'                Exit Function
-'            End If
-'        End If
-'    Loop
-    
+    FailSafeMoveStageZ = False
+    If ZBacklash <> 0 Then
+        Lsm5.Hardware.CpFocus.Position = Z - ZBacklash ' move at correct position
+        Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy Or Lsm5.Hardware.CpFocus.IsBusy
+            Sleep (20)
+            If GetInputState() <> 0 Then
+                DoEvents
+                If ScanStop Then
+                    FailSafeMoveStageZ = False
+                    Exit Function
+                End If
+            End If
+        Loop
+    End If
     Lsm5.Hardware.CpFocus.Position = Z  ' move at correct position
     Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy Or Lsm5.Hardware.CpFocus.IsBusy
-        Sleep (200)
+        Sleep (20)
         If GetInputState() <> 0 Then
             DoEvents
             If ScanStop Then
@@ -685,9 +668,8 @@ Public Function FailSafeMoveStageZ(Z As Double) As Boolean
             End If
         End If
     Loop
-    
-    FailSafeMoveStageZ = True
 
+    FailSafeMoveStageZ = True
 End Function
 
 ''''''
@@ -699,7 +681,6 @@ End Function
 ''''''
 Public Function Autofocus_MoveAcquisition(XShift As Double, YShift As Double, ZShift As Double, ZOffset As Double) As Boolean
     
-    Const ZBacklash = -50   'why do we need this. TODO?
     Dim ZFocus As Double
     Dim Zbefore As Double
     Dim X As Double
@@ -728,7 +709,7 @@ Public Function Autofocus_MoveAcquisition(XShift As Double, YShift As Double, ZS
     'This is moving the x and y position
     'This we want only to do when xy-focus is set
     'Moving to the correct position in X and Y
-    If FrameAutofocussing Then
+    If AutofocusForm.ScanFrameToggle Then
         ' Todo: check whether it moves in the correct direction
         If AutofocusForm.CheckBoxAutofocusTrackXY Then
             X = Lsm5.Hardware.CpStages.PositionX - XShift
@@ -869,7 +850,7 @@ Public Sub Autofocus_MoveAcquisition_HRZ(ZOffset As Double)
 
     'Moving to the correct position in X and Y
  
-    If FrameAutofocussing Then
+    If AutofocusForm.ScanFrameToggle Then
         If AutofocusForm.CheckBoxAutofocusTrackXY Then
             X = Lsm5.Hardware.CpStages.PositionX - XShift  'the fact that it is "-" in this line and "+" in the next line  probably has to do with where the XY of the origin is set (top right corner and not botom left, I think)
             Y = Lsm5.Hardware.CpStages.PositionY - YShift

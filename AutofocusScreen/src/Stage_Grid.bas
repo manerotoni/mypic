@@ -25,7 +25,7 @@ Public GlobalLocationsOrderOld() As Long
 
 
 
-Public Const ZBacklash = -50 'TODO: is it still recquired?. Has to do with the movements of the focus wheel that are "better" if they are long enough.
+Public Const ZBacklash = 0 'ToDo: is it still recquired?. Has to do with the movements of the focus wheel that are "better" if they are long enough.
 
 
 Public Sub MakeBlankImage(DestImage As DsRecordingDoc, _
@@ -101,13 +101,13 @@ End Sub
 
 
 Public Sub ReadLoc(X As Double, Y As Double)
-    Dim cnt As Long
+    Dim Cnt As Long
     
-    cnt = 0
+    Cnt = 0
     On Error GoTo retry
 retry:
-    If cnt > 1000 Then GoTo Finish
-    cnt = cnt + 1
+    If Cnt > 1000 Then GoTo Finish
+    Cnt = Cnt + 1
     X = Lsm5.Hardware.CpStages.PositionX
     Y = Lsm5.Hardware.CpStages.PositionY
 Finish:
