@@ -85,6 +85,8 @@ Public Const vbIgnore = 5   '  Ignore
 Public Const vbYes = 6  '  Yes
 Public Const vbNo = 7    ' No
 
+Public Const PrecZ = 2                     'precision of Z passed for stage movements i.e. Z = Round(Z, PrecZ)
+Public Const PrecXY = 2                    'precision of X and Y passed for stage movements
 
 '''''''''''''''''''''
 '''GLOBAL VARIABLE'''
@@ -592,7 +594,7 @@ End Function
 '   ComputeShiftedCoordinates(XMass, ....)
 '   Calculates new coordinates after translation
 '       [XMass], [YMass], [ZMass]    In - Translation vector
-'       [x], [y], [z] Out - Shifted coordinates. Depends on stage build up and actual position
+'       [x], [y], [z] Out - Shifted coordinates. Depends on stage build up and actual position. Positions are rounded up to PrecXY and PrecZ
 ''''''
 Public Function ComputeShiftedCoordinates(ByVal XMass As Double, ByVal YMass As Double, ByVal ZMass As Double, ByRef X As Double, ByRef Y As Double, ByRef Z As Double)
 
@@ -605,7 +607,9 @@ Public Function ComputeShiftedCoordinates(ByVal XMass As Double, ByVal YMass As 
     End If
         
     Z = Z + ZMass
-    
+    X = Round(X, PrecXY)
+    Y = Round(Y, PrecXY)
+    Z = Round(Z, PrecZ)
 End Function
 
 ''''' ' this should move to function

@@ -19,15 +19,46 @@ Option Explicit 'force to declare all variables
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''Version Description''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '
-' AutofocusScreen_ZEN_v2.0.4
+' AutofocusScreen_ZEN_v2.0.5
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Const Version = " v2.0.4"
-Private Const ZEN = "2010"
+Private Const Version = " v2.0.5"
+Private Const ZEN = "2011"
 Public posTempZ  As Double                  'This is position at start after pushing AutofocusButton
-Private Const DebugCode = True              'sets key to run tests visible or not
-Private Const PrecZ = 2                     'precision of Z passed for stage movements i.e. Z = Round(Z, PrecZ)
-Private Const PrecXY = 2                    'precision of X and Y passed for stage movements
+Private Const DebugCode = False              'sets key to run tests visible or not
+Private Const LogCode = True              'sets key to run tests visible or not
+
+Private Sub StopAfterRepetition_Click()
+    If Not Running Then
+        StopAfterRepetition.Value = False
+        StopAfterRepetition.BackColor = &H8000000F
+    Else
+        If StopAfterRepetition.Value Then
+            StopAfterRepetition.BackColor = 12648447
+        Else
+            StopAfterRepetition.BackColor = &H8000000F
+        End If
+    End If
+End Sub
+
+Private Sub PauseButton_Click()
+    If Not Running Then
+        ScanPause = False
+        PauseButton.Value = False
+        PauseButton.Caption = "PAUSE"
+        PauseButton.BackColor = &H8000000F
+    Else
+        If PauseButton.Value Then
+            ScanPause = True
+            PauseButton.Caption = "RESUME"
+            PauseButton.BackColor = 12648447
+        Else
+            ScanPause = False
+            PauseButton.Caption = "PAUSE"
+            PauseButton.BackColor = &H8000000F
+        End If
+    End If
+End Sub
 
 ''''''
 ' UserForm_Initialize()
@@ -37,7 +68,7 @@ Private Const PrecXY = 2                    'precision of X and Y passed for sta
 Private Sub UserForm_Initialize()
     'Setting of some global variables
     LogFileNameBase = ""
-    Log = DebugCode
+    Log = LogCode
     
     Me.Caption = Me.Caption + Version + " for ZEN " + ZEN
     FormatUserForm (Me.Caption) ' make minimizing button available
@@ -586,7 +617,20 @@ End Sub
 '       [ScanStop] Global/Out - Set to true
 '''''''
 Private Sub StopButton_Click()
-    ScanStop = True
+    If Not Running Then
+        StopButton.Value = False
+        StopButton.BackColor = &H8000000F
+        ScanStop = False
+    Else
+        If StopButton.Value Then
+            StopButton.BackColor = 12648447
+            ScanStop = True
+        Else
+            StopButton.BackColor = &H8000000F
+            ScanStop = False
+        End If
+    End If
+
 End Sub
 
 
@@ -595,62 +639,43 @@ End Sub
 '   Stop scan and reset buttons of the form
 ''''''''
 Public Sub StopAcquisition()
+
     If ScanStop Then
         Lsm5.StopScan
         DisplayProgress "Stopped", RGB(&HC0, 0, 0)
         RestoreAcquisitionParameters
-        Sleep (1000)
-        DisplayProgress "Restore Settings", RGB(&HC0, &HC0, 0)
         DoEvents
-        ' reset the buttons
-        Dim FileName As String
-        Running = False
-        ScanStop = False
-        ScanPause = False
-        PauseButton.Caption = "Pause"
-        PauseButton.BackColor = &H8000000F
-        ExtraBleach = False
-        ExtraBleachButton.Caption = "Bleach"
-        ExtraBleachButton.BackColor = &H8000000F
-        ReDim BleachTable(BlockRepetitions)
-        ReDim BleachStartTable(BlockRepetitions)
-        ReDim BleachStopTable(BlockRepetitions)
-        BleachingActivated = False
-        Sleep (1000)
-        DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-        ChangeButtonStatus True
-        If Log Then
-            SafeOpenTextFile LogFileName, LogFile, FileSystem
-            LogFile.Close
-        End If
-            
-        
     Else
         DisplayProgress "Restore Settings", RGB(&HC0, &HC0, 0)
         RestoreAcquisitionParameters
         DoEvents
-        Sleep (200)
-        ' reset the buttons
-        Running = False
-        ScanStop = False
-        ScanPause = False
-        PauseButton.Caption = "Pause"
-        PauseButton.BackColor = &H8000000F
-        ExtraBleach = False
-        ExtraBleachButton.Caption = "Bleach"
-        ExtraBleachButton.BackColor = &H8000000F
-        ReDim BleachTable(BlockRepetitions)
-        ReDim BleachStartTable(BlockRepetitions)
-        ReDim BleachStopTable(BlockRepetitions)
-        BleachingActivated = False
-        Sleep (200)
-        DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-        ChangeButtonStatus True
-        If Log Then
-            SafeOpenTextFile LogFileName, LogFile, FileSystem
-            LogFile.Close
-        End If
     End If
+    
+    ReDim BleachTable(BlockRepetitions)
+    ReDim BleachStartTable(BlockRepetitions)
+    ReDim BleachStopTable(BlockRepetitions)
+    ChangeButtonStatus True
+    Running = False
+    ScanStop = False
+    ScanPause = False
+    PauseButton.Value = False
+    PauseButton.Caption = "PAUSE"
+    PauseButton.BackColor = &H8000000F
+    ExtraBleach = False
+    ExtraBleachButton.Caption = "Bleach"
+    ExtraBleachButton.BackColor = &H8000000F
+    StopAfterRepetition.Value = False
+    StopAfterRepetition.BackColor = &H8000000F
+    StopButton.BackColor = &H8000000F
+    StopButton.Value = False
+    BleachingActivated = False
+    Sleep (1000)
+    If Log Then
+        SafeOpenTextFile LogFileName, LogFile, FileSystem
+        LogFile.Close
+    End If
+    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
+
 End Sub
 
 '''''
@@ -662,12 +687,12 @@ Private Sub CommandButtonNewDataBase_Click()
 
     GlobalDataBaseName = DatabaseTextbox.Value
     If Not GlobalDataBaseName = "" Then
-        On Error GoTo ErrorHandleDataBase
-        CheckDir (GlobalDataBaseName)
+        If Not CheckDir(GlobalDataBaseName) Then
+            Exit Sub
+        End If
         DatabaseLable.Caption = GlobalDataBaseName
         SaveSetting "OnlineImageAnalysis", "macro", "OutputFolder", GlobalDataBaseName
         LogFileNameBase = GlobalDataBaseName & "\AutofocusLog"
-        
     End If
 
     If DebugCode And LogFileNameBase <> "" Then
@@ -685,9 +710,6 @@ Private Sub CommandButtonNewDataBase_Click()
     Else
         Log = False
     End If
-    Exit Sub
-ErrorHandleDataBase:
-    MsgBox "Could not create directory " & GlobalDataBaseName
     Exit Sub
 ErrorHandleLogFile:
     MsgBox "Could not create LogFile " & LogFileName
@@ -1398,32 +1420,89 @@ End Sub
 '       Performs Autofocus and update ZOffset according to ZShift
 ''''''
 Private Sub GetCurrentPositionOffsetButton_Click()
+    If Not GetCurrentPositionOffsetButtonRun Then
+        ScanStop = True
+        StopAcquisition
+    Else
+        StopAcquisition
+    End If
+End Sub
+
+Private Function GetCurrentPositionOffsetButtonRun() As Boolean
     Dim X As Double
     Dim Y As Double
     Dim Z As Double
+    Dim Time As Double
+    Dim Pos As Double
+    Running = True
     Dim NewPicture As DsRecordingDoc
-    Set NewPicture = Lsm5.NewScanWindow
-    While NewPicture.IsBusy
-        Sleep (100)
-        DoEvents
-    Wend
-    
     DisplayProgress "Get Current Position Offset - Autofocus", RGB(0, &HC0, 0)             'Gives information to the user
-    StopScanCheck
-    
     posTempZ = Lsm5.Hardware.CpFocus.Position
+    Z = posTempZ
+    X = Lsm5.Hardware.CpStages.PositionX
+    Y = Lsm5.Hardware.CpStages.PositionY
 
-    If Not (newMacros.Autofocus_StackShift(NewPicture)) Then
-        StopAcquisition
-        Exit Sub
+    'recenter only after activation of new track
+    If CheckBoxActiveAutofocus Then
+        StopScanCheck
+        If CheckBoxHRZ Then
+            Lsm5.Hardware.CpHrz.Leveling
+        End If
+       'FailSafeMoveStageZ (posTempZ) 'move at position
+        ' Acquire image and calculate center of mass stored in XMass, YMass and ZMass
+        DisplayProgress "Autofocus Activate Tracks", RGB(0, &HC0, 0)
+        Time = Timer
+        If Not AutofocusForm.ActivateAutofocusTrack(GlobalAutoFocusRecording, posTempZ) Then
+            MsgBox "No track selected for Autofocus! Cannot Autofocus!"
+            Exit Function
+        End If
+        
+        If Log Then
+            SafeOpenTextFile LogFileName, LogFile, FileSystem
+            Time = Timer - Time
+            LogFile.WriteLine ("% Get current position: time activate AF tracks " & Time)
+            LogFile.Close
+        End If
+        
+        'DoEvents
+        'Sample0Z = Lsm5.DsRecording.Sample0Z
+        DisplayProgress "Autofocus: Recenter prior AF acquisition.... ", RGB(0, &HC0, 0)
+        DoEvents
+        Time = Timer
+        If Not Recenter_pre(posTempZ) Then
+            Exit Function
+        End If
+
+        If Log Then
+            Time = Timer - Time
+            SafeOpenTextFile LogFileName, LogFile, FileSystem
+            Pos = Lsm5.Hardware.CpFocus.Position
+            LogFile.WriteLine ("% Get current position: actual position      Z = " & Lsm5.Hardware.CpFocus.Position)
+
+            LogFile.WriteLine ("% Get current position: center and wait 1st  Z = " & posTempZ & ", Time required " & Time & ", waiting repeats (max 9) " & Round(Time / 0.4))
+            If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
+                LogFile.WriteLine ("% AutofocusButton: Target Central slide AF  " & posTempZ & "; obtained Central slide " & Pos & "; position " & Pos)
+            Else
+                LogFile.WriteLine ("% Get current position: Target Central slide AF  " & posTempZ & "; obtained Central slide " & _
+                Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + Pos & "; position " & Pos)
+            End If
+            LogFile.Close
+        End If
+
+        If Not newMacros.Autofocus_StackShift(NewPicture) Then
+            Exit Function
+        End If
+        
+        DisplayProgress "Autofocus: Recenter after AF acquisition...", RGB(0, &HC0, 0)
+        Time = Timer
+        If Not Recenter_post(posTempZ) Then
+            Exit Function
+        End If
+        ComputeShiftedCoordinates XMass, YMass, ZMass, X, Y, Z
+        BSliderZOffset.Value = -ZMass
     End If
-    
-    ComputeShiftedCoordinates XMass, YMass, ZMass, X, Y, Z
-    BSliderZOffset.Value = BSliderZOffset.Value - Round(ZMass, PrecZ)
-    
-    RestoreAcquisitionParameters
-    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-End Sub
+    GetCurrentPositionOffsetButtonRun = True
+End Function
 
 '''''''
 '   AutofocusButton_Click()
@@ -1431,6 +1510,7 @@ End Sub
 ''''''''
 Public Sub AutofocusButton_Click()
     Dim RecordingDoc As DsRecordingDoc
+    Running = True
     posTempZ = Lsm5.Hardware.CpFocus.Position
     Recenter (posTempZ)
     
@@ -1489,13 +1569,12 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
     X = Lsm5.Hardware.CpStages.PositionX
     Y = Lsm5.Hardware.CpStages.PositionY
     Sample0Z = Lsm5.DsRecording.Sample0Z
-    
-    If CheckBoxHRZ Then
-        Lsm5.Hardware.CpHrz.Leveling
-    End If
 
     'recenter only after activation of new track
     If CheckBoxActiveAutofocus Then
+        If CheckBoxHRZ Then
+            Lsm5.Hardware.CpHrz.Leveling
+        End If
        'FailSafeMoveStageZ (posTempZ) 'move at position
         ' Acquire image and calculate center of mass stored in XMass, YMass and ZMass
         DisplayProgress "Autofocus Activate Tracks", RGB(0, &HC0, 0)
@@ -1516,8 +1595,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         DisplayProgress "Autofocus: Recenter prior AF acquisition.... ", RGB(0, &HC0, 0)
         DoEvents
         Time = Timer
-        Recenter (posTempZ)
-        If Not WaitForRecentering(posTempZ) Then
+        If Not Recenter_pre(posTempZ) Then
             Exit Function
         End If
 
@@ -1545,21 +1623,13 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         
         DisplayProgress "Autofocus: Recenter after AF acquisition...", RGB(0, &HC0, 0)
         Time = Timer
-        If Not WaitForRecentering(posTempZ) Then
+        If Not Recenter_post(posTempZ) Then
             Exit Function
         End If
         
         'compute new coordinates
         ComputeShiftedCoordinates XMass, YMass, ZMass, X, Y, Z
-        'round up positions
-        Z = Round(Z, PrecZ)
-        X = Round(X, PrecXY)
-        Y = Round(Y, PrecXY)
-        XMass = Round(XMass, PrecXY)
-        YMass = Round(YMass, PrecXY)
-        ZMass = Round(ZMass, PrecXY)
-        
-        
+
         If Log Then
             SafeOpenTextFile LogFileName, LogFile, FileSystem
             Time = Timer - Time
@@ -1586,7 +1656,9 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         End If
         
         'Sample0Z = Lsm5.DsRecording.Sample0Z
-        
+        If CheckBoxHRZ Then
+            Lsm5.Hardware.CpHrz.Position = 0
+        End If
     End If
     
     If Log Then
@@ -1595,9 +1667,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         LogFile.Close
     End If
         
-    If CheckBoxHRZ Then
-        Lsm5.Hardware.CpHrz.Position = 0
-    End If
+
 
     ' Set the acquisitiontrack and record
     If ActivateAcquisitionTrack(GlobalAcquisitionRecording) Then
@@ -1612,8 +1682,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         'center the slide
         
         Time = Timer
-        Recenter (Z + Offset)
-        If Not WaitForRecentering(Z + Offset) Then
+        If Not Recenter_pre(Z + Offset) Then
             Exit Function
         End If
         
@@ -1646,9 +1715,9 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         
         Time = Timer
         'wait that slice recentered after acquisition
-        DisplayProgress "AF: Recenter...", RGB(0, &HC0, 0)
+        DisplayProgress "AF: Recenter after AF ...", RGB(0, &HC0, 0)
 
-        If Not WaitForRecentering(Z + Offset) Then
+        If Not Recenter_post(Z + Offset) Then
             Exit Function
         End If
         
@@ -1679,18 +1748,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         DisplayProgress "AF: move to new Z...", RGB(0, &HC0, 0)
         Time = Timer
         posTempZ = Z
-        Recenter (Z)
-
-        'move stage only if necessary
-        If Round(Lsm5.Hardware.CpFocus.Position, PrecZ) <> Round(Z, PrecZ) Then
-            If Not FailSafeMoveStageZ(Z) Then
-                Exit Function
-            End If
-        End If
-        
-        If Not WaitForRecentering(Z) Then
-            Exit Function
-        End If
+        Recenter_pre (Z)
         
         If Log Then
             Time = Timer - Time
@@ -1702,17 +1760,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         'just recenter and move to original position
         Time = Timer
         DisplayProgress "AF: return to initial Z...", RGB(0, &HC0, 0)
-        Recenter (posTempZ)
-
-        If Round(Lsm5.Hardware.CpFocus.Position, PrecZ) <> Round(posTempZ, PrecZ) Then
-            If Not FailSafeMoveStageZ(posTempZ) Then
-                Exit Function
-            End If
-        End If
-        
-        If Not WaitForRecentering(posTempZ) Then
-            Exit Function
-        End If
+        Recenter_pre (posTempZ)
         If Log Then
             Time = Timer - Time
             SafeOpenTextFile LogFileName, LogFile, FileSystem
@@ -1854,9 +1902,12 @@ End Sub
 '       Create list of positions for Grid or Multiposition
 ''''''
 Private Function StartSetting() As Boolean
+    Dim i As Integer
     StartSetting = False
     BleachingActivated = False
     AutomaticBleaching = False                                  'We do not do FRAps or FLIPS in this case. Bleaches can still be done with the "ExtraBleach" button.
+    
+    ' Do some checking
     If TrackingToggle And TrackingChannelString = "" Then
         MsgBox ("Select a channel for tracking, or uncheck the tracking button")
         Exit Function
@@ -1868,20 +1919,46 @@ Private Function StartSetting() As Boolean
     If GlobalDataBaseName = "" Then
         MsgBox ("No outputfolder selected ! Cannot start acquisition.")
         Exit Function
+    Else
+        If Not CheckDir(GlobalDataBaseName) Then
+            Exit Function
+        End If
+        LogFileNameBase = GlobalDataBaseName & "\AutofocusLog"
+        If DebugCode And LogFileNameBase <> "" Then
+            On Error GoTo ErrorHandleLogFile
+            Set FileSystem = New FileSystemObject
+            i = 0
+            While FileSystem.FileExists(LogFileNameBase & i & ".txt")
+                i = i + 1
+            Wend
+            LogFileName = LogFileNameBase & i & ".txt"
+            SafeOpenTextFile LogFileName, LogFile, FileSystem
+            LogFile.Close
+            Log = True
+        Else
+            Log = False
+        End If
     End If
     
+    If Not AcquisitionTracksOn Then
+        MsgBox ("Select at least one track fro acquisition")
+        Exit Function
+    End If
+    
+    ' do not log if logfilename has not been defined
+    If Log And LogFileName = "" Then
+        Log = False
+    End If
     'As default we do not overwrite files
     OverwriteFiles = False
     
-
-       
     '''''''''''''''''''''''
     '***Set up GridScan***'
     '''''''''''''''''''''''
     If CheckBoxActiveGridScan Then
         'Load starting position from stage
         If Lsm5.Hardware.CpStages.Markcount = 0 Then  ' No marked position
-            MsgBox " GridScan: Use stage to Mark the initial position "
+            MsgBox "GridScan: Use stage to Mark the initial position "
             ScanStop = True
             StopAcquisition
             Exit Function
@@ -1927,7 +2004,6 @@ Private Function StartSetting() As Boolean
     '***Set up MultiLocationScan***'
     ''''''''''''''''''''''''''''''''
     If MultipleLocationToggle Then
-        Dim i As Integer
         If Lsm5.Hardware.CpStages.Markcount > 0 Then
             ReDim posGridX(1 To 1, 1 To Lsm5.Hardware.CpStages.Markcount, 1 To 1, 1 To 1)
             ReDim posGridY(1 To 1, 1 To Lsm5.Hardware.CpStages.Markcount, 1 To 1, 1 To 1)
@@ -1974,12 +2050,19 @@ Private Function StartSetting() As Boolean
     For i = 0 To Lsm5.DsRecording.TrackCount - 1
        GlobalBackupActiveTracks(i) = Lsm5.DsRecording.TrackObjectByMultiplexOrder(i, 1).Acquire
     Next i
-    If Not WaitForRecentering(posTempZ) Then
+    If Not Recenter_post(posTempZ) Then
         Exit Function
     End If
 
     
     StartSetting = True
+    Exit Function
+ErrorHandleDataBase:
+    MsgBox "Could not create directory " & GlobalDataBaseName
+    Exit Function
+ErrorHandleLogFile:
+    MsgBox "Could not create LogFile " & LogFileName
+    Exit Function
 End Function
 
 
@@ -2011,7 +2094,7 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
     Dim StepCol As Integer
     Dim StepColSub As Integer
     Dim Cnt As Integer ' a local counter
-    
+    Dim TotPos As Long
     HighResExperimentCounter = 1
     HighResCounter = 1
     ' CheckBoxActiveOnlineImageAnalysis  refers to the MicroPilot
@@ -2069,7 +2152,7 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
 
     Running = True  'Now we're starting. This will be set to false if the stop button is pressed or if we reached the total number of repetitions.
     ChangeButtonStatus False ' disable buttons
-    
+    TotPos = 1
     Do While Running   'As long as the macro is running we're in this loop. At everystop one will save actual location, and repetition
                 
         RowMax = UBound(posGridX, 1)
@@ -2116,42 +2199,41 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
                             Y = posGridY(iRow, iCol, iRowSub, iColSub)
                             Z = posGridZ(iRow, iCol, iRowSub, iColSub)
                             'move in X and Y
-                            Recenter (Z) ' acquisition can get confused if recenter is done already here (See autofocusButton)
                             If Round(Lsm5.Hardware.CpStages.PositionX, PrecXY) <> Round(X, PrecXY) Or Round(Lsm5.Hardware.CpStages.PositionY, PrecXY) <> Round(Y, PrecXY) Then
                                 If Not FailSafeMoveStageXY(X, Y) Then
                                     StopAcquisition
                                     Exit Sub
                                 End If
                             End If
-                            If Round(Z, PrecZ) <> Round(Lsm5.Hardware.CpFocus.Position, PrecZ) Then
-                                If Not FailSafeMoveStageZ(Z) Then
-                                    StopAcquisition
-                                    Exit Sub
-                                End If
-                            End If
-'                            'Wait for stage to move at workload position
-                            If Not WaitForRecentering(Z) Then
-                                StopAcquisition
-                                Exit Sub
-                            End If
+'                            If Not Recenter_pre(Z) Then ' the recentering is done when setting for imaging have been uploaeded not before
+'                                StopAcquisition
+'                                Exit Sub
+'                            End If
                         Else ' jump to next location
                             GoTo NextLocation
                         End If
                         
                         ' Show position of stage
                         If SingleLocationToggle Then
-                            LocationTextLabel.Caption = " X= " & posGridX(iRow, iCol, iRowSub, iColSub) & ",  Y = " & posGridY(iRow, iCol, iRowSub, iColSub) & _
-                            ", Z = " & posGridZ(iRow, iCol, iRowSub, iColSub)
+                            LocationTextLabel.Caption = "X= " & posGridX(iRow, iCol, iRowSub, iColSub) & ",  Y = " & posGridY(iRow, iCol, iRowSub, iColSub) & _
+                            ", Z = " & posGridZ(iRow, iCol, iRowSub, iColSub) & vbCrLf & _
+                            "Repetition :" & RepetitionNumber & "/" & BSliderRepetitions.Value
                         End If
                         
                         If MultipleLocationToggle Then
-                            LocationTextLabel.Caption = "Marked Position: " & iCol & vbCrLf & " X= " & posGridX(iRow, iCol, iRowSub, iColSub) & _
-                            ",  Y = " & posGridY(iRow, iCol, iRowSub, iColSub) & ", Z = " & posGridZ(iRow, iCol, iRowSub, iColSub)
+                            LocationTextLabel.Caption = "Marked Position: " & iCol & "/" & UBound(posGridX, 1) & vbCrLf & _
+                            "X = " & posGridX(iRow, iCol, iRowSub, iColSub) & ", Y = " & posGridY(iRow, iCol, iRowSub, iColSub) & ", Z = " & posGridZ(iRow, iCol, iRowSub, iColSub) & vbCrLf & _
+                            "Repetition :" & RepetitionNumber & "/" & BSliderRepetitions.Value
+
                         End If
                         If CheckBoxActiveGridScan Then
-                            LocationTextLabel.Caption = "Well/Position Row: " & iRow & ", Column: " & iCol & vbCrLf & _
-                                                        "subposition   Row: " & iRowSub & ", Column: " & iColSub & vbCrLf & _
-                                                        " X= " & posGridX(iRow, iCol, iRowSub, iColSub) & ",  Y = " & posGridY(iRow, iCol, iRowSub, iColSub) & ", Z = " & posGridZ(iRow, iCol, iRowSub, iColSub)
+                            LocationTextLabel.Caption = "Locations : " & TotPos & "/" & UBound(posGridX, 1) * UBound(posGridX, 2) * UBound(posGridX, 3) * UBound(posGridX, 4) & vbCrLf & _
+                                                        "Well/Position Row: " & iRow & "/" & UBound(posGridX, 1) & "; Column: " & iCol & "/" & UBound(posGridX, 2) & vbCrLf & _
+                                                        "Subposition   Row: " & iRowSub & "/" & UBound(posGridX, 3) & "; Column: " & iColSub & "/" & UBound(posGridX, 4) & vbCrLf & _
+                                                        "X = " & posGridX(iRow, iCol, iRowSub, iColSub) & ", Y = " & posGridY(iRow, iCol, iRowSub, iColSub) & _
+                                                        ", Z = " & posGridZ(iRow, iCol, iRowSub, iColSub) & vbCrLf & _
+                                                        "Repetition :" & RepetitionNumber & "/" & BSliderRepetitions.Value
+                                                        
                         End If
                         
                         If ScanPause Then
@@ -2161,17 +2243,19 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
                                 Exit Sub
                             End If
                         End If
+                        
                         If RepetitionNumber = 1 Then
                             StartTime = GetTickCount    'Get the time when the acquisition was started
                         End If
                         
                         'Do the imaging
-                        If Not ImagingWorkFlow(RecordingDoc, StartTime, iRow, iCol, iColSub, iRowSub) Then
+                        If Not ImagingWorkFlow(RecordingDoc, StartTime, iRow, iCol, iColSub, iRowSub, TotPos) Then
                             StopAcquisition
                             Exit Sub
                         End If
         
 NextLocation:
+                        TotPos = TotPos + 1
                         If ScanPause Then
                             If Not pause Then ' Pause is true is Resume
                                 ScanStop = True
@@ -2179,13 +2263,20 @@ NextLocation:
                                 Exit Sub
                             End If
                         End If
-                    
-                Next iColSub
+                        If ScanStop Then
+                            StopAcquisition
+                            Exit Sub
+                        End If
+                   Next iColSub
             Next iRowSub
         Next iCol
     Next iRow
-
-       
+    TotPos = 1
+    If StopAfterRepetition.Value Then
+        ScanStop = True
+        StopAcquisition
+        Exit Sub
+    End If
     ' DONE WITH THE IMAGING....NOW POSTPROCESSING...
     
     If AutomaticBleaching Then
@@ -2258,7 +2349,7 @@ End Sub
 '       [RowSub] In - Row of subpositions grid
 '       [ColSub] In - Column of subpositions grid
 '''''
-Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Boolean
+Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long, TotPos As Long) As Boolean
     
     ImagingWorkFlow = False
     Dim Xnew As Double
@@ -2281,8 +2372,12 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
     Yold = Ynew
     Zold = Znew
     ' Set FileNameId. W....P....T....
-    FileNameID = FileName((Row - 1) * UBound(posGridX, 1) + Col, (RowSub - 1) * UBound(posGridX, 3) + ColSub, RepetitionNumber)
-    FilePath = DatabaseTextbox.Value & "\" & TextBoxFileName.Value & FileNameID
+    FileNameID = FileName(Row, Col, RowSub, ColSub, RepetitionNumber)
+    If TextBoxFileName.Value <> "" Then
+        FilePath = DatabaseTextbox.Value & "\" & TextBoxFileName.Value & "_" & FileNameID
+    Else
+        FilePath = DatabaseTextbox.Value & "\" & FileNameID
+    End If
     
     If Log Then
         SafeOpenTextFile LogFileName, LogFile, FileSystem
@@ -2294,100 +2389,104 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
     End If
     
     ' At every positon and repetition  check if Autofocus needs to be required. Update of positions in Z is only done at the end of acquisition
-    If CheckBoxActiveAutofocus Then  ' Perform Autofocus if active
-        If (RepetitionNumber - 1) Mod AFeveryNth = 0 Then
-                StopScanCheck 'stop any running jobs
-                ' Acquire image and calculate center of mass stored in XMass, YMass and ZMass
-                DisplayProgress "Autofocus Activate Tracks", RGB(0, &HC0, 0)
-                If Not AutofocusForm.ActivateAutofocusTrack(GlobalAutoFocusRecording, posTempZ) Then
-                    MsgBox "No track selected for Autofocus! Cannot Autofocus!"
-                    Exit Function
-                End If
-                Time = Timer
-                Recenter (Zold)
-                If Not WaitForRecentering(Zold) Then
-                    Exit Function
-                End If
-                Lsm5.DsRecording.Sample0Z = 40
-                'Recenter (Zold)
-                'Sample0Z = 0
-                If Log Then
-                    Time = Timer - Time
-                    SafeOpenTextFile LogFileName, LogFile, FileSystem
-                    LogFile.WriteLine ("% StartButton: Recenter for Autofocus Time " & Time & ", repetions (max 9) " & Round(Time / 0.4))
-                    If (ZEN = "2010") Or (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
-                        LogFile.WriteLine ("% StartButton: Target Central slide AF " & Zold & "; obtained Central slide " & Lsm5.Hardware.CpFocus.Position & "; position " & Lsm5.Hardware.CpFocus.Position)
-                    Else
-                        LogFile.WriteLine ("% StartButton: Target Central slide AF " & Zold & "; obtained Central slide " & _
-                        Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + Lsm5.Hardware.CpFocus.Position & "; position " & Lsm5.Hardware.CpFocus.Position)
-                    End If
-                    LogFile.Close
-                End If
-
-
-                ' take a z-stack and finds the brightest plane:
-                If Not newMacros.Autofocus_StackShift(RecordingDoc) Then
-                   Exit Function
-                End If
-                If Log Then
-                    If Not SaveDsRecordingDoc(RecordingDoc, FilePath & "_AFImg.lsm") Then
-                        Exit Function
-                    End If
-                End If
-                ' move the xyz to the right position
-                ComputeShiftedCoordinates XMass, YMass, ZMass, Xnew, Ynew, Znew
-                Znew = Round(Znew, PrecZ)
-                Xnew = Round(Xnew, PrecXY)
-                Ynew = Round(Ynew, PrecXY)
-                XMass = Round(XMass, PrecXY)
-                YMass = Round(YMass, PrecXY)
-                ZMass = Round(ZMass, PrecZ)
-                If CheckBoxAutofocusTrackXY.Value Then
-                    DisplayProgress "Autofocus move XY stage", RGB(0, &HC0, 0)
-                    If Not FailSafeMoveStageXY(Xnew, Ynew) Then
-                        Exit Function
-                    End If
-                    posGridX(Row, Col, RowSub, ColSub) = Xnew
-                    posGridY(Row, Col, RowSub, ColSub) = Ynew
-                End If
-                If Log Then
-                    SafeOpenTextFile LogFileName, LogFile, FileSystem
-                    LogFile.WriteLine ("% StartButton: AF computed position XYZ  " & Xnew & ", " & Ynew & ", " & Znew & ". Center of mass XYZ" & XMass & ", " & YMass & ", " & ZMass)
-                    LogFile.Close
-                End If
-                'wait for recentering
-                DisplayProgress "Autofocus: Wait for recentering", RGB(0, &HC0, 0)
-                Time = Timer
-                If Not WaitForRecentering(Zold) Then
-                    Exit Function
-                End If
-                    
-                If Log Then
-                    Time = Timer - Time
-                    SafeOpenTextFile LogFileName, LogFile, FileSystem
-                    LogFile.WriteLine ("% Recenter time after AF: " & Time & "; repetitions (max 9) " & Round(Time / 0.4))
-                    LogFile.Close
-                End If
-                   
-                If ScanPause Then
-                    If Not pause Then ' Pause is true if Resume
-                        Exit Function
-                    End If
-                End If
+    If CheckBoxActiveAutofocus And ((RepetitionNumber - 1) Mod AFeveryNth = 0) Then    ' Perform Autofocus if active
+        StopScanCheck 'stop any running jobs
+        ' Acquire image and calculate center of mass stored in XMass, YMass and ZMass
+        DisplayProgress "Autofocus Activate Tracks", RGB(0, &HC0, 0)
+        If Not AutofocusForm.ActivateAutofocusTrack(GlobalAutoFocusRecording, posTempZ) Then
+            MsgBox "No track selected for Autofocus! Cannot Autofocus!"
+            Exit Function
+        End If
+        
+        Time = Timer
+        If Not Recenter_pre(Zold) Then
+            Exit Function
+        End If
+        
+        If Log Then
+            Time = Timer - Time
+            SafeOpenTextFile LogFileName, LogFile, FileSystem
+            LogFile.WriteLine ("% StartButton: Recenter for Autofocus Time " & Time & ", repetions (max 9) " & Round(Time / 0.4))
+            If (ZEN = "2010") Or (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
+                LogFile.WriteLine ("% StartButton: Target Central slide AF " & Zold & "; obtained Central slide " & Lsm5.Hardware.CpFocus.Position & "; position " & Lsm5.Hardware.CpFocus.Position)
+            Else
+                LogFile.WriteLine ("% StartButton: Target Central slide AF " & Zold & "; obtained Central slide " & _
+                Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + Lsm5.Hardware.CpFocus.Position & "; position " & Lsm5.Hardware.CpFocus.Position)
             End If
+            LogFile.Close
+        End If
+        
+        ' take a z-stack and finds the brightest plane:
+        If Not newMacros.Autofocus_StackShift(RecordingDoc) Then
+           Exit Function
+        End If
+        
+        If DebugCode Then
+            If Not SaveDsRecordingDoc(RecordingDoc, FilePath & "_AFImg.lsm") Then
+                Exit Function
+            End If
+        End If
+        
+        ' move the xyz to the right position
+        ComputeShiftedCoordinates XMass, YMass, ZMass, Xnew, Ynew, Znew
+        
+        If CheckBoxAutofocusTrackXY.Value And ScanFrameToggle.Value Then
+            DisplayProgress "Autofocus move XY stage", RGB(0, &HC0, 0)
+            If Not FailSafeMoveStageXY(Xnew, Ynew) Then
+                Exit Function
+            End If
+            posGridX(Row, Col, RowSub, ColSub) = Xnew
+            posGridY(Row, Col, RowSub, ColSub) = Ynew
+        End If
+        
+        If Log Then
+            SafeOpenTextFile LogFileName, LogFile, FileSystem
+            LogFile.WriteLine ("% StartButton: AF computed position XYZ  " & Xnew & ", " & Ynew & ", " & Znew & ". Center of mass XYZ" & XMass & ", " & YMass & ", " & ZMass)
+            LogFile.Close
+        End If
+        
+        'wait for recentering
+        DisplayProgress "Autofocus: Wait for recentering after acquisition AF", RGB(0, &HC0, 0)
+        Time = Timer
+        If Not Recenter_post(Zold) Then
+            Exit Function
+        End If
+            
+        If Log Then
+            Time = Timer - Time
+            SafeOpenTextFile LogFileName, LogFile, FileSystem
+            LogFile.WriteLine ("% Recenter time after AF: " & Time & "; repetitions (max 9) " & Round(Time / 0.4))
+            LogFile.Close
+        End If
+           
+        If ScanPause Then
+            If Not pause Then ' Pause is true if Resume
+                Exit Function
+            End If
+        End If
     End If '(RepetitionNumber - 1) Mod AFeveryNth = 0
 
     FilePath = FilePath & ".lsm"
 
-          
 
-    
     ''''''''''''''''''''''''''''''
     '*Begin Alternative imaging**'
     ''''''''''''''''''''''''''''''
-    If CheckBoxAlterImage.Value Then
-        If RepetitionNumber Mod TextBox_RoundAlterTrack = 0 Then
-        
+    If CheckBoxAlterImage.Value And ((RepetitionNumber - 1) Mod TextBox_RoundAlterTrack = 0) Then
+        Dim FilePathAlt As String ' name of path for alternative imaging
+        Dim FileNameAlt As String ' name of file for alternative imaging
+        Dim AcquireAltImage As Boolean
+        AcquireAltImage = False
+        'if we have subpositions
+        If GridScan_nColumnsub.Value * GridScan_nRowsub.Value > 1 Then
+            If ((RowSub - 1) * UBound(posGridX, 4) + ColSub) Mod TextBox_RoundAlterLocation = 0 Then
+                AcquireAltImage = True
+            End If
+        ElseIf ((Row - 1) * UBound(posGridX, 2) + Col) Mod TextBox_RoundAlterLocation = 0 Then
+            AcquireAltImage = True
+        End If
+
+        If AcquireAltImage Then
             Time = Timer
             If CheckBoxActiveAutofocus Then
                 Offset = BSliderZOffset
@@ -2401,24 +2500,20 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
                 Exit Function
             End If
             'center the slide
-            Recenter (Znew + Offset)
-
-            If Not WaitForRecentering(Znew + Offset) Then
+            If Not Recenter_pre(Znew + Offset) Then
                 Exit Function
             End If
-            
-            If GridScan_nColumnsub.Value * GridScan_nRowsub.Value > 1 And ((RowSub - 1) * UBound(posGridXsub, 1) + ColSub) Mod TextBox_RoundAlterLocation = 0 Then
-                FilePath = DatabaseTextbox.Value & "\" & TextBoxFileName.Value & "--Alt" & FileNameID & ".lsm" ' fullpath of alternative file
-                If Not StartAlternativeImaging(RecordingDoc, FilePath, _
-                    TextBoxFileName.Value & "--Alt" & FileNameID & ".lsm") Then
+
+            If TextBoxFileName.Value <> "" Then
+                FilePathAlt = DatabaseTextbox.Value & "\" & TextBoxFileName.Value & "_Alt_" & FileNameID & ".lsm" ' fullpath of alternative file
+                FileNameAlt = TextBoxFileName.Value & "_Alt_" & FileNameID & ".lsm"
+            Else
+                FilePathAlt = DatabaseTextbox.Value & "\" & "Alt_" & FileNameID & ".lsm" ' fullpath of alternative file
+                FileNameAlt = "Alt_" & FileNameID & ".lsm"
+            End If
+            ' if we use subpositions
+            If Not StartAlternativeImaging(RecordingDoc, FilePathAlt, FileNameAlt) Then
                     Exit Function
-                End If
-            ElseIf ((Row - 1) * UBound(posGridX, 1) + Col) Mod TextBox_RoundAlterLocation = 0 Then
-                FilePath = DatabaseTextbox.Value & "\" & TextBoxFileName.Value & "--Alt" & FileNameID & ".lsm" ' fullpath of alternative file
-                If Not StartAlternativeImaging(RecordingDoc, FilePath, _
-                    TextBoxFileName.Value & "--Alt" & FileNameID & ".lsm") Then
-                    Exit Function
-                End If
             End If
             
             If Log Then
@@ -2427,9 +2522,12 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
                 LogFile.Close
             End If
             
-            DisplayProgress "Autofocus: Wait for recenter", RGB(0, &HC0, 0)
+            DisplayProgress "Autofocus: Wait for recenter after alternative imaging", RGB(0, &HC0, 0)
             Time = Timer
-            WaitForRecentering (Znew + Offset)
+            If Not Recenter_post(Znew + Offset) Then
+                Exit Function
+            End If
+            
             If Log Then
                 Time = Timer - Time
                 SafeOpenTextFile LogFileName, LogFile, FileSystem
@@ -2448,8 +2546,8 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
     '''''''''''''''''''''''''''''''''''''
     '*Begin Normal acquisition imaging**'
     '''''''''''''''''''''''''''''''''''''
-    DisplayProgress "Acquiring at current location" & vbCrLf & _
-                    "Repetition: " & RepetitionNumber, RGB(&HC0, &HC0, 0)
+    DisplayProgress "Acquiring  Location   " & TotPos & "/" & UBound(posGridX, 1) * UBound(posGridX, 2) * UBound(posGridX, 3) * UBound(posGridX, 4) & vbCrLf & _
+                    "                   Repetition  " & RepetitionNumber & "/" & BSliderRepetitions.Value, RGB(&HC0, &HC0, 0)
     If Not ActivateAcquisitionTrack(GlobalAcquisitionRecording) Then           'An additional control....
         MsgBox "No track selected for Acquisition! Cannot Acquire!"
         ScanStop = True
@@ -2464,10 +2562,10 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
     End If
     'center the slide
     Time = Timer
-    Recenter (Znew + Offset)
-    If Not WaitForRecentering(Znew + Offset) Then
+    If Not Recenter_pre(Znew + Offset) Then
         Exit Function
     End If
+
     If Log Then
         Time = Timer - Time
         Pos = Lsm5.Hardware.CpFocus.Position
@@ -2510,7 +2608,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
     End If
 
     'wait that slice recentered after acquisition
-    If Not WaitForRecentering(Znew + Offset) Then
+    If Not Recenter_post(Znew + Offset) Then
         Exit Function
     End If
     
@@ -2526,6 +2624,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
         End If
         LogFile.Close
     End If
+    
     If ScanPause Then
         If Not pause Then ' Pause is true is Resume
             Exit Function
@@ -2548,6 +2647,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
     End If
 
     If Not CheckBoxActiveOnlineImageAnalysis Then ' without MicroPilot
+        ' TODO: Revise all this code
         If BleachTable(RepetitionNumber) = True Then   'Check if we're performing a bleach before image acquisition
             Set Track = Lsm5.DsRecording.TrackObjectBleach(Success)
             If Success Then
@@ -2565,7 +2665,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
                 MsgBox ("Could not set bleach track. Did not bleach.")
             End If
             If Row = UBound(posGridX, 1) And Col = UBound(posGridX, 2) Then
-                If RowSub = UBound(posGridXsub, 1) And Col = UBound(posGridXsub, 2) Then  'Allows again to do an extrableach at the en
+                If RowSub = UBound(posGridX, 3) And Col = UBound(posGridX, 4) Then  'Allows again to do an extrableach at the end (Why???)
                     ExtraBleachButton.Caption = "Bleach"
                     ExtraBleachButton.BackColor = &H8000000F
                 End If
@@ -2573,16 +2673,15 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
         
         End If
         ' todo:
-        ' but where is the bleaching image stored ??
+        ' but where is the bleaching image stored ?? Bleaching should be revised !!
     End If
                     
     ''''redefine new position
     Xold = Xnew
     Yold = Ynew
     Zold = Znew
-    'compute potential new positions for acquistion image
+    'compute potential new positions for later acquistion
     If TrackingToggle And Not CheckBoxActiveGridScan Then 'This is if we're doing some postacquisition tracking (not possible with Grid) this is done before Micropilot analysis
-        
         DisplayProgress "Tracking and computing new coordinates of " & vbCrLf & _
                         "Well/Position Row: " & Row & ", Column: " & Col & vbCrLf & _
                         "subposition   Row: " & RowSub & ", Column: " & ColSub & vbCrLf, RGB(&HC0, &HC0, 0)
@@ -2613,14 +2712,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
         SaveSetting "OnlineImageAnalysis", "macro", "Refresh", 0
         SaveSetting "OnlineImageAnalysis", "macro", "code", 1
         'recenter
-        Recenter (Zold)
-        If Not FailSafeMoveStageZ(Zold) Then
-            Exit Function
-        End If
-        If Not WaitForRecentering(Zold) Then
-            Exit Function
-        End If
-        
+        Recenter_pre (Zold)
         If Not MicroscopePilot(RecordingDoc, BleachingActivated, HighResExperimentCounter, HighResCounter, HighResArrayX, HighResArrayY, HighResArrayZ, _
         Row, Col, RowSub, ColSub) Then
             Exit Function
@@ -2847,7 +2939,7 @@ Public Sub MassCenter(Context As String)
     If LineSum = 0 Then
         YMass = 0
     Else
-        YMass = LineWeight / LineSum                                       'Normalizes the weights to get the center of mass
+        YMass = Round(LineWeight / LineSum, PrecXY)                                       'Normalizes the weights to get the center of mass
     End If
 
     ColSum = 0
@@ -2863,7 +2955,7 @@ Public Sub MassCenter(Context As String)
     If ColSum = 0 Then
         XMass = 0
     Else
-        XMass = ColWeight / ColSum
+        XMass = Round(ColWeight / ColSum, PrecXY)
     End If
 
     FrameSum = 0
@@ -2880,7 +2972,7 @@ Public Sub MassCenter(Context As String)
     If FrameSum = 0 Then
         ZMass = 0
     Else
-        ZMass = FrameWeight / FrameSum
+        ZMass = Round(FrameWeight / FrameSum, PrecZ)
     End If
         
 End Sub
@@ -3075,21 +3167,7 @@ End Sub
 
 
 
-Private Sub PauseButton_Click()
-    If Running Then
-        If ScanPause = False Then
-            ScanPause = True
-            PauseButton.Caption = "RESUME"
-            PauseButton.BackColor = 12648447
-        Else
-            ScanPause = False
-            PauseButton.Caption = "PAUSE"
-            PauseButton.BackColor = &H8000000F
-        End If
-    Else
-        MsgBox "The acquisition has not started yet or is already finished. Cannot pause."
-    End If
-End Sub
+
 
 
 '''''
@@ -3763,6 +3841,11 @@ Public Function ActivateAutofocusTrack(Recording As DsRecording, posZ As Double,
     Recording.FrameSpacing = BSliderZStep.Value
     Recording.FramesPerStack = NoFrames
     Recording.TrackObjectByMultiplexOrder(AutofocusTrack, 1).SampleObservationTime = pixelDwell
+    Lsm5.DsRecording.FrameSpacing = BSliderZStep.Value
+    Lsm5.DsRecording.FramesPerStack = NoFrames
+'    If ZEN = "2010" Then
+'        Recenter_pre (posZ)
+'    End If
     Lsm5.DsRecording.Copy Recording
     ' need to do it twice:  set new pixelDwell and FrameSpacing (in case it hase not been set on the first go)
     Lsm5.DsRecording.TrackObjectByMultiplexOrder(AutofocusTrack, 1).SampleObservationTime = pixelDwell
@@ -3909,10 +3992,15 @@ Private Function ActivateZoomTrack(Recording As DsRecording) As Boolean
     Lsm5.DsRecording.Copy Recording
     Lsm5.DsRecording.TimeSeries = True
     Lsm5.DsRecording.StacksPerRecord = TextBoxZoomCycles.Value
-
+    Lsm5.DsRecording.ScanMode = "Stack"
+    If CheckBoxHRZ.Value Then
+        Lsm5.DsRecording.SpecialScanMode = "ZScanner"
+    Else
+        Lsm5.DsRecording.SpecialScanMode = "FocusStep"
+    End If
     'set the correct dwelltime
     Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime = GlobalBackupSampleObservationTime
-         
+
     ActivateZoomTrack = FunSuccess
     
 End Function
@@ -4506,7 +4594,7 @@ HighResCounter As Integer, HighResExperimentCounter As Integer, Row As Long, Col
     Dim Zoomdifftime As Double
     Dim Cnt As Integer
     Dim fullpathname As String
-    
+    Dim Time As Double
     Dim X As Double
     Dim Y As Double
     Dim Z As Double
@@ -4553,58 +4641,87 @@ HighResCounter As Integer, HighResExperimentCounter As Integer, Row As Long, Col
                     Exit Function
                 End If
                 'center acquisition (this should be already at correct position after AF)
-                Recenter (HighResArrayZ(highrespos))
-                
-                'move stage if required
-                If Round(HighResArrayZ(highrespos), 1) <> Round(Lsm5.Hardware.CpFocus.Position, 1) Then
-                    If Not FailSafeMoveStageZ(HighResArrayZ(highrespos)) Then
-                        Exit Function
-                    End If
-                End If
-                If Not WaitForRecentering(HighResArrayZ(highrespos)) Then
-                    Exit Function
-                End If
+                Recenter_pre (HighResArrayZ(highrespos))
                 
                 'Autofocus. This does an extra Autofocus also for the HighresImaging with the same parameters as Autofocus
-                If CheckBoxZoomAutofocus.Value = True Then
-                    DisplayProgress "Micropilot Code 5 - Autofocus acquire", RGB(0, &HC0, 0)
-                    If Not Autofocus_StackShift(RecordingDoc) Then
-                        BatchHighresImagingRoutine = False
+                If CheckBoxZoomAutofocus.Value Then
+                    DisplayProgress "Micropilot - Autofocus activate track and recenter...", RGB(0, &HC0, 0)
+                    If Not AutofocusForm.ActivateAutofocusTrack(GlobalAutoFocusRecording, posTempZ) Then
+                        MsgBox "No track selected for Autofocus! Cannot Autofocus!"
                         Exit Function
                     End If
+                    
+                    Time = Timer
+                    If Not Recenter_pre(HighResArrayZ(highrespos)) Then
+                        Exit Function
+                    End If
+
+                    If Log Then
+                        Time = Timer - Time
+                        SafeOpenTextFile LogFileName, LogFile, FileSystem
+                        LogFile.WriteLine ("% Micropilot: Recenter for Micropilot Autofocus Time " & Time & ", repetions (max 9) " & Round(Time / 0.4))
+                        If (ZEN = "2010") Or (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
+                            LogFile.WriteLine ("% Micropilot: Target Central slide AF " & HighResArrayZ(highrespos) & "; obtained Central slide " & Lsm5.Hardware.CpFocus.Position & "; position " & Lsm5.Hardware.CpFocus.Position)
+                        Else
+                            LogFile.WriteLine ("% Micropilot: Target Central slide AF " & HighResArrayZ(highrespos) & "; obtained Central slide " & _
+                            Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + Lsm5.Hardware.CpFocus.Position & "; position " & Lsm5.Hardware.CpFocus.Position)
+                        End If
+                        LogFile.Close
+                    End If
+                    ' take a z-stack and finds the brightest plane:
+                    DisplayProgress "Micropilot - Autofocus acquire ...", RGB(0, &HC0, 0)
+                    If Not newMacros.Autofocus_StackShift(RecordingDoc) Then
+                       Exit Function
+                    End If
                     ' move the xyz to the right position
-                    DisplayProgress "Micropilot Code 5 - Autofocus move stage", RGB(0, &HC0, 0)
                     ComputeShiftedCoordinates XMass, YMass, ZMass, X, Y, Z
-                    If CheckBoxAutofocusTrackXY And ScanFrameToggle Then
+                    If CheckBoxAutofocusTrackXY.Value And ScanFrameToggle.Value Then
+                        DisplayProgress "Micropilot - Autofocus move XY stage", RGB(0, &HC0, 0)
                         If Not FailSafeMoveStageXY(X, Y) Then
                             Exit Function
                         End If
                     End If
-                    'Wait for recentering
-                    If Not WaitForRecentering(HighResArrayZ(highrespos)) Then
+                
+                    If Log Then
+                        SafeOpenTextFile LogFileName, LogFile, FileSystem
+                        LogFile.WriteLine ("% Micropilot: AF computed position XYZ  " & X & ", " & Y & ", " & Z & ". Center of mass XYZ" & XMass & ", " & YMass & ", " & ZMass)
+                        LogFile.Close
+                    End If
+                
+                    'wait for recentering
+                    DisplayProgress "Micropilot - Wait for recentering after acquisition AF...", RGB(0, &HC0, 0)
+                    Time = Timer
+                    If Not Recenter_post(HighResArrayZ(highrespos)) Then
                         Exit Function
+                    End If
+                    
+                    If Log Then
+                        Time = Timer - Time
+                        SafeOpenTextFile LogFileName, LogFile, FileSystem
+                        LogFile.WriteLine ("% Micropilot: Recenter time after AF: " & Time & "; repetitions (max 9) " & Round(Time / 0.4))
+                        LogFile.Close
                     End If
                 End If
         
-                ' Load AcquisitionSettings
+                DisplayProgress "Micropilot - activate micropilot acquisition track and recenter ...", RGB(0, &HC0, 0)
                 If Not ActivateZoomTrack(GlobalZoomRecording) Then
                     MsgBox " No Track selected for Micropilot! Macro stops here"
-                    ScanStop = True
-                    StopAcquisition
                     Exit Function
                 End If
                 
                 ' set central slice before moving
-                Recenter (Z + TextBoxZoomAutofocusZOffset.Value)
+                If Not Recenter_pre(Z + TextBoxZoomAutofocusZOffset.Value) Then
+                    Exit Function
+                End If
                 
                 If BleachingActivated Then
                                 
                     DisplayProgress "Bleaching...", &HFF00FF
                         
                     Set Track = Lsm5.DsRecording.TrackObjectBleach(Success)
-                    If Success Then ' do only one stack
+                    If Success Then ' This Needs to be checked again
                         'move stage
-                        If Not FailSafeMoveStageZ(Z) Then
+                        If Not FailSafeMoveStageZ(Z + TextBoxZoomAutofocusZOffset.Value) Then
                             Exit Function
                         End If
                         Track.Acquire = True
@@ -4626,10 +4743,9 @@ HighResCounter As Integer, HighResExperimentCounter As Integer, Row As Long, Col
                             If GetInputState() <> 0 Then
                                 DoEvents
                                 If ScanStop Then
-                                BatchHighresImagingRoutine = False
-                                Exit Function
+                                    Exit Function
+                                End If
                             End If
-                        End If
                         Loop
                         
                         Track.UseBleachParameters = False  'switch off the bleaching
@@ -4639,54 +4755,40 @@ HighResCounter As Integer, HighResExperimentCounter As Integer, Row As Long, Col
                     End If
                 
                                  
-                    'Save Image  ' modified by Tischi
-                    FileNameID = FileName((Row - 1) * UBound(posGridX, 1) + Col, (RowSub - 1) * UBound(posGridXsub, 1) + ColSub, -1)
+                    'Save Image
+                    FileNameID = FileName(Row, Col, RowSub, ColSub, -1)
                     ' e.g. name--Bleach--HRExp00001--HRPos00001--W00001--P00001.lsm
-                    fullpathname = DatabaseTextbox.Value & "\" & TextBoxFileName.Value & "--Bleach" & "--HRExp" & ZeroString(5 - Len(CStr(HighResExperimentCounter))) & _
-                    HighResExperimentCounter & "--HRPos" & ZeroString(5 - Len(CStr(highrespos))) _
+                    fullpathname = DatabaseTextbox.Value & "\" & TextBoxFileName.Value & "_Bleach" & "_HRExp" & ZeroString(3 - Len(CStr(HighResExperimentCounter))) & _
+                    HighResExperimentCounter & "_HRPos" & ZeroString(3 - Len(CStr(highrespos))) _
                     & highrespos & FileNameID & ".lsm"
                     SaveDsRecordingDoc RecordingDoc, fullpathname
-                    DisplayProgress "Micropilot Code 5 - SaveImage", RGB(0, &HC0, 0)
+                    DisplayProgress "Micropilot Code Bleach - SaveImage", RGB(0, &HC0, 0)
                     
                 Else ' normal acquistion (non bleaching mode)
-                    
-                    Lsm5.DsRecording.ScanMode = "Stack"
-                    If CheckBoxHRZ.Value Then
-                        Lsm5.DsRecording.SpecialScanMode = "ZScanner"
-                    Else
-                        Lsm5.DsRecording.SpecialScanMode = "FocusStep"
-                    End If
+
                     'Acquisition
-                    DisplayProgress "Micropilot Code 5 - Start Scan", RGB(0, &HC0, 0)
+                    DisplayProgress "Micropilot  - Start acquisition", RGB(0, &HC0, 0)
                     If highrespos = 1 Then
                         ZoomStartTime = CDbl(GetTickCount) * 0.001
                     End If
                     DisplayProgress "Acquisition HighRes Position " & highrespos, RGB(&HC0, &HC0, 0)
                     
-                    If Not WaitForRecentering(Z + TextBoxZoomAutofocusZOffset.Value) Then
-                        Exit Function
-                    End If
-                    
                     If Not ScanToImageNew(RecordingDoc) Then
                         Exit Function
                     End If
-
-                                    
-                    FileNameID = FileName((Row - 1) * UBound(posGridX, 1) + Col, (RowSub - 1) * UBound(posGridXsub, 1) + ColSub, RepetitionNumber)
-                    fullpathname = DatabaseTextbox.Value & "\" & TextBoxFileName.Value & "--HRExp" & FileNameID & "\"
-                    FileNameID = FileName((Row - 1) * UBound(posGridX, 1) + Col, (RowSub - 1) * UBound(posGridXsub, 1) + ColSub, ZoomRepetitionNumber)
-                    
-                    ' e.g. name--HRExp00001--HRPos00001--W00001--P00001--T00001.lsm where T is for ZoomRepetitionNumber
-                    fullpathname = fullpathname & TextBoxFileName.Value & "--HRExp" & ZeroString(5 - Len(CStr(HighResExperimentCounter))) & _
-                    HighResExperimentCounter & "--HRPos" & ZeroString(5 - Len(CStr(highrespos))) _
+                
+                    FileNameID = FileName(Row, Col, RowSub, ColSub, RepetitionNumber)
+                    fullpathname = DatabaseTextbox.Value & "\" & TextBoxFileName.Value & "_HRExp" & FileNameID & "\"
+                    FileNameID = FileName(Row, Col, RowSub, ColSub, ZoomRepetitionNumber)
+                    fullpathname = fullpathname & TextBoxFileName.Value & "_HRExp" & ZeroString(3 - Len(CStr(HighResExperimentCounter))) & _
+                    HighResExperimentCounter & "_HRPos" & ZeroString(3 - Len(CStr(highrespos))) _
                     & highrespos & FileNameID & ".lsm"
-
+                    
+                    DisplayProgress "Micropilot - SaveImage", RGB(0, &HC0, 0)
                     If Not SaveDsRecordingDoc(RecordingDoc, fullpathname) Then
                         Exit Function
                     End If
-        
-                    DisplayProgress "Micropilot Code 5 - SaveImage", RGB(0, &HC0, 0)
-                        
+  
                     ' Tischi: Here the Location-tracking in High-resmode code needs be added!
 
                 End If ' BleachingActivated
@@ -4770,56 +4872,86 @@ End Function
 '       [Z]     - Abosolute position of central slice
 '   position central slice is Z = Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + Lsm5.Hardware.CpFocus.Position
 ''''
-Public Sub Recenter(Z As Double)
+Public Function Recenter_pre(Z As Double) As Boolean
+    If Not Recenter(Z) Then
+        Exit Function
+    End If
+    If Not WaitForRecentering(Z) Then
+        Exit Function
+    End If
+    Recenter_pre = True
+End Function
+
+Public Function Recenter_post(Z As Double) As Boolean
+    If Not WaitForRecentering(Z) Then
+        Exit Function
+    End If
+    Recenter_post = True
+End Function
+
+Public Function Recenter(Z As Double) As Boolean
     Dim i As Integer
     If ZEN = "2010" Then
         For i = 1 To 1
-            Recenter2010 Z
+            If Not Recenter2010(Z) Then
+                Exit Function
+            End If
         Next i
     End If
     If ZEN = "2011" Then
-        Recenter2011 Z
+        If Not Recenter2011(Z) Then
+            Exit Function
+        End If
     End If
+    Recenter = True
+End Function
 
-End Sub
-
-Public Sub Recenter2011(Z As Double)
+Public Function Recenter2011(Z As Double) As Boolean
     Dim MoveStage As Boolean
     Dim Pos As Double
     Pos = Lsm5.Hardware.CpFocus.Position
     MoveStage = False
-    If CheckBoxHRZ Or Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan" Then
+    ' only move stage when required
+    If Lsm5.DsRecording.SpecialScanMode = "ZScanner" Or (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Then
         MoveStage = True
     End If
     Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + Pos - Z
     If MoveStage Then
-        If Round(Pos, 2) <> Round(Z, 2) Then ' move only if necessary
-            FailSafeMoveStageZ (Z)
+        If Round(Pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
+            If Not FailSafeMoveStageZ(Z) Then
+                Exit Function
+            End If
         End If
     End If
-    If CheckBoxHRZ Then 'sets again !TO BE CHECKED
+    If Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then 'sets again !TO BE CHECKED
         Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + Pos - Z
     End If
     DoEvents
-End Sub
+    Recenter2011 = True
+End Function
 
 
-Public Sub Recenter2010(Z As Double)
+Public Function Recenter2010(Z As Double) As Boolean
     Dim MoveStage As Boolean
     Dim Pos As Double
     Pos = Lsm5.Hardware.CpFocus.Position
     MoveStage = True 'test this with some time. With True it works fine
+
     Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + Pos - Z
+
     If MoveStage Then
-        If Round(Pos, 2) <> Round(Z, 2) Then
-            FailSafeMoveStageZ (Z)
+        If Round(Pos, PrecZ) <> Round(Z, PrecZ) Then
+            If Not FailSafeMoveStageZ(Z) Then
+                Exit Function
+            End If
         End If
     End If
-    If CheckBoxHRZ Then 'sets again !TO BE CHECKED ' test this
-        Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + Pos - Z
-    End If
+'    If Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then 'sets again !TO BE CHECKED ' test this
+'        Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + Pos - Z
+'    End If
     DoEvents
-End Sub
+    Recenter2010 = True
+End Function
 
 
 

@@ -54,7 +54,7 @@ Public Function CheckDir(ByVal PathName As String) As Boolean
     CheckDir = True
     Exit Function
 ErrorDir:
-    MsgBox "Was not able to create OutputDirectory! Please check disc/pathname!"
+    MsgBox "Was not able to create Directory " & PathName & "  please check disc/pathname!"
 End Function
 
 ''''
@@ -73,28 +73,35 @@ End Function
 '''''
 '   FileName(iPosition As Integer, iSubposition As Integer, iRepetition As Integer ) As String
 '   Returns string by concatanating well, and sublocation and timepoint. A negative point will omit the string
-'       [iPosition] In - Well or large grid position
-'       [iSubPosition] In - Meandering grid position
-'       [iRepetition]  In - Timepoint/repetition
+'       [Row] In - Row
+'       [Col] In - Col
+'       [RowSub]  In - subrow
+'       [ColSub]  In - subcol
+'       [iRepetition] In - time point
 '''''
-Public Function FileName(iPosition As Long, iSubposition As Long, iRepetition As Integer) As String
+Public Function FileName(Row As Long, Col As Long, RowSub As Long, ColSub As Long, iRepetition As Integer) As String
     'convert numbers into a string
+    Dim iWell As Long
+    Dim iPosition As Long
+
     Dim name As String
     Dim nrZero As Integer
     Dim maxZeros As Integer
-    maxZeros = 5
+    maxZeros = 3
     name = ""
+    iWell = (Row - 1) * UBound(posGridX, 2) + Col
+    iPosition = (RowSub - 1) * UBound(posGridX, 4) + ColSub
+    If iWell >= 0 Then
+        nrZero = maxZeros - Len(CStr(iWell))
+        name = name + "W" + ZeroString(nrZero) + CStr(iWell)
+    End If
     If iPosition >= 0 Then
         nrZero = maxZeros - Len(CStr(iPosition))
-        name = name + "--W" + ZeroString(nrZero) + CStr(iPosition)
-    End If
-    If iSubposition >= 0 Then
-        nrZero = maxZeros - Len(CStr(iSubposition))
-        name = name + "--P" + ZeroString(nrZero) + CStr(iSubposition)
+        name = name + "_P" + ZeroString(nrZero) + CStr(iPosition)
     End If
     If iRepetition >= 0 Then
         nrZero = maxZeros - Len(CStr(iRepetition))
-        name = name + "--T" + ZeroString(nrZero) + CStr(iRepetition)
+        name = name + "_T" + ZeroString(nrZero) + CStr(iRepetition)
     End If
     FileName = name
 End Function
@@ -109,9 +116,12 @@ Public Function ZeroString(NrofZeros As Integer) As String
     Dim i As Integer
     Dim name As String
     name = ""
-    For i = 1 To NrofZeros
-        name = name + "0"
-    Next i
+    If NrofZeros > 0 Then
+        For i = 1 To NrofZeros
+            name = name + "0"
+        Next i
+    End If
+        
     ZeroString = name
 End Function
 
