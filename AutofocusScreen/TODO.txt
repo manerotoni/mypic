@@ -25,6 +25,8 @@ Minor Feature: Update GUI when changed setting (the update only occurs when reco
 Major: Manual should be put up to date edited to explain better zoom-1 piezo, inactivated (?). These are all not very clear.
        Explain how to start the macro with an example image
 
+FEature: ImageJ automatic Create a MAximal projection
+
 ----------------------------------------
 
 Done:

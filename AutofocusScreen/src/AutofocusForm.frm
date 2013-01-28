@@ -28,6 +28,18 @@ Public posTempZ  As Double                  'This is position at start after pus
 Private Const DebugCode = False              'sets key to run tests visible or not
 Private Const LogCode = True              'sets key to run tests visible or not
 
+Private Sub BSliderLineSize_Change()
+
+End Sub
+
+
+
+Private Sub CheckBoxHRZ_Click()
+    
+    CheckBoxFastZline.Visible = Not CheckBoxHRZ
+
+End Sub
+
 Private Sub StopAfterRepetition_Click()
     If Not Running Then
         StopAfterRepetition.Value = False
@@ -114,8 +126,12 @@ Private Sub Re_Start()
         CheckBoxHighSpeed.Value = True
         BSliderFrameSize.Min = 16
         BSliderFrameSize.Max = 1024
+        BSliderLineSize.Min = 16
+        BSliderLineSize.Max = 1024
         BSliderFrameSize.Step = 8
+        BSliderLineSize.Step = 8
         BSliderFrameSize.StepSmall = 4
+        BSliderLineSize.StepSmall = 4
         Lsm5Vba.Application.ThrowEvent eRootReuse, 0
         DoEvents
     ElseIf bLIVE Then
@@ -124,6 +140,10 @@ Private Sub Re_Start()
         BSliderFrameSize.Max = 1024
         BSliderFrameSize.Step = 128
         BSliderFrameSize.StepSmall = 128
+        BSliderLineSize.Min = 128
+        BSliderLineSize.Max = 1024
+        BSliderLineSize.Step = 128
+        BSliderLineSize.StepSmall = 128
         Lsm5Vba.Application.ThrowEvent eRootReuse, 0
         DoEvents
     ElseIf bCamera Then
@@ -185,11 +205,10 @@ Private Sub Re_Start()
     Else
         Log = False
     End If
-    If DebugCode Then
-        RunTests.Visible = True
-    Else
-        RunTests.Visible = False
-    End If
+
+    RunTests.Visible = DebugCode
+    CheckBoxAutofocusTrackZ.Visible = DebugCode
+
     Re_Initialize
     
     
@@ -297,6 +316,7 @@ Private Sub SwitchEnableAutofocusPage(Enable As Boolean)
     ScanFrameToggle.Enabled = Enable
     FrameSizeLabel.Enabled = Enable
     BSliderFrameSize.Enabled = Enable
+    BSliderLineSize.Enabled = Enable
     BSliderZOffset.Enabled = Enable
     SliderZOffsetLabel.Enabled = Enable
     BSliderZRange.Enabled = Enable
@@ -774,7 +794,6 @@ Private Sub RunTests_Click()
         '''''''
         'posTempZ = Zold
         If TestNr = 1 Then
-
             CheckBoxAutofocusTrackZ.Value = False
             CheckBoxTrack1.Value = False
             CheckBoxTrack2.Value = False
@@ -1006,12 +1025,12 @@ End Sub
 '       [TestNr]       - Number of the test, this sets the name of the image files and logfiles.
 '       [MaxTestRepeats] - Maximal number of tests for each repeat
 ''''
-Private Function RunTestAutofocusButton(RecordingDoc As DsRecordingDoc, TestNr As Integer, MaxTestRepeats As Integer, Optional puase As Integer = 5000) As Boolean
+Private Function RunTestAutofocusButton(RecordingDoc As DsRecordingDoc, TestNr As Integer, MaxTestRepeats As Integer, Optional FileName As String = "AutofocusTest", Optional pause As Integer = 5000) As Boolean
 
     Dim FilePath As String
     Dim TestRepeats As Integer
     TestRepeats = 1
-    LogFileName = GlobalDataBaseName & "\AutofocusLogTest" & TestNr & ".txt"
+    LogFileName = GlobalDataBaseName & "\" & FileName & TestNr & "Log" & ".txt"
     
     If Log Then
         SafeOpenTextFile LogFileName, LogFile, FileSystem
@@ -1019,19 +1038,20 @@ Private Function RunTestAutofocusButton(RecordingDoc As DsRecordingDoc, TestNr A
         LogFile.WriteLine "% MaxSpeed " & CheckBoxHighSpeed.Value & ", Zoom1 " & CheckBoxLowZoom.Value & ", Piezo " & CheckBoxHRZ.Value & ", AFTrackZ " & CheckBoxAutofocusTrackZ.Value & _
         ", AFTrackXY " & CheckBoxAutofocusTrackXY.Value
     End If
-    
+    FileName = FileName & TestNr & "_" & TestRepeats & ".lsm"
     While TestRepeats < MaxTestRepeats + 1
         DisplayProgress "Running Test " & TestNr & ". Repeat " & TestRepeats & "/" & MaxTestRepeats & ".......", RGB(0, &HC0, 0)
-        FilePath = GlobalDataBaseName & "\Test" & TestNr & "_" & TestRepeats
+        
+        FilePath = GlobalDataBaseName & FileName
         If Log Then
             SafeOpenTextFile LogFileName, LogFile, FileSystem
             LogFile.WriteLine " "
 
-            LogFile.WriteLine "% Save image in file " & FilePath & ".lsm"
+            LogFile.WriteLine "% Save image in file " & FilePath
             LogFile.Close
         End If
         DoEvents
-        Sleep (puase)
+        Sleep (pause)
         DoEvents
         If TestNr = 1 Then
             posTempZ = Round(posTempZ + (1 - 2 * Rnd) * 50, 1)
@@ -1047,12 +1067,12 @@ Private Function RunTestAutofocusButton(RecordingDoc As DsRecordingDoc, TestNr A
         End If
         
     
-        If Not AutofocusButtonRun(RecordingDoc, FilePath & "_AFImg.lsm") Then
+        If Not AutofocusButtonRun(RecordingDoc, GlobalDataBaseName & "AFimg_" & FileName) Then
             Exit Function
         End If
         'save file
         If ActivateAcquisitionTrack(GlobalAcquisitionRecording) Then
-            SaveDsRecordingDoc RecordingDoc, FilePath & ".lsm"
+            SaveDsRecordingDoc RecordingDoc, FilePath
         End If
         TestRepeats = TestRepeats + 1
         If ScanStop Then
@@ -1072,7 +1092,7 @@ End Function
 '       [TestNr]       - Number of the test, this sets the name of the image files and logfiles.
 '       [MaxTestRepeats] - Maximal number of tests for each repeat
 ''''
-Private Function RunTestFastZline(RecordingDoc As DsRecordingDoc, TestNr As Integer, MaxTestRepeats As Integer, pixelDwell As Double, FrameSize As Integer, pause As Integer) As Boolean
+Private Function RunTestFastZline(RecordingDoc As DsRecordingDoc, TestNr As Integer, MaxTestRepeats As Integer, pixelDwell As Double, FrameSize As Integer, Optional FileName As String = "AutofocusTest", Optional pause As Integer = 5000) As Boolean
 
     Dim FilePath As String
     Dim TestRepeats As Integer
@@ -1268,6 +1288,8 @@ Public Sub RestoreAcquisitionParameters()
     Lsm5.DsRecording.Copy GlobalBackupRecording
     Lsm5.DsRecording.FrameSpacing = GlobalBackupRecording.FrameSpacing
     Lsm5.DsRecording.FramesPerStack = GlobalBackupRecording.FramesPerStack
+
+    
     For i = 0 To Lsm5.DsRecording.TrackCount - 1
        Lsm5.DsRecording.TrackObjectByMultiplexOrder(i, 1).Acquire = GlobalBackupActiveTracks(i)
     Next i
@@ -1284,7 +1306,7 @@ Public Sub RestoreAcquisitionParameters()
         LogFile.WriteLine ("% Restore settings set and allow for central slice " & Time & " Counts (max 9) " & Round(Time / 0.4))
         LogFile.WriteLine (" ")
     End If
-    
+
 End Sub
 
 Public Function SetGetLaserPower(power As Double)
@@ -1398,9 +1420,14 @@ End Function
 '''
 Private Sub ScanLineToggle_Click()
     ScanFrameToggle.Value = Not ScanLineToggle.Value 'if ScanFrame is true ScanLine is false (you can only chose one of them)
-    FrameSizeLabel.Visible = ScanFrameToggle.Value   'FrameSize Label is only displayed if ScanFrame is activated
+    FrameSizeLabel.Visible = ScanLineToggle.Value   'FrameSize Label is only displayed if ScanFrame is activated
     BSliderFrameSize.Visible = ScanFrameToggle.Value 'FrameSize Slider is only displayed if ScanFrame is activated
     CheckBoxAutofocusTrackXY.Visible = ScanFrameToggle.Value
+    BSliderLineSize.Visible = ScanLineToggle.Value 'LineSize is only displayed if ScanFrame is activated
+    If ScanLineToggle.Value Then
+        FrameSizeLabel.Caption = "LineSize"
+    End If
+    CheckBoxFastZline.Visible = ScanLineToggle And Not CheckBoxHRZ
 End Sub
 
 '''
@@ -1412,6 +1439,10 @@ Private Sub ScanFrameToggle_Click()
     FrameSizeLabel.Visible = ScanFrameToggle.Value
     BSliderFrameSize.Visible = ScanFrameToggle.Value
     CheckBoxAutofocusTrackXY.Visible = ScanFrameToggle.Value
+    If ScanFrameToggle.Value Then
+        FrameSizeLabel.Caption = "FrameSize"
+    End If
+    CheckBoxFastZline.Visible = Not ScanFrameToggle.Value And Not CheckBoxHRZ
 End Sub
 
 
@@ -3670,8 +3701,43 @@ End Sub
 ''''''
 Public Function ActivateAutofocusTrack(Recording As DsRecording, posZ As Double, Optional pixelDwell As Double) As Boolean
     Dim i As Integer
+    Dim iZoom As Integer
     Dim TrackSuccess As Integer
     Dim FunSuccess As Boolean
+    Dim ZoomPixelSlice(1 To 9, 1 To 3) As Double
+    iZoom = -1
+    ' define here the Zoom pixelSize slice relation specificed for 256x1 line. pixeldWell rescales with 256/FrameSize
+    ZoomPixelSlice(1, 1) = 5
+    ZoomPixelSlice(2, 1) = 3.1
+    ZoomPixelSlice(3, 1) = 2
+    ZoomPixelSlice(4, 1) = 1.2
+    ZoomPixelSlice(5, 1) = 0.8
+    ZoomPixelSlice(6, 1) = 0
+    ZoomPixelSlice(7, 1) = 0
+    ZoomPixelSlice(8, 1) = 0
+    ZoomPixelSlice(9, 1) = 0
+    'pixel dwell
+    ZoomPixelSlice(1, 1) = 0.00000128 '1.28 us
+    ZoomPixelSlice(2, 2) = 0.0000016  '1.6
+    ZoomPixelSlice(3, 2) = 0.00000192 '1.92
+    ZoomPixelSlice(4, 2) = 0.00000256 '2.56
+    ZoomPixelSlice(5, 2) = 0.0000032  '3.2
+    ZoomPixelSlice(6, 2) = 0.00000512 '5.12
+    ZoomPixelSlice(7, 2) = 0.0000064  '6.4
+    ZoomPixelSlice(8, 2) = 0.0000128  '12.8
+    ZoomPixelSlice(9, 2) = 0.0000256  '25.6
+    
+    
+    'slice size
+    ZoomPixelSlice(1, 3) = 0.08
+    ZoomPixelSlice(2, 3) = 0.1
+    ZoomPixelSlice(3, 3) = 0.12
+    ZoomPixelSlice(4, 3) = 0.15
+    ZoomPixelSlice(5, 3) = 0.19
+    ZoomPixelSlice(6, 3) = 0.31
+    ZoomPixelSlice(7, 3) = 0.38
+    ZoomPixelSlice(8, 3) = 0.77
+    ZoomPixelSlice(9, 3) = 1.54
     
     FunSuccess = False
     ' Set all tracks to non-acquisition first
@@ -3726,74 +3792,72 @@ Public Function ActivateAutofocusTrack(Recording As DsRecording, posZ As Double,
     '*Setting for LSM system***'
     ''''''''''''''''''''''''''''
     If SystemName = "LSM" Then
-        
         '''How to do the Z-stacks
         If CheckBoxHRZ.Value Then                'Piezo
             Recording.SpecialScanMode = "ZScanner"
         Else
             Recording.SpecialScanMode = "FocusStep"
         End If
-                    
+        pixelDwell = GlobalBackupRecording.SamplesPerLine
+        'highspeed does set the pixeldwell time to its minimal possible value
+        If CheckBoxHighSpeed.Value Then
+            'compute maximal possible pixwelDwell for given zoom
+            For i = 1 To UBound(ZoomPixelSlice, 1) - 1
+                If Recording.ZoomX < ZoomPixelSlice(i, 1) And Recording.ZoomX >= ZoomPixelSlice(i + 1, 1) Then
+                    iZoom = i
+                    pixelDwell = ZoomPixelSlice(i, 2)
+                End If
+            Next i
+            'do biderectional scanning (tocheck if it is fine with Zscan)
+            If ScanFrameToggle Then
+                Recording.ScanDirection = 1
+            End If
+        Else
+            pixelDwell = GlobalBackupSampleObservationTime
+            Recording.ScanDirection = GlobalBackupRecording.ScanDirection
+        End If
+        
+        If iZoom < 0 Then
+            iZoom = 1
+        End If
+        
         '''''''''''''''''''''''''''
         '**Setting for line scan**'
         '''''''''''''''''''''''''''
         If ScanLineToggle.Value Then
-        
             Recording.ScanMode = "ZScan"             'This acquires  single X-Z image, like with "Range Select" button Z-stack Window.
+            Recording.SamplesPerLine = BSliderLineSize.Value
             Recording.LinesPerFrame = 1
-     
-            If CheckBoxHighSpeed.Value Then           'For Highspeed we change the settings otherwise use the standard settings as for Acquisition
-                Recording.SamplesPerLine = 256
-                pixelDwell = 0.00000256
-                If Not CheckBoxHRZ.Value Then         'OnTheFly speeds need to be adapted
-                    Recording.SpecialScanMode = "OnTheFly" 'aka: Fast Z-line in Z-Stack menu
-                    If BSliderZStep.Value < 0.15 Then
-                        pixelDwell = 0.00000256
-                    ElseIf BSliderZStep.Value < 0.19 Then
-                        pixelDwell = 0.0000032
-                    ElseIf BSliderZStep.Value < 0.31 Then
-                        pixelDwell = 0.00000512
-                    ElseIf BSliderZStep.Value < 0.38 Then
-                        pixelDwell = 0.0000064
-                    ElseIf BSliderZStep.Value < 0.77 Then
-                        pixelDwell = 0.0000128
-                    ElseIf BSliderZStep.Value < 1.54 Then
-                        pixelDwell = 0.0000256
-                    Else
-                        pixelDwell = 0.00000256
-                        Recording.SpecialScanMode = "FocusStep"
-                        DisplayProgress "Highest Z Step of 1.54 um with no piezo and Fast Z line has been reached. Autofocus uses slower Focus Step", RGB(&HC0, &HC0, 0)
-                    End If
-                End If
-                
-            Else ' Use GlobalAcquisitionsTrack as default for pixel dwell
-                Recording.SpecialScanMode = "FocusStep"
-                Recording.SamplesPerLine = GlobalBackupRecording.SamplesPerLine        'TODO: Check if a value is always given also in frame mode
-                pixelDwell = GlobalBackupSampleObservationTime
-                
+            If BSliderZStep.Value >= ZoomPixelSlice(i, 3) Then
+                 DisplayProgress "Highest Z Step of 1.54 um with no piezo and Fast " & _
+                 "Z line has been reached. Autofocus uses slower Focus Step", RGB(&HC0, &HC0, 0)
             End If
-            
+            If CheckBoxHRZ Then
+                Recording.SpecialScanMode = "ZScanner"
+            Else
+                If CheckBoxFastZline And BSliderZStep.Value < ZoomPixelSlice(i, 3) Then
+                    Recording.SpecialScanMode = "OnTheFly" 'aka: Fast Z-line in Z-Stack menu
+                    For i = iZoom To UBound(ZoomPixelSlice, 1)
+                        If BSliderZStep.Value < ZoomPixelSlice(i, 3) Then
+                            pixelDwell = ZoomPixelSlice(i, 2)
+                            Exit For
+                        End If
+                    Next i
+                 Else
+                    Recording.SpecialScanMode = "FocusStep"
+                 End If
+            End If
         End If
         
         ''''''''''''''''''''''''''''
         '**Setting for frame scan**'
         ''''''''''''''''''''''''''''
         If ScanFrameToggle.Value Then
-        
             Recording.ScanMode = "Stack"                       'This is defining to acquire a Z stack of Z-Y images
             Recording.SamplesPerLine = BSliderFrameSize.Value  'If doing frame autofocussing it uses the userdefined frame size
             Recording.LinesPerFrame = BSliderFrameSize.Value
-            
-            If CheckBoxHighSpeed.Value Then
-               Recording.ScanDirection = 1                     'If Highspeed is selected it uses the bidirectionnal scanning
-               pixelDwell = (256 / BSliderFrameSize.Value) * 0.00000256
-            Else                                               ' Default is GlobalAcquisitionTrack
-               Recording.ScanDirection = GlobalBackupRecording.ScanDirection
-               pixelDwell = GlobalBackupSampleObservationTime
-            End If
-            
         End If
-    
+        pixelDwell = pixelDwell * 256 / Recording.SamplesPerLine
     End If  ' If SystemName = "LSM"
     
     '''''''''''''''''''''''''''''
