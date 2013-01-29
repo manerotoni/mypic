@@ -207,3 +207,55 @@ error_exit:
 
 End Function
 
+'''''
+'   UsedDevices40(bLSM As Boolean, bLIVE As Boolean, bCamera As Boolean)
+'   Ask which system is the macro runnning on
+'       [bLSM]  In/Out - True if LSM system
+'       [bLive] In/Out - True for LIVE system
+'       [bCamera] In/Out - True if Camera is used
+''''
+Public Sub UsedDevices40(bLSM As Boolean, bLIVE As Boolean, bCamera As Boolean)
+    Dim Scancontroller As AimScanController
+    Dim TrackParameters As AimTrackParameters
+    Dim Size As Long
+    Dim lTrack As Long
+    Dim eDeviceMode As Long
+
+    bLSM = False
+    bLIVE = False
+    bCamera = False
+    Set Scancontroller = Lsm5.ExternalDsObject.Scancontroller
+    Set TrackParameters = Scancontroller.TrackParameters
+    If TrackParameters Is Nothing Then Exit Sub
+    Size = TrackParameters.GetTrackArraySize
+    For lTrack = 0 To Size - 1
+            eDeviceMode = TrackParameters.TrackDeviceMode(lTrack)
+            Select Case eDeviceMode
+                Case eAimDeviceModeLSM
+                    bLSM = True
+
+                Case eAimDeviceModeLSM_ChannelMode
+                    bLSM = True
+
+                Case eAimDeviceModeLSM_NDD
+                    bLSM = True
+
+                Case eAimDeviceModeLSM_DD
+                    bLSM = True
+
+                Case eAimDeviceModeSpectralImager
+                    bLSM = True
+                    Exit Sub
+
+                Case eAimDeviceModeRtScanner
+                    bLIVE = True
+                    Exit Sub
+
+                Case eAimDeviceModeCamera1
+                    bCamera = True
+                    Exit Sub
+
+            End Select
+    Next lTrack
+End Sub
+

@@ -87,10 +87,17 @@ Public Const vbNo = 7    ' No
 
 Public Const PrecZ = 2                     'precision of Z passed for stage movements i.e. Z = Round(Z, PrecZ)
 Public Const PrecXY = 2                    'precision of X and Y passed for stage movements
+Public Const ZBacklash = 0                 'ToDo: is it still recquired?.
+                                           'Has to do with the movements of the focus wheel that are "better"
+                                           'if they are long enough. For amoment a test did not gave significant differences
+
 
 '''''''''''''''''''''
 '''GLOBAL VARIABLE'''
 '''''''''''''''''''''
+
+
+
 Public X11 As Double
 Public X12 As Double
 Public X21 As Double
@@ -585,8 +592,9 @@ Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
         LogFile.WriteLine "% Autofocus_stackshift compute time: " & Timer - Time
         LogFile.Close
     End If
-    
-    Autofocus_StackShift = True
+    If Not ScanStop Then
+        Autofocus_StackShift = True
+    End If
 End Function
 
 
