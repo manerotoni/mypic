@@ -1,0 +1,330 @@
+commit 8f9dcf8717669a42a217a03584e6db73a0677490
+Author: Antonio Politi <politi@embl.de>
+Date:   Tue Jan 29 01:50:28 2013 +0100
+
+    Verision 2.0.6 Concat + test minipage for AFscreen
+    
+    * Debug test page to run different tests.
+    * save of AFimage if wished
+
+commit 193d8eacbaef2a58ce74fac4a0e8f1c0ca97a5a4
+Author: Antonio Politi <politi@embl.de>
+Date:   Mon Jan 28 08:23:08 2013 +0100
+
+    LineSize and update pixeldwells
+    
+    * Introduce a line size for ScanLine.
+    * Pixeldwell time should fit different sized lines now
+
+commit 634e1c8935c44011464656d6b439a665a8a9da6d
+Author: Antonio Politi <politi@embl.de>
+Date:   Thu Jan 24 13:50:23 2013 +0100
+
+    Source of concat function
+    
+    Upload of source files for concat
+
+commit 0eb641a47ebfeecdef6468716800c661fbbc27c0
+Author: Antonio Politi <politi@embl.de>
+Date:   Thu Jan 24 10:56:55 2013 +0100
+
+    Version 2.0.5
+    
+    * Can run with mixed acquisition of piezo for AF and stage for
+    acquisition (not recommanded anyway)
+    * naming changed to Wxxx_Pxxx_Txxx.lsm or prefix_Wxxx_Pxxx_Txxx.lsm
+
+commit 842d3ce06b868ffdcec37b6195027647349762f8
+Author: Antonio Politi <politi@embl.de>
+Date:   Tue Jan 22 19:17:01 2013 +0100
+
+    Corrected naming for files using in grid
+    
+    Stop after end of repetition button.
+    Stop button activation is visible
+    corrected error when start without a folder. When start is pushed the
+    macro checks if folder exists and eventually creates a new one or stops
+
+commit d7e0a4fb52fa3a83493b7906ab8862f54eaca991
+Author: Antonio Politi <politi@embl.de>
+Date:   Tue Jan 22 11:57:35 2013 +0100
+
+    Version from ZEN2010
+    
+    upload version from ZEN2010 to check weather some changes have been lost
+
+commit fd3a1dce249f3d2e06de5481116f79eaf737ad1d
+Author: Antonio Politi <politi@embl.de>
+Date:   Tue Jan 22 11:55:27 2013 +0100
+
+    More notes
+    
+    * to fix: problem with scan frame
+    * To improve: finish current repetition
+    show repetition name
+
+commit 723bcd85dc35d3816f39fb9c8ef460abcc899b41
+Author: Antonio Politi <politi@embl.de>
+Date:   Tue Jan 22 11:53:47 2013 +0100
+
+    Zen 2010 Zen 2011
+    
+    * stage works with ZEN 2011 and Zen 2010. Still not vey precise fast-Z
+    line
+    * To fix: grid positions with 5x2 are not set correctly (in particaulr
+    name of file)
+    error when logging and start button without previously setting
+    outputfolder. Should do all tests before the start
+    imaging update is very sluggish
+
+commit c74931d0e45620cc13a7f52fb4f64ff46c1f6278
+Author: Antonio Politi <politi@embl.de>
+Date:   Tue Jan 22 11:25:29 2013 +0100
+
+     lost some changes
+
+commit 25d9e655aaa2d646ac386d83937531e377f3bb30
+Author: Antonio Politi <politi@embl.de>
+Date:   Tue Jan 22 11:02:23 2013 +0100
+
+    forget a file
+
+commit dce553b1839df510de3b772f5e27b9ceb17c826c
+Author: Antonio Politi <politi@embl.de>
+Date:   Tue Jan 22 11:01:56 2013 +0100
+
+    Zen 21010 and Zen2011
+    
+    * Stage autofocus works with both programs. However fast z-line remains
+    unprecise.
+    * To fix:
+    - scan frame doe snot work properly (aicha)
+    - wrong naming of grid with 5x2
+    - error using log file when start is pushed without having declared
+    outputfolder
+    - imaging update works very slow or not at all
+    * feature:
+    - log files but ont AF image when not in debug mode
+    - show repetition name, position/ of total number of positions
+
+commit e023473ebdc96e13cf3e9e1050e994cf35c17580
+Author: Antonio Politi <politi@embl.de>
+Date:   Thu Jan 10 15:17:27 2013 +0100
+
+    AutofocusButton
+    
+    * correct waiting for finishing recentering of slices ibn
+    autofocusbutton (much more precise)
+    * Button to run several tests simulatenously
+
+commit fb2c1d3378e31782eb4f7f707054fb8e4a587e8e
+Author: Antonio Politi <politi@embl.de>
+Date:   Thu Jan 3 10:37:57 2013 +0100
+
+    File cleanup
+
+commit d1050132283e8a4ecebad7aef936b8da50829794
+Author: Antonio Politi <politi@embl.de>
+Date:   Thu Jan 3 10:35:41 2013 +0100
+
+    Major change in way of Autofocus
+    
+    *AutofocusButton: Now the Z movement is done after the full acquisition.
+    Only the central slice is changed. This  spares time and gives more
+    reliable result.
+    
+    * Fileformat is in agreement with Cellbase: well are numbered from the
+    lest to the right. Top to bottom. Acquisition is still according to
+    meandering.
+
+commit bb5169b2adc6fd49bef33a6c2efe5feacc10fc21
+Author: Antonio Politi <politi@embl.de>
+Date:   Tue Dec 18 17:56:10 2012 +0100
+
+    MaxSpeed for Autofocus
+    
+    * Micropilot and Additional acquistion work without piezo
+    * All functions use for computing new coordinates and moving the same
+    subroutine. This should simplify any problems in mapping
+    physical and image position
+    * Autofocus MaxSpeed setting is independet of acquisition setting. The
+    macro tries to set minimal pixel dwell time for given imaging
+    * Autofocus in the absence of piezo works als large z-Step. To use Fast
+    Z-line pixel dwell time is adapted to the Z-step
+    * All(?) functions use for computing new coordinates and moving the same
+    subroutine. This should simplify any problems in mapping
+    physical and image position
+    * Tracking has been modified so that it does move in the same way as
+    during Autofocusing (see next point)
+
+commit e6e938be34d2e32611d90f852c5c182bb187cfc1
+Author: Antonio Politi <politi@embl.de>
+Date:   Fri Dec 14 10:18:46 2012 +0100
+
+    Commits of ascii code
+
+commit 040fa1083c0c9160620a9e31b0f39b97154623ef
+Author: Antonio Politi <politi@embl.de>
+Date:   Tue Dec 11 17:47:00 2012 +0100
+
+    Saving and Multilocation/Grid has been improved
+    
+    Code:
+    * Changed alternative imaging function
+    * Large clean up of StartAcquisition. Extra function for creating
+    GridPoints.
+    * Changed reading of multiple locations from stage menu. Now it reads
+    all positions at beginning of scan and puts into an array.  The order of
+    the points is so maintained.
+    Feature:
+    * After stop system returns to first position or continue from current
+    position, current time (extra button)
+    * Saving format changed to W00001_P00001_T00001.lsm
+    * Saving checks for overwriting of files
+
+commit 6c1ebf2b3b28a0a2cf02ac4274ee5f5b4ed297a8
+Author: Antonio Politi <politi@embl.de>
+Date:   Thu Dec 6 15:46:53 2012 +0100
+
+    Clean up, Automated enable of form via Active buttons
+    
+    * Removed old code for Grid which is not used anymore (large clean up of Stage_Grid.bas)
+    * Outputflder is saved in registry and is automatically reloaded
+    * Proper declaration of variables type  in Sub BatchHighresImagingRoutine and other for   Micropilot part of code
+    * Improved choice of tracks in the code
+    * Re-initialize now just look for new tracks
+    * Activation of acquisition mode is done by the same active button. This automatically enable/disables minipages.
+    * Cross dependency of acquisition modes is now visual in the form via enable/disable features
+
+commit f7ed37f172b65accc890eea378df7f866d47573b
+Author: Antonio Politi <politi@embl.de>
+Date:   Mon Dec 3 19:53:58 2012 +0100
+
+    Change name
+
+commit 7eb97983f296d417c86a13ad716af67f3c5cbf6f
+Author: Antonio Politi <politi@embl.de>
+Date:   Mon Dec 3 19:52:48 2012 +0100
+
+    Improved functions, comments and clean ups
+    
+    Consistent usage of Stop scan throughall functions (need to finish test)
+    Linescan without piezo accepts larger step by removing Fast Z-line.
+    Todo: find optimal setting between scan speed and fast-Zline
+    Clean up of code in several functions and simplification
+    Commenting code and removed obsolete code
+    Add ASCII files to repository
+
+commit 6cbda706abca79fb0a449349577731bb6e5ee6ee
+Author: Antonio Politi <toni@mac-nedelec23.pool.embl.de>
+Date:   Thu Nov 22 17:43:53 2012 +0100
+
+    Update of TODO list. Change in AutofocusScreen_ZEN to account for absecne of piezo and large z-Step in Z-line mode.
+    It basically does not use fast Z-line if the stepping is too big.
+
+commit 343c17f15a11e76f13f9366d8c678f66a33aba3b
+Author: Antonio Politi <toni@mac-nedelec23.pool.embl.de>
+Date:   Thu Nov 22 17:12:15 2012 +0100
+
+    A CHANGELOG data file has been added
+
+commit 518c916586cd303dc6ef6af9ea2d72e1f74f16f4
+Author: Antonio Politi <toni@mac-nedelec23.pool.embl.de>
+Date:   Thu Nov 22 16:46:04 2012 +0100
+
+    update of TODO list
+
+commit e22394338d9ef37722ef09d15dc6ceef98e759ea
+Author: Antonio Politi <toni@mac-nedelec23.pool.embl.de>
+Date:   Thu Nov 22 16:41:02 2012 +0100
+
+    Nothing to add
+
+commit 2a33a9b447b587c7d94dc17b9ee15c1f51834eb4
+Author: Antonio Politi <toni@mac-nedelec23.pool.embl.de>
+Date:   Tue Nov 20 20:23:44 2012 +0100
+
+    no major changes
+
+commit 1616f6a6bd6ea4d9f537d23cf665df43902f4a5f
+Author: Antonio Politi <toni@mac-nedelec23.pool.embl.de>
+Date:   Mon Nov 12 16:48:43 2012 +0100
+
+    text changes
+
+commit db2c686321ca35a2cb368dc4d6decc34f6f89500
+Author: Antonio Politi <toni@mac-nedelec23.pool.embl.de>
+Date:   Fri Nov 9 15:35:00 2012 +0100
+
+    Removed bug MCUCommand Chr(13) -> Strings.Chr(13)
+    Change credits
+
+commit 15eaf011fe7f91cfcbb5dc8d864eff46723b254c
+Author: Antonio Politi <toni@mac-nedelec23.pool.embl.de>
+Date:   Thu Nov 8 12:25:20 2012 +0100
+
+    Different versions of AutofocusScreen as provided from the official releases.
+    This versions should not be changed!!
+
+commit c122d86563fec7493a22c1436bbadb4edd8ea7de
+Author: Antonio Politi <toni@mac-nedelec23.pool.embl.de>
+Date:   Mon Nov 5 14:19:24 2012 +0100
+
+    change of directory of source files
+
+commit 333c072098ef71c5e586071b437b95d7d505fc0a
+Author: Antonio Politi <toni@mac-nedelec23.pool.embl.de>
+Date:   Mon Nov 5 14:19:10 2012 +0100
+
+    Few modifications on AutoFocusScreen and TODO
+
+commit 36f20fe14dc7273d21c2072ef8a7a66d6b529668
+Author: Antonio Politi <toni@mac-nedelec23.pool.embl.de>
+Date:   Mon Nov 5 14:11:52 2012 +0100
+
+    ascii files of the AutoFocusMacro
+
+commit e3944be04e242e3f68f1172d570a21448bf64f56
+Author: Antonio Politi <toni@mac-nedelec23.embl.de>
+Date:   Tue Oct 23 10:57:09 2012 +0200
+
+    This is the latest version of AutofocusScreen as modified by Christian Tischer
+
+commit bdea02b1cd08729ca4678671a6e18340d062c5b8
+Author: Antonio Politi <toni@mac-nedelec23.embl.de>
+Date:   Tue Oct 23 10:53:30 2012 +0200
+
+    Messing around with the tags.
+    So this is version 4.2.2 as on the EMBLEM website.
+    It will be used then to create a tag v4.2.2 the tag has nothing to do with the branch
+
+commit 76a89ad9396c00d1cb3ac7293227feb4c80a61b6
+Author: Antonio Politi <toni@mac-nedelec23.embl.de>
+Date:   Tue Oct 23 10:39:34 2012 +0200
+
+    v4.2.3.0 first commit
+
+commit 1a3bae1851cec8ce92e5d7935416ebaa183212a5
+Author: Antonio Politi <toni@mac-nedelec23.embl.de>
+Date:   Tue Oct 23 10:36:58 2012 +0200
+
+    first commit of v4.2.3.0 for bugfixes
+
+commit 02b77dfa4985f43514ed7008206bbbd5f9b45431
+Author: Antonio Politi <toni@mac-nedelec23.embl.de>
+Date:   Tue Oct 23 10:29:42 2012 +0200
+
+    concat.lvb is added
+
+commit f5cd67da8abbaaa6070d7adcee274103b0ad48eb
+Author: Antonio Politi <toni@mac-nedelec23.embl.de>
+Date:   Tue Oct 23 10:20:06 2012 +0200
+
+    First commit of AutofocusScreen_ZEN.lvb and documentation. This is unfortunately a binary file :-(
+    This is version 4.2.2 as released on EMBLEM website
+
+commit 4c4860bb7acf0b7373a02db9da0323aae2865924
+Author: tischi <tischitischer@gmail.com>
+Date:   Thu Aug 23 14:06:47 2012 +0200
+
+    tischi: initial upload of macro
