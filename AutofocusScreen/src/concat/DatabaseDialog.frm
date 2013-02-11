@@ -22,11 +22,25 @@ Attribute VB_Exposed = False
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Private Const Version = " v2.0.1"
 Option Explicit 'force to declare all variables
+Private Const Pattern = "(\w+)_T(\d+).lsm"     ' this recognizes e.g. blabla_Wxxx_Pxxx_Txxx.lsm
+Private Const PatternOld = "(\w+)_R(\d+).lsm"  ' this recognizes e.g. blabla_Lxxx_Rxxx.lsm
+Private StopConcat As Boolean
 
 
 Dim DatabaseDialogLoaded As Boolean
 
 
+
+
+
+
+
+
+
+
+Private Sub StopButton_Click()
+    StopConcat = True
+End Sub
 
 Private Sub UserForm_Activate()
     If Not DatabaseDialogLoaded Then
@@ -39,6 +53,48 @@ End Sub
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
     AutoStoreModify
     SaveWindowPosition
+End Sub
+
+Private Sub OptionAllFiles_Click()
+    If User_flg Then
+        GlobalFileOptions = 3
+        OptionAllFiles.Value = True
+        OptionZStack.Value = False
+        OptionTimeStack.Value = False
+        Frame1.Caption = "All images"
+        FillListBox
+        Image1.Visible = False
+        SetButtons
+        DisplayProgress "Select image...", RGB(&HC0, &HC0, 0)
+    End If
+End Sub
+
+Private Sub OptionTimeStack_Click()
+    If User_flg Then
+        GlobalFileOptions = 1
+        OptionTimeStack.Value = True
+        OptionZStack.Value = False
+        OptionAllFiles.Value = False
+        Frame1.Caption = "Time series"
+        FillListBox
+        Image1.Visible = False
+        SetButtons
+        DisplayProgress "Select image...", RGB(&HC0, &HC0, 0)
+    End If
+End Sub
+
+Private Sub OptionZStack_Click()
+    If User_flg Then
+        GlobalFileOptions = 2
+        OptionZStack.Value = True
+        OptionTimeStack.Value = False
+        OptionAllFiles.Value = False
+        Frame1.Caption = "Z-Stacks"
+        FillListBox
+        Image1.Visible = False
+        SetButtons
+        DisplayProgress "Select image...", RGB(&HC0, &HC0, 0)
+    End If
 End Sub
 
 ''''''
@@ -71,7 +127,6 @@ Public Sub FillListBox()
     Dim NumberOfSelected As Long
     Dim Image As AimImage
     Dim Node As Long
-    
     Dim Files() As String
     Dim PathNames() As String
     Dim NumberFiles As Long
@@ -276,61 +331,10 @@ Public Sub SetControlFlags()
 
 End Sub
 
-Private Sub ButtonWl_Click()
 
-    DoEvents
 
-    GlobalStartWlTmp = GlobalStartWl
-    GlobalStepWlTmp = GlobalStepWl
-    
-    GlobalSetWlChange = False
-    SetWlForm.Show 1
-    If GlobalSetWlChange Then
-        GlobalStartWl = GlobalStartWlTmp
-        GlobalStepWl = GlobalStepWlTmp
-    End If
-    flgBreak = False
-    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-End Sub
 
-Private Sub ButtonToLambda_Click()
-    DoLambda
-End Sub
 
-Private Sub CommandButtonModifyChannel_Click()
-On Error GoTo Finish
-
-    flgBreak = False
-    User_flg = False
-
-    If LoadSourceImage(GlobalImageDocument, GlobalImage, ImagesListBox.ListIndex) Then
-        GlobalNumberOfChannels = GlobalImage.ImageMemory.GetDimensionC
-        If GlobalNumberOfChannels > 0 Then
-            ChannelNameForm.Show 0
-        End If
-    End If
-
-Finish:
-    flgBreak = False
-    User_flg = True
-
-End Sub
-
-Private Sub ConvertButton_Click()
-    DoConvertToT
-End Sub
-
-Private Sub ButtonToZ_Click()
-    DoConvertToZ
-End Sub
-
-Private Sub ButtonYZ_Click()
-    DoConvertYZ
-End Sub
-
-Private Sub ButtonXZ_Click()
-    DoConvertXZ
-End Sub
 
 Private Sub SetControls()
     User_flg = False
@@ -387,45 +391,14 @@ Private Sub OptionButton2_Click()
 End Sub
 
 
-Private Sub ZStepButton_Click()
-    DoZStep
-End Sub
+
 
 Private Sub CommandButton1_Click()
     flgBreak = True
 End Sub
 
-Private Sub MakeTimeButton_Click()
-    DoMakeTimeSeries
-End Sub
 
-Private Sub RotateButtonRight_Click()
-    DoRotateXY False
-End Sub
 
-Private Sub RotateButtonLeft_Click()
-    DoRotateXY True
-End Sub
-
-Private Sub ConcatenateTimeButton_Click()
-    DoConcatenate_Time
-End Sub
-
-Private Sub ConcatenateButton_Click()
-    DoConcatenate_Z
-End Sub
-
-Private Sub MirrorButton_Click()
-    DoMirrorXY
-End Sub
-
-Private Sub ReverseButton_Click()
-    DoReverseZ
-End Sub
-
-Private Sub TimeStartButton_Click()
-    DoSetStartTime
-End Sub
 
 Private Sub ExitButton_Click()
     AutoStoreModify
@@ -491,67 +464,19 @@ On Error GoTo NoImage
     
     User_flg = False
     If (ImagesListBox.ListIndex <> -1) Then
-        RotateButtonLeft.Enabled = True
-        RotateButtonRight.Enabled = True
-        
-        MirrorButton.Enabled = True
+
         
         If OptionZStack.Value Then
             OptionTimeStack.Value = False
             OptionAllFiles.Value = False
-        
-            ConvertButton.Enabled = True
-            ReverseButton.Enabled = True
-            ZStepButton.Enabled = True
-            ConcatenateButton.Enabled = True
-            ConcatenateTimeButton.Enabled = False
-            MakeTimeButton.Enabled = False
-            ButtonToZ.Enabled = False
-            ButtonXZ.Enabled = True
-            ButtonYZ.Enabled = True
-            ButtonToLambda.Enabled = False
-            ButtonWl.Enabled = False
-            TimeStartButton.Enabled = False
-            
         ElseIf OptionTimeStack.Value Then
-        
             OptionTimeStack.Value = True
             OptionZStack.Value = False
             OptionAllFiles.Value = False
-            
-            ConvertButton.Enabled = False
-            ReverseButton.Enabled = False
-            ZStepButton.Enabled = False
-            
-            ConcatenateButton.Enabled = False
-            ConcatenateTimeButton.Enabled = True
-            MakeTimeButton.Enabled = False
-            ButtonToZ.Enabled = True
-            ButtonXZ.Enabled = False
-            ButtonYZ.Enabled = False
-            ButtonToLambda.Enabled = False
-            ButtonWl.Enabled = False
-            TimeStartButton.Enabled = True
-
         Else
             OptionTimeStack.Value = False
             OptionZStack.Value = False
             OptionAllFiles.Value = True
-            ConvertButton.Enabled = True
-            ButtonToZ.Enabled = True
-            
-            ReverseButton.Enabled = False
-            ZStepButton.Enabled = False
-            
-            ConcatenateButton.Enabled = True
-            ConcatenateTimeButton.Enabled = True
-            MakeTimeButton.Enabled = True
-            
-            ButtonXZ.Enabled = False
-            ButtonYZ.Enabled = False
-            TimeStartButton.Enabled = True
-            ButtonToLambda.Enabled = True
-            ButtonWl.Enabled = True
         End If
         If GlobalFileSource = 0 Then
             If LoadSourceImage(SourceImageDocument, SourceImage, ImagesListBox.ListIndex) Then
@@ -574,7 +499,6 @@ On Error GoTo NoImage
             Import.ReadFullSizeFileInformation SourceImage
             Import.ReadThumbnail Thumbnail, Import.FileInfoSize(eAimImportExportCoordinateT) / 2, _
             Import.FileInfoSize(eAimImportExportCoordinateZ) / 2, 128, 128
-            
             Image1.Visible = True
             Image1.Picture = TransferPicture(Thumbnail).Picture
             User_flg = True
@@ -583,72 +507,12 @@ On Error GoTo NoImage
         End If
     Else
         Image1.Visible = False
-    
-        RotateButtonLeft.Enabled = False
-        RotateButtonRight.Enabled = False
-        MirrorButton.Enabled = False
-
-        ConcatenateButton.Enabled = False
-        ConcatenateTimeButton.Enabled = False
-        MakeTimeButton.Enabled = False
-        
-        ConvertButton.Enabled = False
-        ReverseButton.Enabled = False
-        ZStepButton.Enabled = False
-        
-        ButtonToZ.Enabled = False
-        ButtonXZ.Enabled = False
-        ButtonYZ.Enabled = False
-        TimeStartButton.Enabled = False
         DisplayProgress "Select File...", RGB(&HC0, &HC0, 0)
-        
     End If
 NoImage:
-    
     User_flg = True
 End Sub
 
-Private Sub OptionAllFiles_Click()
-    If User_flg Then
-        GlobalFileOptions = 3
-        OptionAllFiles.Value = True
-        OptionZStack.Value = False
-        OptionTimeStack.Value = False
-        Frame1.Caption = "All images"
-        FillListBox
-        Image1.Visible = False
-        SetButtons
-        DisplayProgress "Select image...", RGB(&HC0, &HC0, 0)
-    End If
-End Sub
-
-Private Sub OptionTimeStack_Click()
-    If User_flg Then
-        GlobalFileOptions = 1
-        OptionTimeStack.Value = True
-        OptionZStack.Value = False
-        OptionAllFiles.Value = False
-        Frame1.Caption = "Time series"
-        FillListBox
-        Image1.Visible = False
-        SetButtons
-        DisplayProgress "Select image...", RGB(&HC0, &HC0, 0)
-    End If
-End Sub
-
-Private Sub OptionZStack_Click()
-    If User_flg Then
-        GlobalFileOptions = 2
-        OptionZStack.Value = True
-        OptionTimeStack.Value = False
-        OptionAllFiles.Value = False
-        Frame1.Caption = "Z-Stacks"
-        FillListBox
-        Image1.Visible = False
-        SetButtons
-        DisplayProgress "Select image...", RGB(&HC0, &HC0, 0)
-    End If
-End Sub
 
 
 
@@ -827,469 +691,6 @@ Private Function WaitProgress(Progress As AimProgress)
 
 End Function
 
-Private Sub DoConvertToZ()
-
-    Dim SourceImageDocument As AimExperimentTreeNode
-    Dim DestinationImageDocument As AimExperimentTreeNode
-'    Dim DestinationImageDocument As RecordingDocument
-    
-    Dim SourceImage As AimImage
-    Dim DestinationImage As AimImage
-    Dim ImageCopy As AimImageCopy
-    Dim DataType As enumAimImageDataType
-
-On Error GoTo Finish
-'    Set SourceImage = Lsm5.CreateObject("AimImage.Image")
-'    Set SourceImageDocument = Lsm5.CreateObject("AimExperiment.TreeNode")
-'    Set Import = Lsm5.CreateObject("AimImageImportExport.Import")
-    Set ImageCopy = Lsm5.CreateObject("AimImageProcessing.Copy")
-
-    flgBreak = False
-    User_flg = False
-
-    If LoadSourceImage(SourceImageDocument, SourceImage, ImagesListBox.ListIndex) Then
-    
-        If GlobalFileOptions = 3 Then
-            If SourceImage.ImageMemory.GetDimensionZ > 1 Then
-                MsgBox "This is Z Stack Image! No Conversion!"
-                GoTo Finish
-            End If
-        End If
-        DataType = SourceImage.ImageMemory.GetDataType(0)
-        If Not MakeDestination(DestinationImageDocument, _
-                               DestinationImage, _
-                               SourceImage.ImageMemory.GetDimensionX, _
-                               SourceImage.ImageMemory.GetDimensionY, _
-                               1, _
-                               1, _
-                               SourceImage.ImageMemory.GetDimensionC, _
-                               DataType) Then GoTo Finish
-                               
-'         If Not MakeDestinationDS(DestinationImageDocument, _
-'                               DestinationImage, _
-'                               SourceImage.ImageMemory.GetDimensionX, _
-'                               SourceImage.ImageMemory.GetDimensionY, _
-'                               1, _
-'                               1, _
-'                               SourceImage.ImageMemory.GetDimensionC, _
-'                               DataType) Then GoTo Finish
-                              
-        ImageCopy.SourceImage = SourceImage
-        ImageCopy.DestinationImage = DestinationImage
-        ImageCopy.ImageParameterCopyFlags = eAimImageParameterCopyAll
-'        ImageCopy.SourceCoordinateZ = eAimImageOperationCoordinateT
-        
-'        copy.SourceCoordinate(eAimImageOperationCoordinateC) = eAimImageOperationCoordinateC
-'        copy.SourceCoordinate(eAimImageOperationCoordinateX) = eAimImageOperationCoordinateX
-'        copy.SourceCoordinate(eAimImageOperationCoordinateY) = eAimImageOperationCoordinateY
-        ImageCopy.SourceCoordinate(eAimImageOperationCoordinateT) = eAimImageOperationCoordinateZ
-        
-        
-        ImageCopy.CreateDestinationMemory eAimImageDataTypeInvalid, _
-                                          True
-        ImageCopy.Start
-        If DestinationImage.ImageMemory.VoxelSizeZ = 0 Then
-            DestinationImage.ImageMemory.VoxelSizeZ = DestinationImage.ImageMemory.VoxelSizeX
-        End If
-            
-        If Not WaitProgress(ImageCopy) Then GoTo Finish
-
-'        DestinationImageDocument.RedrawImage
-    End If
-    
-Finish:
-
-    flgBreak = False
-    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-    User_flg = True
-    
-End Sub
-
-Private Sub DoConvertToT()
-
-    Dim SourceImageDocument As AimExperimentTreeNode
-    Dim DestinationImageDocument As AimExperimentTreeNode
-    Dim SourceImage As AimImage
-    Dim DestinationImage As AimImage
-    Dim ImageCopy As AimImageCopy
-    Dim index As Long
-    Dim DataType As enumAimImageDataType
-On Error GoTo Finish
-
-    flgBreak = False
-    User_flg = False
-'    Set SourceImage = Lsm5.CreateObject("AimImage.Image")
-'    Set SourceImageDocument = Lsm5.CreateObject("AimExperiment.TreeNode")
-'    Set Import = Lsm5.CreateObject("AimImageImportExport.Import")
-    Set ImageCopy = Lsm5.CreateObject("AimImageProcessing.Copy")
-
-    If LoadSourceImage(SourceImageDocument, SourceImage, ImagesListBox.ListIndex) Then
-    
-        If GlobalFileOptions = 3 Then
-            If SourceImage.ImageMemory.GetDimensionT > 1 Then
-                MsgBox "This is Time Series Image! No Conversion!"
-                GoTo Finish
-            End If
-        End If
-        DataType = SourceImage.ImageMemory.GetDataType(0)
-            
-        If Not MakeDestination(DestinationImageDocument, _
-                               DestinationImage, _
-                               SourceImage.ImageMemory.GetDimensionX, _
-                               SourceImage.ImageMemory.GetDimensionY, _
-                               1, _
-                               1, _
-                               SourceImage.ImageMemory.GetDimensionC, _
-                               DataType) Then GoTo Finish
-                               
-'        If Not MakeDestinationDS(DestinationImageDocument, _
-'                               DestinationImage, _
-'                               SourceImage.ImageMemory.GetDimensionX, _
-'                               SourceImage.ImageMemory.GetDimensionY, _
-'                               1, _
-'                               1, _
-'                               SourceImage.ImageMemory.GetDimensionC, _
-'                               DataType) Then GoTo Finish
-
-        ImageCopy.SourceImage = SourceImage
-        ImageCopy.DestinationImage = DestinationImage
-        ImageCopy.ImageParameterCopyFlags = eAimImageParameterCopyAll
-'        ImageCopy.SourceCoordinateT = eAimImageOperationCoordinateZ
-'        copy.SourceCoordinate(eAimImageOperationCoordinateC) = eAimImageOperationCoordinateC
-'        copy.SourceCoordinate(eAimImageOperationCoordinateX) = eAimImageOperationCoordinateX
-'        copy.SourceCoordinate(eAimImageOperationCoordinateY) = eAimImageOperationCoordinateY
-        ImageCopy.SourceCoordinate(eAimImageOperationCoordinateZ) = eAimImageOperationCoordinateT
-        
-        ImageCopy.CreateDestinationMemory eAimImageDataTypeInvalid, _
-                                          True
-        ImageCopy.Start
-        For index = 0 To DestinationImage.ImageMemory.GetDimensionT - 1
-            DestinationImage.ImageMemory.TimeStamp(index) = SourceImage.ImageMemory.VoxelSizeZ * index * 1000000
-        Next index
-            
-        If Not WaitProgress(ImageCopy) Then GoTo Finish
-        
-'        DestinationImageDocument.RedrawImage
-    End If
-
-Finish:
-
-    flgBreak = False
-    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-    User_flg = True
-End Sub
-
-Private Sub DoConvertXZ()
-
-    Dim SourceImageDocument As AimExperimentTreeNode
-    Dim DestinationImageDocument As AimExperimentTreeNode
-'    Dim DestinationImageDocument As RecordingDocument
-    Dim SourceImage As AimImage
-    Dim DestinationImage As AimImage
-    Dim ImageCopy As AimImageCopy
-    Dim DataType As enumAimImageDataType
-
-On Error GoTo Finish
-
-    flgBreak = False
-    User_flg = False
-'    Set SourceImage = Lsm5.CreateObject("AimImage.Image")
-'    Set SourceImageDocument = Lsm5.CreateObject("AimExperiment.TreeNode")
-'    Set Import = Lsm5.CreateObject("AimImageImportExport.Import")
-    Set ImageCopy = Lsm5.CreateObject("AimImageProcessing.Copy")
-
-    If LoadSourceImage(SourceImageDocument, SourceImage, ImagesListBox.ListIndex) Then
-        DataType = SourceImage.ImageMemory.GetDataType(0)
-        If Not MakeDestination(DestinationImageDocument, _
-                               DestinationImage, _
-                               SourceImage.ImageMemory.GetDimensionX, _
-                               SourceImage.ImageMemory.GetDimensionZ, _
-                               1, _
-                               1, _
-                               SourceImage.ImageMemory.GetDimensionC, _
-                               DataType) Then GoTo Finish
-'        If Not MakeDestinationDS(DestinationImageDocument, _
-'                               DestinationImage, _
-'                               SourceImage.ImageMemory.GetDimensionX, _
-'                               SourceImage.ImageMemory.GetDimensionZ, _
-'                               1, _
-'                               1, _
-'                               SourceImage.ImageMemory.GetDimensionC, _
-'                               DataType) Then GoTo Finish
-
-        ImageCopy.SourceImage = SourceImage
-        ImageCopy.DestinationImage = DestinationImage
-        ImageCopy.ImageParameterCopyFlags = eAimImageParameterCopyAll
-'        ImageCopy.SourceCoordinateY = eAimImageOperationCoordinateZ
-'        ImageCopy.SourceCoordinateZ = eAimImageOperationCoordinateY
-        
-'        copy.SourceCoordinate(eAimImageOperationCoordinateC) = eAimImageOperationCoordinateC
-        ImageCopy.SourceCoordinate(eAimImageOperationCoordinateZ) = eAimImageOperationCoordinateX
-        ImageCopy.SourceCoordinate(eAimImageOperationCoordinateX) = eAimImageOperationCoordinateZ
-'        copy.SourceCoordinate(eAimImageOperationCoordinateY) = eAimImageOperationCoordinateY
-        
-        ImageCopy.CreateDestinationMemory eAimImageDataTypeInvalid, _
-                                          True
-        ImageCopy.Start
-            
-        If Not WaitProgress(ImageCopy) Then GoTo Finish
-        
-'        DestinationImageDocument.RedrawImage
-    End If
-
-Finish:
-    flgBreak = False
-    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-    User_flg = True
-End Sub
-
-Private Sub DoConvertYZ()
-
-    Dim SourceImageDocument As AimExperimentTreeNode
-    Dim DestinationImageDocument As AimExperimentTreeNode
-'    Dim DestinationImageDocument As RecordingDocument
-    
-    Dim SourceImage As AimImage
-    Dim DestinationImage As AimImage
-    Dim ImageCopy As AimImageCopy
-    Dim DataType As enumAimImageDataType
-
-On Error GoTo Finish
-
-    flgBreak = False
-    User_flg = False
-'    Set SourceImage = Lsm5.CreateObject("AimImage.Image")
-'    Set SourceImageDocument = Lsm5.CreateObject("AimExperiment.TreeNode")
-'    Set Import = Lsm5.CreateObject("AimImageImportExport.Import")
-    Set ImageCopy = Lsm5.CreateObject("AimImageProcessing.Copy")
-
-    If LoadSourceImage(SourceImageDocument, SourceImage, ImagesListBox.ListIndex) Then
-        DataType = SourceImage.ImageMemory.GetDataType(0)
-        If Not MakeDestination(DestinationImageDocument, _
-                               DestinationImage, _
-                               SourceImage.ImageMemory.GetDimensionY, _
-                               SourceImage.ImageMemory.GetDimensionZ, _
-                               1, _
-                               1, _
-                               SourceImage.ImageMemory.GetDimensionC, _
-                               DataType) Then GoTo Finish
-'        If Not MakeDestinationDS(DestinationImageDocument, _
-'                               DestinationImage, _
-'                               SourceImage.ImageMemory.GetDimensionY, _
-'                               SourceImage.ImageMemory.GetDimensionZ, _
-'                               1, _
-'                               1, _
-'                               SourceImage.ImageMemory.GetDimensionC, _
-'                               DataType) Then GoTo Finish
-            
-        ImageCopy.SourceImage = SourceImage
-        ImageCopy.DestinationImage = DestinationImage
-        ImageCopy.ImageParameterCopyFlags = eAimImageParameterCopyAll
-'        ImageCopy.SourceCoordinateY = eAimImageOperationCoordinateZ
-'        ImageCopy.SourceCoordinateZ = eAimImageOperationCoordinateX
-'        ImageCopy.SourceCoordinateX = eAimImageOperationCoordinateY
-        
-'        copy.SourceCoordinate(eAimImageOperationCoordinateC) = eAimImageOperationCoordinateC
-        ImageCopy.SourceCoordinate(eAimImageOperationCoordinateZ) = eAimImageOperationCoordinateY
-        ImageCopy.SourceCoordinate(eAimImageOperationCoordinateX) = eAimImageOperationCoordinateZ
-        ImageCopy.SourceCoordinate(eAimImageOperationCoordinateY) = eAimImageOperationCoordinateX
-        
-        ImageCopy.CreateDestinationMemory eAimImageDataTypeInvalid, _
-                                          True
-        ImageCopy.Start
-        
-        If Not WaitProgress(ImageCopy) Then GoTo Finish
-        
-'        DestinationImageDocument.RedrawImage
-    End If
-
-Finish:
-    flgBreak = False
-    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-    User_flg = True
-End Sub
-
-Public Sub DoMirrorXY()
-    Dim SourceImageDocument As AimExperimentTreeNode
-    Dim SourceImage As AimImage
-    Dim ImageCopy As AimImageCopy
-
-On Error GoTo Finish
-
-    flgBreak = False
-    User_flg = False
-'    Set SourceImage = Lsm5.CreateObject("AimImage.Image")
-'    Set SourceImageDocument = Lsm5.CreateObject("AimExperiment.TreeNode")
-'    Set Import = Lsm5.CreateObject("AimImageImportExport.Import")
-    Set ImageCopy = Lsm5.CreateObject("AimImageProcessing.Copy")
-
-    If LoadSourceImage(SourceImageDocument, SourceImage, ImagesListBox.ListIndex) Then
-        
-        ImageCopy.SourceImage = SourceImage
-        ImageCopy.DestinationImage = SourceImage
-        ImageCopy.ImageParameterCopyFlags = 0
-'        ImageCopy.SourceStrideX = -1
-'        ImageCopy.SourceX = SourceImage.ImageMemory.GetDimensionX - 1
-        
-        ImageCopy.SourceStride(eAimImageOperationCoordinateX) = -1
-        ImageCopy.Size(eAimImageOperationCoordinateX) = SourceImage.ImageMemory.GetDimensionX
-        ImageCopy.SourceStart(eAimImageOperationCoordinateX) = SourceImage.ImageMemory.GetDimensionX - 1
-        
-        ImageCopy.Start
-        
-        If Not WaitProgress(ImageCopy) Then GoTo Finish
-        
-        SourceImageDocument.RedrawImage
-    End If
-
-Finish:
-    flgBreak = False
-    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-    User_flg = True
-End Sub
-
-Private Sub DoRotateXY(DirectionLeft As Boolean)
-
-    Dim SourceImageDocument As AimExperimentTreeNode
-    Dim DestinationImageDocument As AimExperimentTreeNode
-'    Dim DestinationImageDocument As RecordingDocument
-    
-    Dim SourceImage As AimImage
-    Dim DestinationImage As AimImage
-    Dim ImageCopy As AimImageCopy
-    Dim DataType As enumAimImageDataType
-    
-On Error GoTo Finish
-
-    flgBreak = False
-    User_flg = False
-'    Set SourceImage = Lsm5.CreateObject("AimImage.Image")
-'    Set SourceImageDocument = Lsm5.CreateObject("AimExperiment.TreeNode")
-'    Set Import = Lsm5.CreateObject("AimImageImportExport.Import")
-    Set ImageCopy = Lsm5.CreateObject("AimImageProcessing.Copy")
-    If LoadSourceImage(SourceImageDocument, SourceImage, ImagesListBox.ListIndex) Then
-    
-        DataType = SourceImage.ImageMemory.GetDataType(0)
-        If Not MakeDestination(DestinationImageDocument, _
-                               DestinationImage, _
-                               SourceImage.ImageMemory.GetDimensionY, _
-                               SourceImage.ImageMemory.GetDimensionX, _
-                               1, _
-                               1, _
-                               SourceImage.ImageMemory.GetDimensionC, _
-                               DataType) Then GoTo Finish
-'        If Not MakeDestinationDS(DestinationImageDocument, _
-'                               DestinationImage, _
-'                               SourceImage.ImageMemory.GetDimensionY, _
-'                               SourceImage.ImageMemory.GetDimensionX, _
-'                               1, _
-'                               1, _
-'                               SourceImage.ImageMemory.GetDimensionC, _
-'                               DataType) Then GoTo Finish
-
-        ImageCopy.SourceImage = SourceImage
-        ImageCopy.DestinationImage = DestinationImage
-        ImageCopy.ImageParameterCopyFlags = eAimImageParameterCopyAll
-'        ImageCopy.SourceCoordinateX = eAimImageOperationCoordinateY
-'        ImageCopy.SourceCoordinateY = eAimImageOperationCoordinateX
-        ImageCopy.SourceCoordinate(eAimImageOperationCoordinateY) = eAimImageOperationCoordinateX
-        ImageCopy.SourceCoordinate(eAimImageOperationCoordinateX) = eAimImageOperationCoordinateY
-        
-        If DirectionLeft Then
-'            ImageCopy.SourceStrideX = -1
-'            ImageCopy.SourceX = SourceImage.ImageMemory.GetDimensionX - 1
-            ImageCopy.SourceStride(eAimImageOperationCoordinateX) = -1
-            ImageCopy.Size(eAimImageOperationCoordinateX) = SourceImage.ImageMemory.GetDimensionX
-            ImageCopy.SourceStart(eAimImageOperationCoordinateX) = SourceImage.ImageMemory.GetDimensionX - 1
-        Else
-'            ImageCopy.SourceStrideY = -1
-'            ImageCopy.SourceY = SourceImage.ImageMemory.GetDimensionY - 1
-            ImageCopy.SourceStride(eAimImageOperationCoordinateY) = -1
-            ImageCopy.Size(eAimImageOperationCoordinateY) = SourceImage.ImageMemory.GetDimensionY
-            ImageCopy.SourceStart(eAimImageOperationCoordinateY) = SourceImage.ImageMemory.GetDimensionY - 1
-        End If
-        ImageCopy.CreateDestinationMemory eAimImageDataTypeInvalid, _
-                                          True
-        ImageCopy.Start
-            
-        If Not WaitProgress(ImageCopy) Then GoTo Finish
-        
-'        DestinationImageDocument.RedrawImage
-    End If
-
-Finish:
-    flgBreak = False
-    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-    User_flg = True
-End Sub
-
-Private Sub DoReverseZ()
-
-    Dim SourceImageDocument As AimExperimentTreeNode
-    Dim DestinationImageDocument As AimExperimentTreeNode
-'    Dim DestinationImageDocument As RecordingDocument
-    
-    Dim SourceImage As AimImage
-    Dim DestinationImage As AimImage
-    Dim ImageCopy As AimImageCopy
-    Dim DataType As enumAimImageDataType
-    
-On Error GoTo Finish
-
-    flgBreak = False
-    User_flg = False
-'    Set SourceImage = Lsm5.CreateObject("AimImage.Image")
-'    Set SourceImageDocument = Lsm5.CreateObject("AimExperiment.TreeNode")
-'    Set Import = Lsm5.CreateObject("AimImageImportExport.Import")
-    Set ImageCopy = Lsm5.CreateObject("AimImageProcessing.Copy")
-
-    If LoadSourceImage(SourceImageDocument, SourceImage, ImagesListBox.ListIndex) Then
-    
-        DataType = SourceImage.ImageMemory.GetDataType(0)
-        If Not MakeDestination(DestinationImageDocument, _
-                               DestinationImage, _
-                               SourceImage.ImageMemory.GetDimensionX, _
-                               SourceImage.ImageMemory.GetDimensionY, _
-                               1, _
-                               1, _
-                               SourceImage.ImageMemory.GetDimensionC, _
-                               DataType) Then GoTo Finish
-'        If Not MakeDestinationDS(DestinationImageDocument, _
-'                               DestinationImage, _
-'                               SourceImage.ImageMemory.GetDimensionX, _
-'                               SourceImage.ImageMemory.GetDimensionY, _
-'                               1, _
-'                               1, _
-'                               SourceImage.ImageMemory.GetDimensionC, _
-'                               DataType) Then GoTo Finish
-
-        ImageCopy.SourceImage = SourceImage
-        ImageCopy.DestinationImage = DestinationImage
-        ImageCopy.ImageParameterCopyFlags = eAimImageParameterCopyAll
-'        ImageCopy.SourceStrideZ = -1
-'        ImageCopy.SourceZ = SourceImage.ImageMemory.GetDimensionZ - 1
-        
-        ImageCopy.SourceStride(eAimImageOperationCoordinateZ) = -1
-        ImageCopy.Size(eAimImageOperationCoordinateZ) = SourceImage.ImageMemory.GetDimensionZ
-        ImageCopy.SourceStart(eAimImageOperationCoordinateZ) = SourceImage.ImageMemory.GetDimensionZ - 1
-        
-        
-        ImageCopy.CreateDestinationMemory eAimImageDataTypeInvalid, _
-                                          True
-        ImageCopy.Start
-            
-        If Not WaitProgress(ImageCopy) Then GoTo Finish
-        
-'        DestinationImageDocument.RedrawImage
-    End If
-
-Finish:
-    flgBreak = False
-    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-    User_flg = True
-End Sub
-
-
 Private Sub DoConcatenate_Time()
 
     Dim SourceImageNodeDocument As AimExperimentTreeNode
@@ -1375,7 +776,6 @@ On Error GoTo Finish
                     Set Nodes(NumberOfSelected + 1) = SourceImageNodeDocument
                 Else
                     Set SourceImage = Lsm5.CreateObject("AimImage.Image")
-                
 '                    Set SourceImage = New AimImage
                     Import.filename = GlobalFiles(index)
                     Import.ReadFullSizeFileInformation SourceImage
@@ -1443,10 +843,6 @@ On Error GoTo Finish
             
 '                Set SourceImage = New AimImage
                 Set SourceImage = Lsm5.CreateObject("AimImage.Image")
-'    Set SourceImageDocument = Lsm5.CreateObject("AimExperiment.TreeNode")
-'   Set Import = Lsm5.CreateObject("AimImageImportExport.Import")
-'    Set ImageCopy = Lsm5.CreateObject("AimImageProcessing.Copy")
-            
                 Import.filename = SlctFileName(IndexArray(index))
                 Import.ReadFullSizeFileInformation SourceImage
                 If Import.FileInfoChannelDataType(0) = eAimImageDataTypeU8 Then
@@ -1468,14 +864,6 @@ On Error GoTo Finish
             
             If index = 1 Then
             
-'                 If Not MakeDestination(DestinationImageDocument, _
-'                                       DestinationImage, _
-'                                       SourceImage.ImageMemory.GetDimensionX, _
-'                                       SourceImage.ImageMemory.GetDimensionY, _
-'                                       SourceImage.ImageMemory.GetDimensionZ, _
-'                                       SizeT, _
-'                                       SourceImage.ImageMemory.GetDimensionC, _
-'                                       SourceImage.ImageMemory.GetDataType(0)) Then GoTo Finish
                                        
                  If Not MakeDestination(DestinationImageDocument, _
                                        DestinationImage, _
@@ -1486,15 +874,6 @@ On Error GoTo Finish
                                        SizeC, _
                                        SourceImage.ImageMemory.GetDataType(0)) Then GoTo Finish
                                        
-'                If Not MakeDestinationDS(DestinationImageDocument, _
-'                                      DestinationImage, _
-'                                      SizeX, _
-'                                      SizeY, _
-'                                      SizeZ, _
-'                                      SizeT, _
-'                                      SizeC, _
-'                                      SourceImage.ImageMemory.GetDataType(0)) Then GoTo Finish
-                                       
             
                 ImageCopy.SourceImage = SourceImage
                 ImageCopy.DestinationImage = DestinationImage
@@ -1503,11 +882,6 @@ On Error GoTo Finish
                 ImageCopy.CreateDestinationMemory eAimImageDataTypeInvalid, _
                                                   True
                                                   
-'                DestinationImage.ImageMemory.Resize SizeT, _
-'                                                    SourceImage.ImageMemory.GetDimensionZ, _
-'                                                    SourceImage.ImageMemory.GetDimensionY, _
-'                                                    SourceImage.ImageMemory.GetDimensionX, _
-'                                                    eAimImageResizeTypePreserve
                 DestinationImage.ImageMemory.Resize SizeT, _
                                                     SizeZ, _
                                                     SizeY, _
@@ -1517,52 +891,18 @@ On Error GoTo Finish
                 DestinationImageDocument.Name = Name2 + "_SUM"
                 ImageCopy.Start
                 If Not WaitProgress(ImageCopy) Then GoTo Finish
-
-'                DestinationImageDocument.SetTitle Name2 + "_SUM"
-           
-            
-            
-            
-            
-'                If Import.FileInfoChannelDataType(0) = eAimImageDataTypeU8 Then
-'                    DataType = 1
-'                Else
-'                    DataType = 2
-'                End If
-'
-'                Set DestinationImageDocument = EngelImageToHechtImage(SingleImage)
-'                Set DestinationImage = DestinationImageDocument.Image(0, True)
-'
-'                ImageCopy.SourceImage = SourceImage
-'                ImageCopy.DestinationImage = DestinationImage
-'                ImageCopy.ImageParameterCopyFlags = eAimImageParameterCopyAll - eAimImageParameterCopyEventList
-'
-'                ImageCopy.CreateDestinationMemory eAimImageDataTypeInvalid, _
-'                                                  True
-'
-'                DestinationImage.ImageMemory.Resize SizeT, _
-'                                                    SourceImage.ImageMemory.GetDimensionZ, _
-'                                                    SourceImage.ImageMemory.GetDimensionY, _
-'                                                    SourceImage.ImageMemory.GetDimensionX, _
-'                                                    eAimImageResizeTypePreserve
-'                DestinationImageDocument.SetTitle SlctFileName(IndexArray(Index)) + "_SUM"
-'                DestinationImageDocument.RedrawImage
-
             Else
                 ImageCopy.SourceImage = SourceImage
                 ImageCopy.DestinationImage = DestinationImage
-'                ImageCopy.DestinationT = Td
                 ImageCopy.DestinationStart(eAimImageOperationCoordinateT) = Td
 
                 ImageCopy.ImageParameterCopyFlags = eAimImageParameterCopyTimeStamps ' Or eAimImageParameterCopyEventList
                 If GlobalUseChannelColor And GlobalSystemVersion >= 50 Then
                     For Cd = 0 To DestinationImage.ImageMemory.GetDimensionC - 1
-'                        ImageCopy.ChannelAssignment(Cd) = -1
                         For Cs = 0 To SourceImage.ImageMemory.GetDimensionC - 1
                             If SourceImage.DisplayParameters.ChannelInformation.ChannelColor(Cs) = _
                                        DestinationImage.DisplayParameters.ChannelInformation.ChannelColor(Cd) _
                                        Then
-'                                ImageCopy.ChannelAssignment(Cd) = Cs
                                 ImageCopy.DestinationStart(eAimImageOperationCoordinateC) = Cd
                                 ImageCopy.SourceStart(eAimImageOperationCoordinateC) = Cs
                                 ImageCopy.Size(eAimImageOperationCoordinateC) = Cd + 1
@@ -1573,12 +913,10 @@ On Error GoTo Finish
                     Next Cd
                 Else
                     For Cd = 0 To DestinationImage.ImageMemory.GetDimensionC - 1
-'                        ImageCopy.ChannelAssignment(Cd) = -1
                         For Cs = 0 To SourceImage.ImageMemory.GetDimensionC - 1
                             If StrComp(SourceImage.DisplayParameters.ChannelInformation.ChannelName(Cs), _
                                        DestinationImage.DisplayParameters.ChannelInformation.ChannelName(Cd), _
                                        vbTextCompare) = 0 Then
-'                                ImageCopy.ChannelAssignment(Cd) = Cs
                                 ImageCopy.DestinationStart(eAimImageOperationCoordinateC) = Cd
                                 ImageCopy.SourceStart(eAimImageOperationCoordinateC) = Cs
                                 ImageCopy.Size(eAimImageOperationCoordinateC) = Cd + 1
@@ -1590,8 +928,6 @@ On Error GoTo Finish
                 
                 End If
             End If
-'            ImageCopy.Start
-'            If Not WaitProgress(ImageCopy) Then GoTo Finish
             
             If index > 1 Then
                 TimeDifference = CDbl((TimeStart(IndexArray(index)) - TimeStart(IndexArray(1))) * 24 * 3600)
@@ -1615,23 +951,14 @@ On Error GoTo Finish
             
             Count = SourceImage.EventList.Count
             For Es = 0 To Count - 1
-                EventTimeStamp = SourceImage.EventList.time(Es)
+                EventTimeStamp = SourceImage.EventList.Time(Es)
                 EventType = SourceImage.EventList.Type(Es)
                 EventDescription = SourceImage.EventList.Description(Es)
                 DestinationImage.EventList.Append EventTimeStamp + TimeSystemStartLast, EventType, EventDescription
             Next Es
         Next index
-'        DestinationImageDocument.SetTitle SlctFileName(IndexArray(1)) + "_SUM"
-'        DestinationImageDocument.RedrawImage
-
-'        DestinationImageDocument.SetTitle Name2 + "_SUM"
-'        DestinationImageDocument.Name = Name2 + "_SUM"
-'        DestinationImageDocument.SetTitle Name2 + "_SUM"
         DestinationImageDocument.Name = Name2 + "_SUM"
         
-'        DestinationImageDocument.RedrawImage
-        
-'        ViewerGuiServer.Activate DestinationImageDocument
         Lsm5Vba.Application.ThrowEvent eRootReuse, 0
         DoEvents
     End If
@@ -1701,601 +1028,13 @@ Public Function SingleImage() As DsRecordingDoc
 End Function
 
 
-Private Sub DoConcatenate_Z()
-
-    Dim SourceImageNodeDocument As AimExperimentTreeNode
-'    Dim DestinationImageDocument As RecordingDocument
-    Dim DestinationImageDocument As AimExperimentTreeNode
-    
-    Dim SourceImage As AimImage
-    Dim DestinationImage As AimImage
-    Dim ImageCopy As AimImageCopy
-    Dim index As Long
-    Dim SizeZ As Long
-    Dim Zd As Long
-    Dim Cs As Long
-    Dim Cd As Long
-    Dim NumberOfSelected As Long
-    Dim Nodes() As AimExperimentTreeNode
-    Dim SlctFileName() As String
-    Dim NumberOfImages As Long
-    Dim Import As AimImageImport
-    Dim DataType As Long
-
-On Error GoTo Finish
-
-    flgBreak = False
-    User_flg = False
-'    Set SourceImage = Lsm5.CreateObject("AimImage.Image")
-'    Set SourceImageDocument = Lsm5.CreateObject("AimExperiment.TreeNode")
-    Set Import = Lsm5.CreateObject("AimImageImportExport.Import")
-    Set ImageCopy = Lsm5.CreateObject("AimImageProcessing.Copy")
-
-    If (ImagesListBox.ListIndex <> -1) Then
-        DisplayProgress "Working...", RGB(0, &HC0, 0)
-        SizeZ = 0
-        NumberOfSelected = 0
-        NumberOfImages = ImagesListBox.ListCount
-        
-        For index = 1 To NumberOfImages
-            If ImagesListBox.Selected(index - 1) Then
-                ReDim Preserve Nodes(NumberOfSelected + 1)
-                ReDim Preserve SlctFileName(NumberOfSelected + 1)
-                
-                If GlobalFileSource = 0 Then
-                    Set SourceImageNodeDocument = GlobalNodes(index)
-                    Set SourceImage = SourceImageNodeDocument.Image(0)
-                    Set Nodes(NumberOfSelected + 1) = SourceImageNodeDocument
-                    SlctFileName(NumberOfSelected + 1) = SourceImageNodeDocument.Name
-                    SizeZ = SizeZ + SourceImage.ImageMemory.GetDimensionT
-                    
-                Else
-                    Set SourceImage = Lsm5.CreateObject("AimImage.Image")
-'    Set SourceImageDocument = Lsm5.CreateObject("AimExperiment.TreeNode")
-'   Set Import = Lsm5.CreateObject("AimImageImportExport.Import")
-'    Set ImageCopy = Lsm5.CreateObject("AimImageProcessing.Copy")
-                
-'                    Set SourceImage = New AimImage
-                    Import.filename = GlobalFiles(index)
-                    Import.ReadFullSizeFileInformation SourceImage
-                    SlctFileName(NumberOfSelected + 1) = GlobalFiles(index)
-                    SizeZ = SizeZ + Import.FileInfoSize(eAimImportExportCoordinateZ)
-                End If
-
-                NumberOfSelected = NumberOfSelected + 1
-            End If
-            DisplayProgress "Reading File Info..." + Strings.Format(100 * index / NumberOfImages, "0") + "%", RGB(0, &HC0, 0)
-            DoEvents
-            
-        Next index
-                
-        If NumberOfSelected < 2 Then
-            MsgBox "Select two or more z-stack files!"
-            DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-            GoTo Finish
-        End If
-        DisplayProgress "Copying Files...", RGB(0, &HC0, 0)
-        Zd = 0
-        For index = 1 To NumberOfSelected
-            
-'            Set SourceImageNodeDocument = Nodes(Index)
-'            Set SourceImage = SourceImageNodeDocument.Image(0)
-            If GlobalFileSource = 0 Then
-                Set SourceImageNodeDocument = Nodes(index)
-                Set SourceImage = SourceImageNodeDocument.Image(0)
-            Else
-                Set SourceImage = Lsm5.CreateObject("AimImage.Image")
-'    Set SourceImageDocument = Lsm5.CreateObject("AimExperiment.TreeNode")
-'   Set Import = Lsm5.CreateObject("AimImageImportExport.Import")
-'    Set ImageCopy = Lsm5.CreateObject("AimImageProcessing.Copy")
-            
-'                Set SourceImage = New AimImage
-                Import.filename = SlctFileName(index)
-                Import.ReadFullSizeFileInformation SourceImage
-                If Import.FileInfoChannelDataType(0) = eAimImageDataTypeU8 Then
-                    DataType = 1
-                Else
-                    DataType = 2
-                End If
-                SourceImage.ImageMemory.Create Import.FileInfoSize(eAimImportExportCoordinateC), _
-                                                    Import.FileInfoSize(eAimImportExportCoordinateT), _
-                                                    Import.FileInfoSize(eAimImportExportCoordinateZ), _
-                                                    Import.FileInfoSize(eAimImportExportCoordinateY), _
-                                                    Import.FileInfoSize(eAimImportExportCoordinateX), _
-                                                    Import.FileInfoChannelDataType(0)
-                                                    
-                Import.Import SourceImage
-            
-          
-            End If
-  
-            
-            If index = 1 Then
-                If Not MakeDestination(DestinationImageDocument, _
-                                       DestinationImage, _
-                                       SourceImage.ImageMemory.GetDimensionX, _
-                                       SourceImage.ImageMemory.GetDimensionY, _
-                                       1, _
-                                       1, _
-                                       SourceImage.ImageMemory.GetDimensionC, _
-                                       SourceImage.ImageMemory.GetDataType(0)) Then GoTo Finish
-'
-'                If Not MakeDestinationDS(DestinationImageDocument, _
-'                                      DestinationImage, _
-'                                      SizeX, _
-'                                      SizeY, _
-'                                      SizeZ, _
-'                                      SizeT, _
-'                                      SizeC, _
-'                                      SourceImage.ImageMemory.GetDataType(0)) Then GoTo Finish
-
-'                If Not MakeDestinationDS(DestinationImageDocument, _
-'                                       DestinationImage, _
-'                                       SourceImage.ImageMemory.GetDimensionX, _
-'                                       SourceImage.ImageMemory.GetDimensionY, _
-'                                       1, _
-'                                       1, _
-'                                       SourceImage.ImageMemory.GetDimensionC, _
-'                                       SourceImage.ImageMemory.GetDataType(0)) Then GoTo Finish
-                                       
-                                       
-
-'                If Import.FileInfoChannelDataType(0) = eAimImageDataTypeU8 Then
-'                    DataType = 1
-'                Else
-'                    DataType = 2
-'                End If
-'
-'                Set DestinationImageDocument = EngelImageToHechtImage(SingleImage)
-'                Set DestinationImage = DestinationImageDocument.Image(0, True)
-            
-                ImageCopy.SourceImage = SourceImage
-                ImageCopy.DestinationImage = DestinationImage
-                ImageCopy.ImageParameterCopyFlags = eAimImageParameterCopyAll
-            
-                ImageCopy.CreateDestinationMemory eAimImageDataTypeInvalid, _
-                                                  True
-                                                  
-                DestinationImage.ImageMemory.Resize SourceImage.ImageMemory.GetDimensionT, _
-                                                    SizeZ, _
-                                                    SourceImage.ImageMemory.GetDimensionY, _
-                                                    SourceImage.ImageMemory.GetDimensionX, _
-                                                    eAimImageResizeTypePreserve
-                DestinationImageDocument.Name = SlctFileName(index) + "_SUM"
-'                DestinationImageDocument.SetTitle SlctFileName(index) + "_SUM"
-                ImageCopy.Start
-                If Not WaitProgress(ImageCopy) Then GoTo Finish
-                
-            Else
-                ImageCopy.SourceImage = SourceImage
-                ImageCopy.DestinationImage = DestinationImage
-                ImageCopy.DestinationStart(eAimImageOperationCoordinateZ) = Zd
-'                ImageCopy.DestinationZ = Zd
-                ImageCopy.ImageParameterCopyFlags = eAimImageParameterCopyEventList
-                
-                For Cd = 0 To DestinationImage.ImageMemory.GetDimensionC - 1
-'                    ImageCopy.ChannelAssignment(Cd) = -1
-                    For Cs = 0 To SourceImage.ImageMemory.GetDimensionC - 1
-                        If StrComp(SourceImage.DisplayParameters.ChannelInformation.ChannelName(Cs), _
-                                   DestinationImage.DisplayParameters.ChannelInformation.ChannelName(Cd), _
-                                   vbTextCompare) = 0 Then
-'                            ImageCopy.ChannelAssignment(Cd) = Cs
-                            ImageCopy.DestinationStart(eAimImageOperationCoordinateC) = Cd
-                            ImageCopy.SourceStart(eAimImageOperationCoordinateC) = Cs
-                            ImageCopy.Size(eAimImageOperationCoordinateC) = Cd + 1
-                            ImageCopy.Start
-                            If Not WaitProgress(ImageCopy) Then GoTo Finish
-                        End If
-                    Next Cs
-                Next Cd
-            End If
-            
-            
-            Zd = Zd + SourceImage.ImageMemory.GetDimensionZ
-        Next index
-        DestinationImageDocument.Name = SlctFileName(1) + "_SUM"
-'        DestinationImageDocument.SetTitle SlctFileName(index) + "_SUM"
-        
-'        DestinationImageDocument.RedrawImage
-        
-    End If
-
-Finish:
-    flgBreak = False
-    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-    User_flg = True
-    
-End Sub
-
-Private Sub DoZStep()
-    Dim SourceImageDocument As AimExperimentTreeNode
-    Dim SourceImage As AimImage
-
-On Error GoTo Finish
-
-    flgBreak = False
-    User_flg = False
-
-    If LoadSourceImage(SourceImageDocument, SourceImage, ImagesListBox.ListIndex) Then
-        
-        GlobalZStep = 10 ^ 6 * SourceImage.ImageMemory.VoxelSizeZ
-        ZStepForm.Show 1
-        If ZStepChange Then
-            SourceImage.ImageMemory.VoxelSizeZ = GlobalZStep / 10 ^ 6
-        End If
-    End If
-
-Finish:
-    flgBreak = False
-    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-    User_flg = True
-End Sub
-
-Private Sub DoSetStartTime()
-    Dim SourceImageDocument As AimExperimentTreeNode
-    Dim SourceImage As AimImage
-    Dim DateValue As Double
-    Dim TimeValue As Double
-
-On Error GoTo Finish
-
-    flgBreak = False
-    User_flg = False
-
-    If LoadSourceImage(SourceImageDocument, SourceImage, ImagesListBox.ListIndex) Then
-        
-        GlobalTimeStampDate = SourceImage.Characteristics.AcquisitionDateAndTime
-        GlobalTimeStampTime = SourceImage.Characteristics.AcquisitionDateAndTime
-            
-        TimeStampForm.Show 1
-        If TimeStampChange Then
-            DateValue = CDbl(GlobalTimeStampDate)
-            DateValue = CDbl(CLng(DateValue))
-            TimeValue = CDbl(GlobalTimeStampTime)
-            TimeValue = TimeValue - CDbl(Int(TimeValue))
-        
-            SourceImage.Characteristics.AcquisitionDateAndTime = CDate(DateValue + TimeValue)
-        End If
-    End If
-
-Finish:
-    flgBreak = False
-    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-    User_flg = True
-
-End Sub
 
 
 
-Private Sub DoLambda()
-    Dim SourceImageDocument As AimExperimentTreeNode
-    Dim DestinationImageDocument As AimExperimentTreeNode
-'    Dim DestinationImageDocument As RecordingDocument
-    
-    Dim SourceImage As AimImage
-    Dim DestinationImage As AimImage
-    Dim ImageCopy As AimImageCopy
-    Dim C As Long
-    Dim C1 As Long
-    Dim Z As Long
-    Dim T As Long
-    Dim Data() As Byte
-On Error GoTo Finish
-
-    flgBreak = False
-    User_flg = False
-'    Set SourceImage = Lsm5.CreateObject("AimImage.Image")
-'    Set SourceImageDocument = Lsm5.CreateObject("AimExperiment.TreeNode")
-'    Set Import = Lsm5.CreateObject("AimImageImportExport.Import")
-    Set ImageCopy = Lsm5.CreateObject("AimImageProcessing.Copy")
-
-    If LoadSourceImage(SourceImageDocument, SourceImage, ImagesListBox.ListIndex) Then
-    
-        If SourceImage.DisplayParameters.Type = eAimImageDisplayTypeSpectral Then
-            If Not MakeDestination(DestinationImageDocument, _
-                                   DestinationImage, _
-                                   SourceImage.ImageMemory.GetDimensionX, _
-                                   SourceImage.ImageMemory.GetDimensionY, _
-                                   1, _
-                                   1, _
-                                   SourceImage.ImageMemory.GetDimensionC, _
-                                   SourceImage.ImageMemory.GetDataType(0)) Then GoTo Finish
-                                   
-            DestinationImage.DisplayParameters.Type = eAimImageDisplayTypeImage
-    
-            ImageCopy.SourceImage = SourceImage
-            ImageCopy.DestinationImage = DestinationImage
-            ImageCopy.ImageParameterCopyFlags = eAimImageParameterCopyAll - eAimImageParameterCopyAcquisitionParameters - eAimImageParameterCopyDisplayType
-            
-            ImageCopy.CreateDestinationMemory eAimImageDataTypeInvalid, _
-                                              True
-            ImageCopy.Start
-                
-            If Not WaitProgress(ImageCopy) Then GoTo Finish
-            
-            DestinationImage.DisplayParameters.Type = eAimImageDisplayTypeImage
-
-'            MsgBox "This image is a lambda stack"
-        Else
-            DisplayProgress "Working... ", RGB(0, &HC0, 0)
-            
-        
-            If SourceImage.ImageMemory.GetDimensionC = 1 And SourceImage.ImageMemory.GetDimensionT > 1 Then
-                If SourceImage.ImageMemory.GetDimensionT > 40 Then
-                    MsgBox "Too Many Time Points to Convert to Lambda Stack!"
-                    GoTo Finish
-                End If
-
-                If Not MakeDestination(DestinationImageDocument, _
-                                       DestinationImage, _
-                                       SourceImage.ImageMemory.GetDimensionX, _
-                                       SourceImage.ImageMemory.GetDimensionY, _
-                                       1, _
-                                       1, _
-                                       SourceImage.ImageMemory.GetDimensionT, _
-                                       SourceImage.ImageMemory.GetDataType(0)) Then GoTo Finish
-'                If Not MakeDestinationDS(DestinationImageDocument, _
-'                                       DestinationImage, _
-'                                       SourceImage.ImageMemory.GetDimensionX, _
-'                                       SourceImage.ImageMemory.GetDimensionY, _
-'                                       1, _
-'                                       1, _
-'                                       SourceImage.ImageMemory.GetDimensionT, _
-'                                       SourceImage.ImageMemory.GetDataType(0)) Then GoTo Finish
-'
-'                ReDim Data(SourceImage.ImageMemory.GetDimensionX * SourceImage.ImageMemory.GetDimensionY)
-'
-'                For T = 0 To SourceImage.ImageMemory.GetDimensionT - 1
-'                    For Z = 0 To SourceImage.ImageMemory.GetDimensionZ - 1
-'                        SourceImage.ImageMemory.GetSubregion 0, _
-'                                                             0, _
-'                                                             0, _
-'                                                             Z, _
-'                                                             T, _
-'                                                             1, _
-'                                                             1, _
-'                                                             1, _
-'                                                             1, _
-'                                                             SourceImage.ImageMemory.GetDimensionX, _
-'                                                             SourceImage.ImageMemory.GetDimensionY, _
-'                                                             1, _
-'                                                             1, _
-'                                                             eAimImageDataTypeU8, SourceImage.ImageMemory.GetDimensionX * SourceImage.ImageMemory.GetDimensionY, _
-'                                                             Data(0)
-'
-'                        DestinationImage.ImageMemory.SetSubregion T, _
-'                                                                  0, _
-'                                                                  0, _
-'                                                                  Z, _
-'                                                                  0, _
-'                                                                  1, _
-'                                                                  1, _
-'                                                                  1, _
-'                                                                  1, _
-'                                                                  SourceImage.ImageMemory.GetDimensionX, _
-'                                                                  SourceImage.ImageMemory.GetDimensionY, _
-'                                                                  1, _
-'                                                                  1, _
-'                                                                  0, _
-'                                                                  0, _
-'                                                                  0, _
-'                                                                  eAimImageDataTypeInvalid, _
-'                                                                  SourceImage.ImageMemory.GetDimensionX * SourceImage.ImageMemory.GetDimensionY, _
-'                                                                  Data(0)
-'                    Next Z
-'                Next T
-
-                ImageCopy.SourceImage = SourceImage
-                ImageCopy.DestinationImage = DestinationImage
-                ImageCopy.ImageParameterCopyFlags = eAimImageParameterCopyAll
-                'ImageCopy.SourceCoordinate(eAimImageOperationCoordinateC) = eAimImageOperationCoordinateT
-
-                For C = 0 To SourceImage.ImageMemory.GetDimensionT - 1
-
-'                    For C1 = 0 To SourceImage.ImageMemory.GetDimensionT - 1
-'                        ImageCopy.ChannelAssignment(C1) = -1
-'                    Next C1
-'                    ImageCopy.ChannelAssignment(C) = 0
-
-                    ImageCopy.DestinationStart(eAimImageOperationCoordinateC) = C
-                    ImageCopy.SourceStart(eAimImageOperationCoordinateT) = C
-                    ImageCopy.SourceStart(eAimImageOperationCoordinateC) = 0
-'                    ImageCopy.Size(eAimImageOperationCoordinateC) = Cd + 1
-                    ImageCopy.Size(eAimImageOperationCoordinateC) = C + 1
-                    ImageCopy.Size(eAimImageOperationCoordinateT) = 1
-'                    ImageCopy.SizeT = 1
-'                    ImageCopy.SourceT = C
-                   ' ImageCopy.Size(eAimImageOperationCoordinateT) = 1
 
 
-'                    ImageCopy.CreateDestinationMemory eAimImageDataTypeInvalid, _
-'                                                      True
-                    ImageCopy.Start
-                    DisplayProgress "Copying Image " + CStr(C + 1) + " out of " + CStr(SourceImage.ImageMemory.GetDimensionT), RGB(0, &HC0, 0)
-
-                    If Not WaitProgress(ImageCopy) Then GoTo Finish
-
-                Next C
-                DestinationImage.DisplayParameters.Type = eAimImageDisplayTypeSpectral
-                For C = 0 To DestinationImage.ImageMemory.GetDimensionC - 1
-                    DestinationImage.ImageMemory.DetectionWavelengthStart(C) = (GlobalStartWl + C * GlobalStepWl - GlobalStepWl / 2) * 0.000000001
-                    DestinationImage.ImageMemory.DetectionWavelengthEnd(C) = (GlobalStartWl + C * GlobalStepWl + GlobalStepWl / 2) * 0.000000001
-                    DestinationImage.DisplayParameters.ChannelInformation.ChannelName(C) = CStr((GlobalStartWl + C * GlobalStepWl) + GlobalStepWl / 2)
-                Next C
 
 
-'            If SourceImage.ImageMemory.GetDimensionC = 1 And SourceImage.ImageMemory.GetDimensionT > 1 Then
-'                If Not MakeDestination(DestinationImageDocument, _
-'                                       DestinationImage, _
-'                                       SourceImage.ImageMemory.GetDimensionX, _
-'                                       SourceImage.ImageMemory.GetDimensionY, _
-'                                       SourceImage.ImageMemory.GetDimensionZ, _
-'                                       1, _
-'                                       SourceImage.ImageMemory.GetDimensionT, _
-'                                       SourceImage.ImageMemory.GetDataType(0)) Then GoTo Finish
-'
-'                ImageCopy.SourceImage = SourceImage
-'                ImageCopy.DestinationImage = DestinationImage
-'                ImageCopy.ImageParameterCopyFlags = eAimImageParameterCopyAll
-'
-''                ImageCopy.SourceStrideT = 1
-''                ImageCopy.Sourcec = SourceImage.ImageMemory.GetDimensionT - 1
-'                ImageCopy.CreateDestinationMemory eAimImageDataTypeInvalid, _
-'                                                  True
-'                For C = 0 To SourceImage.ImageMemory.GetDimensionT - 1
-'                    For C1 = 0 To SourceImage.ImageMemory.GetDimensionT - 1
-'                        ImageCopy.ChannelAssignment(C1) = -1
-'                    Next C1
-'                    ImageCopy.ChannelAssignment(C) = 0
-'                    ImageCopy.SizeT = 1
-'                    ImageCopy.SourceT = C
-'                    ImageCopy.Start
-'                    If Not WaitProgress(ImageCopy) Then GoTo Finish
-'
-'                Next C
-'
-'                DestinationImage.DisplayParameters.Type = eAimImageDisplayTypeSpectral
-'                For C = 0 To DestinationImage.ImageMemory.GetDimensionC - 1
-'                    DestinationImage.ImageMemory.DetectionWavelengthStart(C) = (GlobalStartWl + C * GlobalStepWl) * 0.000000001
-'                    DestinationImage.ImageMemory.DetectionWavelengthEnd(C) = (GlobalStartWl + C * GlobalStepWl) * 0.000000001
-''                    DestinationImage.DisplayParameters.ChannelInformation.ChannelColor(C) = RGB(255, 255, 255)
-'                    DestinationImage.DisplayParameters.ChannelInformation.ChannelName(C) = CStr((GlobalStartWl + C * GlobalStepWl) + GlobalStepWl / 2)
-'
-'                Next C
-            Else
-                If SourceImage.ImageMemory.GetDimensionC = 1 Then
-                    MsgBox "Image Should Have More than One Channel!"
-                    GoTo Finish
-                End If
-            
-                If Not MakeDestination(DestinationImageDocument, _
-                                       DestinationImage, _
-                                       SourceImage.ImageMemory.GetDimensionX, _
-                                       SourceImage.ImageMemory.GetDimensionY, _
-                                       1, _
-                                       1, _
-                                       SourceImage.ImageMemory.GetDimensionC, _
-                                       SourceImage.ImageMemory.GetDataType(0)) Then GoTo Finish
-'                If Not MakeDestinationDS(DestinationImageDocument, _
-'                                       DestinationImage, _
-'                                       SourceImage.ImageMemory.GetDimensionX, _
-'                                       SourceImage.ImageMemory.GetDimensionY, _
-'                                       1, _
-'                                       1, _
-'                                       SourceImage.ImageMemory.GetDimensionC, _
-'                                       SourceImage.ImageMemory.GetDataType(0)) Then GoTo Finish
-                                       
-        
-                ImageCopy.SourceImage = SourceImage
-                ImageCopy.DestinationImage = DestinationImage
-                ImageCopy.ImageParameterCopyFlags = eAimImageParameterCopyAll
-                
-                ImageCopy.CreateDestinationMemory eAimImageDataTypeInvalid, _
-                                                  True
-                ImageCopy.Start
-                    
-                If Not WaitProgress(ImageCopy) Then GoTo Finish
-                
-                DestinationImage.DisplayParameters.Type = eAimImageDisplayTypeSpectral
-                For C = 0 To DestinationImage.ImageMemory.GetDimensionC - 1
-                    DestinationImage.ImageMemory.DetectionWavelengthStart(C) = (GlobalStartWl + C * GlobalStepWl) * 0.000000001
-                    DestinationImage.ImageMemory.DetectionWavelengthEnd(C) = (GlobalStartWl + C * GlobalStepWl) * 0.000000001
-'                    DestinationImage.DisplayParameters.ChannelInformation.ChannelColor(C) = RGB(255, 255, 255)
-                    DestinationImage.DisplayParameters.ChannelInformation.ChannelName(C) = CStr((GlobalStartWl + C * GlobalStepWl) + GlobalStepWl / 2)
-                    
-                Next C
-            End If
-        End If
-'        DestinationImageDocument.RedrawImage
-    End If
-
-Finish:
-    flgBreak = False
-    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-    User_flg = True
-End Sub
-
-
-Private Sub DoMakeTimeSeries()
-
-    Dim SourceImageDocument As AimExperimentTreeNode
-    Dim DestinationImageDocument As AimExperimentTreeNode
-'    Dim DestinationImageDocument As RecordingDocument
-    
-    Dim SourceImage As AimImage
-    Dim DestinationImage As AimImage
-    Dim ImageCopy As AimImageCopy
-    Dim T As Long
-
-On Error GoTo Finish
-
-    flgBreak = False
-    User_flg = False
-'    Set SourceImage = Lsm5.CreateObject("AimImage.Image")
-'    Set SourceImageDocument = Lsm5.CreateObject("AimExperiment.TreeNode")
-'    Set Import = Lsm5.CreateObject("AimImageImportExport.Import")
-    Set ImageCopy = Lsm5.CreateObject("AimImageProcessing.Copy")
-
-    If LoadSourceImage(SourceImageDocument, SourceImage, ImagesListBox.ListIndex) Then
-    
-        If SourceImage.ImageMemory.GetDimensionT > 1 Then
-            MsgBox "This is Time Series Image! Use Single Image!"
-            GoTo Finish
-        End If
-        
-        TimeNumberChange = False
-        NumOfTimes.Show 1
-        
-        If TimeNumberChange Then
-            If Not MakeDestination(DestinationImageDocument, _
-                                   DestinationImage, _
-                                   SourceImage.ImageMemory.GetDimensionX, _
-                                   SourceImage.ImageMemory.GetDimensionY, _
-                                   1, _
-                                   GlobalNumberOfStacks, _
-                                   SourceImage.ImageMemory.GetDimensionC, _
-                                   SourceImage.ImageMemory.GetDataType(0)) Then GoTo Finish
-'            If Not MakeDestinationDS(DestinationImageDocument, _
-'                                   DestinationImage, _
-'                                   SourceImage.ImageMemory.GetDimensionX, _
-'                                   SourceImage.ImageMemory.GetDimensionY, _
-'                                   1, _
-'                                   1, _
-'                                   SourceImage.ImageMemory.GetDimensionC, _
-'                                   SourceImage.ImageMemory.GetDataType(0)) Then GoTo Finish
-                                   
-            ImageCopy.SourceImage = SourceImage
-            ImageCopy.DestinationImage = DestinationImage
-            ImageCopy.ImageParameterCopyFlags = eAimImageParameterCopyAll - eAimImageParameterCopyDisplayType
-'            ImageCopy.SourceStrideT = 0
-'            ImageCopy.SizeT = GlobalNumberOfStacks
-            
-            ImageCopy.SourceStride(eAimImageOperationCoordinateT) = 1
-            ImageCopy.Size(eAimImageOperationCoordinateT) = 1 'GlobalNumberOfStacks
-            ImageCopy.SourceStart(eAimImageOperationCoordinateT) = 0
-            
-            ImageCopy.CreateDestinationMemory eAimImageDataTypeInvalid, _
-                                            False
-            For T = 1 To GlobalNumberOfStacks
-                ImageCopy.DestinationStart(eAimImageOperationCoordinateT) = T - 1
-                ImageCopy.Start
-                If Not WaitProgress(ImageCopy) Then GoTo Finish
-            Next T
-            For T = 0 To GlobalNumberOfStacks - 1
-                DestinationImage.ImageMemory.TimeStamp(T) = DestinationImage.ImageMemory.TimeStamp(0) + T * GlobalTimeIntv
-            Next T
-                
-            If Not WaitProgress(ImageCopy) Then GoTo Finish
-        End If
-    End If
-    
-Finish:
-
-    flgBreak = False
-    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
-    User_flg = True
-    
-End Sub
 
 Public Sub DisplayProgress(state As String, Color As Long)
     If (Color & &HFF) > 128 Or ((Color / 256) & &HFF) > 128 Or ((Color / 256) & &HFF) > 128 Then
@@ -2390,9 +1129,82 @@ Private Sub EnsureOnlyNumbers()
     End If
 End Sub
 
-' m1tle mitosys modification
-Private Sub SelectLocationButton_Click()
-    SelectLocation (Val(SelectLocationTextBox.Text))
+
+
+
+''''
+'   CreateListToConcatenate()
+'   Reads file from list and concatenate them according to their end index
+''''
+Private Function CreateListToConcatenate() As ImageName()
+
+    Dim Images() As ImageName  'this array contains the base-name (first entry) and all files belonging to it
+    ReDim Images(0)
+    Images(0).BaseName = ""
+    Dim Match As MatchCollection
+    Dim index As Integer
+    Dim i As Integer
+    Dim RegEx As VBScript_RegExp_55.RegExp
+    Set RegEx = CreateObject("vbscript.regexp") ' an object to do regular expression operations
+    Dim List
+    List = ImagesListBox.List
+    'check through the full list of image files
+
+    For index = 0 To ImagesListBox.ListCount - 1
+        ' try to match Pattern for file naming used by AutofocusScreen
+        RegEx.Pattern = Pattern
+        If RegEx.Test(ImagesListBox.List(index, 0)) Then
+            Set Match = RegEx.Execute(ImagesListBox.List(index, 0))
+        Else
+            RegEx.Pattern = PatternOld
+            If RegEx.Test(ImagesListBox.List(index, 0)) Then
+                Set Match = RegEx.Execute(ImagesListBox.List(index, 0))
+            Else
+                GoTo NextIndex
+            End If
+        End If
+        
+        If Images(0).BaseName = "" Then 'initialize the Images
+            ReDim Images(0)
+            Images(0).BaseName = Match.Item(0).SubMatches.Item(0)
+            ReDim Images(0).ListOfNames(0)
+            Images(0).ListOfNames(0) = ImagesListBox.List(index, 0)
+        Else
+            RegEx.Pattern = "^" & Match.Item(0).SubMatches.Item(0)
+            For i = 0 To UBound(Images)
+                If RegEx.Test(Images(i).BaseName) Then
+                    ReDim Preserve Images(i).ListOfNames(UBound(Images(i).ListOfNames) + 1)
+                    Images(i).ListOfNames(UBound(Images(i).ListOfNames)) = ImagesListBox.List(index, 0)
+                    GoTo NextIndex
+                End If
+            Next i
+            ReDim Preserve Images(UBound(Images) + 1)
+            ' if I am here no matches was found a create a new BaseName
+            Images(UBound(Images)).BaseName = Match.Item(0).SubMatches.Item(0)
+            ReDim Images(i).ListOfNames(0)
+            Images(UBound(Images)).ListOfNames(0) = ImagesListBox.List(index, 0)
+            
+        End If
+NextIndex:
+    Next index
+    CreateListToConcatenate = Images
+End Function
+
+Private Sub SelectLocationNew(loc As Integer, Images() As ImageName)
+    Dim index As Integer
+    Dim indexI As Integer
+    Dim RegEx As VBScript_RegExp_55.RegExp
+    Set RegEx = CreateObject("vbscript.regexp") ' an object to do regular expression operations
+
+    For index = 0 To ImagesListBox.ListCount - 1
+        ImagesListBox.Selected(index) = False
+        RegEx.Pattern = "^" & Images(loc).BaseName & "_"
+        User_flg = False
+        If RegEx.Test(ImagesListBox.List(index, 0)) Then
+            ImagesListBox.Selected(index) = True
+        End If
+    Next index
+    User_flg = True
 End Sub
 
 Private Sub SelectLocation(loc As Integer)
@@ -2400,11 +1212,11 @@ Private Sub SelectLocation(loc As Integer)
     Dim indexL2 As Integer
     Dim index As Integer
     For index = 0 To ImagesListBox.ListCount - 1
-        indexL = InStr(1, ImagesListBox.list(index, 0), "_L")
-        indexL2 = InStr(indexL + 1, ImagesListBox.list(index, 0), "_")
+        indexL = InStr(1, ImagesListBox.List(index, 0), "_L")
+        indexL2 = InStr(indexL + 1, ImagesListBox.List(index, 0), "_")
         ImagesListBox.Selected(index) = False
         If Not ((indexL = 0) Or (indexL2 = 0)) Then
-            If loc = Val(Mid(ImagesListBox.list(index, 0), indexL + 2, indexL2 - indexL - 2)) Then
+            If loc = Val(Mid(ImagesListBox.List(index, 0), indexL + 2, indexL2 - indexL - 2)) Then
                 ImagesListBox.Selected(index) = True
             End If
         End If
@@ -2413,51 +1225,69 @@ End Sub
 
 ' m1tle mitosys modification
 Private Sub ConcatenateTimePerLocationButton_Click()
+    Dim Images() As ImageName
+    Images = CreateListToConcatenate
     ' find minimum and maximum location number
-    Dim minLoc As Integer
-    Dim maxLoc As Integer
-    Dim locVal As Integer
-    Dim indexL As Integer
-    Dim indexL2 As Integer
-    minLoc = 10000
-    maxLoc = -1
     Dim outputfile As String
-    Dim filename As String
     Dim index As Integer
-    For index = 0 To ImagesListBox.ListCount - 1
-        indexL = InStr(1, ImagesListBox.list(index, 0), "_L") ' index of _L
-        indexL2 = InStr(indexL + 1, ImagesListBox.list(index, 0), "_")
-        If Not ((indexL = 0) Or (indexL2 = 0)) Then
-            locVal = Val(Mid(ImagesListBox.list(index, 0), indexL + 2, indexL2 - indexL - 2))
-            If locVal < minLoc Then
-                minLoc = locVal
+    
+    For index = 0 To UBound(Images)
+        outputfile = FileNameTextBox & Images(index).BaseName & ".lsm"
+        If UBound(Images(index).ListOfNames) > 0 Then
+            If StopConcat Then
+                GoTo EndSub
             End If
-            If locVal > maxLoc Then
-                maxLoc = locVal
+            
+            SelectLocationNew index, Images
+            DoConcatenate_Time
+            SaveDsRecordingDoc Lsm5.DsRecordingActiveDocObject, outputfile
+        End If
+    Next index
+EndSub:
+    StopConcat = False
+End Sub
+
+
+Private Sub ConcatenatetimeMarkedLocation_Click()
+    Dim Images() As ImageName
+    Images = CreateListToConcatenate
+    ' find minimum and maximum location number
+    Dim outputfile As String
+    Dim index As Integer
+    Dim indexI As Integer
+    Dim indexList() As Boolean
+    ReDim indexList(0 To UBound(Images, 1))
+    Dim RegEx As VBScript_RegExp_55.RegExp
+    Set RegEx = CreateObject("vbscript.regexp") ' an object to do regular expression operations
+    'find index that correspond to marked location
+    For indexI = 0 To ImagesListBox.ListCount - 1
+        If ImagesListBox.Selected(indexI) Then
+            For index = 0 To UBound(Images, 1)
+                RegEx.Pattern = "^" & Images(index).BaseName
+                If RegEx.Test(ImagesListBox.List(indexI, 0)) Then
+                    indexList(index) = True
+                    Exit For
+                End If
+            Next index
+        End If
+    Next indexI
+            
+    For index = 0 To UBound(Images, 1)
+        If StopConcat Then
+            GoTo EndSub
+        End If
+        If indexList(index) Then
+            outputfile = FileNameTextBox & Images(index).BaseName & ".lsm"
+            If UBound(Images(index).ListOfNames) > 0 Then
+                SelectLocationNew index, Images
+                DoConcatenate_Time
+                SaveDsRecordingDoc Lsm5.DsRecordingActiveDocObject, outputfile
             End If
         End If
     Next index
-    
-    If (minLoc = 100000) Or (maxLoc = -1) Then
-        MsgBox ("No minimum and maximum location numbers found in filenames!")
-    End If
-        
-    outputfile = FileNameTextBox & OutputFilenameBox
-    If (Len(outputfile) < 4) Or (Not (Right(outputfile, 4) = ".lsm")) Then
-        outputfile = outputfile & ".lsm"
-    End If
-    
-    filename = Left(outputfile, Len(outputfile) - 4)
-    
-    For index = minLoc To maxLoc
-        outputfile = filename & "_L" & CStr(index) & ".lsm"
-        SelectLocation (index)
-        DoConcatenate_Time
-        SaveDsRecordingDoc Lsm5.DsRecordingActiveDocObject, outputfile
-    Next index
-    
+EndSub:
+    StopConcat = False
 End Sub
-
 
 ' Copied and adapted from MultiTimeSeries macro
 Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, filename As String) As Boolean

@@ -7,6 +7,11 @@ Public Const OFN_HIDEREADONLY = &H4
 Public Const OFN_PATHMUSTEXIST = &H800
 Public Const OFN_OVERWRITEPROMPT = &H2
 
+Public Type ImageName
+     BaseName As String
+     ListOfNames() As String
+End Type
+
 Public Type OPENFILENAME
     lStructSize As Long
     hwndOwner As Long
@@ -60,7 +65,7 @@ Public Type WIN32_FIND_DATA
 End Type
 
 Public Declare Function SHBrowseForFolder Lib "shell32.dll" Alias "SHBrowseForFolderA" (lpBi As BROWSEINFO) As Long
-Public Declare Function SHGetPathFromIDList Lib "shell32.dll" Alias "SHGetPathFromIDListA" (ByVal list As Long, ByVal lpPath As String) As Long
+Public Declare Function SHGetPathFromIDList Lib "shell32.dll" Alias "SHGetPathFromIDListA" (ByVal List As Long, ByVal lpPath As String) As Long
 Public Declare Function FindFirstFile Lib "kernel32" Alias "FindFirstFileA" (ByVal lpFileName As String, lpFindFileData As WIN32_FIND_DATA) As Long
 Public Declare Function FindNextFile Lib "kernel32" Alias "FindNextFileA" (ByVal hFindFile As Long, lpFindFileData As WIN32_FIND_DATA) As Long
 Public Declare Function FindClose Lib "kernel32" (ByVal hFindFile As Long) As Long

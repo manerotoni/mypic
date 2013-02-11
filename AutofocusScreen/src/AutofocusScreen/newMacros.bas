@@ -294,9 +294,8 @@ lpNumberOfFreeClusters As Long, lpTotalNumberOfClusters As Long) As Long
 Public Declare Function GetTickCount Lib "kernel32" () As Long
 
 
-
-Public Sub A_Setup()
-     AutofocusForm.Show
+Public Sub Autofocus_Setup()
+        AutofocusForm.Show
 End Sub
 
 
@@ -311,37 +310,6 @@ Public Sub DisplayProgress(State As String, Color As Long)       'Used to displa
     DoEvents
 End Sub
 
-''''
-'   AutoStore()
-'   This was used to store values of the macro parameteres in the registry.
-'   This could be used for saving of the macro and resuisng them but is not working in its present state.
-''''
-Public Sub AutoStore()
-    Dim myKey As String
-    Dim Success As Boolean
-    Dim storeOK As Boolean
-    Dim idx As Long
-    Dim lockNo As Long
-    Dim Msg, Style, Title, Help, Ctxt, Response, MyString
-    AutofocusForm.GetBlockValues
-    storeOK = True
-    myKey = "UI\" + GlobalMacroKey + "\AutoStore"
-    Success = tools.RegExistKey(myKey)
-    If Success Then
-        Success = tools.RegDeleteKey(myKey)
-    End If
-    Success = tools.RegCreateKey(myKey)
-'    tools.RegStringValue(myKey, "BlockAutoConfiguration") = BlockAutoConfiguration
-    tools.RegLongValue(myKey, "BlockTimeIndex") = BlockTimeIndex
-'    tools.RegLongValue(myKey, "BlockAutoConfigurationUse") = BlockAutoConfigurationUse
-    tools.RegDoubleValue(myKey, "BlockHighSpeed") = AutofocusForm.CheckBoxHighSpeed.Value
-    tools.RegDoubleValue(myKey, "BlockLowZoom") = AutofocusForm.CheckBoxLowZoom.Value
-    tools.RegDoubleValue(myKey, "BlockHRZ") = AutofocusForm.CheckBoxHRZ.Value
-   
-    tools.RegDoubleValue(myKey, "BlockZOffset") = AutofocusForm.BSliderZOffset.Value
-    tools.RegDoubleValue(myKey, "BlockZRange") = AutofocusForm.BSliderZRange.Value
-    tools.RegDoubleValue(myKey, "BlockZStep") = AutofocusForm.BSliderZStep.Value
-End Sub
 
 ''''
 ' TODO: Why not use Lsm5.StartScan?
@@ -387,76 +355,14 @@ Public Function ScanToImageNew(RecordingDoc As DsRecordingDoc) As Boolean
     End If
     
     While AcquisitionController.IsGrabbing
-        Sleep (100)
-        If GetInputState() <> 0 Then
-            DoEvents
-            If ScanStop Then
-                Exit Function
-            End If
+        Sleep (200) ' this sometimes hangs if we use GetInputState. Try now without it and test if it does not hang
+        DoEvents
+        If ScanStop Then
+            Exit Function
         End If
     Wend
-    
     ScanToImageNew = True
-    
 End Function
-
-
-'''''
-'  AutoRecall()
-'  This was used to read values of the macro parameteres in the registry. This could be used for saving of the macro and resuisng them but
-'  is not working in its present state.
-'''''
-Public Sub AutoRecall()
-    Dim myKey As String
-    Dim Success As Boolean
-    Dim idx As Long
-    Dim lockNo As Long
-    Dim Msg, Style, Title, Help, Ctxt, Response, MyString As String
-'    Dim Position As Long
-   ' Dim Range As Double
-    
-    myKey = "UI\" + GlobalMacroKey + "\AutoStore"
-    Success = tools.RegExistKey(myKey)
-    If Success Then
-'        Position = Lsm5.Hardware.CpObjectiveRevolver.RevolverPosition
-'        If Position >= 0 Then
-'            Range = Lsm5.Hardware.CpObjectiveRevolver.FreeWorkingDistance(Position) * 1000#
-'        Else
-'            Range = 0#
-'        End If
-'substituted29.06.2010 by Function Range
-    
-'        BlockAutoConfiguration = tools.RegStringValue(myKey, "BlockAutoConfiguration")
-        BlockTimeIndex = tools.RegLongValue(myKey, "BlockTimeIndex") 'TODO what is this?
-'        BlockAutoConfigurationUse = tools.RegLongValue(myKey, "BlockAutoConfigurationUse")
-        AutofocusForm.CheckBoxHighSpeed.Value = tools.RegDoubleValue(myKey, "BlockHighSpeed")
-        AutofocusForm.CheckBoxLowZoom.Value = tools.RegDoubleValue(myKey, "BlockLowZoom")
-        AutofocusForm.CheckBoxHRZ.Value = tools.RegDoubleValue(myKey, "BlockHRZ")
-        
-        AutofocusForm.BSliderZOffset.Value = tools.RegDoubleValue(myKey, "BlockZOffset")
-        AutofocusForm.BSliderZRange.Value = tools.RegDoubleValue(myKey, "BlockZRange")
-        AutofocusForm.BSliderZStep.Value = tools.RegDoubleValue(myKey, "BlockZStep")
-        If AutofocusForm.BSliderZRange.Value > Range() * 0.9 Then
-            AutofocusForm.BSliderZRange.Value = Range() * 0.9
-        End If
-        If Abs(AutofocusForm.BSliderZOffset.Value) > Range * 0.9 Then
-            AutofocusForm.BSliderZOffset.Value = 0
-        End If
-        
-        AutofocusForm.SetBlockValues
-    End If
-End Sub
-
-''''''
-'   CopyRecording(Destination As DsRecording, Source As DsRecording)
-'   This function does normal copy and also Copies FramesPerStack
-'''''
-Public Sub CopyRecording(Destination As DsRecording, Source As DsRecording)
-    Destination.Copy Source
-    Destination.FramesPerStack = Source.FramesPerStack ' why only this
-End Sub
-
-
 
 
 
@@ -466,7 +372,7 @@ End Sub
 '       [GlobalCorrectionOffset] Global Out - Offset added to shift in zStack
 '   TODO: Do we still need it. Only for Axioskop does the Offset change
 '''''
-Public Sub SystemVersionOffset()
+Public Sub SystemVersionOffset(Optional tmp As Boolean) ' tmp is a hack to hide function from menu
     SystemVersion = Lsm5.Info.VersionIs
     If StrComp(SystemVersion, "2.8", vbBinaryCompare) >= 0 Then
         If Lsm5.Info.IsAxioskop Then

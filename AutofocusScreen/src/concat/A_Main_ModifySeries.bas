@@ -31,7 +31,7 @@ Public GlobalImage As AimImage
 Public GlobalNumberOfChannels As Long
 
 
-Declare Sub Sleep Lib "kernel32" (ByVal time As Long)
+Declare Sub Sleep Lib "kernel32" (ByVal Time As Long)
 
 Public Sub Main()
     Dim SystemVersion As String

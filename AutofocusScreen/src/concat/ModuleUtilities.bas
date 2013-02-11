@@ -1523,19 +1523,19 @@ End Sub
 Function RunTime() As Double
     Dim secTime As Currency
     Dim secFreq As Currency
-    Dim time As Double
+    Dim Time As Double
     Dim frequency As Double
     
     QueryPerformanceFrequency secFreq
     QueryPerformanceCounter secTime
     
-    time = secTime
+    Time = secTime
     frequency = secFreq
 
     If frequency = 0 Then
         RunTime = 0
     Else
-        RunTime = time / frequency
+        RunTime = Time / frequency
     End If
 End Function
 
