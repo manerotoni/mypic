@@ -87,9 +87,10 @@ Public Const vbNo = 7    ' No
 
 Public Const PrecZ = 2                     'precision of Z passed for stage movements i.e. Z = Round(Z, PrecZ)
 Public Const PrecXY = 2                    'precision of X and Y passed for stage movements
-Public Const ZBacklash = 0                 'ToDo: is it still recquired?.
+
+Public Const ZBacklash = 0               'ToDo: is it still recquired?.
                                            'Has to do with the movements of the focus wheel that are "better"
-                                           'if they are long enough. For amoment a test did not gave significant differences
+                                           'if they are long enough. For amoment a test did not gave significant differences This is required for ZEN2010
 
 
 '''''''''''''''''''''
@@ -353,7 +354,7 @@ Public Function ScanToImageNew(RecordingDoc As DsRecordingDoc) As Boolean
         'Set RecordingDoc = Lsm5.StartScan this does not overwrite
         If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
     End If
-    
+    Sleep (200)
     While AcquisitionController.IsGrabbing
         Sleep (200) ' this sometimes hangs if we use GetInputState. Try now without it and test if it does not hang
         DoEvents
@@ -468,7 +469,7 @@ Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
     Time = Timer
     DisplayProgress "Autofocus acquire", RGB(0, &HC0, 0)
     '''Check a last time that AF stack number and step is correct when in Fast Z-line mode
-    If (Not AutofocusForm.CheckBoxHRZ.Value) And AutofocusForm.ScanLineToggle.Value And AutofocusForm.CheckBoxHighSpeed.Value Then
+    If (Not AutofocusForm.CheckBoxHRZ.Value) And AutofocusForm.ScanLineToggle.Value And AutofocusForm.CheckBoxFastZline.Value Then
         If Lsm5.DsRecording.SpecialScanMode = "FocusStep" Then
              DisplayProgress "Highest Z Step of 1.54 um with no piezo and Fast Z line has been reached. Autofocus uses slower Focus Step", RGB(&HC0, &HC0, 0)
         End If
