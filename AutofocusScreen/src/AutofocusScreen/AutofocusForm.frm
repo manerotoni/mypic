@@ -23,7 +23,7 @@ Option Explicit 'force to declare all variables
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Private Const Version = " v2.1.1"
-Private Const ZEN = "2011"
+Private Const ZEN = "2010"
 Public posTempZ  As Double                  'This is position at start after pushing AutofocusButton
 Private Const DebugCode = True             'sets key to run tests visible or not
 Private Const LogCode = True             'sets key to run tests visible or not
@@ -1615,12 +1615,7 @@ Public Sub RestoreAcquisitionParameters()
        Lsm5.DsRecording.TrackObjectByMultiplexOrder(i, 1).Acquire = GlobalBackupActiveTracks(i)
     Next i
     Time = Timer
-    If Round(Lsm5.Hardware.CpFocus.Position, PrecZ) <> Round(posTempZ, PrecZ) Then 'Need to move now! May cause problems!
-        If Not FailSafeMoveStageZ(posTempZ) Then
-            StopAcquisition
-            Exit Sub
-        End If
-    End If
+
     Sleep (1000)
     Recenter_pre (posTempZ)
      'wait that CpFocus settle
@@ -2953,13 +2948,16 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
     Else
         Offset = 0
     End If
-    Sleep (200)
+
     'center the slide
     Time = Timer
+    Sleep (200)
     If Not Recenter_pre(Znew + Offset) Then
         Exit Function
     End If
 
+
+    
     If Log Then
         Time = Timer - Time
         pos = Lsm5.Hardware.CpFocus.Position
@@ -3251,7 +3249,7 @@ Public Sub MassCenter(Context As String)
     Else
         FrameNumber = 1
     End If
-    'Gets the pixel size in um
+    'Gets the pixel size
     PixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing * 1000000
     'Gets the distance between frames in Z
     FrameSpacing = Lsm5.DsRecordingActiveDocObject.Recording.FrameSpacing
@@ -3288,7 +3286,7 @@ Public Sub MassCenter(Context As String)
         Next line
     Next frame
     
-    'First it finds the minimum and maximum projected (integrated) pixel values in the 3 dimensions
+    'First it finds the minimum and maximum porjected (integrated) pixel values in the 3 dimensions
     MinColValue = 4095 * LineMax * FrameNumber          'The maximum values are initially set to the maximum possible value
     minLineValue = 4095 * ColMax * FrameNumber
     minFrameValue = 4095 * LineMax * ColMax
@@ -3320,12 +3318,12 @@ Public Sub MassCenter(Context As String)
         End If
     Next frame
     ' Why do you need to threshold the image? (this is probably to remove noise
-    ' Calculates the threshold values. It is set to an arbitrary value of the minimum projected value plus 20% of the difference between the minimum and the maximum projected value.
-    ' Then calculates the center of mass
+    'Calculates the threshold values. It is set to an arbitrary value of the minimum projected value plus 20% of the difference between the minimum and the maximum projected value.
+    'Then calculates the center of mass
     LineSum = 0
     LineWeight = 0
     MidLine = (LineMax + 1) / 2
-    Threshold = minLineValue + (MaxLineValue - minLineValue) * 0.8          'Threshold calculation
+    Threshold = minLineValue + (MaxLineValue - minLineValue) * 0.8         'Threshold calculation
     For line = 1 To LineMax
         LineValue = Intline(line - 1) - Threshold                           'Subtracs the threshold
         PosValue = LineValue + Abs(LineValue)                               'Makes sure that the value is positive or zero. If LineValue is negative, the Posvalue = 0; if Line value is positive, then Posvalue = 2*LineValue
@@ -3375,7 +3373,7 @@ End Sub
 
 ''''''
 '   MassCenterF(Context As String)
-'   TODO: Make a faster procedure here that uses ExcelWorksheet stuff. Try to optimize it
+'   TODO: Make a faster procedure here
 ''''''
 Public Sub MassCenterF(Context As String)
     Dim scrline As Variant
@@ -3442,6 +3440,7 @@ Public Sub MassCenterF(Context As String)
     PixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing * 1000000
     'Gets the distance between frames in Z
     FrameSpacing = Lsm5.DsRecordingActiveDocObject.Recording.FrameSpacing
+    
     'Initiallize tables to store projected (integrated) pixels values in the 3 dimensions
     ReDim Intline(LineMax) As Long
     ReDim IntCol(ColMax) As Long
@@ -3457,7 +3456,7 @@ Public Sub MassCenterF(Context As String)
             End If
         Next channel
     End If
-
+    
     'Tracking is not the correct word. It just does center of mass on an additional channel
 
     'Reads the pixel values and fills the tables with the projected (integrated) pixels values in the three directions
@@ -3473,6 +3472,7 @@ Public Sub MassCenterF(Context As String)
             Next Col
         Next line
     Next frame
+    
     'First it finds the minimum and maximum projected (integrated) pixel values in the 3 dimensions
     MinColValue = 4095 * LineMax * FrameNumber          'The maximum values are initially set to the maximum possible value
     minLineValue = 4095 * ColMax * FrameNumber
