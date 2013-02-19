@@ -3129,10 +3129,10 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
             End If
         End If
         ' update positions for next acquistion
-        posGridX(Row, Col, RowSub) = Xnew
-        posGridY(Row, Col, ColSub) = Ynew
+        posGridX(Row, Col, RowSub, ColSub) = Xnew
+        posGridY(Row, Col, RowSub, ColSub) = Ynew
         If CheckBoxTrackZ Then
-            posGridZ(Row, Col, RowSub) = Znew
+            posGridZ(Row, Col, RowSub, ColSub) = Znew
         End If
     Else ' no location tracking
         Lsm5.Hardware.CpHrz.Leveling   'This I think puts the HRZ to its resting position, and moves the focuswheel correspondingly. Do we need this?
@@ -3251,7 +3251,7 @@ Public Sub MassCenter(Context As String)
     Else
         FrameNumber = 1
     End If
-    'Gets the pixel size
+    'Gets the pixel size in um
     PixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing * 1000000
     'Gets the distance between frames in Z
     FrameSpacing = Lsm5.DsRecordingActiveDocObject.Recording.FrameSpacing
@@ -3288,7 +3288,7 @@ Public Sub MassCenter(Context As String)
         Next line
     Next frame
     
-    'First it finds the minimum and maximum porjected (integrated) pixel values in the 3 dimensions
+    'First it finds the minimum and maximum projected (integrated) pixel values in the 3 dimensions
     MinColValue = 4095 * LineMax * FrameNumber          'The maximum values are initially set to the maximum possible value
     minLineValue = 4095 * ColMax * FrameNumber
     minFrameValue = 4095 * LineMax * ColMax
@@ -3320,12 +3320,12 @@ Public Sub MassCenter(Context As String)
         End If
     Next frame
     ' Why do you need to threshold the image? (this is probably to remove noise
-    'Calculates the threshold values. It is set to an arbitrary value of the minimum projected value plus 20% of the difference between the minimum and the maximum projected value.
-    'Then calculates the center of mass
+    ' Calculates the threshold values. It is set to an arbitrary value of the minimum projected value plus 20% of the difference between the minimum and the maximum projected value.
+    ' Then calculates the center of mass
     LineSum = 0
     LineWeight = 0
     MidLine = (LineMax + 1) / 2
-    Threshold = minLineValue + (MaxLineValue - minLineValue) * 0.8         'Threshold calculation
+    Threshold = minLineValue + (MaxLineValue - minLineValue) * 0.8          'Threshold calculation
     For line = 1 To LineMax
         LineValue = Intline(line - 1) - Threshold                           'Subtracs the threshold
         PosValue = LineValue + Abs(LineValue)                               'Makes sure that the value is positive or zero. If LineValue is negative, the Posvalue = 0; if Line value is positive, then Posvalue = 2*LineValue
@@ -3375,7 +3375,7 @@ End Sub
 
 ''''''
 '   MassCenterF(Context As String)
-'   TODO: Make a faster procedure here
+'   TODO: Make a faster procedure here that uses ExcelWorksheet stuff. Try to optimize it
 ''''''
 Public Sub MassCenterF(Context As String)
     Dim scrline As Variant
@@ -3442,7 +3442,6 @@ Public Sub MassCenterF(Context As String)
     PixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing * 1000000
     'Gets the distance between frames in Z
     FrameSpacing = Lsm5.DsRecordingActiveDocObject.Recording.FrameSpacing
-    
     'Initiallize tables to store projected (integrated) pixels values in the 3 dimensions
     ReDim Intline(LineMax) As Long
     ReDim IntCol(ColMax) As Long
@@ -3458,7 +3457,7 @@ Public Sub MassCenterF(Context As String)
             End If
         Next channel
     End If
-    
+
     'Tracking is not the correct word. It just does center of mass on an additional channel
 
     'Reads the pixel values and fills the tables with the projected (integrated) pixels values in the three directions
@@ -3474,7 +3473,6 @@ Public Sub MassCenterF(Context As String)
             Next Col
         Next line
     Next frame
-    
     'First it finds the minimum and maximum projected (integrated) pixel values in the 3 dimensions
     MinColValue = 4095 * LineMax * FrameNumber          'The maximum values are initially set to the maximum possible value
     minLineValue = 4095 * ColMax * FrameNumber
@@ -3945,13 +3943,12 @@ Private Sub SwitchEnableTrackingToggle(Enable As Boolean)
     End If
     CheckBoxPostTrackXY.Visible = Enable
     CheckBoxTrackZ.Visible = Enable
-    If Lsm5.DsRecording.ScanMode = "Stack" Then
+    PostAcquisitionLabel.Visible = Enable
+    If Lsm5.DsRecording.ScanMode = "Stack" Or Lsm5.DsRecording.ScanMode = "ZScanner" Then
         CheckBoxTrackZ.Enabled = True
-        PostAcquisitionLabel.Visible = Enable
     Else
         CheckBoxTrackZ.Enabled = False
         CheckBoxTrackZ.Value = False
-        PostAcquisitionLabel.Visible = Enable
     End If
 End Sub
     
