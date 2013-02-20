@@ -220,11 +220,11 @@ Private Sub Re_Start()
     AlterImageInitialize = True
     ZoomImageInitialize = True
     
-'    If ZEN = "2010" Then
-'        ZBacklash = -20
-'    ElseIf ZEN = "2011" Then
-'        ZBacklash = 0
-'    End If
+    If ZEN = "2010" Then
+        ZBacklash = 0
+    ElseIf ZEN = "2011" Then
+        ZBacklash = 0
+    End If
     
     
     Re_Initialize
@@ -1617,8 +1617,16 @@ Public Sub RestoreAcquisitionParameters()
     Time = Timer
 
     Sleep (1000)
-    Recenter_pre (posTempZ)
-     'wait that CpFocus settle
+    Recenter_pre posTempZ
+    pos = Lsm5.Hardware.CpFocus.Position
+    If ZEN = "2011" Or ZEN = "2010" Then
+        If Round(pos, PrecZ) <> Round(posTempZ, PrecZ) Then
+            If Not FailSafeMoveStageZ(posTempZ) Then
+                Exit Sub
+            End If
+        End If
+        Recenter_post (posTempZ)
+    End If
     
     If Log Then
         SafeOpenTextFile LogFileName, LogFile, FileSystem
@@ -2110,7 +2118,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         Time = Timer
         posTempZ = Z
         Recenter_pre Z
-        If ZEN = "2011" Then
+        If ZEN = "2011" Or ZEN = "2010" Then
             If Round(pos, PrecZ) <> Round(Z, PrecZ) Then
                 If Not FailSafeMoveStageZ(Z) Then
                     Exit Function
@@ -5375,7 +5383,20 @@ Public Function Recenter2010(Z As Double) As Boolean
     Dim pos As Double
     Dim Sample0Z As Double
     pos = Lsm5.Hardware.CpFocus.Position
-    MoveStage = True 'always move
+    MoveStage = False 'always move
+    ' only move stage when required
+    If Lsm5.DsRecording.SpecialScanMode = "ZScanner" Or (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Then
+        MoveStage = True
+    End If
+    
+    Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + pos - Z
+    If MoveStage Then
+        If Round(pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
+            If Not FailSafeMoveStageZ(Z) Then
+                Exit Function
+            End If
+        End If
+    End If
     Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + pos - Z
     If MoveStage Then
         If Round(pos, PrecZ) <> Round(Z, PrecZ) Then
