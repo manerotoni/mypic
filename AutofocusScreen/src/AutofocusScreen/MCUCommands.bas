@@ -10,7 +10,7 @@ Public MirrorX As Boolean
 Public MirrorY As Boolean
   
 
-Public Sub InitializeStageProperties()
+Public Sub InitializeStageProperties(Optional tmp As Boolean) ' tmp is a hack so that function does not appear in menu
     Set Interface = Lsm5.ExternalCpObject.pHardwareObjects.pInterfaces
     Set Interface = Interface.pItem("CANN")
     
@@ -273,14 +273,14 @@ Private Function SendCommandWaitForHexAnswer(command As String) As Long
 
 End Function
 
-Public Sub NoImageAxisChange()
- ExchangeXY = False
- MirrorX = False
- MirrorY = False
+Public Sub NoImageAxisChange(Optional tmp As Boolean) ' tmp is used so that the function does not appear in the menu. Not very clean
+    ExchangeXY = False
+    MirrorX = False
+    MirrorY = False
 End Sub
 
-Public Sub ImageAxisChange()
-Lsm5.ExternalCpObject.pHardwareObjects.GetImageAxisStateS 1, ExchangeXY, MirrorX, MirrorY
+Public Sub ImageAxisChange(Optional tmp As Boolean)
+    Lsm5.ExternalCpObject.pHardwareObjects.GetImageAxisStateS 1, ExchangeXY, MirrorX, MirrorY
 End Sub
 
 
@@ -298,14 +298,14 @@ Public Function AreStageCoordinateExchanged() As Boolean
     Dim bCamera As Boolean
     Dim lsystem As Integer
     
-     UsedDevices40 bLSM, bLIVE, bCamera
-        If bLSM Then
-            lsystem = 0
-        ElseIf bLIVE Then
-            lsystem = 1
-        ElseIf bCamera Then
-            lsystem = 3
-        End If
+    UsedDevices40 bLSM, bLIVE, bCamera
+    If bLSM Then
+        lsystem = 0
+    ElseIf bLIVE Then
+        lsystem = 1
+    ElseIf bCamera Then
+        lsystem = 3
+    End If
 
     Lsm5.ExternalCpObject.pHardwareObjects.GetImageAxisStateS lsystem, ExchangeXY, MirrorX, MirrorY
     AreStageCoordinateExchanged = ExchangeXY

@@ -61,14 +61,40 @@ End Function
 ' Tries to open a file. If already open resume to next command
 ''''
 Public Function SafeOpenTextFile(ByVal PathName As String, ByRef File As TextStream, ByVal FileSystem As FileSystemObject) As Boolean
-    On Error Resume Next
-    Set File = FileSystem.OpenTextFile(PathName, 8, True)
-    On Error GoTo ErrorHandle
-    SafeOpenTextFile = True
+    If FileExist(PathName) Then
+        ' file exist we try to open it
+        On Error Resume Next
+        Set File = FileSystem.OpenTextFile(PathName, 8, True)
+        On Error GoTo FileIsOpen
+        SafeOpenTextFile = True
+        Exit Function
+    Else
+        On Error Resume Next
+        Set File = FileSystem.OpenTextFile(PathName, 8, True)
+        On Error GoTo FileIsNotAccessible
+        SafeOpenTextFile = True
+        Exit Function
+    End If
+FileIsOpen:
+    SafeOpenTextFile = True 'file is already open
     Exit Function
-ErrorHandle:
-    SafeOpenTextFile = False 'file is already open
+FileIsNotAccessible:
+    SafeOpenTextFile = False
 End Function
+
+
+''''
+'   LogMessage(ByVal Msg As String, ByVal Log As Boolean, ByVal PathName As String, ByRef File As TextStream, ByVal FileSystem As FileSystemObject)
+'   Write Msg to a File if Log is on otherwise it does nothing
+''''
+Public Function LogMessage(ByVal Msg As String, ByVal Log As Boolean, ByVal PathName As String, ByRef File As TextStream, ByVal FileSystem As FileSystemObject)
+    If Log Then
+        If SafeOpenTextFile(PathName, File, FileSystem) Then
+            File.WriteLine (Msg)
+        End If
+    End If
+End Function
+
 
 '''''
 '   FileName(iPosition As Integer, iSubposition As Integer, iRepetition As Integer ) As String

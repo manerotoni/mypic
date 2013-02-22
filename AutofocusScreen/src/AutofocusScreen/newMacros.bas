@@ -88,7 +88,7 @@ Public Const vbNo = 7    ' No
 Public Const PrecZ = 2                     'precision of Z passed for stage movements i.e. Z = Round(Z, PrecZ)
 Public Const PrecXY = 2                    'precision of X and Y passed for stage movements
 
-Public Const ZBacklash = 0               'ToDo: is it still recquired?.
+Public ZBacklash  As Double           'ToDo: is it still recquired?.
                                            'Has to do with the movements of the focus wheel that are "better"
                                            'if they are long enough. For amoment a test did not gave significant differences This is required for ZEN2010
 
@@ -427,6 +427,8 @@ Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
     Dim BigZStep As Double
     Dim Time As Double
     Dim Cnt As Integer
+
+    
     
     Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
     DisplayProgress "Autofocus SetupScanWindow", RGB(0, &HC0, 0)
@@ -448,7 +450,7 @@ Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
     
     'Lsm5.DsRecording.FramesPerStack = FramesPerStack
     
-    DisplayProgress "Autofocus CheckZRange", RGB(0, &HC0, 0)
+    DisplayProgress "Autofocus: CheckZRange", RGB(0, &HC0, 0)
     'checks again if Zranges are good
     If Not AutofocusForm.CheckZRanges() Then
         Autofocus_StackShift = False
@@ -484,21 +486,18 @@ Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
         Exit Function
     End If
     
-    If Log Then
-        SafeOpenTextFile LogFileName, LogFile, FileSystem
-        LogFile.WriteLine "% Autofocus_stackshift: acquire time: " & Timer - Time
-    End If
+    LogMsg = "% Autofocus_stackshift: acquire time " & Round(Timer - Time, 2)
+    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
     
     Time = Timer
     DisplayProgress "Autofocus compute", RGB(0, &HC0, 0)
     
     ' Computes XMass, YMass and ZMass
     AutofocusForm.MassCenter ("Autofocus")
+    
+    LogMsg = "% Autofocus_stackshift: compute time " & Round(Timer - Time, 2)
+    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
 
-    If Log Then
-        LogFile.WriteLine "% Autofocus_stackshift compute time: " & Timer - Time
-        LogFile.Close
-    End If
     If Not ScanStop Then
         Autofocus_StackShift = True
     End If
