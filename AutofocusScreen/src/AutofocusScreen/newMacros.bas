@@ -425,6 +425,7 @@ End Sub
 Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
     Dim pixelDwell As Double
     Dim BigZStep As Double
+    Dim LogMsg As String
     Dim Time As Double
     Dim Cnt As Integer
 

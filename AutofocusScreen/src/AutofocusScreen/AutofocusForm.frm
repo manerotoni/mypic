@@ -19,18 +19,25 @@ Option Explicit 'force to declare all variables
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''Version Description''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '
-' AutofocusScreen_ZEN_v2.1.1
+' AutofocusScreen_ZEN_v2.1.2
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Const Version = " v2.1.1"
+Private Const Version = " v2.1.2"
 Private Const ZEN = "2010"
 Public posTempZ  As Double                  'This is position at start after pushing AutofocusButton
 Private Const DebugCode = False             'sets key to run tests visible or not
-Private Const LogCode = True             'sets key to run tests visible or not
+Private Const ReleaseName = True            'this adds the ZEN version
+Private Const LogCode = True                'sets key to run tests visible or not
 
 Private AlterImageInitialize As Boolean ' first time aternative image is activated values from acquisition are loaded
 Private ZoomImageInitialize As Boolean 'first time ZoomImage/Micropilot is activated values from acquisition are loaded
 
+
+Private Sub CheckBoxAutofocusTrackXY_Click()
+    If CheckBoxAutofocusTrackXY Then
+        CheckBoxPostTrackXY.Value = Not CheckBoxAutofocusTrackXY
+    End If
+End Sub
 
 Private Sub CheckBoxFastZline_Click()
     If CheckBoxFastZline Then
@@ -58,6 +65,13 @@ Private Sub CheckBoxHRZ_Click()
     End If
 End Sub
 
+
+
+Private Sub CheckBoxPostTrackXY_Click()
+    If CheckBoxPostTrackXY Then
+        CheckBoxAutofocusTrackXY.Value = Not CheckBoxPostTrackXY
+    End If
+End Sub
 
 Private Sub StopAfterRepetition_Click()
     If Not Running Then
@@ -106,7 +120,11 @@ Public Sub UserForm_Initialize()
     LogFileNameBase = ""
     Log = LogCode
     
-    Me.Caption = Me.Caption + Version + " for ZEN " + ZEN
+    Me.Caption = Me.Caption + Version + " for ZEN "
+    
+    If ReleaseName Then
+        Me.Caption = Me.Caption + ZEN
+    End If
 
     FormatUserForm (Me.Caption) ' make minimizing button available
     Re_Start                    ' Initialize some of the variables
@@ -259,7 +277,9 @@ Public Sub Re_Initialize()
     Dim count As Long
     
     AutoFindTracks
-  
+    SwitchEnableAutofocusPage CheckBoxActiveAutofocus
+    SwitchEnableAlterImagePage CheckBoxAlterImage
+    SwitchEnableOnlineImageAnalysisPage CheckBoxActiveOnlineImageAnalysis
     
     PubSearchScan = False
     NoReflectionSignal = False
@@ -298,7 +318,7 @@ Public Sub Re_Initialize()
     For i = 0 To Lsm5.DsRecording.TrackCount - 1
        GlobalBackupActiveTracks(i) = Lsm5.DsRecording.TrackObjectByMultiplexOrder(i, 1).Acquire
     Next i
-    If Not WaitForRecentering(posTempZ) Then
+    If Not Recenter_post(posTempZ) Then
         Exit Sub
     End If
     Set FileSystem = New FileSystemObject
@@ -536,6 +556,7 @@ Private Sub CheckBoxAlterImage_Click()
 
     SwitchEnableAlterImagePage (CheckBoxAlterImage.Value)
     If CheckBoxAlterImage.Value And AlterImageInitialize Then
+        TextBoxAlterFrameSize.Value = GlobalAcquisitionRecording.SamplesPerLine
         TextBoxAlterZoom.Value = GlobalAcquisitionRecording.ZoomX
         TextBoxAlterZOffset.Value = BSliderZOffset.Value
         TextBoxAlterInterval.Value = GlobalAcquisitionRecording.FrameSpacing
@@ -555,6 +576,8 @@ Private Sub SwitchEnableAlterImagePage(Enable As Boolean)
     CheckBox2ndTrack2.Enabled = Enable
     CheckBox2ndTrack3.Enabled = Enable
     CheckBox2ndTrack4.Enabled = Enable
+    AlterFrameSizeLabel.Enabled = Enable
+    TextBoxAlterFrameSize.Enabled = Enable
     AlterZoomLabel.Enabled = Enable
     TextBoxAlterZoom.Enabled = Enable
     AlterNumSlicesLabel.Enabled = Enable
@@ -579,7 +602,6 @@ Private Sub CheckBoxActiveGridScan_Click()
 
     SwitchEnableGridScanPage (CheckBoxActiveGridScan.Value)
     If CheckBoxActiveGridScan.Value Then
-        TrackingToggle.Value = False
         MultipleLocationToggle.Value = False
     End If
     
@@ -1782,7 +1804,7 @@ Private Sub ScanLineToggle_Click()
     CheckBoxAutofocusTrackXY.Visible = ScanFrameToggle.Value
     BSliderLineSize.Visible = ScanLineToggle.Value 'LineSize is only displayed if ScanFrame is activated
     If ScanLineToggle.Value Then
-        FrameSizeLabel.Caption = "LineSize"
+        FrameSizeLabel.Caption = "LineSize (px)"
     End If
     CheckBoxFastZline.Enabled = ScanLineToggle And Not CheckBoxHRZ
 End Sub
@@ -1797,7 +1819,7 @@ Private Sub ScanFrameToggle_Click()
     BSliderFrameSize.Visible = ScanFrameToggle.Value
     CheckBoxAutofocusTrackXY.Visible = ScanFrameToggle.Value
     If ScanFrameToggle.Value Then
-        FrameSizeLabel.Caption = "FrameSize"
+        FrameSizeLabel.Caption = "FrameSize (px)"
     End If
     CheckBoxFastZline.Enabled = Not ScanFrameToggle.Value And Not CheckBoxHRZ
 End Sub
@@ -2475,7 +2497,9 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
     Dim X As Double              ' x value where to move the stage (this is used as reference)
     Dim Y As Double              ' y value where to move the stage
     Dim Z As Double              ' z value where to move the stage
-
+    Dim Xold As Double
+    Dim Yold As Double
+    Dim Zold As Double
     
     'test variables
     Dim Success As Integer       ' Check if something was sucessfull
@@ -2563,10 +2587,17 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
                             Y = posGridY(iRow, iCol, iRowSub, iColSub)
                             Z = posGridZ(iRow, iCol, iRowSub, iColSub)
                             'move in X and Y
-                            If Round(Lsm5.Hardware.CpStages.PositionX, PrecXY) <> Round(X, PrecXY) Or Round(Lsm5.Hardware.CpStages.PositionY, PrecXY) <> Round(Y, PrecXY) Then
+                            Xold = Lsm5.Hardware.CpStages.PositionX
+                            Yold = Lsm5.Hardware.CpStages.PositionY
+                            If Round(Xold, PrecXY) <> Round(X, PrecXY) Or Round(Yold, PrecXY) <> Round(Y, PrecXY) Then
                                 If Not FailSafeMoveStageXY(X, Y) Then
                                     StopAcquisition
                                     Exit Sub
+                                End If
+                                If (Xold - X) ^ 2 + (Yold - Y) ^ 2 > 40000 Then 'make a pause if it moves more than 200 um
+                                    Sleep (2000)
+                                Else
+                                    Sleep (500)
                                 End If
                             End If
                             
@@ -3109,7 +3140,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
         Recenter_pre Zold
     End If
     
-    If TrackingToggle And Not CheckBoxActiveGridScan Then 'This is if we're doing some postacquisition tracking (not possible with Grid)
+    If TrackingToggle Then
         'move to new position
         If CheckBoxPostTrackXY.Value Then
             If Not FailSafeMoveStageXY(Xnew, Ynew) Then
@@ -3154,14 +3185,25 @@ Private Sub MakeGrid(posGridX() As Double, posGridY() As Double, posGridZ() As D
         Dim iCol As Long
         Dim iRowSub As Long
         Dim iColSub As Long
-        
+        Dim RowDim(1 To 2) As Integer
+        Dim ColDim(1 To 2) As Integer
+        Dim RowSubDim(1 To 2) As Integer
+        Dim ColSubDim(1 To 2) As Integer
+        RowDim(1) = LBound(posGridX, 1)
+        RowDim(2) = UBound(posGridX, 1)
+        ColDim(1) = LBound(posGridX, 2)
+        ColDim(2) = UBound(posGridX, 2)
+        RowSubDim(1) = LBound(posGridX, 3)
+        RowSubDim(2) = UBound(posGridX, 3)
+        ColSubDim(1) = LBound(posGridX, 4)
+        ColSubDim(2) = UBound(posGridX, 4)
         'Make grid and subgrid
-        For iRow = LBound(posGridX, 1) To UBound(posGridX, 1)
-            For iCol = LBound(posGridX, 2) To UBound(posGridX, 2)
-                For iRowSub = LBound(posGridX, 3) To UBound(posGridX, 3)
-                    For iColSub = LBound(posGridX, 4) To UBound(posGridX, 4)
-                        posGridX(iRow, iCol, iRowSub, iColSub) = Round(XStart + (iCol - 1) * dX + (iColSub - 1) * dXsub, PrecXY)
-                        posGridY(iRow, iCol, iRowSub, iColSub) = Round(YStart + (iRow - 1) * dY + (iRowSub - 1) * dYsub, PrecXY)
+        For iRow = RowDim(1) To RowDim(2)
+            For iCol = ColDim(1) To ColDim(2)
+                For iRowSub = RowSubDim(1) To RowSubDim(2)
+                    For iColSub = ColSubDim(1) To ColSubDim(2)
+                        posGridX(iRow, iCol, iRowSub, iColSub) = Round(XStart + (iCol - 1) * dX + (iColSub - 1 - (ColSubDim(2) - 1) / 2) * dXsub, PrecXY)
+                        posGridY(iRow, iCol, iRowSub, iColSub) = Round(YStart + (iRow - 1) * dY + (iRowSub - 1 - (RowSubDim(2) - 1) / 2) * dYsub, PrecXY)
                         posGridZ(iRow, iCol, iRowSub, iColSub) = Round(ZStart, PrecZ)
                         posGridXY_valid(iRow, iCol, iRowSub, iColSub) = Valid(iRow, iCol)
                     Next iColSub
@@ -3270,6 +3312,7 @@ Public Sub MassCenter(Context As String)
                 Exit For
             End If
         Next channel
+        
         If Not FoundChannel Then
             MsgBox (" Was not able to find channel for tracking!!")
             Exit Sub
@@ -3929,9 +3972,6 @@ End Sub
 '  Tracking is the wrong word. It just uses an extra channel for the calculation of center of mass which is then used to move the stage
 '''''
 Private Sub TrackingToggle_Click()
-    If TrackingToggle.Value Then
-        CheckBoxActiveGridScan.Value = False
-    End If
     SwitchEnableTrackingToggle (TrackingToggle.Value)
 End Sub
 
@@ -4334,15 +4374,9 @@ Public Function ActivateAlterAcquisitionTrack(Recording As DsRecording) As Boole
     Recording.ScanMode = "Stack"
     Recording.FrameSpacing = CDbl(TextBoxAlterInterval.Value)
     Recording.FramesPerStack = CDbl(TextBoxAlterNumSlices.Value)
-    Dim string1 As String
-    string1 = "0.1"
-    Dim Test As Double
-    Test = CDbl(string1)
-    If CheckBoxHRZ.Value Then
-        Recording.SpecialScanMode = "ZScanner" ' this is a problem if people do not have a piezo
-    Else
-        Recording.SpecialScanMode = "FocusStep"
-    End If
+    Recording.SamplesPerLine = TextBoxAlterFrameSize.Value
+    Recording.LinesPerFrame = TextBoxAlterFrameSize.Value
+    Recording.SpecialScanMode = GlobalAcquisitionRecording.SpecialScanMode
     Lsm5.DsRecording.Copy Recording
     Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime = GlobalBackupSampleObservationTime
     If Not ScanStop Then
