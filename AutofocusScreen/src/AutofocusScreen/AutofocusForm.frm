@@ -2103,7 +2103,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         End If
         
         Time = Timer - Time
-        LogMsg = "% AutofocusButton: Time acquire AQImg " & Time
+        LogMsg = "% AutofocusButton: Time acquire AQImg " & Round(Time, 2)
         LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
         
         ''''''''''recenter
@@ -3098,7 +3098,11 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
                         "Well/Position Row: " & Row & ", Column: " & Col & vbCrLf & _
                         "subposition   Row: " & RowSub & ", Column: " & ColSub & vbCrLf, RGB(&HC0, &HC0, 0)
         DoEvents
+        Time = Timer
         MassCenter ("Tracking")
+        LogMsg = " StartButton: Time compute center of mass AQ img " & Round(Timer - Time, 2)
+         LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+
         'compute XYZShift from XYZMass
         ComputeShiftedCoordinates XMass, YMass, ZMass, Xnew, Ynew, Znew
     End If
