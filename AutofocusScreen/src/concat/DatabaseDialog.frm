@@ -282,7 +282,6 @@ Private Sub UseCommonDialog(MyPath As String)
     End If
     CommonDialog.filename = MyPath + "*.*"
     CommonDialog.Filter = "Temporary Files Folder ( *.* ) |*.*"
-    
     CommonDialog.ShowOpen
     CommonDialog.FLAGS = 0
     tmpString = CommonDialog.FileTitle
