@@ -136,6 +136,7 @@ Public OverwriteFiles As Boolean
 Public NoReflectionSignal As Boolean
 Public PubSentStageGrid As Boolean
 Public BleachingActivated As Boolean
+Public FocusMapPresent As Boolean
 
 Public flgEvent As Integer
 Public flg As Integer
@@ -242,7 +243,7 @@ Public RecordingDocpub As DsRecordingDoc
 Public posGridX() As Double ' they are initiated during acquisition
 Public posGridY() As Double ' they are initiated during acquisition
 Public posGridZ() As Double ' initiated during acquistion
-Public posGridXY_valid() As Boolean ' they are initiated during acquisition
+Public posGridXY_Valid() As Boolean ' they are initiated during acquisition
 
 Public posGridXsub() As Double ' they are initiated during acquisition
 Public posGridYsub() As Double ' they are initiated during acquisition

@@ -1,3 +1,12 @@
+tO DO VERSOION 	2.2
+Pre-scan with position and use previous grid-point to set the position
+select active sites
+rotate grid according to rotated image.
+
+To do for FCS:
+make small macro to peform all task starting from lsm image. Also save position and tif file
+
+
 To do for version 2.1 
 
 Major: All functions need to be updated as autofocus Button. Z movement is done at the end of the imaging protocol

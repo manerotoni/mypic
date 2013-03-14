@@ -8,7 +8,7 @@ Option Explicit
 Private Declare Function FindWindowA Lib "user32" _
 (ByVal lpClassName As String, _
 ByVal lpWindowName As String) As Long
- 
+  
 Private Declare Function GetWindowLongA Lib "user32" _
 (ByVal hWnd As Long, _
 ByVal nIndex As Long) As Long
@@ -46,6 +46,11 @@ Public Function FileExist(ByVal PathName As String) As Boolean
      End If
 End Function
 
+
+''''
+' CheckDir
+' Check that directory exists
+''''
 Public Function CheckDir(ByVal PathName As String) As Boolean
     On Error GoTo ErrorDir
     If Dir(GlobalDataBaseName, vbDirectory) = "" Then
@@ -56,6 +61,8 @@ Public Function CheckDir(ByVal PathName As String) As Boolean
 ErrorDir:
     MsgBox "Was not able to create Directory " & PathName & "  please check disc/pathname!"
 End Function
+
+
 
 ''''
 ' Tries to open a file. If already open resume to next command
@@ -150,6 +157,238 @@ Public Function ZeroString(NrofZeros As Integer) As String
         
     ZeroString = name
 End Function
+
+''''
+' CheckPosFile
+' Check that entries of first line correspond to 4 specific values
+''''
+Public Function CheckPosFile(ByVal sFile As String, ByVal Row As Integer, ByVal Col As Integer, ByVal RowSub As Integer, ByVal ColSub As Integer) As Boolean
+    If FileExist(sFile) Then
+        Close
+        On Error GoTo ErrorPosFile:
+        Dim iFileNum As Integer
+        Dim Fields As String
+        Dim FieldEntries() As String
+        iFileNum = FreeFile()
+        Open sFile For Input As iFileNum
+        Line Input #iFileNum, Fields
+        While Left(Fields, 1) = "%"
+            Line Input #iFileNum, Fields
+        Wend
+        FieldEntries = Split(Fields, " ")
+        If FieldEntries(0) = Row And FieldEntries(1) = Col And FieldEntries(2) = RowSub And FieldEntries(3) = ColSub Then
+            CheckPosFile = True
+        End If
+        Close #iFileNum
+    End If
+    Exit Function
+ErrorPosFile:
+    If Err.Number = 70 Then
+        MsgBox ("WritePosFile: Was not able to load position file " & sFile & ". File is open by another program.")
+    End If
+End Function
+
+'''''''
+' LoadPosFile
+' Function loads a file and write entries in Double arrays
+''''''''
+Public Function LoadPosFile(ByVal sFile As String, _
+  posGridX() As Double, posGridY() As Double, posGridZ() As Double) As Boolean
+    Dim iRow As Integer
+    Dim iCol As Integer
+    Dim iRowSub As Integer
+    Dim iColSub As Integer
+    Close
+    On Error GoTo ErrorPosFile:
+    Dim iFileNum As Integer
+    Dim Fields As String
+    Dim FieldEntries() As String
+    iFileNum = FreeFile()
+    Open sFile For Input As iFileNum
+    Line Input #iFileNum, Fields
+    While Left(Fields, 1) = "%"
+        Line Input #iFileNum, Fields
+    Wend
+    FieldEntries = Split(Fields, " ")
+    ReDim posGridX(1 To CDbl(FieldEntries(0)), 1 To CDbl(FieldEntries(1)), 1 To CDbl(FieldEntries(2)), 1 To CDbl(FieldEntries(3)))
+    ReDim posGridY(1 To CDbl(FieldEntries(0)), 1 To CDbl(FieldEntries(1)), 1 To CDbl(FieldEntries(2)), 1 To CDbl(FieldEntries(3)))
+    ReDim posGridZ(1 To CDbl(FieldEntries(0)), 1 To CDbl(FieldEntries(1)), 1 To CDbl(FieldEntries(2)), 1 To CDbl(FieldEntries(3)))
+    For iRow = 1 To UBound(posGridX, 1)
+      For iCol = 1 To UBound(posGridX, 2)
+          Line Input #iFileNum, Fields
+          While Left(Fields, 1) = "%"
+            Line Input #iFileNum, Fields
+          Wend
+          FieldEntries = Split(Fields, " ")
+          For iRowSub = 1 To UBound(posGridX, 3)
+              For iColSub = 1 To UBound(posGridX, 4)
+                  posGridX(iRow, iCol, iRowSub, iColSub) = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * UBound(posGridX, 3) * 3))
+                  posGridY(iRow, iCol, iRowSub, iColSub) = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * UBound(posGridX, 3) * 3 + 1))
+                  posGridZ(iRow, iCol, iRowSub, iColSub) = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * UBound(posGridX, 3) * 3 + 2))
+              Next iColSub
+          Next iRowSub
+      Next iCol
+    Next iRow
+    Close #iFileNum
+    LoadPosFile = True
+    Exit Function
+ErrorPosFile:
+    If Err.Number = 70 Then
+        MsgBox ("WritePosFile: Was not able to load position file " & sFile & ". File is open by another program.")
+    Else
+        MsgBox ("WritePosFile: Was not able to load position file " & sFile)
+    End If
+    MsgBox ("Was not able to load position file " & sFile)
+End Function
+    
+'''''''
+' LoadValidFile
+' Function loads a file and write entries in Double arrays
+''''''''
+Public Function LoadValidFile(ByVal sFile As String, posGridXY_Valid() As Boolean) As Boolean
+    Dim iRow As Integer
+    Dim iCol As Integer
+    Dim iRowSub As Integer
+    Dim iColSub As Integer
+    Close
+    On Error GoTo ErrorPosFile:
+    Dim iFileNum As Integer
+    Dim Fields As String
+    Dim FieldEntries() As String
+    iFileNum = FreeFile()
+    Open sFile For Input As iFileNum
+    Line Input #iFileNum, Fields
+    While Left(Fields, 1) = "%"
+        Line Input #iFileNum, Fields
+    Wend
+    FieldEntries = Split(Fields, " ")
+    ReDim posGridXY_Valid(1 To CDbl(FieldEntries(0)), 1 To CDbl(FieldEntries(1)), 1 To CDbl(FieldEntries(2)), 1 To CDbl(FieldEntries(3)))
+    For iRow = 1 To UBound(posGridX, 1)
+      For iCol = 1 To UBound(posGridX, 2)
+          Line Input #iFileNum, Fields
+          While Left(Fields, 1) = "%"
+            Line Input #iFileNum, Fields
+          Wend
+          FieldEntries = Split(Fields, " ")
+          For iRowSub = 1 To UBound(posGridX, 3)
+              For iColSub = 1 To UBound(posGridX, 4)
+                  posGridXY_Valid(iRow, iCol, iRowSub, iColSub) = CBool(FieldEntries((iColSub - 1) + (iRowSub - 1) * UBound(posGridX, 3)))
+              Next iColSub
+          Next iRowSub
+      Next iCol
+    Next iRow
+    Close #iFileNum
+    LoadValidFile = True
+    Exit Function
+ErrorPosFile:
+    If Err.Number = 70 Then
+        MsgBox ("WritePosFile: Was not able to load position file " & sFile & ". File is open by another program.")
+    Else
+        MsgBox ("WritePosFile: Was not able to load position file " & sFile)
+    End If
+    MsgBox ("Was not able to load position file " & sFile)
+End Function
+    
+'''''''
+' WritePosFile
+' Function loads a file and write entries in Double arrays
+''''''''
+Public Function WritePosFile(ByVal sFile As String, _
+  posGridX() As Double, posGridY() As Double, posGridZ() As Double) As Boolean
+    Dim iRow As Integer
+    Dim iCol As Integer
+    Dim iRowSub As Integer
+    Dim iColSub As Integer
+    Dim Line As String
+    Dim LineComm As String
+    Close
+    On Error GoTo ErrorPosFile:
+    Dim iFileNum As Integer
+    Dim Fields As String
+    Dim FieldEntries() As String
+    iFileNum = FreeFile()
+    Open sFile For Output As iFileNum
+    Print #iFileNum, "%nrRows nrColumns nrsubRows nrsubColumns"
+    Print #iFileNum, UBound(posGridX, 1) & " " & UBound(posGridX, 2) & " " & UBound(posGridX, 3) & " " & UBound(posGridX, 4)
+    For iRow = 1 To UBound(posGridX, 1)
+      For iCol = 1 To UBound(posGridX, 2)
+          LineComm = "%Row: " & iRow & ", Col: " & iCol & " "
+          Print #iFileNum, LineComm
+          Line = ""
+          LineComm = "%Rowsub Colsub: "
+          For iRowSub = 1 To UBound(posGridX, 3)
+              For iColSub = 1 To UBound(posGridX, 4)
+                 LineComm = LineComm & iRowSub & " " & iColSub & ", "
+                 Line = Line & posGridX(iRow, iCol, iRowSub, iColSub) & " " & posGridY(iRow, iCol, iRowSub, iColSub) & " " _
+                  & posGridZ(iRow, iCol, iRowSub, iColSub) & " "
+              Next iColSub
+          Next iRowSub
+        Print #iFileNum, LineComm
+        Print #iFileNum, Line
+      Next iCol
+    Next iRow
+    Close #iFileNum
+    WritePosFile = True
+    Exit Function
+ErrorPosFile:
+    If Err.Number = 70 Then
+        MsgBox ("WritePosFile: Was not able to load position file " & sFile & ". File is open by another program")
+    Else
+        MsgBox ("WritePosFile: Was not able to load position file " & sFile)
+    End If
+    Close #iFileNum
+End Function
+    
+'''''''
+' WritePosFile
+' Function loads a file and write entries in Double arrays
+''''''''
+Public Function WriteValidFile(ByVal sFile As String, posGridXY_Valid() As Boolean) As Boolean
+    Dim iRow As Integer
+    Dim iCol As Integer
+    Dim iRowSub As Integer
+    Dim iColSub As Integer
+    Dim Line As String
+    Dim LineComm As String
+    Close
+    On Error GoTo ErrorPosFile:
+    Dim iFileNum As Integer
+    Dim Fields As String
+    Dim FieldEntries() As String
+    iFileNum = FreeFile()
+    Open sFile For Output As iFileNum
+    Print #iFileNum, "%nrRows nrColumns nrsubRows nrsubColumns"
+    Print #iFileNum, UBound(posGridXY_Valid, 1) & " " & UBound(posGridXY_Valid, 2) & " " & UBound(posGridXY_Valid, 3) & " " & UBound(posGridXY_Valid, 4)
+    For iRow = 1 To UBound(posGridXY_Valid, 1)
+      For iCol = 1 To UBound(posGridXY_Valid, 2)
+          LineComm = "%Row: " & iRow & ", Col: " & iCol & " "
+          Print #iFileNum, LineComm
+          Line = ""
+          LineComm = "%Rowsub Colsub: "
+          For iRowSub = 1 To UBound(posGridXY_Valid, 3)
+              For iColSub = 1 To UBound(posGridXY_Valid, 4)
+                 LineComm = LineComm & iRowSub & " " & iColSub & ", "
+                 Line = Line & -posGridXY_Valid(iRow, iCol, iRowSub, iColSub) * 1 & " "
+              Next iColSub
+          Next iRowSub
+        Print #iFileNum, LineComm
+        Print #iFileNum, Line
+      Next iCol
+    Next iRow
+    Close #iFileNum
+    WriteValidFile = True
+    Exit Function
+ErrorPosFile:
+    If Err.Number = 70 Then
+        MsgBox ("WriteValidFile: Was not able to load position file " & sFile & ". File is open by another program")
+    Else
+        MsgBox ("WriteValidFile: Was not able to load position file " & sFile)
+    End If
+    Close #iFileNum
+End Function
+    
+        
+
 
 '''''
 '   Range() As Double
