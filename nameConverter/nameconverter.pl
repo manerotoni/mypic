@@ -1,43 +1,43 @@
-#!/usr/bin/perl
-# rename lsm files created with AutofocusMacro for ZEN according to cellBase scheme
-# Files are in $dir
-# naming scheme is $naming
-# The Well number xxx of prefix_Wxxx_Pyyy_Tzzz.lsm correspond to the first number
-# given in the naming file
+#!/usr/bin/perl  
+# nameconverter.pl
+# renames lsm files created with AutofocusMacro for ZEN according to cellBase scheme
+# The Well number xxx of prefix_Wxxx_Pyyy_Tzzz.lsm is compared to the first number of the naming scheme
+# the name is then something--zzz.lsm
+
+#This files contains the conversion scheme
+my $naming = 'y:\DataExchange\Andrea_for_Antonio\Boni_Test_Batch01_01.txt';
+#This directory contains the files to convert
+my $dir = 'c:\Users\Antonio Politi\Desktop\Andrea_for_Antonio\Boni_Test_Batch01_01';
+
 use File::Copy;
 my %hash;
-my $naming = 'Renaming.txt'
-my $dir = '/Volumes/ellenberg/DataExchange/Andrea_for_Antonio/Boni_NUP62-NUP205_batch1_02/';
-open FILE, $naming or die $!;
+
+# create a hash correspoding the Well number and file name
+open FILE, $naming or die "cannot open $naming: $!";
 my $key;
 while (my $line = <FILE>) {
     chomp($line);
-    my @entries =split(/\s+/,$line);
+    my @entries =split('--',$line);
     #print "@entries[0]\n";
-    $hash{@entries[0]} = @entries[1];
+    $hash{@entries[0]} = $line;
  }
-if (exists($hash{"_L1"})) {
-    #print "maybe\n";
-}
-
 close FILE;
-opendir(DIR,$dir) or die "cannot open directory";
+
+# cycles through the directory and copy files to new name in same directory
+opendir(DIR,$dir) or die "cannot open directory: $!";
 @files = readdir(DIR);
 close(DIR);
 chdir($dir);
 open LOG, ">", "renaming.log" or die $!;
+my $time;
 for my $file (@files) {
-    #print $file."\n";
-    my @entries = $file =~ /(\w+)\_R(\d+)/;
-    my $time;
-    if (exists($hash{@entries[0]})) {
-        if (@entries[1] < 10) {
-           $time = "0".@entries[1];
-        } else {
-           $time = @entries[1];
-        }
-        print LOG "File renaming ".$file." into ".$hash{@entries[0]}."--T".$time.".lsm\n";
-        rename( $file, $hash{@entries[0]}."--T".$time.".lsm") or die "Copy failed: $!";
-    }
+	#print $file."\n";
+	my @entries = $file =~ /W(\d+)\_P\d+\_T(\d+)/;
+	if (exists($hash{@entries[0]})) {
+		$time = @entries[1];
+		print LOG "File renaming ".$file." into ".$hash{@entries[0]}."--".$time.".lsm\n";
+		copy( $file, $hash{@entries[0]}."--".$time.".lsm") or die "Copy failed: $!";
+		#rename
+	}
 }
 close LOG;
