@@ -22,7 +22,7 @@ Option Explicit 'force to declare all variables
 ' AutofocusScreen_ZEN_v2.1.3
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Const Version = " v2.1.3"
+Private Const Version = " v2.1.3.1"
 Private Const ZEN = "2010"
 Public posTempZ  As Double                  'This is position at start after pushing AutofocusButton
 Private Const DebugCode = False             'sets key to run tests visible or not
@@ -266,12 +266,7 @@ Private Sub Re_Start()
     Set FileSystem = New FileSystemObject
     'If we log a new logfile is created
     If LogCode And LogFileNameBase <> "" Then
-        Dim i As Integer
-        i = 0
-        While FileSystem.FileExists(LogFileNameBase & i & ".txt")
-            i = i + 1
-        Wend
-        LogFileName = LogFileNameBase & i & ".txt"
+        LogFileName = LogFileNameBase
         SafeOpenTextFile LogFileName, LogFile, FileSystem
         LogFile.Close
         Log = True
@@ -355,11 +350,7 @@ Public Sub Re_Initialize()
     Set FileSystem = New FileSystemObject
     'If we log a new logfile is created
     If LogCode And LogFileNameBase <> "" Then
-        i = 0
-        While FileSystem.FileExists(LogFileNameBase & i & ".txt")
-            i = i + 1
-        Wend
-        LogFileName = LogFileNameBase & i & ".txt"
+        LogFileName = LogFileNameBase
         SafeOpenTextFile LogFileName, LogFile, FileSystem
         LogFile.Close
         Log = True
@@ -874,7 +865,7 @@ End Sub
 '   TODO: Change name of function
 '''''
 Private Sub CommandButtonNewDataBase_Click()
-
+    CommonDialog.ShowOpen
     GlobalDataBaseName = DatabaseTextbox.Value
     If Not GlobalDataBaseName = "" Then
         If Not CheckDir(GlobalDataBaseName) Then
@@ -882,20 +873,15 @@ Private Sub CommandButtonNewDataBase_Click()
         End If
         DatabaseLable.Caption = GlobalDataBaseName
         SaveSetting "OnlineImageAnalysis", "macro", "OutputFolder", GlobalDataBaseName
-        LogFileNameBase = GlobalDataBaseName & "\AutofocusLog"
+        LogFileNameBase = GlobalDataBaseName & "\AutofocusScreen.log"
     End If
 
     If LogCode And LogFileNameBase <> "" Then
         On Error GoTo ErrorHandleLogFile
-        Set FileSystem = New FileSystemObject
-        Dim i As Integer
-        i = 0
-        While FileSystem.FileExists(LogFileNameBase & i & ".txt")
-            i = i + 1
-        Wend
-        LogFileName = LogFileNameBase & i & ".txt"
-        SafeOpenTextFile LogFileName, LogFile, FileSystem
-        LogFile.Close
+        'Set FileSystem = New FileSystemObject
+        LogFileName = LogFileNameBase
+        'SafeOpenTextFile LogFileName, LogFile, FileSystem
+        'LogFile.Close
         Log = True
     Else
         Log = False
@@ -2019,7 +2005,6 @@ Public Sub AutofocusButton_Click()
     Dim RecordingDoc As DsRecordingDoc
     Running = True
     posTempZ = Lsm5.Hardware.CpFocus.Position
-
     Recenter_pre posTempZ
     Set GlobalAutoFocusRecording = Lsm5.CreateBackupRecording
     Set GlobalAcquisitionRecording = Lsm5.CreateBackupRecording
@@ -2099,7 +2084,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         DoEvents
         Sleep (200)
         Time = Timer
-        If Not Recenter_pre(posTemp, SuccessRecenter) Then
+        If Not Recenter_pre(posTempZ, SuccessRecenter) Then
             Exit Function
         End If
         
@@ -2230,7 +2215,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
     End If
     
     Time = Timer
-    Recenter_pre posTempZ, SuccesRecenter
+    Recenter_pre posTempZ, SuccessRecenter
     pos = Lsm5.Hardware.CpFocus.Position
     ' move stage to posTempZ
     If ZEN = "2011" Or ZEN = "2010" Then
@@ -2403,19 +2388,12 @@ Private Function StartSetting() As Boolean
         If Not CheckDir(GlobalDataBaseName) Then
             Exit Function
         End If
-        LogFileNameBase = GlobalDataBaseName & "\" & TextBoxFileName.Value & "Log"
+        LogFileNameBase = GlobalDataBaseName & "\AutofocusScreen.log"
         If LogCode And LogFileNameBase <> "" Then
             On Error GoTo ErrorHandleLogFile
-            i = 0
-            While FileSystem.FileExists(LogFileNameBase & i & ".txt")
-                i = i + 1
-            Wend
-            LogFileName = LogFileNameBase & i & ".txt"
-        
+            LogFileName = LogFileNameBase
             SafeOpenTextFile LogFileName, LogFile, FileSystem
-            If DebugCode Then
-                LogFile.WriteLine "% ZEN software version " & ZEN
-            End If
+            LogFile.WriteLine "% ZEN software version " & ZEN & " " & Version
             LogFile.Close
             Log = True
         Else
@@ -3010,73 +2988,6 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
     FilePath = FilePath & ".lsm"
 
 
-    ''''''''''''''''''''''''''''''
-    '*Begin Alternative imaging**'
-    ''''''''''''''''''''''''''''''
-    If CheckBoxAlterImage.Value And ((RepetitionNumber - 1) Mod TextBox_RoundAlterTrack = 0) Then
-        Dim FilePathAlt As String ' name of path for alternative imaging
-        Dim FileNameAlt As String ' name of file for alternative imaging
-        Dim AcquireAltImage As Boolean
-        AcquireAltImage = False
-        'if we have subpositions
-        If GridScan_nColumnsub.Value * GridScan_nRowsub.Value > 1 Then
-            If ((RowSub - 1) * UBound(posGridX, 4) + ColSub) Mod TextBox_RoundAlterLocation = 0 Then
-                AcquireAltImage = True
-            End If
-        ElseIf ((Row - 1) * UBound(posGridX, 2) + Col) Mod TextBox_RoundAlterLocation = 0 Then
-            AcquireAltImage = True
-        End If
-
-        If AcquireAltImage Then
-            Time = Timer
-            If CheckBoxActiveAutofocus Then
-                Offset = BSliderZOffset
-            Else
-                Offset = 0
-            End If
-            DisplayProgress "Addition acquisition: prepeare settings at ZOffset position...", RGB(0, &HC0, 0)
-            ' setup acquisition paramneters
-            If Not ActivateAlterAcquisitionTrack(GlobalAltRecording) Then           'An additional control....
-                MsgBox "No track selected for Additional Acquisition! Cannot Acquire!"
-                Exit Function
-            End If
-            'center the slide
-            If Not Recenter_pre(Znew + Offset) Then
-                Exit Function
-            End If
-
-            FilePathAlt = DatabaseTextbox.Value & BackSlash & TextBoxFileName.Value & UnderScore & "Alt_" & FileNameID & ".lsm" ' fullpath of alternative file
-            FileNameAlt = TextBoxFileName.Value & UnderScore & "Alt_" & FileNameID & ".lsm"
-            
-            LogMsg = "% Start button: Additional acquisition " & FilePathAlt
-            LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
-            
-            DisplayProgress "Additional acquisition: acquire...", RGB(0, &HC0, 0)
-            If Not StartAlternativeImaging(RecordingDoc, FilePathAlt, FileNameAlt) Then
-                    Exit Function
-            End If
-             
-            
-            ''' Recenter
-            DisplayProgress "Additional acquisition:  wait recenter ...", RGB(0, &HC0, 0)
-            
-            If Not Recenter_post(Znew + Offset, SuccessRecenter) Then
-                Exit Function
-            End If
-            
-            LogMsg = "% StartButton:  wait to return center Z (post AltImg) " & Znew + Offset
-            pos = Lsm5.Hardware.CpFocus.Position
-            If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
-                LogMsg = LogMsg & ", obtained Z " & pos & ", position " & pos & ", success within rep." & SuccessRecenter
-            Else
-                LogMsg = LogMsg & ", obtained Z " & Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + pos _
-                & ", position " & pos & ", success within rep." & SuccessRecenter
-            End If
-            LogMsg = LogMsg & vbCrLf & "% Startbutton:  time for additional acquisition + centering " & Round(Timer - Time)
-            LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
-            
-        End If
-    End If
 
     If ScanPause Then
         If Not pause Then ' Pause is true if Resume
@@ -3168,6 +3079,75 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
             Exit Function
         End If
     End If
+
+    ''''''''''''''''''''''''''''''
+    '*Begin Alternative imaging**'
+    ''''''''''''''''''''''''''''''
+    If CheckBoxAlterImage.Value And ((RepetitionNumber - 1) Mod TextBox_RoundAlterTrack = 0) Then
+        Dim FilePathAlt As String ' name of path for alternative imaging
+        Dim FileNameAlt As String ' name of file for alternative imaging
+        Dim AcquireAltImage As Boolean
+        AcquireAltImage = False
+        'if we have subpositions
+        If GridScan_nColumnsub.Value * GridScan_nRowsub.Value > 1 Then
+            If ((RowSub - 1) * UBound(posGridX, 4) + ColSub) Mod TextBox_RoundAlterLocation = 0 Then
+                AcquireAltImage = True
+            End If
+        ElseIf ((Row - 1) * UBound(posGridX, 2) + Col) Mod TextBox_RoundAlterLocation = 0 Then
+            AcquireAltImage = True
+        End If
+
+        If AcquireAltImage Then
+            Time = Timer
+            If CheckBoxActiveAutofocus Then
+                Offset = BSliderZOffset
+            Else
+                Offset = 0
+            End If
+            DisplayProgress "Addition acquisition: prepeare settings at ZOffset position...", RGB(0, &HC0, 0)
+            ' setup acquisition paramneters
+            If Not ActivateAlterAcquisitionTrack(GlobalAltRecording) Then           'An additional control....
+                MsgBox "No track selected for Additional Acquisition! Cannot Acquire!"
+                Exit Function
+            End If
+            'center the slide
+            If Not Recenter_pre(Znew + Offset) Then
+                Exit Function
+            End If
+
+            FilePathAlt = DatabaseTextbox.Value & BackSlash & TextBoxFileName.Value & UnderScore & "Alt_" & FileNameID & ".lsm" ' fullpath of alternative file
+            FileNameAlt = TextBoxFileName.Value & UnderScore & "Alt_" & FileNameID & ".lsm"
+            
+            LogMsg = "% Start button: Additional acquisition " & FilePathAlt
+            LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+            
+            DisplayProgress "Additional acquisition: acquire...", RGB(0, &HC0, 0)
+            If Not StartAlternativeImaging(RecordingDoc, FilePathAlt, FileNameAlt) Then
+                    Exit Function
+            End If
+             
+            
+            ''' Recenter
+            DisplayProgress "Additional acquisition:  wait recenter ...", RGB(0, &HC0, 0)
+            
+            If Not Recenter_post(Znew + Offset, SuccessRecenter) Then
+                Exit Function
+            End If
+            
+            LogMsg = "% StartButton:  wait to return center Z (post AltImg) " & Znew + Offset
+            pos = Lsm5.Hardware.CpFocus.Position
+            If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
+                LogMsg = LogMsg & ", obtained Z " & pos & ", position " & pos & ", success within rep." & SuccessRecenter
+            Else
+                LogMsg = LogMsg & ", obtained Z " & Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + pos _
+                & ", position " & pos & ", success within rep." & SuccessRecenter
+            End If
+            LogMsg = LogMsg & vbCrLf & "% Startbutton:  time for additional acquisition + centering " & Round(Timer - Time)
+            LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+            
+        End If
+    End If
+
 
     ''''''''''''''''''''''''''
     '*** Store bleachTable ***'
