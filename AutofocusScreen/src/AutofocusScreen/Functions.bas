@@ -139,6 +139,41 @@ Public Function FileName(Row As Long, Col As Long, RowSub As Long, ColSub As Lon
     FileName = name
 End Function
 
+Public Function GetFolders(cdmain) As String
+
+    '-- Cheap way to use the common dialog box as a directory-picker
+    Dim x As Integer
+    With cdmain
+        .Flags = cdlOFNPathMustExist
+        .Flags = .Flags Or cdlOFNHideReadOnly
+        .Flags = .Flags Or cdlOFNNoChangeDir
+        .Flags = .Flags Or cdlOFNExplorer
+        .Flags = .Flags Or cdlOFNNoValidate
+        .FileName = "*.*"
+    End With
+    '...The NoValidate setting permits the user to press "Open" while no
+    'single file is selected. The filename setting of "*.*" now satisfies
+    'the common dialog. to parse the directory, use the following logic
+    'from where you present the dialog:
+    x = 3
+    cdmain.CancelError = True 'do not terminate on error
+    On Error Resume Next 'I will hande errors
+    cdmain.ShowOpen 'Present "open" dialog
+    '-- If FileTitle is null, user did not override the default (*.*)
+    '
+    'If cdmain.FileTitle &lt;&gt; "" Then
+    'x = Len(cdmain.FileTitle)
+    
+    
+    If Err = 0 Then
+        GetFolders = Left(cdmain.FileName, Len(cdmain.FileName) - x)
+    Else
+    '-- User pressed "Cancel"
+        GetFolders = ""
+    End If
+
+End Function
+
 '''''
 '   ZeroString(NrofZeros As Integer) As String
 '   Returns a string of zeros
@@ -189,8 +224,10 @@ ErrorPosFile:
 End Function
 
 '''''''
-' LoadPosFile
-' Function loads a file and write entries in Double arrays
+' LoadPosFile(ByVal sFile As String, posGridX() As Double, posGridY() As Double, posGridZ() As Double)
+'       [sFile] In  - Output file name
+'       [posGridX], [posGridY], [posGridZ] In  - Array where to write coordinates of positions
+'   Function loads a file and write entries in Double arrays. First entry of file is structure of grid
 ''''''''
 Public Function LoadPosFile(ByVal sFile As String, _
   posGridX() As Double, posGridY() As Double, posGridZ() As Double) As Boolean
@@ -242,8 +279,11 @@ ErrorPosFile:
 End Function
     
 '''''''
-' LoadValidFile
-' Function loads a file and write entries in Double arrays
+'   LoadValidFile(ByVal sFile As String, posGridXY_Valid() As Boolean) As Boolean
+'       [sFile] In - name of file
+'       [posGridXY_Valid] In/Out - the valid positions to image in the grid
+'   Function loads a file and write entries in Double arrays
+'   First non-commented line is structure of array
 ''''''''
 Public Function LoadValidFile(ByVal sFile As String, posGridXY_Valid() As Boolean) As Boolean
     Dim iRow As Integer
@@ -290,8 +330,10 @@ ErrorPosFile:
 End Function
     
 '''''''
-' WritePosFile
-' Function loads a file and write entries in Double arrays
+'   WritePosFile (ByVal sFile As String, posGridX() As Double, posGridY() As Double, posGridZ() As Double)
+'       [sFile] In  - Output file name
+'       [posGridX], [posGridY], [posGridZ] In  - Array with coordinates of positions
+'   Write out position of grid. The first uncommented line is the structure of the grid
 ''''''''
 Public Function WritePosFile(ByVal sFile As String, _
   posGridX() As Double, posGridY() As Double, posGridZ() As Double) As Boolean
@@ -340,8 +382,10 @@ ErrorPosFile:
 End Function
     
 '''''''
-' WritePosFile
-' Function loads a file and write entries in Double arrays
+'   WriteValidFile (ByVal sFile As String, posGridXY_Valid() As Boolean) As Boolean
+'       [sFile] In - The filename
+'        [posGridXY_Valid] In - The valid positions
+'   Write which position is active/valid, i.e. imaged
 ''''''''
 Public Function WriteValidFile(ByVal sFile As String, posGridXY_Valid() As Boolean) As Boolean
     Dim iRow As Integer
@@ -387,8 +431,6 @@ ErrorPosFile:
     Close #iFileNum
 End Function
     
-        
-
 
 '''''
 '   Range() As Double

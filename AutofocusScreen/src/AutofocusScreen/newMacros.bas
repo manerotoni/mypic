@@ -512,18 +512,18 @@ End Function
 '       [XMass], [YMass], [ZMass]    In - Translation vector
 '       [x], [y], [z] Out - Shifted coordinates. Depends on stage build up and actual position. Positions are rounded up to PrecXY and PrecZ
 ''''''
-Public Function ComputeShiftedCoordinates(ByVal XMass As Double, ByVal YMass As Double, ByVal ZMass As Double, ByRef X As Double, ByRef Y As Double, ByRef Z As Double)
+Public Function ComputeShiftedCoordinates(ByVal XMass As Double, ByVal YMass As Double, ByVal ZMass As Double, ByRef x As Double, ByRef Y As Double, ByRef Z As Double)
 
     If AreStageCoordinateExchanged Then
-        X = X - YMass
+        x = x - YMass
         Y = Y - XMass
     Else
-        X = X + XMass
+        x = x + XMass
         Y = Y - YMass
     End If
         
     Z = Z + ZMass
-    X = Round(X, PrecXY)
+    x = Round(x, PrecXY)
     Y = Round(Y, PrecXY)
     Z = Round(Z, PrecZ)
 End Function
@@ -534,12 +534,12 @@ End Function
 '       [x] In - x-position
 '       [y] In - y-position
 '''''
-Public Function FailSafeMoveStageXY(X As Double, Y As Double) As Boolean
+Public Function FailSafeMoveStageXY(x As Double, Y As Double) As Boolean
     
     FailSafeMoveStageXY = False
 
 
-    Lsm5.Hardware.CpStages.SetXYPosition X, Y
+    Lsm5.Hardware.CpStages.SetXYPosition x, Y
     'TODO Check this
     Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
         Sleep (200)
@@ -603,7 +603,7 @@ Public Function Autofocus_MoveAcquisition(XShift As Double, YShift As Double, ZS
     
     Dim ZFocus As Double
     Dim Zbefore As Double
-    Dim X As Double
+    Dim x As Double
     Dim Y As Double
         
     '''''''''''''''''''''''''''''''''''''''
@@ -632,9 +632,9 @@ Public Function Autofocus_MoveAcquisition(XShift As Double, YShift As Double, ZS
     If AutofocusForm.ScanFrameToggle Then
         ' Todo: check whether it moves in the correct direction
         If AutofocusForm.CheckBoxAutofocusTrackXY Then
-            X = Lsm5.Hardware.CpStages.PositionX - XShift
+            x = Lsm5.Hardware.CpStages.PositionX - XShift
             Y = Lsm5.Hardware.CpStages.PositionY - YShift
-            Success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition(X, Y)
+            Success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition(x, Y)
         End If
          
         Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
@@ -693,7 +693,7 @@ Private Sub MovetoCorrectZPosition(ZOffset As Double)
 Const ZBacklash = -50
 Dim ZFocus As Double
 Dim Zbefore As Double
-Dim X As Double
+Dim x As Double
 Dim Y As Double
      ZFocus = Lsm5.Hardware.CpFocus.Position + ZOffset + ZShift
        Lsm5.Hardware.CpFocus.Position = ZFocus + ZBacklash    'Moves down -50uM (ZBacklash) with the focus wheel
@@ -720,7 +720,7 @@ Public Sub Autofocus_MoveAcquisition_HRZ(ZOffset As Double)
     Const ZBacklash = -50
     Dim ZFocus As Double
     Dim Zbefore As Double
-    Dim X As Double
+    Dim x As Double
     Dim Y As Double
 
     AutofocusForm.RestoreAcquisitionParameters
@@ -772,9 +772,9 @@ Public Sub Autofocus_MoveAcquisition_HRZ(ZOffset As Double)
  
     If AutofocusForm.ScanFrameToggle Then
         If AutofocusForm.CheckBoxAutofocusTrackXY Then
-            X = Lsm5.Hardware.CpStages.PositionX - XShift  'the fact that it is "-" in this line and "+" in the next line  probably has to do with where the XY of the origin is set (top right corner and not botom left, I think)
+            x = Lsm5.Hardware.CpStages.PositionX - XShift  'the fact that it is "-" in this line and "+" in the next line  probably has to do with where the XY of the origin is set (top right corner and not botom left, I think)
             Y = Lsm5.Hardware.CpStages.PositionY - YShift
-            Success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition(X, Y)
+            Success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition(x, Y)
         End If
          
         Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy

@@ -16,13 +16,17 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit 'force to declare all variables
 
+  Private shlShell As Shell32.Shell
+  Private shlFolder As Shell32.Folder
+  Private Const BIF_RETURNONLYFSDIRS = &H1
+
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''Version Description''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '
 ' AutofocusScreen_ZEN_v2.1.3
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Const Version = " v2.1.3.1"
+Private Const Version = " v2.1.3.2"
 Private Const ZEN = "2010"
 Public posTempZ  As Double                  'This is position at start after pushing AutofocusButton
 Private Const DebugCode = False             'sets key to run tests visible or not
@@ -32,11 +36,204 @@ Private Const LogCode = True                'sets key to run tests visible or no
 Private AlterImageInitialize As Boolean ' first time aternative image is activated values from acquisition are loaded
 Private ZoomImageInitialize As Boolean 'first time ZoomImage/Micropilot is activated values from acquisition are loaded
 
+'''''
+'   SaveSettings(FileName As String)
+'   SaveSettings of the UserForm AutofocusForm in file name FileName.
+'   Name should correspond exactly to name used in Form
+'''''
+Private Sub SaveSettings(FileName As String)
+    Dim iFileNum As Integer
+    Close
+    On Error GoTo ErrorHandle
+    iFileNum = FreeFile()
+    Open FileName For Output As iFileNum
+    
+    'Single MultipelocationToggle
+    Print #iFileNum, "% Single Multiple "
+    Print #iFileNum, "MultipleLocationToggle " & MultipleLocationToggle.Value
+    Print #iFileNum, "SingleLocationToggle " & SingleLocationToggle.Value
+    
+    'Autofocus
+    Print #iFileNum, "% Settings for AutofocusMacro for ZEN " & ZEN & "  " & Version
+    Print #iFileNum, "% Autofocus "
+    Print #iFileNum, "CheckBoxActiveAutofocus " & CheckBoxActiveAutofocus.Value
+    Print #iFileNum, "OptionButtonTrack1 " & OptionButtonTrack1.Value
+    Print #iFileNum, "OptionButtonTrack2 " & OptionButtonTrack2.Value
+    Print #iFileNum, "OptionButtonTrack3 " & OptionButtonTrack3.Value
+    Print #iFileNum, "OptionButtonTrack4 " & OptionButtonTrack4.Value
+    Print #iFileNum, "CheckBoxHighSpeed " & CheckBoxHighSpeed.Value
+    Print #iFileNum, "CheckBoxLowZoom " & CheckBoxLowZoom.Value
+    Print #iFileNum, "CheckBoxHRZ " & CheckBoxHRZ.Value
+    Print #iFileNum, "CheckBoxFastZline " & CheckBoxFastZline.Value
+    Print #iFileNum, "AFeveryNth " & AFeveryNth.Value
+    Print #iFileNum, "CheckBoxAutofocusTrackZ " & CheckBoxAutofocusTrackZ.Value
+    Print #iFileNum, "CheckBoxAutofocusTrackXY " & CheckBoxAutofocusTrackXY.Value
+    Print #iFileNum, "ScanLineToggle " & ScanLineToggle.Value
+    Print #iFileNum, "ScanFrameToggle " & ScanFrameToggle.Value
+    Print #iFileNum, "BSliderLineSize " & BSliderLineSize.Value
+    Print #iFileNum, "BSliderFrameSize " & BSliderFrameSize.Value
+    Print #iFileNum, "BSliderZOffset " & BSliderZOffset.Value
+    Print #iFileNum, "BSliderZRange " & BSliderZRange.Value
+    Print #iFileNum, "BSliderZStep " & BSliderZStep.Value
+    Print #iFileNum, "SaveAFImage " & SaveAFImage.Value
+    
+    'Acquisition
+    Print #iFileNum, "% Acquisition "
+    Print #iFileNum, "CheckBoxTrack1 " & CheckBoxTrack1.Value
+    Print #iFileNum, "CheckBoxTrack2 " & CheckBoxTrack2.Value
+    Print #iFileNum, "CheckBoxTrack3 " & CheckBoxTrack3.Value
+    Print #iFileNum, "CheckBoxTrack4 " & CheckBoxTrack4.Value
 
+    
+    'PostAcquisitionTracking
+    Print #iFileNum, "% PostAcquisitionTracking "
+    Print #iFileNum, "TrackingToggle " & TrackingToggle.Value
+    Print #iFileNum, "ComboBoxTrackingChannel " & ComboBoxTrackingChannel.Value
+    Print #iFileNum, "CheckBoxPostTrackXY " & CheckBoxPostTrackXY.Value
+    Print #iFileNum, "CheckBoxTrackZ " & CheckBoxTrackZ.Value
+    
+    'Looping
+    Print #iFileNum, "% Looping "
+    Print #iFileNum, "TimerUnit " & TimerUnit
+    Print #iFileNum, "BSliderTime " & BSliderTime.Value
+    Print #iFileNum, "CheckBoxInterval " & CheckBoxInterval.Value
+    Print #iFileNum, "BSliderRepetitions " & BSliderRepetitions.Value
+    
+    'Output
+    Print #iFileNum, "% Output "
+    Print #iFileNum, "DatabaseTextbox " & DatabaseTextbox.Value
+    Print #iFileNum, "TextBoxFileName " & TextBoxFileName.Value
+    
+    'Micropilot
+    Print #iFileNum, "% MicroPilot "
+    Print #iFileNum, "CheckBoxActiveOnlineImageAnalysis " & CheckBoxActiveOnlineImageAnalysis.Value
+    Print #iFileNum, "CheckBoxZoomTrack1 " & CheckBoxZoomTrack1.Value
+    Print #iFileNum, "CheckBoxZoomTrack2 " & CheckBoxZoomTrack2.Value
+    Print #iFileNum, "CheckBoxZoomTrack3 " & CheckBoxZoomTrack3.Value
+    Print #iFileNum, "CheckBoxZoomTrack4 " & CheckBoxZoomTrack4.Value
+    Print #iFileNum, "TextBoxZoomCycles " & TextBoxZoomCycles.Value
+    Print #iFileNum, "TextBoxZoomCycleDelay " & TextBoxZoomCycleDelay.Value
+    Print #iFileNum, "TextBoxZoomFrameSize " & TextBoxZoomFrameSize.Value
+    Print #iFileNum, "TextBoxZoomAutofocusZOffset " & TextBoxZoomAutofocusZOffset.Value
+    Print #iFileNum, "TextBoxZoomNumSlices " & TextBoxZoomNumSlices.Value
+    Print #iFileNum, "TextBoxZoomInterval " & TextBoxZoomInterval.Value
+    Print #iFileNum, "TextBoxZoom " & TextBoxZoom.Value
+    Print #iFileNum, "CheckBoxZoomAutofocus " & CheckBoxZoomAutofocus.Value
+    
+    'Additional Acquisition
+    Print #iFileNum, "% Additional Acquisition "
+    Print #iFileNum, "CheckBoxAlterImage " & CheckBoxAlterImage.Value
+    Print #iFileNum, "CheckBox2ndTrack1 " & CheckBox2ndTrack1.Value
+    Print #iFileNum, "CheckBox2ndTrack2 " & CheckBox2ndTrack2.Value
+    Print #iFileNum, "CheckBox2ndTrack3 " & CheckBox2ndTrack3.Value
+    Print #iFileNum, "CheckBox2ndTrack4 " & CheckBox2ndTrack4.Value
+    Print #iFileNum, "TextBox_RoundAlterTrack " & TextBox_RoundAlterTrack.Value
+    Print #iFileNum, "TextBox_RoundAlterLocation " & TextBox_RoundAlterLocation.Value
+    Print #iFileNum, "TextBoxAlterFrameSize " & TextBoxAlterFrameSize.Value
+    Print #iFileNum, "TextBoxAlterZOffset " & TextBoxAlterZOffset.Value
+    Print #iFileNum, "TextBoxAlterNumSlices " & TextBoxAlterNumSlices.Value
+    Print #iFileNum, "TextBoxAlterInterval " & TextBoxAlterInterval.Value
+    Print #iFileNum, "TextBoxAlterZoom " & TextBoxAlterZoom.Value
+
+    'Additional Acquisition
+    Print #iFileNum, "% Additional Acquisition "
+    Print #iFileNum, "CheckBoxActiveGridScan " & CheckBoxActiveGridScan.Value
+    Print #iFileNum, "GridScan_nRow " & GridScan_nRow.Value
+    Print #iFileNum, "GridScan_nColumn " & GridScan_nColumn.Value
+    Print #iFileNum, "GridScan_dRow " & GridScan_dRow.Value
+    Print #iFileNum, "GridScan_dColumn " & GridScan_dColumn.Value
+    Print #iFileNum, "GridScan_refRow " & GridScan_refRow.Value
+    Print #iFileNum, "GridScan_refColumn " & GridScan_refColumn.Value
+    Print #iFileNum, "GridScan_nRowsub " & GridScan_nRowsub.Value
+    Print #iFileNum, "GridScan_nColumnsub " & GridScan_nColumnsub.Value
+    Print #iFileNum, "GridScan_dRowsub " & GridScan_dRowsub.Value
+    Print #iFileNum, "GridScan_dColumnsub " & GridScan_dColumnsub.Value
+
+    
+    Close #iFileNum
+    Exit Sub
+ErrorHandle:
+    MsgBox "Not able to open " & FileName & " for saving settings"
+End Sub
+
+''''
+'   LoadSettings(FileName As String)
+'   LoadSettings of Form from FileName
+''''
+Private Sub LoadSettings(FileName As String)
+    Dim iFileNum As Integer
+    Dim Fields As String
+    Dim FieldEntries() As String
+    Dim Entries() As String
+    Close
+    On Error GoTo ErrorHandle
+    iFileNum = FreeFile()
+    Open FileName For Input As iFileNum
+    Do While Not EOF(iFileNum)
+        Line Input #iFileNum, Fields
+        While Left(Fields, 1) = "%"
+            Line Input #iFileNum, Fields
+        Wend
+        FieldEntries = Split(Fields, " ", 2)
+        If FieldEntries(0) = "TimerUnit" Then
+            TimerUnit = CDbl(FieldEntries(1))
+            If TimerUnit = 60 Then
+                CommandTimeMin_Click
+            Else
+                CommandTimeSec_Click
+            End If
+        Else
+            Me.Controls(FieldEntries(0)).Value = FieldEntries(1)
+        End If
+    Loop
+    Exit Sub
+ErrorHandle:
+    MsgBox "Not able to read in settings " & FileName & " for saving settings"
+End Sub
+
+''''
+'   ButtonSaveSettings_Click()
+'   Open a dialog to save setting of the macro
+''''
+Private Sub ButtonSaveSettings_Click()
+    Dim FileName As String
+    CommonDialog.InitDir = DatabaseTextbox.Value
+    CommonDialog.DialogTitle = "Save AutofocusScreenSetting"
+    CommonDialog.Filter = "ini files ( *.ini ) |*.ini"
+    CommonDialog.ShowOpen
+    CommonDialog.Flags = 0
+    FileName = CommonDialog.FileName
+    SaveSettings FileName
+End Sub
+
+''''
+'   ButtonSaveSettings_Click()
+'   Open a dialog to save setting of the macro
+''''
+Private Sub ButtonLoadSettings_Click()
+    Dim FileName As String
+    On Error GoTo ErrorHandle
+    CommonDialog.InitDir = DatabaseTextbox.Value
+    CommonDialog.CancelError = True
+    CommonDialog.DialogTitle = "Save AutofocusScreenSetting"
+    CommonDialog.Filter = "ini files ( *.ini ) |*.ini"
+    CommonDialog.ShowOpen
+    CommonDialog.Flags = 0
+    FileName = CommonDialog.FileName
+    LoadSettings FileName
+    Exit Sub
+ErrorHandle:
+End Sub
+
+''''
+'   FocusMap_Click()
+'   create a focusMap using teh Autofocus Channel
+''''
 Private Sub FocusMap_Click()
     ' This will run just in the AutofocusMode all the AcquisitionTracks are set off
+    SetDatabase
     AcquisitionTracksSetOff
-    Dim BackRepetions As Integer
+    Dim BackRepetitions As Integer
     Dim BackTimeDelay As Integer
     Dim BackTimerUnit As Integer
     
@@ -103,6 +300,8 @@ Private Sub CheckBoxPostTrackXY_Click()
         CheckBoxAutofocusTrackXY.Value = Not CheckBoxPostTrackXY
     End If
 End Sub
+
+
 
 Private Sub StopAfterRepetition_Click()
     If Not Running Then
@@ -620,70 +819,10 @@ End Sub
 '   Set the grid scan on or off. Changes also
 ''
 Private Sub CheckBoxActiveGridScan_Click()
-
     SwitchEnableGridScanPage (CheckBoxActiveGridScan.Value)
     If CheckBoxActiveGridScan.Value Then
         MultipleLocationToggle.Value = False
     End If
-    'check if there is a setting file
-    If GlobalDataBaseName <> "" And CheckBoxActiveGridScan.Value Then
-        On Error GoTo ErrHandle
-        Dim sFile As String
-        sFile = GlobalDataBaseName & "\gridSettings.txt"
-        If FileExist(sFile) Then
-            Close
-            Dim i As Integer
-            Dim iFileNum As Integer
-            Dim Fields As String
-            Dim FieldEntries() As String
-            iFileNum = FreeFile()
-            Open sFile For Input As iFileNum
-            
-            Line Input #iFileNum, Fields
-            While Left(Fields, 1) = "%"
-                Line Input #iFileNum, Fields
-            Wend
-            FieldEntries = Split(Fields, " ")
-            GridScan_nRow.Value = FieldEntries(0)
-            GridScan_nColumn.Value = FieldEntries(1)
-            
-            Line Input #iFileNum, Fields
-            While Left(Fields, 1) = "%"
-                Line Input #iFileNum, Fields
-            Wend
-            FieldEntries = Split(Fields, " ")
-            GridScan_dRow.Value = FieldEntries(0)
-            GridScan_dColumn.Value = FieldEntries(1)
-            
-            Line Input #iFileNum, Fields
-            While Left(Fields, 1) = "%"
-                Line Input #iFileNum, Fields
-            Wend
-            FieldEntries = Split(Fields, " ")
-            GridScan_refRow.Value = FieldEntries(0)
-            GridScan_refColumn.Value = FieldEntries(1)
-            
-            Line Input #iFileNum, Fields
-            While Left(Fields, 1) = "%"
-                Line Input #iFileNum, Fields
-            Wend
-            FieldEntries = Split(Fields, " ")
-            GridScan_nRowsub.Value = FieldEntries(0)
-            GridScan_nColumnsub.Value = FieldEntries(1)
-            
-            Line Input #iFileNum, Fields
-            While Left(Fields, 1) = "%"
-                Line Input #iFileNum, Fields
-            Wend
-            FieldEntries = Split(Fields, " ")
-            GridScan_dRowsub.Value = FieldEntries(0)
-            GridScan_dColumnsub.Value = FieldEntries(1)
-
-        End If
-    End If
-    Exit Sub
-ErrHandle:
-    MsgBox "File " & sFile & " has not the correct format for setting the grid!"
 End Sub
 
 ''''
@@ -742,7 +881,7 @@ Private Sub CommandButtonHelp_Click()
 
     Dim dblTask As Double
     Dim MacroPath As String
-    Dim Mypath As String
+    Dim MyPath As String
     Dim MyPathPDF As String
     
     Dim bslash As String
@@ -772,8 +911,8 @@ Private Sub CommandButtonHelp_Click()
                     Start = pos + 1
                 End If
             Loop
-            Mypath = Strings.Left(MacroPath, Start - 1)
-            MyPathPDF = Mypath + HelpNamePDF
+            MyPath = Strings.Left(MacroPath, Start - 1)
+            MyPathPDF = MyPath + HelpNamePDF
 
             OK = False
             On Error GoTo RTFhelp
@@ -848,6 +987,7 @@ Public Sub StopAcquisition()
     StopButton.BackColor = &H8000000F
     StopButton.Value = False
     BleachingActivated = False
+    LocationTextLabel.Caption = ""
     Sleep (1000)
     If Log Then
         SafeOpenTextFile LogFileName, LogFile, FileSystem
@@ -861,13 +1001,40 @@ End Sub
 
 '''''
 '   CommandButtonNewDataBase_Click()
-'   Assigns output folder where files are stored in ZEN software
-'   TODO: Change name of function
+'   Open a Dialog to design folder where to save the results. then cal SetDatabase to set global variables
 '''''
 Private Sub CommandButtonNewDataBase_Click()
-    CommonDialog.ShowOpen
+    CommonDialog.InitDir = DatabaseTextbox.Value
+    CommonDialog.DialogTitle = "Select a folder to process. Double click OPEN to Process"
+    DatabaseTextbox.Value = GetFolders(CommonDialog)
+    SetDatabase
+End Sub
+
+'''''
+'   DatabaseTextbox_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+'   Only update the outputfolder when enter is pressed. This avois creating a folde at every keystroke
+'''''
+Private Sub DatabaseTextbox_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+    If KeyCode = 13 Then 'this is the enter key
+        SetDatabase
+    End If
+End Sub
+
+'''''
+'   SetDatabase()
+'       [GlobalDataBaseName] Out/Global - The name of Outputfolder
+'       [LogFileNameBase]    Out/Global - The name of the LogfileName
+'       [Log]                Out/Global - If yes results are logged
+'       Set global variables and check if we can create Outputfolder
+'''''
+Private Sub SetDatabase()
     GlobalDataBaseName = DatabaseTextbox.Value
+    If GlobalDataBaseName = "" Then
+        DatabaseLable.Caption = "No output folder"
+    End If
+
     If Not GlobalDataBaseName = "" Then
+        On Error GoTo ErrorHandleDataBase
         If Not CheckDir(GlobalDataBaseName) Then
             Exit Sub
         End If
@@ -887,10 +1054,14 @@ Private Sub CommandButtonNewDataBase_Click()
         Log = False
     End If
     Exit Sub
+ErrorHandleDataBase:
+    MsgBox "Could not create output Directory " & GlobalDataBaseName
+    Exit Sub
 ErrorHandleLogFile:
     MsgBox "Could not create LogFile " & LogFileName
-    Exit Sub
 End Sub
+
+
 
 '''''
 ' AFTest1_Click()
@@ -1917,7 +2088,7 @@ Private Sub GetCurrentPositionOffsetButton_Click()
 End Sub
 
 Private Function GetCurrentPositionOffsetButtonRun() As Boolean
-    Dim X As Double
+    Dim x As Double
     Dim Y As Double
     Dim Z As Double
     Dim Time As Double
@@ -1929,7 +2100,7 @@ Private Function GetCurrentPositionOffsetButtonRun() As Boolean
     DisplayProgress "Get Current Position Offset - Autofocus", RGB(0, &HC0, 0)             'Gives information to the user
     posTempZ = Lsm5.Hardware.CpFocus.Position
     Z = posTempZ
-    X = Lsm5.Hardware.CpStages.PositionX
+    x = Lsm5.Hardware.CpStages.PositionX
     Y = Lsm5.Hardware.CpStages.PositionY
 
     'recenter only after activation of new track
@@ -1968,7 +2139,7 @@ Private Function GetCurrentPositionOffsetButtonRun() As Boolean
         
         DisplayProgress "Autofocus: Recenter after AF acquisition...", RGB(0, &HC0, 0)
         Time = Timer
-        ComputeShiftedCoordinates XMass, YMass, ZMass, X, Y, Z
+        ComputeShiftedCoordinates XMass, YMass, ZMass, x, Y, Z
         BSliderZOffset.Value = -ZMass
         
         Time = Timer
@@ -2043,7 +2214,7 @@ End Sub
 Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = Nothing, Optional FilePath As String = "") As Boolean
     Running = True
     Dim Time As Double
-    Dim X As Double
+    Dim x As Double
     Dim Y As Double
     Dim Z As Double
     Dim Sample0Z As Double ' test variable
@@ -2057,7 +2228,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
 
 
     Z = posTempZ
-    X = Lsm5.Hardware.CpStages.PositionX
+    x = Lsm5.Hardware.CpStages.PositionX
     Y = Lsm5.Hardware.CpStages.PositionY
 
     'recenter only after activation of new track
@@ -2130,8 +2301,8 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
          
          
         '''''''''''''''Translate to new coordinates
-        ComputeShiftedCoordinates XMass, YMass, ZMass, X, Y, Z
-        LogMsg = "% AutofocusButton: center of mass XYZ " & XMass & " " & YMass & " " & ZMass & " ,computed position XYZ " & X & " " & Y & " " & Z
+        ComputeShiftedCoordinates XMass, YMass, ZMass, x, Y, Z
+        LogMsg = "% AutofocusButton: center of mass XYZ " & XMass & " " & YMass & " " & ZMass & " ,computed position XYZ " & x & " " & Y & " " & Z
         LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
         
                 
@@ -2143,7 +2314,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         
         'move X and Y if tracking is on
         If ScanFrameToggle And CheckBoxAutofocusTrackXY Then
-            If Not FailSafeMoveStageXY(X, Y) Then
+            If Not FailSafeMoveStageXY(x, Y) Then
                 Exit Function
             End If
         End If
@@ -2352,7 +2523,7 @@ Private Sub ContinueFromCurrentLocation_Click()
         StopAcquisition
         Exit Sub
     End If
-    StartAcquisition BleachingActivated, FocusMapPresent 'This is the main function of the macro
+    StartAcquisition BleachingActivated 'This is the main function of the macro
 End Sub
 
 
@@ -2381,6 +2552,8 @@ Private Function StartSetting() As Boolean
         MsgBox ("Select at least one location in the stage control window, or uncheck the multiple location button")
         Exit Function
     End If
+    'This loads value of Databasename
+    SetDatabase
     If GlobalDataBaseName = "" Then
         MsgBox ("No outputfolder selected ! Cannot start acquisition.")
         Exit Function
@@ -2392,6 +2565,7 @@ Private Function StartSetting() As Boolean
         If LogCode And LogFileNameBase <> "" Then
             On Error GoTo ErrorHandleLogFile
             LogFileName = LogFileNameBase
+            Close
             SafeOpenTextFile LogFileName, LogFile, FileSystem
             LogFile.WriteLine "% ZEN software version " & ZEN & " " & Version
             LogFile.Close
@@ -2480,9 +2654,11 @@ Private Function StartSetting() As Boolean
     '***Set up MultiLocationScan***'
     ''''''''''''''''''''''''''''''''
     If MultipleLocationToggle Then
+    
         If FileExist(GlobalDataBaseName & "\" & "PositionsMultiLoc.txt") Then
             MsgBox ("File Exist")
         End If
+        
         If Lsm5.Hardware.CpStages.Markcount > 0 Then
             ReDim posGridX(1 To 1, 1 To Lsm5.Hardware.CpStages.Markcount, 1 To 1, 1 To 1)
             ReDim posGridY(1 To 1, 1 To Lsm5.Hardware.CpStages.Markcount, 1 To 1, 1 To 1)
@@ -2532,8 +2708,12 @@ Private Function StartSetting() As Boolean
     If Not Recenter_post(posTempZ) Then
         Exit Function
     End If
-
     
+    'SaveSettings
+    If GlobalDataBaseName <> "" Then
+        SetDatabase
+        SaveSettings GlobalDataBaseName & "AutofocusScreen.ini"
+    End If
     StartSetting = True
     Exit Function
 ErrorHandleDataBase:
@@ -2592,7 +2772,7 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
     End If
   
     'Coordinates
-    Dim X As Double              ' x value where to move the stage (this is used as reference)
+    Dim x As Double              ' x value where to move the stage (this is used as reference)
     Dim Y As Double              ' y value where to move the stage
     Dim Z As Double              ' z value where to move the stage
     Dim Xold As Double
@@ -2682,7 +2862,7 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
                         ' Here comes the check for good or bad location ...
                         If posGridXY_Valid(iRow, iCol, iRowSub, iColSub) Then
                             'define actual positions and move there
-                            X = posGridX(iRow, iCol, iRowSub, iColSub)
+                            x = posGridX(iRow, iCol, iRowSub, iColSub)
                             Y = posGridY(iRow, iCol, iRowSub, iColSub)
                             Z = posGridZ(iRow, iCol, iRowSub, iColSub)
                             'In gridscan mode use initially Z of previous position to find new position
@@ -2694,8 +2874,8 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
                             'move in X and Y
                             Xold = Lsm5.Hardware.CpStages.PositionX
                             Yold = Lsm5.Hardware.CpStages.PositionY
-                            If Round(Xold, PrecXY) <> Round(X, PrecXY) Or Round(Yold, PrecXY) <> Round(Y, PrecXY) Then
-                                If Not FailSafeMoveStageXY(X, Y) Then
+                            If Round(Xold, PrecXY) <> Round(x, PrecXY) Or Round(Yold, PrecXY) <> Round(Y, PrecXY) Then
+                                If Not FailSafeMoveStageXY(x, Y) Then
                                     StopAcquisition
                                     Exit Sub
                                 End If
@@ -2716,13 +2896,13 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
                         
                         ' Show position of stage
                         If SingleLocationToggle Then
-                            LocationTextLabel.Caption = "X= " & X & ",  Y = " & Y & ", Z = " & Z & vbCrLf & _
+                            LocationTextLabel.Caption = "X= " & x & ",  Y = " & Y & ", Z = " & Z & vbCrLf & _
                             "Repetition :" & RepetitionNumber & "/" & BSliderRepetitions.Value
                         End If
                         
                         If MultipleLocationToggle Then
                             LocationTextLabel.Caption = "Marked Position: " & iCol & "/" & UBound(posGridX, 2) & vbCrLf & _
-                            "X = " & X & ", Y = " & Y & ", Z = " & Z & vbCrLf & _
+                            "X = " & x & ", Y = " & Y & ", Z = " & Z & vbCrLf & _
                             "Repetition :" & RepetitionNumber & "/" & BSliderRepetitions.Value
 
                         End If
@@ -2730,7 +2910,7 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
                             LocationTextLabel.Caption = "Locations : " & TotPos & "/" & UBound(posGridX, 1) * UBound(posGridX, 2) * UBound(posGridX, 3) * UBound(posGridX, 4) & vbCrLf & _
                                                         "Well/Position Row: " & iRow & "/" & UBound(posGridX, 1) & "; Column: " & iCol & "/" & UBound(posGridX, 2) & vbCrLf & _
                                                         "Subposition   Row: " & iRowSub & "/" & UBound(posGridX, 3) & "; Column: " & iColSub & "/" & UBound(posGridX, 4) & vbCrLf & _
-                                                        "X = " & X & ", Y = " & Y & _
+                                                        "X = " & x & ", Y = " & Y & _
                                                         ", Z = " & Z & vbCrLf & _
                                                         "Repetition :" & RepetitionNumber & "/" & BSliderRepetitions.Value
                                                         
@@ -3325,8 +3505,11 @@ Private Sub MakeValidGrid(posGridXY_Valid() As Boolean, ByVal sFile As String)
     Dim Default As String
     Dim last_entry  As String
     Dim Active As Boolean
+    Dim GoodMatch As Boolean
+    'Well--Row--Col--(Row,Col)--TypeofWell
     CellBase = "(\d+)--(\d+)--(\d+)--(\S+)--(\S+)"
-    Default = "(\d+) "
+    'valid Row--Col
+    Default = "(\d+) (\d+)--(\d+)"
     Dim iRow As Long
     Dim iCol As Long
     Dim iRowSub As Long
@@ -3337,49 +3520,9 @@ Private Sub MakeValidGrid(posGridXY_Valid() As Boolean, ByVal sFile As String)
     Dim Rec As DsRecordingDoc
     Dim FoundChannel As Boolean
     FoundChannel = False
-    'File is either a Cellbase file or a series of 1 and zeros vertically ordered
-    If FileExist(sFile) Then
-        On Error GoTo Default:
-        Dim iFileNum As Integer
-        Dim Fields As String
-        Dim FieldEntries() As String
-        iFileNum = FreeFile()
-        Open sFile For Input As iFileNum
-        
-        For iRow = 1 To UBound(posGridXY_Valid, 1)
-            For iCol = 1 To UBound(posGridXY_Valid, 2)
-                Line Input #iFileNum, Fields
-                While Left(Fields, 1) = "%"
-                    Line Input #iFileNum, Fields
-                Wend
-                RegEx.Pattern = Default
-                If RegEx.Test(Fields) Then
-                     Set Match = RegEx.Execute(Fields)
-                     last_entry = Match.Item(0).SubMatches.Item(0)
-                     Active = (last_entry = "1")
-                Else
-                    RegEx.Pattern = CellBase
-                    If RegEx.Test(Fields) Then
-                        Set Match = RegEx.Execute(Fields)
-                        last_entry = Match.Item(0).SubMatches.Item(4)
-                        Active = (last_entry <> "empty")
-                    Else
-                        MsgBox "File " & sFile & " has no standard format. Use default valid grid setting!"
-                        GoTo Default
-                    End If
-                End If
-                For iRowSub = 1 To UBound(posGridXY_Valid, 3)
-                    For iColSub = 1 To UBound(posGridXY_Valid, 4)
-                        posGridXY_Valid(iRow, iCol, iRowSub, iColSub) = Active
-                    Next iColSub
-                Next iRowSub
-            Next iCol
-        Next iRow
-        Exit Sub
-    End If
-    ' All points are true
-Default:
-              'Make grid and subgrid
+    
+    ' All points are true as default
+    'Make grid and subgrid
     For iRow = 1 To UBound(posGridXY_Valid, 1)
         For iCol = 1 To UBound(posGridXY_Valid, 2)
             For iRowSub = 1 To UBound(posGridXY_Valid, 3)
@@ -3389,6 +3532,47 @@ Default:
             Next iRowSub
         Next iCol
     Next iRow
+    
+    'File is either a Cellbase file or a series of 1 and zeros vertically ordered
+    If FileExist(sFile) Then
+        Close
+        Dim iFileNum As Integer
+        Dim Fields As String
+        Dim FieldEntries() As String
+        iFileNum = FreeFile()
+        Open sFile For Input As iFileNum
+        ' Go till end of file and fill the grid validity
+        Do While Not EOF(iFileNum)
+            On Error GoTo ErrorHandle:
+            Line Input #iFileNum, Fields
+            GoodMatch = False
+            RegEx.Pattern = Default
+            If RegEx.Test(Fields) Then
+                Set Match = RegEx.Execute(Fields)
+                Active = (Match.Item(0).SubMatches.Item(0) = "1")
+                GoodMatch = True
+            Else
+                RegEx.Pattern = CellBase
+                If RegEx.Test(Fields) Then
+                    Set Match = RegEx.Execute(Fields)
+                    Active = (Match.Item(0).SubMatches.Item(4) <> "empty")
+                    GoodMatch = True
+                End If
+            End If
+            'if this gridposition exists then update activity
+            If GoodMatch And CInt(Match.Item(0).SubMatches.Item(1)) <= UBound(posGridXY_Valid, 1) And CInt(Match.Item(0).SubMatches.Item(1)) >= LBound(posGridXY_Valid, 1) _
+            And CInt(Match.Item(0).SubMatches.Item(2)) <= UBound(posGridXY_Valid, 2) And CInt(Match.Item(0).SubMatches.Item(2)) >= LBound(posGridXY_Valid, 2) Then
+                For iRowSub = 1 To UBound(posGridXY_Valid, 3)
+                    For iColSub = 1 To UBound(posGridXY_Valid, 4)
+                        posGridXY_Valid(CInt(Match.Item(0).SubMatches.Item(1)), CInt(Match.Item(0).SubMatches.Item(2)), iRowSub, iColSub) = Active
+                    Next iColSub
+                Next iRowSub
+            End If
+        Loop
+    End If
+    Exit Sub
+ErrorHandle:
+    MsgBox "MakeValidGrid error!"
 End Sub
 
 
@@ -4928,7 +5112,7 @@ Private Sub CreateZoomDatabase(ZoomDatabaseName, HighResExperimentCounter, ZoomE
             Dim bslash As String
             Dim pos As Long
             Dim NameLength As Long
-            Dim Mypath As String
+            Dim MyPath As String
             
             Start = 1
             bslash = "\"
@@ -4940,18 +5124,18 @@ Private Sub CreateZoomDatabase(ZoomDatabaseName, HighResExperimentCounter, ZoomE
                 End If
             Loop
             
-            Mypath = DatabaseTextbox.Value + bslash
+            MyPath = DatabaseTextbox.Value + bslash
             NameLength = Len(DatabaseTextbox.Value)
             ZoomExpname = Strings.Right(DatabaseTextbox.Value, NameLength - Start + 1)
            ' NameLength = Len(Myname)
            ' Myname = Strings.Left(Myname, NameLength - 4)
-            ZoomDatabaseName = Mypath & ZoomExpname & "_" & TextBoxFileName.Value & LocationName & "_R" & RepetitionNumber & "_Exp" & HighResExperimentCounter & "_zoom"
+            ZoomDatabaseName = MyPath & ZoomExpname & "_" & TextBoxFileName.Value & LocationName & "_R" & RepetitionNumber & "_Exp" & HighResExperimentCounter & "_zoom"
             ' Lsm5.NewDatabase (ZoomDatabaseName)
            ' ZoomDatabaseName = ZoomDatabaseName & "\" & Myname & "_zoom.mdb"
     
 End Sub
 
-Private Sub CreateAlterImageDatabase(AlterDatabaseName, Mypath)
+Private Sub CreateAlterImageDatabase(AlterDatabaseName, MyPath)
         Dim Start As Integer
         Dim bslash As String
         Dim pos As Long
@@ -4967,12 +5151,12 @@ Private Sub CreateAlterImageDatabase(AlterDatabaseName, Mypath)
                  Start = pos + 1
              End If
          Loop
-         Mypath = Strings.Left(DatabaseTextbox.Value, Start - 1)
+         MyPath = Strings.Left(DatabaseTextbox.Value, Start - 1)
          NameLength = Len(DatabaseTextbox.Value)
          Myname = Strings.Right(DatabaseTextbox.Value, NameLength - Start + 1)
          NameLength = Len(Myname)
          ' Myname = Strings.Left(Myname, NameLength - 4)
-         AlterDatabaseName = Mypath & Myname & "_additionalTracks"
+         AlterDatabaseName = MyPath & Myname & "_additionalTracks"
         ' Lsm5.NewDatabase (AlterDatabaseName)
         '  AlterDatabaseName = AlterDatabaseName & "\" & Myname & "_additionalTracks"
          
@@ -5119,7 +5303,7 @@ Private Sub StorePositioninHighResArray(HighResArrayX() As Double, HighResArrayY
     
     Dim zoomXoffset As Double
     Dim zoomYoffset As Double
-    Dim X As Double
+    Dim x As Double
     Dim Y As Double
     Dim PixelSize As Double
 
@@ -5153,14 +5337,14 @@ Private Sub StorePositioninHighResArray(HighResArrayX() As Double, HighResArrayY
     'Move x,y,
      
     PixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing * 1000000
-    X = Lsm5.Hardware.CpStages.PositionX
+    x = Lsm5.Hardware.CpStages.PositionX
     Y = Lsm5.Hardware.CpStages.PositionY
     
     'MsgBox ("PixelSize " + CStr(PixelSize))
     'MsgBox ("zoomXoffset*ps,zoomYoffset*ps " + CStr(zoomXoffset * PixelSize) + "," + CStr(zoomYoffset * PixelSize))
     
     
-    HighResArrayX(HighResCounter) = X - zoomXoffset * PixelSize
+    HighResArrayX(HighResCounter) = x - zoomXoffset * PixelSize
     HighResArrayY(HighResCounter) = Y + zoomYoffset * PixelSize
     HighResArrayZ(HighResCounter) = Lsm5.Hardware.CpFocus.Position
    ' MsgBox "Current Z Position = " + CStr(Lsm5.Hardware.CpFocus.Position)
@@ -5198,7 +5382,7 @@ HighResCounter As Integer, HighResExperimentCounter As Integer, Row As Long, Col
     Dim UnderScore As String
     Dim LogMsg As String
     'position variables
-    Dim X As Double
+    Dim x As Double
     Dim Y As Double
     Dim Z As Double
     Dim pos As Double
@@ -5252,7 +5436,7 @@ HighResCounter As Integer, HighResExperimentCounter As Integer, Row As Long, Col
         
                 ' Move to Positon in x, y, z for Highresscan
                 DisplayProgress "Micropilot Code 5 - Move to Position", RGB(0, &HC0, 0)
-                X = HighResArrayX(highrespos)
+                x = HighResArrayX(highrespos)
                 Y = HighResArrayY(highrespos)
                 Z = HighResArrayZ(highrespos)
                 If Not FailSafeMoveStageXY(HighResArrayX(highrespos), HighResArrayY(highrespos)) Then
@@ -5302,14 +5486,14 @@ HighResCounter As Integer, HighResExperimentCounter As Integer, Row As Long, Col
                         
                         
                     ' move the xyz to the right position
-                    ComputeShiftedCoordinates XMass, YMass, ZMass, X, Y, Z
+                    ComputeShiftedCoordinates XMass, YMass, ZMass, x, Y, Z
                     If CheckBoxAutofocusTrackXY.Value And ScanFrameToggle.Value Then
                         DisplayProgress "Micropilot - Autofocus move XY stage", RGB(0, &HC0, 0)
-                        If Not FailSafeMoveStageXY(X, Y) Then
+                        If Not FailSafeMoveStageXY(x, Y) Then
                             Exit Function
                         End If
                     End If
-                    LogMsg = "% Micropilot: center of mass  " & XMass & ", " & YMass & ", " & ZMass & ", computed position " & X & ", " & Y & ", " & Z
+                    LogMsg = "% Micropilot: center of mass  " & XMass & ", " & YMass & ", " & ZMass & ", computed position " & x & ", " & Y & ", " & Z
                     LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
                     
                 End If

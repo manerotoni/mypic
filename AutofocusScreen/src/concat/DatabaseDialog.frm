@@ -17,15 +17,12 @@ Attribute VB_Exposed = False
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''Version Description''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '
-' Concat v2.0.1
+' Concat v2.0.2
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Const Version = " v2.0.1"
+Private Const Version = " v2.0.2"
 Option Explicit 'force to declare all variables
-Private Const Pattern = "(\w+)_T(\d+).lsm"     ' this recognizes e.g. blabla_Wxxx_Pxxx_Txxx.lsm
-Private Const PatternOld = "(\w+)_R(\d+).lsm"  ' this recognizes e.g. blabla_Lxxx_Rxxx.lsm
-Private StopConcat As Boolean
-
+Private Pattern() As String
 
 Dim DatabaseDialogLoaded As Boolean
 
@@ -39,7 +36,7 @@ Dim DatabaseDialogLoaded As Boolean
 
 
 Private Sub StopButton_Click()
-    StopConcat = True
+    flgBreak = True
 End Sub
 
 Private Sub UserForm_Activate()
@@ -47,6 +44,11 @@ Private Sub UserForm_Activate()
         LoadWindowPosition
     End If
     DatabaseDialogLoaded = True
+    ReDim Pattern(4)
+    Pattern(0) = "(\w+)_T(\d+).lsm" 'new standard formt
+    Pattern(1) = "(\w+)--(\d+).lsm" 'Cellbase Format
+    Pattern(2) = "(\w+)_R(\d+).lsm" 'old obsolete format
+    Pattern(3) = "(\w+)--T(\d+).lsm" 'intermediate obsolete format
 
 End Sub
 
@@ -690,7 +692,7 @@ Private Function WaitProgress(Progress As AimProgress)
 
 End Function
 
-Private Sub DoConcatenate_Time()
+Private Function DoConcatenate_Time() As Boolean
 
     Dim SourceImageNodeDocument As AimExperimentTreeNode
     Dim DestinationImageDocument As AimExperimentTreeNode
@@ -961,12 +963,12 @@ On Error GoTo Finish
         Lsm5Vba.Application.ThrowEvent eRootReuse, 0
         DoEvents
     End If
-
+    DoConcatenate_Time = True
 Finish:
     flgBreak = False
     DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
     User_flg = True
-End Sub
+End Function
 
 
 Public Function SingleImage() As DsRecordingDoc
@@ -1139,6 +1141,7 @@ Private Function CreateListToConcatenate() As ImageName()
 
     Dim Images() As ImageName  'this array contains the base-name (first entry) and all files belonging to it
     ReDim Images(0)
+    Dim iPattern As Integer
     Images(0).BaseName = ""
     Dim Match As MatchCollection
     Dim index As Integer
@@ -1150,39 +1153,43 @@ Private Function CreateListToConcatenate() As ImageName()
     'check through the full list of image files
 
     For index = 0 To ImagesListBox.ListCount - 1
+        'We can use different pattern to match the files
         ' try to match Pattern for file naming used by AutofocusScreen
-        RegEx.Pattern = Pattern
-        If RegEx.Test(ImagesListBox.List(index, 0)) Then
+        RegEx.Pattern = Pattern(0)
+        For iPattern = 0 To UBound(Pattern, 1) - 1
+            RegEx.Pattern = Pattern(iPattern)
             Set Match = RegEx.Execute(ImagesListBox.List(index, 0))
-        Else
-            RegEx.Pattern = PatternOld
-            If RegEx.Test(ImagesListBox.List(index, 0)) Then
-                Set Match = RegEx.Execute(ImagesListBox.List(index, 0))
+            If Match.Count > 0 Then
+                Exit For
             Else
-                GoTo NextIndex
+                GoTo NextPattern
             End If
-        End If
-        
-        If Images(0).BaseName = "" Then 'initialize the Images
-            ReDim Images(0)
-            Images(0).BaseName = Match.Item(0).SubMatches.Item(0)
-            ReDim Images(0).ListOfNames(0)
-            Images(0).ListOfNames(0) = ImagesListBox.List(index, 0)
+NextPattern:
+        Next iPattern
+        If Match.Count = 0 Then
+            GoTo NextIndex
         Else
-            RegEx.Pattern = "^" & Match.Item(0).SubMatches.Item(0)
-            For i = 0 To UBound(Images)
-                If RegEx.Test(Images(i).BaseName) Then
-                    ReDim Preserve Images(i).ListOfNames(UBound(Images(i).ListOfNames) + 1)
-                    Images(i).ListOfNames(UBound(Images(i).ListOfNames)) = ImagesListBox.List(index, 0)
-                    GoTo NextIndex
-                End If
-            Next i
-            ReDim Preserve Images(UBound(Images) + 1)
-            ' if I am here no matches was found a create a new BaseName
-            Images(UBound(Images)).BaseName = Match.Item(0).SubMatches.Item(0)
-            ReDim Images(i).ListOfNames(0)
-            Images(UBound(Images)).ListOfNames(0) = ImagesListBox.List(index, 0)
-            
+                        
+            If Images(0).BaseName = "" Then 'initialize the Images
+                ReDim Images(0)
+                Images(0).BaseName = Match.Item(0).SubMatches.Item(0)
+                ReDim Images(0).ListOfNames(0)
+                Images(0).ListOfNames(0) = ImagesListBox.List(index, 0)
+            Else
+                RegEx.Pattern = "^" & Match.Item(0).SubMatches.Item(0)
+                For i = 0 To UBound(Images)
+                    If RegEx.Test(Images(i).BaseName) Then
+                        ReDim Preserve Images(i).ListOfNames(UBound(Images(i).ListOfNames) + 1)
+                        Images(i).ListOfNames(UBound(Images(i).ListOfNames)) = ImagesListBox.List(index, 0)
+                        GoTo NextIndex
+                    End If
+                Next i
+                ReDim Preserve Images(UBound(Images) + 1)
+                ' if I am here no matches was found a create a new BaseName
+                Images(UBound(Images)).BaseName = Match.Item(0).SubMatches.Item(0)
+                ReDim Images(i).ListOfNames(0)
+                Images(UBound(Images)).ListOfNames(0) = ImagesListBox.List(index, 0)
+            End If
         End If
 NextIndex:
     Next index
@@ -1233,17 +1240,15 @@ Private Sub ConcatenateTimePerLocationButton_Click()
     For index = 0 To UBound(Images)
         outputfile = FileNameTextBox & Images(index).BaseName & ".lsm"
         If UBound(Images(index).ListOfNames) > 0 Then
-            If StopConcat Then
-                GoTo EndSub
-            End If
-            
+            DoEvents
             SelectLocationNew index, Images
-            DoConcatenate_Time
+            If Not DoConcatenate_Time Then
+                Exit Sub
+            End If
             SaveDsRecordingDoc Lsm5.DsRecordingActiveDocObject, outputfile
         End If
     Next index
-EndSub:
-    StopConcat = False
+
 End Sub
 
 
@@ -1272,20 +1277,17 @@ Private Sub ConcatenatetimeMarkedLocation_Click()
     Next indexI
             
     For index = 0 To UBound(Images, 1)
-        If StopConcat Then
-            GoTo EndSub
-        End If
         If indexList(index) Then
             outputfile = FileNameTextBox & Images(index).BaseName & ".lsm"
             If UBound(Images(index).ListOfNames) > 0 Then
                 SelectLocationNew index, Images
-                DoConcatenate_Time
+                If Not DoConcatenate_Time Then
+                    Exit Sub
+                End If
                 SaveDsRecordingDoc Lsm5.DsRecordingActiveDocObject, outputfile
             End If
         End If
     Next index
-EndSub:
-    StopConcat = False
 End Sub
 
 ' Copied and adapted from MultiTimeSeries macro

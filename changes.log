@@ -1,0 +1,717 @@
+22c22
+< ' AutofocusScreen_ZEN_v2.1.3
+---
+> ' AutofocusScreen_ZEN_v2.1.2
+25c25
+< Private Const Version = " v2.1.3"
+---
+> Private Const Version = " v2.1.2"
+36,66d35
+< Private Sub FocusMap_Click()
+<     ' This will run just in the AutofocusMode all the AcquisitionTracks are set off
+<     AcquisitionTracksSetOff
+<     Dim BackRepetions As Integer
+<     Dim BackTimeDelay As Integer
+<     Dim BackTimerUnit As Integer
+<     
+<     'make backup of values
+<     BackRepetitions = BSliderRepetitions.Value
+<     BackTimeDelay = BlockTimeDelay
+<     BackTimerUnit = TimerUnit
+< 
+<     'change values
+<     BSliderRepetitions.Value = 1
+<     BlockTimeDelay = 0
+<     CommandTimeSec_Click
+<     CheckBoxActiveOnlineImageAnalysis.Value = False
+<     CheckBoxAlterImage.Value = False
+<     StartButton_Click
+<     WritePosFile GlobalDataBaseName & "\" & TextBoxFileName.Value & "positionsGrid.csv", posGridX, posGridY, posGridZ
+<     
+<     'Reset values
+<     BSliderRepetitions.Value = BackRepetitions
+<     BlockTimeDelay = BackTimeDelay
+<     If BackTimerUnit = 60 Then
+<         CommandTimeMin_Click
+<     Else
+<         CommandTimeSec_Click
+<     End If
+< End Sub
+< 
+321c290
+<     FocusMapPresent = False
+---
+>     
+472a442
+> '   ************************
+637,695c607
+<     'check if there is a setting file
+<     If GlobalDataBaseName <> "" And CheckBoxActiveGridScan.Value Then
+<         On Error GoTo ErrHandle
+<         Dim sFile As String
+<         sFile = GlobalDataBaseName & "\gridSettings.txt"
+<         If FileExist(sFile) Then
+<             Close
+<             Dim i As Integer
+<             Dim iFileNum As Integer
+<             Dim Fields As String
+<             Dim FieldEntries() As String
+<             iFileNum = FreeFile()
+<             Open sFile For Input As iFileNum
+<             
+<             Line Input #iFileNum, Fields
+<             While Left(Fields, 1) = "%"
+<                 Line Input #iFileNum, Fields
+<             Wend
+<             FieldEntries = Split(Fields, " ")
+<             GridScan_nRow.Value = FieldEntries(0)
+<             GridScan_nColumn.Value = FieldEntries(1)
+<             
+<             Line Input #iFileNum, Fields
+<             While Left(Fields, 1) = "%"
+<                 Line Input #iFileNum, Fields
+<             Wend
+<             FieldEntries = Split(Fields, " ")
+<             GridScan_dRow.Value = FieldEntries(0)
+<             GridScan_dColumn.Value = FieldEntries(1)
+<             
+<             Line Input #iFileNum, Fields
+<             While Left(Fields, 1) = "%"
+<                 Line Input #iFileNum, Fields
+<             Wend
+<             FieldEntries = Split(Fields, " ")
+<             GridScan_refRow.Value = FieldEntries(0)
+<             GridScan_refColumn.Value = FieldEntries(1)
+<             
+<             Line Input #iFileNum, Fields
+<             While Left(Fields, 1) = "%"
+<                 Line Input #iFileNum, Fields
+<             Wend
+<             FieldEntries = Split(Fields, " ")
+<             GridScan_nRowsub.Value = FieldEntries(0)
+<             GridScan_nColumnsub.Value = FieldEntries(1)
+<             
+<             Line Input #iFileNum, Fields
+<             While Left(Fields, 1) = "%"
+<                 Line Input #iFileNum, Fields
+<             Wend
+<             FieldEntries = Split(Fields, " ")
+<             GridScan_dRowsub.Value = FieldEntries(0)
+<             GridScan_dColumnsub.Value = FieldEntries(1)
+< 
+<         End If
+<     End If
+<     Exit Sub
+< ErrHandle:
+<     MsgBox "File " & sFile & " has not the correct format for setting the grid!"
+---
+>     
+719,722d630
+<     GridScan_refColumn.Enabled = Enable
+<     GridScan_refRow.Enabled = Enable
+<     GridScan_refColumnLabel.Enabled = Enable
+<     GridScan_refRowLabel.Enabled = Enable
+1971c1879
+<         If Not Recenter_pre(posTempZ, SuccessRecenter) Then
+---
+>         If Not Recenter_pre(posTempZ) Then
+1976c1884
+<         LogMsg = "% Get current position: center Z (pre AFimg) " & posTempZ & ", time required" & Time & ", succes within rep. " & SuccessRecenter
+---
+>         LogMsg = "% Get current position: center Z (pre AFimg) " & posTempZ & ", time required" & Time
+2102c2010
+<         If Not Recenter_pre(posTemp, SuccessRecenter) Then
+---
+>         If Not Recenter_pre(posTempZ) Then
+2110c2018
+<             LogMsg = LogMsg & ", Obtained Z " & pos & "; actual position " & pos & ", time required " & Time & ", succes within rep. " & SuccessRecenter
+---
+>             LogMsg = LogMsg & ", Obtained Z " & pos & "; actual position " & pos & ", time required " & Time & ", repeats (max 9) " & Round(Time / 0.4)
+2113c2021
+<             & "; actual position " & pos & ", time required " & Time & ", succes within rep. " & SuccessRecenter
+---
+>             & "; actual position " & pos & ", time required " & Time & ", repeats (max 9) " & Round(Time / 0.4)
+2183c2091
+<         If Not Recenter_pre(Z + Offset, SuccessRecenter) Then
+---
+>         If Not Recenter_pre(Z + Offset) Then
+2187c2095
+<         LogMsg = "% AutofocusButton: center Z + Offset (pre AQimg) " & Z + Offset & ", time required " & Time & ", succes within rep. " & SuccessRecenter
+---
+>         LogMsg = "% AutofocusButton: center Z + Offset (pre AQimg) " & Z + Offset & ", time required " & Time & ", repeats (max 9) " & Round(Time / 0.4)
+2233c2141
+<     Recenter_pre posTempZ, SuccesRecenter
+---
+>     Recenter_pre posTempZ
+2370c2278
+<     StartAcquisition BleachingActivated, FocusMapPresent 'This is the main function of the macro
+---
+>     StartAcquisition BleachingActivated 'This is the main function of the macro
+2381,2385d2288
+<     Dim initPos As Boolean   'if False and gridsize correspond positions are taken from file positionsGrid.csv
+<     Dim initValid As Boolean 'if False and gridsize correspond positions are taken from file validGrid.csv
+<     
+<     initPos = True
+<     initValid = True
+2426,2427c2329,2330
+<     If Not AcquisitionTracksOn And Not CheckBoxActiveAutofocus And Not CheckBoxAlterImage Then
+<         MsgBox ("Nothing to do! Check at least one imaging option!")
+---
+>     If Not AcquisitionTracksOn Then
+>         MsgBox ("Select at least one track fro acquisition")
+2456,2495c2359,2383
+<         If CheckPosFile(GlobalDataBaseName & "\positionsGrid.csv", GridScan_nRow.Value, GridScan_nColumn.Value, _
+<             GridScan_nRowsub.Value, GridScan_nColumnsub.Value) Then
+<             If MsgBox("Position file " & "positionsGrid.csv exists. Do you want to reset positions?", VbYesNo) = vbNo Then
+<                  If LoadPosFile(GlobalDataBaseName & "\positionsGrid.csv", posGridX, posGridY, posGridZ) Then
+<                     initPos = False
+<                     FocusMapPresent = True
+<                  End If
+<             End If
+<         End If
+<         
+<         If initPos Then
+<             DisplayProgress "Initialize all grid positions. First Gridpoint is first Marked point on stage....", RGB(0, &HC0, 0)
+<             'MsgBox " GridScan: Uses as initial position the first Marked point on stage "
+<             'Store starting position for later restart. This is the first marked point
+<             Lsm5.Hardware.CpStages.MarkGetZ 0, XStart, YStart, ZStart
+<             Sleep (1000)
+<             ReDim posGridX(1 To GridScan_nRow.Value, 1 To GridScan_nColumn.Value, 1 To GridScan_nRowsub.Value, 1 To GridScan_nColumnsub.Value)
+<             ReDim posGridY(1 To GridScan_nRow.Value, 1 To GridScan_nColumn.Value, 1 To GridScan_nRowsub.Value, 1 To GridScan_nColumnsub.Value)
+<             ReDim posGridZ(1 To GridScan_nRow.Value, 1 To GridScan_nColumn.Value, 1 To GridScan_nRowsub.Value, 1 To GridScan_nColumnsub.Value)
+<             MakeGrid posGridX, posGridY, posGridZ, XStart, YStart, ZStart, GridScan_dColumn.Value, GridScan_dRow.Value, _
+<             GridScan_dColumnsub.Value, GridScan_dRowsub.Value, GridScan_refColumn.Value, GridScan_refRow.Value
+<             DisplayProgress "Initialize all grid positions...DONE", RGB(0, &HC0, 0)
+<             WritePosFile GlobalDataBaseName & "\positionsGrid.csv", posGridX, posGridY, posGridZ
+<             FocusMapPresent = False
+<         End If
+<         
+<         If CheckPosFile(GlobalDataBaseName & "\validGrid.csv", GridScan_nRow.Value, GridScan_nColumn.Value, _
+<             GridScan_nRowsub.Value, GridScan_nColumnsub.Value) Then
+<             If MsgBox("Valid file " & "validGrid.csv exists. Do you want to reset valid positions?", VbYesNo) = vbNo Then
+<                  If LoadValidFile(GlobalDataBaseName & "\validGrid.csv", posGridXY_Valid) Then
+<                     initValid = False
+<                  End If
+<             End If
+<         End If
+<         
+<         If initValid Then
+<             ReDim posGridXY_Valid(1 To GridScan_nRow.Value, 1 To GridScan_nColumn.Value, 1 To GridScan_nRowsub.Value, 1 To GridScan_nColumnsub.Value) ' A position may be active or not
+<             MakeValidGrid posGridXY_Valid, GlobalDataBaseName & "\validGridDefault.txt"
+<             WriteValidFile GlobalDataBaseName & "\validGrid.csv", posGridXY_Valid
+<         End If
+---
+>         DisplayProgress "Initialize all grid positions. First Gridpoint is first Marked pont on stage....", RGB(0, &HC0, 0)
+> 
+>         'MsgBox " GridScan: Uses as initial position the first Marked point on stage "
+>         ' Store starting position for later restart. This is the first marked point
+>         Lsm5.Hardware.CpStages.MarkGetZ 0, XStart, YStart, ZStart
+>         Sleep (1000)
+>         ReDim posGridX(1 To GridScan_nRow.Value, 1 To GridScan_nColumn.Value, 1 To GridScan_nRowsub.Value, 1 To GridScan_nColumnsub.Value)
+>         ReDim posGridY(1 To GridScan_nRow.Value, 1 To GridScan_nColumn.Value, 1 To GridScan_nRowsub.Value, 1 To GridScan_nColumnsub.Value)
+>         ReDim posGridZ(1 To GridScan_nRow.Value, 1 To GridScan_nColumn.Value, 1 To GridScan_nRowsub.Value, 1 To GridScan_nColumnsub.Value)
+>         ReDim posGridXY_valid(1 To GridScan_nRow.Value, 1 To GridScan_nColumn.Value, 1 To GridScan_nRowsub.Value, 1 To GridScan_nColumnsub.Value) ' A position may be active or not
+> 
+>         ' this will be changed to read from file
+>         Dim Valid() As Boolean
+>         ReDim Valid(1 To GridScan_nRow.Value, 1 To GridScan_nColumn.Value)
+>         Dim Row As Integer
+>         Dim Col As Integer
+>         For Row = LBound(Valid, 1) To UBound(Valid, 1)
+>             For Col = LBound(Valid, 2) To UBound(Valid, 2)
+>                 Valid(Row, Col) = True
+>             Next Col
+>         Next Row
+>         'Valid(1, 1) = False
+>         MakeGrid posGridX, posGridY, posGridZ, posGridXY_valid, XStart, YStart, ZStart, GridScan_dColumn.Value, GridScan_dRow.Value, _
+>         GridScan_dColumnsub.Value, GridScan_dRowsub.Value, Valid
+>         DisplayProgress "Initialize all grid positions...DONE", RGB(0, &HC0, 0)
+2505,2507d2392
+<         If FileExist(GlobalDataBaseName & "\" & "PositionsMultiLoc.txt") Then
+<             MsgBox ("File Exist")
+<         End If
+2512c2397
+<             ReDim posGridXY_Valid(1 To 1, 1 To Lsm5.Hardware.CpStages.Markcount, 1 To 1, 1 To 1) ' A well may be active or not
+---
+>             ReDim posGridXY_valid(1 To 1, 1 To Lsm5.Hardware.CpStages.Markcount, 1 To 1, 1 To 1) ' A well may be active or not
+2516c2401
+<                 posGridXY_Valid(1, i, 1, 1) = True
+---
+>                 posGridXY_valid(1, i, 1, 1) = True
+2526c2411
+<             ReDim posGridXY_Valid(1 To 1, 1 To 1, 1 To 1, 1 To 1) 'A well may be active or not
+---
+>             ReDim posGridXY_valid(1 To 1, 1 To 1, 1 To 1, 1 To 1) 'A well may be active or not
+2529c2414
+<             posGridXY_Valid(1, 1, 1, 1) = 1
+---
+>             posGridXY_valid(1, 1, 1, 1) = 1
+2595,2602c2480,2483
+<     Dim StepCol As Integer    'forward or backward step
+<     Dim StepColSub As Integer 'forward or backward step
+<     Dim Cnt As Integer        'a local counter
+<     Dim TotPos As Long        'total number of positions
+<     
+<     'coordinates
+<     Dim previousZ As Double   'remember position of previous position in Z
+<     
+---
+>     Dim StepCol As Integer
+>     Dim StepColSub As Integer
+>     Dim Cnt As Integer ' a local counter
+>     Dim TotPos As Long
+2605d2485
+<     
+2664d2543
+<     previousZ = posGridZ(1, 1, 1, 1)
+2705c2584
+<                         If posGridXY_Valid(iRow, iCol, iRowSub, iColSub) Then
+---
+>                         If posGridXY_valid(iRow, iCol, iRowSub, iColSub) Then
+2710,2715d2588
+<                             'In gridscan mode use initially Z of previous position to find new position
+<                             If RepetitionNumber = 1 And CheckBoxActiveGridScan And Not FocusMapPresent Then
+<                                 Z = previousZ
+<                             Else
+<                                 Z = posGridZ(iRow, iCol, iRowSub, iColSub)
+<                             End If
+2723a2597,2601
+>                                 If (Xold - X) ^ 2 + (Yold - Y) ^ 2 > 40000 Then 'make a pause if it moves more than 200 um
+>                                     Sleep (2000)
+>                                 Else
+>                                     Sleep (500)
+>                                 End If
+2741c2619,2620
+<                             LocationTextLabel.Caption = "X= " & X & ",  Y = " & Y & ", Z = " & Z & vbCrLf & _
+---
+>                             LocationTextLabel.Caption = "X= " & posGridX(iRow, iCol, iRowSub, iColSub) & ",  Y = " & posGridY(iRow, iCol, iRowSub, iColSub) & _
+>                             ", Z = " & posGridZ(iRow, iCol, iRowSub, iColSub) & vbCrLf & _
+2747c2626
+<                             "X = " & X & ", Y = " & Y & ", Z = " & Z & vbCrLf & _
+---
+>                             "X = " & posGridX(iRow, iCol, iRowSub, iColSub) & ", Y = " & posGridY(iRow, iCol, iRowSub, iColSub) & ", Z = " & posGridZ(iRow, iCol, iRowSub, iColSub) & vbCrLf & _
+2755,2756c2634,2635
+<                                                         "X = " & X & ", Y = " & Y & _
+<                                                         ", Z = " & Z & vbCrLf & _
+---
+>                                                         "X = " & posGridX(iRow, iCol, iRowSub, iColSub) & ", Y = " & posGridY(iRow, iCol, iRowSub, iColSub) & _
+>                                                         ", Z = " & posGridZ(iRow, iCol, iRowSub, iColSub) & vbCrLf & _
+2774c2653
+<                         If Not ImagingWorkFlow(RecordingDoc, StartTime, iRow, iCol, iRowSub, iColSub, TotPos) Then
+---
+>                         If Not ImagingWorkFlow(RecordingDoc, StartTime, iRow, iCol, iColSub, iRowSub, TotPos) Then
+2792d2670
+<                         previousZ = posGridZ(iRow, iCol, iRowSub, iColSub)
+2898,2902c2776
+<     If RepetitionNumber = 1 And CheckBoxActiveGridScan And Not FocusMapPresent Then
+<         Znew = Lsm5.Hardware.CpFocus.Position
+<     Else
+<         Znew = posGridZ(Row, Col, RowSub, ColSub)
+<     End If
+---
+>     Znew = posGridZ(Row, Col, RowSub, ColSub)
+2923,2926c2797
+< '
+< '    If CheckBoxHRZ Then
+< '        Lsm5.Hardware.CpHrz.Leveling
+< '    End If
+---
+>     
+2930c2801
+<     & "% StartButton: Current position  XYZ " & Round(Xold, PrecXY) & ", " & Round(Yold, PrecXY) & ", " & Round(Zold, PrecZ)
+---
+>     & "% StartButton: Current position  XYZ " & Round(posGridX(Row, Col, RowSub, ColSub), PrecXY) & ", " & Round(posGridY(Row, Col, RowSub, ColSub), PrecXY) & ", " & Round(posGridZ(Row, Col, RowSub, ColSub), PrecZ)
+3093,3095c2964,2969
+<     If ActivateAcquisitionTrack(GlobalAcquisitionRecording) Then            'An additional control....
+<         LogMsg = "% Startbutton: Time activate AQ track " & Round(Timer - Time, 2)
+<         LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+---
+>     If Not ActivateAcquisitionTrack(GlobalAcquisitionRecording) Then           'An additional control....
+>         MsgBox "No track selected for Acquisition! Cannot Acquire!"
+>         ScanStop = True
+>         StopAcquisition
+>         Exit Function
+>     End If
+3097,3111c2971,2973
+<         
+<         If CheckBoxActiveAutofocus Then
+<             Offset = BSliderZOffset
+<         Else
+<             Offset = 0
+<         End If
+<         
+<         DisplayProgress "Acquisition: recentering Z + Offset ", RGB(0, &HC0, 0)
+<         'center the slide
+<         Time = Timer
+<         'Sleep (200)
+<         If Not Recenter_pre(Znew + Offset) Then
+<             Exit Function
+<         End If
+<         'Sleep (200)
+---
+>     LogMsg = "% Startbutton: Time activate AQ track " & Round(Timer - Time, 2)
+>     LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+> 
+3113,3140c2975,3013
+<         
+<         Time = Round(Timer - Time, 2)
+<         LogMsg = "% Startbutton: Center Z + Offset (pre AQimg) " & Znew + Offset & ", time required " & Time & ", repeats " & Round(Time / 0.4)
+<         LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+<         DoEvents
+<         DisplayProgress "Acquiring  Location   " & TotPos & "/" & UBound(posGridX, 1) * UBound(posGridX, 2) * UBound(posGridX, 3) * UBound(posGridX, 4) & vbCrLf & _
+<                     "                   Repetition  " & RepetitionNumber & "/" & BSliderRepetitions.Value, RGB(&HC0, &HC0, 0)
+<         Time = Timer
+<         If Not ScanToImageNew(RecordingDoc) Then
+<             Exit Function
+<         End If
+<         LogMsg = "% Startbutton: Time acquire AQ track " & Round(Timer - Time)
+<         LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+<         
+<         ''''''''''''''''''''''''''''''''''''
+<         '*** Save Acquisition Image *******'
+<         ''''''''''''''''''''''''''''''''''''
+<         RecordingDoc.SetTitle TextBoxFileName.Value & FileNameID
+<         'this is the name of the file to be saved
+<         'Check existance of file and warn
+<         If Not OverwriteFiles Then
+<             If FileExist(FilePath) Then
+<                 If MsgBox("File " & FilePath & " exists. Do you want to overwrite this and subsequent files? ", VbYesNo) = vbYes Then
+<                     OverwriteFiles = True
+<                 Else
+<                     ScanStop = True
+<                     Exit Function
+<                 End If
+---
+>     If CheckBoxActiveAutofocus Then
+>         Offset = BSliderZOffset
+>     Else
+>         Offset = 0
+>     End If
+> 
+>     'center the slide
+>     Time = Timer
+>     'Sleep (200)
+>     If Not Recenter_pre(Znew + Offset) Then
+>         Exit Function
+>     End If
+>     'Sleep (200)
+> 
+>     
+>     Time = Round(Timer - Time, 2)
+>     LogMsg = "% Startbutton: Center Z + Offset (pre AQimg) " & Znew + Offset & ", time required " & Time & ", repeats " & Round(Time / 0.4)
+>     LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+>     DoEvents
+>     Time = Timer
+>     If Not ScanToImageNew(RecordingDoc) Then
+>         Exit Function
+>     End If
+>     LogMsg = "% Startbutton: Time acquire AQ track " & Round(Timer - Time)
+>     LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+>     
+>     ''''''''''''''''''''''''''''''''''''
+>     '*** Save Acquisition Image *******'
+>     ''''''''''''''''''''''''''''''''''''
+>     RecordingDoc.SetTitle TextBoxFileName.Value & FileNameID
+>     'this is the name of the file to be saved
+>     'Check existance of file and warn
+>     If Not OverwriteFiles Then
+>         If FileExist(FilePath) Then
+>             If MsgBox("File " & FilePath & " exists. Do you want to overwrite this and subsequent files? ", VbYesNo) = vbYes Then
+>                 OverwriteFiles = True
+>             Else
+>                 ScanStop = True
+>                 Exit Function
+3142a3016,3020
+>     End If
+> 
+>     If Not SaveDsRecordingDoc(RecordingDoc, FilePath) Then    ' HERE THE IMAGE IS FINALLY SAVED
+>         Exit Function
+>     End If
+3144,3163c3022,3025
+<         If Not SaveDsRecordingDoc(RecordingDoc, FilePath) Then    ' HERE THE IMAGE IS FINALLY SAVED
+<             Exit Function
+<         End If
+<         
+<         Time = Timer
+<         'wait that slice recentered after acquisition
+<         If Not Recenter_post(Znew + Offset, SuccessRecenter) Then
+<             Exit Function
+<         End If
+<         
+<         LogMsg = "% StartButton:  recenter Z (post AQImg) " & Znew + Offset
+<         pos = Lsm5.Hardware.CpFocus.Position
+<         Time = Round(Timer - Time, 2)
+<         If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
+<             LogMsg = LogMsg & ", obtained Z " & pos & ", position " & pos & ", time required " & Time & ", success within rep. " & SuccessRecenter
+<         Else
+<             LogMsg = LogMsg & ", obtained Z " & Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + pos _
+<             & ", position " & pos & ", time required " & Time & ", success within rep. " & SuccessRecenter
+<         End If
+<         LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+---
+>     Time = Timer
+>     'wait that slice recentered after acquisition
+>     If Not Recenter_post(Znew + Offset, SuccessRecenter) Then
+>         Exit Function
+3165a3028,3039
+>     LogMsg = "% StartButton:  recenter Z (post AQImg) " & Znew + Offset
+>     pos = Lsm5.Hardware.CpFocus.Position
+>     Time = Round(Timer - Time, 2)
+>     If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
+>         LogMsg = LogMsg & ", obtained Z " & pos & ", position " & pos & ", time required " & Time & ", success within rep. " & SuccessRecenter
+>     Else
+>         LogMsg = LogMsg & ", obtained Z " & Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + pos _
+>         & ", position " & pos & ", time required " & Time & ", success within rep. " & SuccessRecenter
+>     End If
+>     LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+> 
+>     
+3308c3182,3183
+< Private Sub MakeGrid(posGridX() As Double, posGridY() As Double, posGridZ() As Double, XStart As Double, YStart As Double, ZStart As Double, dX As Double, dY As Double, dXsub As Double, dYsub As Double, refCol As Integer, refRow As Integer)
+---
+> Private Sub MakeGrid(posGridX() As Double, posGridY() As Double, posGridZ() As Double, posGridXY_valid() As Boolean _
+> , XStart As Double, YStart As Double, ZStart As Double, dX As Double, dY As Double, dXsub As Double, dYsub As Double, Valid() As Boolean)
+3316a3192,3203
+>         Dim RowDim(1 To 2) As Integer
+>         Dim ColDim(1 To 2) As Integer
+>         Dim RowSubDim(1 To 2) As Integer
+>         Dim ColSubDim(1 To 2) As Integer
+>         RowDim(1) = LBound(posGridX, 1)
+>         RowDim(2) = UBound(posGridX, 1)
+>         ColDim(1) = LBound(posGridX, 2)
+>         ColDim(2) = UBound(posGridX, 2)
+>         RowSubDim(1) = LBound(posGridX, 3)
+>         RowSubDim(2) = UBound(posGridX, 3)
+>         ColSubDim(1) = LBound(posGridX, 4)
+>         ColSubDim(2) = UBound(posGridX, 4)
+3318,3323c3205,3210
+<         For iRow = 1 To UBound(posGridX, 1)
+<             For iCol = 1 To UBound(posGridX, 2)
+<                 For iRowSub = 1 To UBound(posGridX, 3)
+<                     For iColSub = 1 To UBound(posGridX, 4)
+<                         posGridX(iRow, iCol, iRowSub, iColSub) = Round(XStart + (1 - refCol) * dX + (iCol - 1) * dX + (iColSub - 1 - (UBound(posGridX, 4) - 1) / 2) * dXsub, PrecXY)
+<                         posGridY(iRow, iCol, iRowSub, iColSub) = Round(YStart + (1 - refRow) * dY + (iRow - 1) * dY + (iRowSub - 1 - (UBound(posGridX, 3) - 1) / 2) * dYsub, PrecXY)
+---
+>         For iRow = RowDim(1) To RowDim(2)
+>             For iCol = ColDim(1) To ColDim(2)
+>                 For iRowSub = RowSubDim(1) To RowSubDim(2)
+>                     For iColSub = ColSubDim(1) To ColSubDim(2)
+>                         posGridX(iRow, iCol, iRowSub, iColSub) = Round(XStart + (iCol - 1) * dX + (iColSub - 1 - (ColSubDim(2) - 1) / 2) * dXsub, PrecXY)
+>                         posGridY(iRow, iCol, iRowSub, iColSub) = Round(YStart + (iRow - 1) * dY + (iRowSub - 1 - (RowSubDim(2) - 1) / 2) * dYsub, PrecXY)
+3324a3212
+>                         posGridXY_valid(iRow, iCol, iRowSub, iColSub) = Valid(iRow, iCol)
+3331,3414d3218
+< '''''
+< '   MakeValidGrid( posGridX() As Double, posGridY() As Double, posGridXY_valid() )
+< '   Create a grid
+< '       [posGridX] In/Out - Array where X grid positions are stored
+< '       [posGridY] In/Out - Array where Y grid positions are stored
+< '       [posGridXY_valid] In/Out - Array that says if position is valid
+< '       [locationNumbersMainGrid] In/Out - location number on main grid
+< '''''
+< Private Sub MakeValidGrid(posGridXY_Valid() As Boolean, ByVal sFile As String)
+<     ' A row correspond to Y movement and Column to X shift
+<     ' entries are posGridX(row, column)!! this what is
+<     ' counters
+<     ' Make main grid
+<     Dim CellBase As String
+<     Dim Default As String
+<     Dim last_entry  As String
+<     Dim Active As Boolean
+<     CellBase = "(\d+)--(\d+)--(\d+)--(\S+)--(\S+)"
+<     Default = "(\d+) "
+<     Dim iRow As Long
+<     Dim iCol As Long
+<     Dim iRowSub As Long
+<     Dim iColSub As Long
+<     Dim RegEx As VBScript_RegExp_55.RegExp
+<     Set RegEx = CreateObject("vbscript.regexp")
+<     Dim Match As MatchCollection
+<     Dim Rec As DsRecordingDoc
+<     Dim FoundChannel As Boolean
+<     FoundChannel = False
+<     'File is either a Cellbase file or a series of 1 and zeros vertically ordered
+<     If FileExist(sFile) Then
+<         On Error GoTo Default:
+<         Dim iFileNum As Integer
+<         Dim Fields As String
+<         Dim FieldEntries() As String
+<         iFileNum = FreeFile()
+<         Open sFile For Input As iFileNum
+<         
+<         For iRow = 1 To UBound(posGridXY_Valid, 1)
+<             For iCol = 1 To UBound(posGridXY_Valid, 2)
+<                 Line Input #iFileNum, Fields
+<                 While Left(Fields, 1) = "%"
+<                     Line Input #iFileNum, Fields
+<                 Wend
+<                 RegEx.Pattern = Default
+<                 If RegEx.Test(Fields) Then
+<                      Set Match = RegEx.Execute(Fields)
+<                      last_entry = Match.Item(0).SubMatches.Item(0)
+<                      Active = (last_entry = "1")
+<                 Else
+<                     RegEx.Pattern = CellBase
+<                     If RegEx.Test(Fields) Then
+<                         Set Match = RegEx.Execute(Fields)
+<                         last_entry = Match.Item(0).SubMatches.Item(4)
+<                         Active = (last_entry <> "empty")
+<                     Else
+<                         MsgBox "File " & sFile & " has no standard format. Use default valid grid setting!"
+<                         GoTo Default
+<                     End If
+<                 End If
+<                 For iRowSub = 1 To UBound(posGridXY_Valid, 3)
+<                     For iColSub = 1 To UBound(posGridXY_Valid, 4)
+<                         posGridXY_Valid(iRow, iCol, iRowSub, iColSub) = Active
+<                     Next iColSub
+<                 Next iRowSub
+<             Next iCol
+<         Next iRow
+<         Exit Sub
+<     End If
+<     ' All points are true
+< Default:
+<               'Make grid and subgrid
+<     For iRow = 1 To UBound(posGridXY_Valid, 1)
+<         For iCol = 1 To UBound(posGridXY_Valid, 2)
+<             For iRowSub = 1 To UBound(posGridXY_Valid, 3)
+<                 For iColSub = 1 To UBound(posGridXY_Valid, 4)
+<                     posGridXY_Valid(iRow, iCol, iRowSub, iColSub) = True
+<                 Next iColSub
+<             Next iRowSub
+<         Next iCol
+<     Next iRow
+< End Sub
+< 
+< 
+3434c3238
+<     Dim Line As Long
+---
+>     Dim line As Long
+3525c3329
+<         For Line = 1 To LineMax
+---
+>         For line = 1 To LineMax
+3528c3332
+<             scrline = Lsm5.DsRecordingActiveDocObject.ScanLine(channel, 0, frame - 1, Line - 1, spl, bpp) 'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
+---
+>             scrline = Lsm5.DsRecordingActiveDocObject.ScanLine(channel, 0, frame - 1, line - 1, spl, bpp) 'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
+3530c3334
+<                 Intline(Line - 1) = Intline(Line - 1) + scrline(Col - 1)
+---
+>                 Intline(line - 1) = Intline(line - 1) + scrline(Col - 1)
+3534c3338
+<         Next Line
+---
+>         Next line
+3543,3545c3347,3349
+<     For Line = 1 To LineMax
+<         If Intline(Line - 1) < minLineValue Then
+<             minLineValue = Intline(Line - 1)
+---
+>     For line = 1 To LineMax
+>         If Intline(line - 1) < minLineValue Then
+>             minLineValue = Intline(line - 1)
+3547,3548c3351,3352
+<         If Intline(Line - 1) > MaxLineValue Then
+<             MaxLineValue = Intline(Line - 1)
+---
+>         If Intline(line - 1) > MaxLineValue Then
+>             MaxLineValue = Intline(line - 1)
+3550c3354
+<     Next Line
+---
+>     Next line
+3574,3575c3378,3379
+<     For Line = 1 To LineMax
+<         LineValue = Intline(Line - 1) - Threshold                           'Subtracs the threshold
+---
+>     For line = 1 To LineMax
+>         LineValue = Intline(line - 1) - Threshold                           'Subtracs the threshold
+3577c3381
+<         LineWeight = LineWeight + (PixelSize * (Line - MidLine)) * PosValue 'Calculates the weight of the Thresholded projected pixel values according to their position relative to the center of the image and sums them up
+---
+>         LineWeight = LineWeight + (PixelSize * (line - MidLine)) * PosValue 'Calculates the weight of the Thresholded projected pixel values according to their position relative to the center of the image and sums them up
+3579c3383
+<     Next Line
+---
+>     Next line
+3639c3443
+<     Dim Line As Long
+---
+>     Dim line As Long
+3711c3515
+<         For Line = 1 To LineMax
+---
+>         For line = 1 To LineMax
+3714c3518
+<             scrline = Lsm5.DsRecordingActiveDocObject.ScanLine(channel, 0, frame - 1, Line - 1, spl, bpp) 'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
+---
+>             scrline = Lsm5.DsRecordingActiveDocObject.ScanLine(channel, 0, frame - 1, line - 1, spl, bpp) 'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
+3716c3520
+<                 Intline(Line - 1) = Intline(Line - 1) + scrline(Col - 1)
+---
+>                 Intline(line - 1) = Intline(line - 1) + scrline(Col - 1)
+3720c3524
+<         Next Line
+---
+>         Next line
+3730,3732c3534,3536
+<     For Line = 1 To LineMax
+<         If Intline(Line - 1) < minLineValue Then
+<             minLineValue = Intline(Line - 1)
+---
+>     For line = 1 To LineMax
+>         If Intline(line - 1) < minLineValue Then
+>             minLineValue = Intline(line - 1)
+3734,3735c3538,3539
+<         If Intline(Line - 1) > MaxLineValue Then
+<             MaxLineValue = Intline(Line - 1)
+---
+>         If Intline(line - 1) > MaxLineValue Then
+>             MaxLineValue = Intline(line - 1)
+3737c3541
+<     Next Line
+---
+>     Next line
+3761,3762c3565,3566
+<     For Line = 1 To LineMax
+<         LineValue = Intline(Line - 1) - Threshold                           'Subtracs the threshold
+---
+>     For line = 1 To LineMax
+>         LineValue = Intline(line - 1) - Threshold                           'Subtracs the threshold
+3764c3568
+<         LineWeight = LineWeight + (PixelSize * (Line - MidLine)) * PosValue 'Calculates the weight of the Thresholded projected pixel values according to their position relative to the center of the image and sums them up
+---
+>         LineWeight = LineWeight + (PixelSize * (line - MidLine)) * PosValue 'Calculates the weight of the Thresholded projected pixel values according to their position relative to the center of the image and sums them up
+3766c3570
+<     Next Line
+---
+>     Next line
+4794,4797d4597
+< ''''
+< '  AcquisitionTracksOn()
+< '  Checks if at least one track for acquisition is on
+< '''
+4813,4822d4612
+< '''
+< ' Sets all acquisitions to off
+< '''
+< Private Function AcquisitionTracksSetOff() As Boolean
+<     CheckBoxTrack1.Value = 0
+<     CheckBoxTrack2.Value = 0
+<     CheckBoxTrack3.Value = 0
+<     CheckBoxTrack4.Value = 0
+< End Function
+< 
+5614c5404
+< Public Function Recenter_pre(Z As Double, Optional Success As Boolean = False) As Boolean
+---
+> Public Function Recenter_pre(Z As Double) As Boolean
+5618c5408
+<     If Not WaitForRecentering(Z, Success) Then
+---
+>     If Not WaitForRecentering(Z) Then
+5664d5453
+<     Dim tmp As Integer
