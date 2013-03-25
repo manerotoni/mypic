@@ -20,12 +20,7 @@ Public Sub InitializeStageProperties(Optional tmp As Boolean) ' tmp is a hack so
 End Sub
 
 Public Function GetStagePositionX(CANN As Boolean) As Double
-  
-   
-  
     On Error GoTo nostage
-   
-    
     If ExchangeXY Then
         GetStagePositionX = StageGetPositionY(CANN) * 1000000#
     Else
