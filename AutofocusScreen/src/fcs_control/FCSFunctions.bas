@@ -1,0 +1,309 @@
+Attribute VB_Name = "FCSFunctions"
+Option Explicit 'force to declare all variables
+Public Declare Function GetInputState Lib "user32" () As Long ' Check if mouse or keyboard has been pushed
+
+Public FcsControl As AimFcsController
+Public viewerGuiServer As AimViewerGuiServer
+Public FcsPositions As AimFcsSamplePositionParameters
+Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
+Public FcsData As AimFcsData
+Public ScanStop As Boolean
+Public AcquisitionController  As AimScanController
+Public Const PrecXY = 3
+Public Sub Start()
+    Initialize_Controller
+    ScanStop = False
+    FCSRunner.Show
+End Sub
+
+'''''
+'   Set the FCS controller and data stuff
+'''''
+Private Sub Initialize_Controller()
+    Set FcsControl = Fcs
+    Set viewerGuiServer = Lsm5.viewerGuiServer
+    Set FcsPositions = FcsControl.SamplePositionParameters
+End Sub
+
+''''
+' Start Fcs Measurment
+''''
+Public Function FcsMeasurement(Optional FcsData As AimFcsData) As Boolean
+    Dim node As AimExperimentTreeNode
+    Set viewerGuiServer = Lsm5.viewerGuiServer
+    Set FcsControl = Fcs
+    Set viewerGuiServer = Lsm5.viewerGuiServer
+    
+    If FcsData Is Nothing Then
+        Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
+        node.Type = eExperimentTeeeNodeTypeConfoCor
+        viewerGuiServer.InsertExperimentTreeNode node, True, 0
+        ' Insert an FCS document into ZEN
+        Set FcsData = node.FcsData
+    End If
+    'FcsData.name = "Bla"
+    FcsControl.StopAcquisitionAndWait
+    FcsControl.StartMeasurement FcsData
+    While FcsControl.IsAcquisitionRunning(1)
+        Sleep (500)
+        If ScanStop Then
+            FcsControl.StopAcquisitionAndWait
+            Exit Function
+        End If
+        DoEvents
+    Wend
+    FcsControl.StopAcquisitionAndWait
+    FcsMeasurement = True
+End Function
+
+'''''
+'   ScanToImage ( RecordingDoc As DsRecordingDoc) As Boolean
+'   scan overwrite the same image, even with several z-slices
+'''''
+Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
+    Dim ProgressFifo As IAimProgressFifo ' what is this?
+    Dim gui As Object, treenode As Object
+    'Set gui = Lsm5.ViewerGuiServer
+    If RecordingDoc Is Nothing Then
+        Set RecordingDoc = Lsm5.NewScanWindow
+        While RecordingDoc.IsBusy
+            Sleep (20)
+            DoEvents
+        Wend
+    End If
+    If Not RecordingDoc Is Nothing Then
+        Set treenode = RecordingDoc.RecordingDocument.image(0, True)
+        'Set treenode = Lsm5.NewDocument why not this?
+        Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller ' public variable
+        AcquisitionController.DestinationImage(0) = treenode 'EngelImageToHechtImage(GlobalSingleImage).Image(0, True)
+        AcquisitionController.DestinationImage(1) = Nothing
+        Set ProgressFifo = AcquisitionController.DestinationImage(0)
+        Lsm5.tools.CheckLockControllers True
+        AcquisitionController.StartGrab eGrabModeSingle
+        'Set RecordingDoc = Lsm5.StartScan this does not overwrite
+        If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
+    End If
+    Sleep (200)
+    While AcquisitionController.IsGrabbing
+        Sleep (200) ' this sometimes hangs if we use GetInputState. Try now without it and test if it does not hang
+        DoEvents
+        If ScanStop Then
+            Exit Function
+        End If
+    Wend
+    ScanToImage = True
+End Function
+
+
+''''''
+' SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As String) As Boolean
+' Copied and adapted from MultiTimeSeries macro
+''''''
+Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As String) As Boolean
+    Dim Export As AimImageExport
+    Dim image As AimImageMemory
+    Dim Error As AimError
+    Dim Planes As Long
+    Dim Plane As Long
+    Dim Horizontal As enumAimImportExportCoordinate
+    Dim Vertical As enumAimImportExportCoordinate
+
+
+    'Set Image = EngelImageToHechtImage(Document).Image(0, True)
+    If Not Document Is Nothing Then
+        Set image = Document.RecordingDocument.image(0, True)
+    End If
+    
+    Set Export = Lsm5.CreateObject("AimImageImportExport.Export.4.5")
+    'Set Export = New AimImageExport
+    Export.FileName = FileName
+    Export.Format = eAimExportFormatLsm5
+    Export.StartExport image, image
+    Set Error = Export
+    Error.LastErrorMessage
+    
+    Planes = 1
+    Export.GetPlaneDimensions Horizontal, Vertical
+    
+    Select Case Vertical
+        Case eAimImportExportCoordinateY:
+             Planes = image.GetDimensionZ * image.GetDimensionT
+        Case eAimImportExportCoordinateZ:
+            Planes = image.GetDimensionT
+    End Select
+    
+    'TODO check. what happens here with Export.ExportPlane Nothing why Nothing (thumbnails)
+    For Plane = 0 To Planes - 1
+        If GetInputState() <> 0 Then
+            DoEvents
+             If ScanStop Then
+                Export.FinishExport
+                Exit Function
+            End If
+        End If
+        Export.ExportPlane Nothing
+    Next Plane
+    Export.FinishExport
+    SaveDsRecordingDoc = True
+    
+End Function
+
+''''
+' SaveFcsMeasurment to File
+''''
+Public Sub SaveFcsMeasurement(FcsData As AimFcsData, FileName As String)
+    If FcsData Is Nothing Then
+        MsgBox "No Fcs Recording to Save"
+        Exit Sub
+    End If
+    ' Write to file
+    Dim writer As AimFcsFileWrite
+    Set writer = Lsm5.CreateObject("AimFcsFile.Write")
+           writer.FileName = FileName
+        writer.FileWriteType = eFcsFileWriteTypeAll
+        writer.Format = eFcsFileFormatConfoCor3WithRawData
+    
+        writer.Source = FcsData
+        writer.Run
+       
+    If Not writer.DestinationFilesExist(FileName) Then
+        writer.FileName = FileName
+        writer.FileWriteType = eFcsFileWriteTypeAll
+        writer.Format = eFcsFileFormatConfoCor3WithRawData
+    
+        writer.Source = FcsData
+        writer.Run
+    Else
+ 
+    End If
+End Sub
+
+'''''
+'   GetFcsPosition(PosX As Double, PosY As Double, PosZ As Double)
+'   reads position of small crosshair
+'''''
+Public Sub GetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Optional pos As Long = -1)
+    If pos = -1 Then
+        'read actual position of crosshair
+        Set viewerGuiServer = Lsm5.viewerGuiServer
+        viewerGuiServer.FcsGetLsmCoordinates PosX, PosY, PosZ
+    Else
+        Set FcsControl = Fcs
+        Set FcsPositions = FcsControl.SamplePositionParameters
+        PosX = FcsPositions.PositionX(pos)
+        PosY = FcsPositions.PositionY(pos)
+        PosZ = FcsPositions.PositionZ(pos)
+    End If
+End Sub
+
+
+
+'''''
+'   SetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Pos As Long)
+'   Create a new position if Pos > FcsPositions.PositionListSize
+'   then all positions inbetween are set to 0
+'''''
+Public Sub SetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, pos As Long)
+    Set FcsControl = Fcs
+    Set FcsPositions = FcsControl.SamplePositionParameters
+    FcsPositions.PositionX(pos) = PosX
+    FcsPositions.PositionY(pos) = PosY
+    FcsPositions.PositionZ(pos) = PosZ
+    'this shows the small crosshair
+    viewerGuiServer.UpdateFcsPositions
+End Sub
+
+''''
+'   GetFcsListPositionLength()
+'   Maximal number of positions
+''''
+Public Function GetFcsPositionListLength() As Long
+    Set FcsControl = Fcs
+    Set FcsPositions = FcsControl.SamplePositionParameters
+    GetFcsPositionListLength = FcsPositions.PositionListSize
+End Function
+
+''''
+'   ClearFcsPositionList()
+'   Remove all FCSpositions stored
+''''
+Public Function ClearFcsPositionList()
+    'This clear the positions
+    Set FcsControl = Fcs
+    Set viewerGuiServer = Lsm5.viewerGuiServer
+    Set FcsPositions = FcsControl.SamplePositionParameters
+
+    FcsPositions.PositionListSize = 0
+    viewerGuiServer.UpdateFcsPositions
+End Function
+
+Public Sub SaveFcsPositionList(sFile As String, pixelSize As Double)
+    On Error GoTo ErrorHandle
+    Close
+    Dim iFileNum As Integer
+    Dim i As Long
+    Dim PosX As Double
+    Dim PosY As Double
+    Dim PosZ As Double
+    iFileNum = FreeFile()
+    Open sFile For Output As iFileNum
+    If pixelSize > 0 Then
+        Print #iFileNum, "%X Y Z (um) X Y Z (px) "
+    Else
+        Print #iFileNum, "%X Y Z (um) "
+    End If
+    For i = 0 To GetFcsPositionListLength - 1
+        GetFcsPosition PosX, PosY, PosZ, i
+        If pixelSize > 0 Then
+            Print #iFileNum, Round(PosX * 1000000, PrecXY) & " " & Round(PosY * 1000000, PrecXY) & " " & Round(PosZ * 1000000, PrecXY) & " " & PosX / pixelSize & " " & PosY / pixelSize & " " & PosZ / pixelSize
+        Else
+             Print #iFileNum, Round(PosX * 1000000, PrecXY) & " " & Round(PosY * 1000000, PrecXY) & " " & Round(PosZ * 1000000, PrecXY)
+        End If
+    Next i
+    Close
+    Exit Sub
+ErrorHandle:
+    MsgBox "Can't write " & sFile & " for the FcsPositions"
+End Sub
+
+Sub FocusOnLastDocument(Optional Name As String = "")
+    '**************************************
+    'Recorded: 26/03/2013
+    'Description:
+    '**************************************
+    Dim ZEN As Zeiss_Micro_AIM_ApplicationInterface.ApplicationInterface
+    Set ZEN = Application.ApplicationInterface
+    Dim Items As Long
+    If Name <> "" Then
+        ZEN.gui.Document.ByName = Name ' this does not work
+    Else
+        ZEN.gui.Document.ByIndex = ZEN.gui.Document.ItemCount - 2
+    End If
+End Sub
+
+'Sub Macro2()
+'    '**************************************
+'    'Recorded: 13/03/2013
+'    'Description:
+'    '**************************************
+'    Dim ZEN As Zeiss_Micro_AIM_ApplicationInterface.ApplicationInterface
+'    Set ZEN = Application.ApplicationInterface
+'    'ZEN.GUI.Fcs.Positions.PositionListRemoveAll.Execute
+'    Dim pos As ZEN.GUI.Fcs.Positions.SelectedPosition
+'    Set pos = ZEN.GUI.Fcs.Positions.SelectedPosition
+'    ZEN.GUI.Fcs.Positions.AddPosition.Execute
+'
+''    ZEN.GUI.Fcs.Positions.EnableCurrentPosition.Value = True
+''    ZEN.GUI.Fcs.Positions.CurrentPositionX.Value = -150
+''    ZEN.GUI.Fcs.Positions.CurrentPositionY.Value = 20
+''    ZEN.GUI.Fcs.Positions.CurrentPositionCrossHair.Value = False
+''    ZEN.GUI.Fcs.Positions.CurrentPositionCrossHair.Value = True
+''
+''
+''    'ZEN.GUI.Fcs.Positions.AddPosition.Execute
+'
+'
+'End Sub
+
+
+
