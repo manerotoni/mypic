@@ -10,9 +10,12 @@ Public FcsData As AimFcsData
 Public ScanStop As Boolean
 Public AcquisitionController  As AimScanController
 Public Const PrecXY = 3
+
 Public Sub Start()
     Initialize_Controller
     ScanStop = False
+    Set viewerGuiServer = Lsm5.viewerGuiServer
+    'viewerGuiServer.FcsSelectLsmImagePositions = True
     FCSRunner.Show
 End Sub
 
@@ -23,8 +26,40 @@ Private Sub Initialize_Controller()
     Set FcsControl = Fcs
     Set viewerGuiServer = Lsm5.viewerGuiServer
     Set FcsPositions = FcsControl.SamplePositionParameters
+    viewerGuiServer.FcsSelectLsmImagePositions = True
 End Sub
 
+Public Sub NewRecord(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0)
+    Dim node As AimExperimentTreeNode
+    Set viewerGuiServer = Lsm5.viewerGuiServer
+    Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
+    node.Type = eExperimentTeeeNodeTypeLsm
+    viewerGuiServer.InsertExperimentTreeNode node, True, Container
+    Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
+    While RecordingDoc.IsBusy
+        Sleep (20)
+        DoEvents
+    Wend
+    RecordingDoc.SetTitle Name
+End Sub
+
+
+Public Sub NewFcsRecord(FcsData As AimFcsData, Optional Name As String, Optional Container As Long = 0)
+    Dim node As AimExperimentTreeNode
+    Set viewerGuiServer = Lsm5.viewerGuiServer
+    Dim Recording As DsRecordingDoc
+    If FcsData Is Nothing Then
+        Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
+        node.Type = eExperimentTeeeNodeTypeConfoCor
+        viewerGuiServer.InsertExperimentTreeNode node, True, Container
+        ' Insert an FCS document into ZEN
+        Set FcsData = node.FcsData
+        FcsData.Name = Name
+        Set Recording = Lsm5.DsRecordingActiveDocObject
+        Recording.SetTitle Name
+    End If
+
+End Sub
 ''''
 ' Start Fcs Measurment
 ''''
@@ -35,11 +70,7 @@ Public Function FcsMeasurement(Optional FcsData As AimFcsData) As Boolean
     Set viewerGuiServer = Lsm5.viewerGuiServer
     
     If FcsData Is Nothing Then
-        Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
-        node.Type = eExperimentTeeeNodeTypeConfoCor
-        viewerGuiServer.InsertExperimentTreeNode node, True, 0
-        ' Insert an FCS document into ZEN
-        Set FcsData = node.FcsData
+       NewFcsRecord FcsData
     End If
     'FcsData.name = "Bla"
     FcsControl.StopAcquisitionAndWait
@@ -56,6 +87,7 @@ Public Function FcsMeasurement(Optional FcsData As AimFcsData) As Boolean
     FcsMeasurement = True
 End Function
 
+
 '''''
 '   ScanToImage ( RecordingDoc As DsRecordingDoc) As Boolean
 '   scan overwrite the same image, even with several z-slices
@@ -65,11 +97,7 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
     Dim gui As Object, treenode As Object
     'Set gui = Lsm5.ViewerGuiServer
     If RecordingDoc Is Nothing Then
-        Set RecordingDoc = Lsm5.NewScanWindow
-        While RecordingDoc.IsBusy
-            Sleep (20)
-            DoEvents
-        Wend
+        NewRecord RecordingDoc
     End If
     If Not RecordingDoc Is Nothing Then
         Set treenode = RecordingDoc.RecordingDocument.image(0, True)
@@ -88,6 +116,7 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
         Sleep (200) ' this sometimes hangs if we use GetInputState. Try now without it and test if it does not hang
         DoEvents
         If ScanStop Then
+            Lsm5.StopAcquisition
             Exit Function
         End If
     Wend

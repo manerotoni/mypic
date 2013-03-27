@@ -15,7 +15,21 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit 'force to declare all variables
-Private Const Version = "v0.2"
+Private Const Version = "v0.3"
+Private IsAcquiring As Boolean
+Private Counter As Integer
+
+
+Private Sub TestCode1_Click()
+    Dim Record As DsRecordingDoc
+    Dim FcsData As AimFcsData
+    Counter = Counter + 1
+    NewRecord Record, "Lsm" & Counter, 0
+    ScanToImage Record
+    NewFcsRecord FcsData, "FCS" & Counter, 1
+    FcsMeasurement FcsData
+End Sub
+
 ''''
 '   FCSButton_Click()
 '   Save actual image, save FCSpoints and perform FCS
@@ -63,7 +77,7 @@ Private Sub FcsRecord(PreImg As Boolean, PostImg As Boolean)
         MsgBox "No points selected for FCS!"
         Exit Sub
     End If
-    
+    IsAcquiring = True
     iExp = 0
     Dim FileCol As String
     FileID = BaseNameTextBox.Value & "_" & iExp & "_preFCS.lsm"
@@ -74,39 +88,37 @@ Private Sub FcsRecord(PreImg As Boolean, PostImg As Boolean)
     FileCol = FileID
     'Scan and save record
     If PreImg Then
+        NewRecord Record, FileID, 0
+        FocusOnLastDocument
         If Not ScanToImage(Record) Then
             GoTo Abort
         End If
     Else
         Set Record = Lsm5.DsRecordingActiveDocObject
+        Record.SetTitle FileID
     End If
-    Record.SetTitle FileID
-    SaveDsRecordingDoc Record, OutputFolderTextBox.Value & "\" & FileID
-    pixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing
     
-    'save positions in a file
-    FileID = BaseNameTextBox.Value & "_" & iExp & ".txt"
-    SaveFcsPositionList OutputFolderTextBox.Value & "\" & FileID, pixelSize
 
     'Fcs Measurment
     FileID = BaseNameTextBox.Value & "_" & iExp & ".fcs"
+    NewFcsRecord FcsData, FileID, 1
     If Not FcsMeasurement(FcsData) Then
         GoTo Abort
     End If
-    FcsData.Name = FileID
-    Set Record = Lsm5.DsRecordingActiveDocObject
-    Record.SetTitle FileID
+    
+    'Save Files
+    SaveDsRecordingDoc Record, OutputFolderTextBox.Value & "\" & BaseNameTextBox.Value & "_" & iExp & "_preFCS.lsm"
+    pixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing
+    'save positions in a file
+    SaveFcsPositionList OutputFolderTextBox.Value & "\" & BaseNameTextBox.Value & "_" & iExp & ".txt", pixelSize
+
     SaveFcsMeasurement FcsData, OutputFolderTextBox.Value & "\" & FileID
     'node.NumberImages = 2 ??
     
     'Scan and save record after FCS
     If PostImg Then
-        Set Record = Lsm5.NewScanWindow
-        While Record.IsBusy
-            Sleep (20)
-            DoEvents
-        Wend
         FileID = BaseNameTextBox.Value & "_" & iExp & "_postFCS.lsm"
+        NewRecord Record, FileID, 0
         If Not ScanToImage(Record) Then
             GoTo Abort
         End If
@@ -116,22 +128,32 @@ Private Sub FcsRecord(PreImg As Boolean, PostImg As Boolean)
     Sleep (1000)
     FocusOnLastDocument
 Abort:
-    StopButton.Value = False
+    StopButtonState False
     ScanStop = False
+    IsAcquiring = False
 End Sub
 
 
 
 
 Private Sub StopButton_Click()
-    If StopButton Then
-        StopButton.BackColor = &HFF
-        ScanStop = True
+    ScanStop = True
+    If IsAcquiring Then
+        StopButtonState ScanStop
     Else
-        StopButton.BackColor = &H8000000F
-        ScanStop = False
+        StopButtonState False
     End If
 End Sub
+
+Private Sub StopButtonState(State As Boolean)
+    If State Then
+        StopButton.BackColor = &HFF
+    Else
+        StopButton.BackColor = &H8000000F
+    End If
+End Sub
+
+
 
 ''''''
 ' UserForm_Initialize()
@@ -205,6 +227,6 @@ Private Sub AddPointButton_Click()
     Dim PosY As Double
     Dim PosZ  As Double
     GetFcsPosition PosX, PosY, PosZ
-    SetFcsPosition PosX, PosY, PosX, GetFcsPositionListLength
+    SetFcsPosition PosX, PosY, PosZ, GetFcsPositionListLength
     LoadPointButton_Click
 End Sub
