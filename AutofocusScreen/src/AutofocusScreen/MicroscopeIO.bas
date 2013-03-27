@@ -288,9 +288,7 @@ lpNumberOfFreeClusters As Long, lpTotalNumberOfClusters As Long) As Long
 Public Declare Function GetTickCount Lib "kernel32" () As Long
 
 
-Public Sub Autofocus_Setup()
-        AutofocusForm.Show
-End Sub
+
 
 
 Public Sub DisplayProgress(State As String, Color As Long)       'Used to display in the progress bar what the macro is doing

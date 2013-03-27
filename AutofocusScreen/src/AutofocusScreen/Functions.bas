@@ -1,6 +1,10 @@
 Attribute VB_Name = "Functions"
 Option Explicit
 
+Public Sub Autofocus_Setup()
+        AutofocusForm.Show
+End Sub
+
 '''''
 '  isArrayEmpty(parArray As Variant) As Boolean
 '  Returns false if not an array or dynamic array that has not been initialised (ReDim) or has been erased (Erase)

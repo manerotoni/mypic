@@ -16,9 +16,9 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit 'force to declare all variables
 
-  Private shlShell As Shell32.Shell
-  Private shlFolder As Shell32.Folder
-  Private Const BIF_RETURNONLYFSDIRS = &H1
+Private shlShell As Shell32.Shell
+Private shlFolder As Shell32.Folder
+Private Const BIF_RETURNONLYFSDIRS = &H1
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''Version Description''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -40,7 +40,7 @@ Private ZoomImageInitialize As Boolean  ' first time ZoomImage/Micropilot is act
 ' UserForm_Initialize()
 '   Function called from e.g. AutoFocusForm.Show
 '   Load and initialize form
-''
+'''''
 Public Sub UserForm_Initialize()
     'Setting of some global variables
     LogFileNameBase = ""
@@ -53,8 +53,10 @@ Public Sub UserForm_Initialize()
     End If
 
     FormatUserForm (Me.Caption) ' make minimizing button available
+    AutofocusForm.Show
     Re_Start                    ' Initialize some of the variables
 
+    
 End Sub
 
 ''''
