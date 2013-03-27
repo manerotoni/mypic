@@ -20,18 +20,11 @@ Attribute VB_Exposed = False
 ' Concat v2.0.2
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Const Version = " v2.0.2"
+Private Const Version = " v2.0.3"
 Option Explicit 'force to declare all variables
 Private Pattern() As String
 
 Dim DatabaseDialogLoaded As Boolean
-
-
-
-
-
-
-
 
 
 
@@ -46,9 +39,9 @@ Private Sub UserForm_Activate()
     DatabaseDialogLoaded = True
     ReDim Pattern(4)
     Pattern(0) = "(\w+)_T(\d+).lsm" 'new standard formt
-    Pattern(1) = "(\w+)--(\d+).lsm" 'Cellbase Format
+    Pattern(1) = "(\d+\-*\d+\-*\d+\-*\(\d+,\d+\)\-*\w+\-*\w+)\-*(\d+).lsm" 'Cellbase Format
     Pattern(2) = "(\w+)_R(\d+).lsm" 'old obsolete format
-    Pattern(3) = "(\w+)--T(\d+).lsm" 'intermediate obsolete format
+    Pattern(3) = "(\w+\-*W\w+\-*P\w+)\-*T(\d+).lsm" 'old intermediate format obsolete
 
 End Sub
 
@@ -465,8 +458,6 @@ On Error GoTo NoImage
     
     User_flg = False
     If (ImagesListBox.ListIndex <> -1) Then
-
-        
         If OptionZStack.Value Then
             OptionTimeStack.Value = False
             OptionAllFiles.Value = False
@@ -692,7 +683,7 @@ Private Function WaitProgress(Progress As AimProgress)
 
 End Function
 
-Private Function DoConcatenate_Time() As Boolean
+Private Function DoConcatenate_Time(Name2 As String) As Boolean
 
     Dim SourceImageNodeDocument As AimExperimentTreeNode
     Dim DestinationImageDocument As AimExperimentTreeNode
@@ -743,7 +734,6 @@ Private Function DoConcatenate_Time() As Boolean
     Dim EventDescription As String
     Dim Es As Long
 
-    Dim Name2 As String
 On Error GoTo Finish
 
     flgBreak = False
@@ -888,8 +878,7 @@ On Error GoTo Finish
                                                     SizeY, _
                                                     SizeX, _
                                                     eAimImageResizeTypePreserve
-                GetPureName SlctFileName(IndexArray(index)), Name2
-                DestinationImageDocument.Name = Name2 + "_SUM"
+                DestinationImageDocument.Name = Name2
                 ImageCopy.Start
                 If Not WaitProgress(ImageCopy) Then GoTo Finish
             Else
@@ -958,7 +947,7 @@ On Error GoTo Finish
                 DestinationImage.EventList.Append EventTimeStamp + TimeSystemStartLast, EventType, EventDescription
             Next Es
         Next index
-        DestinationImageDocument.Name = Name2 + "_SUM"
+        DestinationImageDocument.Name = Name2
         
         Lsm5Vba.Application.ThrowEvent eRootReuse, 0
         DoEvents
@@ -966,7 +955,6 @@ On Error GoTo Finish
     DoConcatenate_Time = True
 Finish:
     flgBreak = False
-    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
     User_flg = True
 End Function
 
@@ -1201,13 +1189,17 @@ Private Sub SelectLocationNew(loc As Integer, Images() As ImageName)
     Dim indexI As Integer
     Dim RegEx As VBScript_RegExp_55.RegExp
     Set RegEx = CreateObject("vbscript.regexp") ' an object to do regular expression operations
-
     For index = 0 To ImagesListBox.ListCount - 1
         ImagesListBox.Selected(index) = False
-        RegEx.Pattern = "^" & Images(loc).BaseName & "_"
+        RegEx.Pattern = "^" & Images(loc).BaseName
         User_flg = False
         If RegEx.Test(ImagesListBox.List(index, 0)) Then
-            ImagesListBox.Selected(index) = True
+            For indexI = 0 To UBound(Images(loc).ListOfNames)
+                RegEx.Pattern = Images(loc).ListOfNames(indexI)
+                If RegEx.Test(ImagesListBox.List(index, 0)) Then
+                    ImagesListBox.Selected(index) = True
+                End If
+            Next indexI
         End If
     Next index
     User_flg = True
@@ -1242,13 +1234,14 @@ Private Sub ConcatenateTimePerLocationButton_Click()
         If UBound(Images(index).ListOfNames) > 0 Then
             DoEvents
             SelectLocationNew index, Images
-            If Not DoConcatenate_Time Then
+            If Not DoConcatenate_Time(Images(index).BaseName) Then
                 Exit Sub
             End If
+            DisplayProgress "Saving File ...", RGB(0, &HC0, 0)
             SaveDsRecordingDoc Lsm5.DsRecordingActiveDocObject, outputfile
         End If
     Next index
-
+    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
 End Sub
 
 
@@ -1281,7 +1274,7 @@ Private Sub ConcatenatetimeMarkedLocation_Click()
             outputfile = FileNameTextBox & Images(index).BaseName & ".lsm"
             If UBound(Images(index).ListOfNames) > 0 Then
                 SelectLocationNew index, Images
-                If Not DoConcatenate_Time Then
+                If Not DoConcatenate_Time(Images(index).BaseName) Then
                     Exit Sub
                 End If
                 SaveDsRecordingDoc Lsm5.DsRecordingActiveDocObject, outputfile
