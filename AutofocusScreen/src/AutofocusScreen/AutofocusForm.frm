@@ -26,7 +26,7 @@ Private Const BIF_RETURNONLYFSDIRS = &H1
 ' AutofocusScreen_ZEN_v2.1.3
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Const Version = " v2.1.3.3"
+Private Const Version = " v2.1.3.4"
 Private Const ZEN = "2010"
 Public posTempZ  As Double                  'This is position at start after pushing AutofocusButton
 Private Const DebugCode = False             'sets key to run tests visible or not
@@ -351,9 +351,10 @@ Private Sub SaveSettings(FileName As String)
     Print #iFileNum, "TextBoxAlterInterval " & TextBoxAlterInterval.Value
     Print #iFileNum, "TextBoxAlterZoom " & TextBoxAlterZoom.Value
 
-    'Additional Acquisition
+    'Grid Acquisition
     Print #iFileNum, "% Additional Acquisition "
     Print #iFileNum, "CheckBoxActiveGridScan " & CheckBoxActiveGridScan.Value
+    Print #iFileNum, "useValidGridDefault " & useValidGridDefault.Value
     Print #iFileNum, "GridScan_nRow " & GridScan_nRow.Value
     Print #iFileNum, "GridScan_nColumn " & GridScan_nColumn.Value
     Print #iFileNum, "GridScan_dRow " & GridScan_dRow.Value
@@ -402,6 +403,7 @@ Private Sub LoadSettings(FileName As String)
             Me.Controls(FieldEntries(0)).Value = FieldEntries(1)
         End If
     Loop
+    Close #iFileNum
     Exit Sub
 ErrorHandle:
     MsgBox "Not able to read " & FileName & " for AutofocusScreen settings"
@@ -457,7 +459,7 @@ End Sub
 Private Sub FocusMap_Click()
     ' This will run just in the AutofocusMode all the AcquisitionTracks are set off
     SetDatabase
-    SaveSettings GlobalDataBaseName & "tmpSettings.ini"
+    SaveSettings GlobalDataBaseName & "\tmpSettings.ini"
     AcquisitionTracksSetOff
     'change values
     BSliderRepetitions.Value = 1
@@ -468,7 +470,7 @@ Private Sub FocusMap_Click()
     StartButton_Click
     WritePosFile GlobalDataBaseName & "\" & TextBoxFileName.Value & "positionsGrid.csv", posGridX, posGridY, posGridZ
     'Return to original values for the
-    LoadSettings GlobalDataBaseName & "tmpSettings.ini"
+    LoadSettings GlobalDataBaseName & "\tmpSettings.ini"
 End Sub
 
 
@@ -1925,7 +1927,17 @@ Private Function StartSetting() As Boolean
         
         If initValid Then
             ReDim posGridXY_Valid(1 To GridScan_nRow.Value, 1 To GridScan_nColumn.Value, 1 To GridScan_nRowsub.Value, 1 To GridScan_nColumnsub.Value) ' A position may be active or not
-            MakeValidGrid posGridXY_Valid, GlobalDataBaseName & "\validGridDefault.txt"
+            WriteValidFile GlobalDataBaseName & "\validGrid.csv", posGridXY_Valid
+
+            If useValidGridDefault Then
+                If isValidGridDefault(GlobalDataBaseName & "\validGridDefault.txt") Then
+                    MakeValidGrid posGridXY_Valid, GlobalDataBaseName & "\validGridDefault.txt"
+                Else
+                    Exit Function
+                End If
+            Else
+               MakeValidGrid posGridXY_Valid
+            End If
             WriteValidFile GlobalDataBaseName & "\validGrid.csv", posGridXY_Valid
         End If
     End If
@@ -5122,4 +5134,5 @@ Private Function RunTestFastZline(RecordingDoc As DsRecordingDoc, TestNr As Inte
     End If
     RunTestFastZline = True
 End Function
+
 

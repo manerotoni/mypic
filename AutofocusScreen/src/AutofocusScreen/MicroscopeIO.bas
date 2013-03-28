@@ -1086,6 +1086,57 @@ Public Sub MakeGrid(posGridX() As Double, posGridY() As Double, posGridZ() As Do
         Next iRow
 End Sub
 
+Public Function isValidGridDefault(ByVal sFile As String) As Boolean
+    Dim CellBase As String
+    Dim Default As String
+    Dim last_entry  As String
+    Dim Active As Boolean
+    Dim GoodMatch As Boolean
+    Dim RegEx As VBScript_RegExp_55.RegExp
+    Set RegEx = CreateObject("vbscript.regexp")
+    Dim Match As MatchCollection
+    'Well--Row--Col--(Row,Col)--TypeofWell
+    CellBase = "(\d+)--(\d+)--(\d+)--(\S+)--(\S+)"
+    'valid Row--Col
+    Default = "(\d+) (\d+)--(\d+)"
+    If FileExist(sFile) Then
+        Close
+        Dim iFileNum As Integer
+        Dim Fields As String
+        Dim FieldEntries() As String
+        iFileNum = FreeFile()
+        Open sFile For Input As iFileNum
+        Do While Not EOF(iFileNum)
+            On Error GoTo ErrorHandle:
+            Line Input #iFileNum, Fields
+            GoodMatch = False
+            RegEx.Pattern = Default
+            If RegEx.Test(Fields) Then
+                Set Match = RegEx.Execute(Fields)
+                Active = (Match.Item(0).SubMatches.Item(0) = "1")
+                GoodMatch = True
+            Else
+                RegEx.Pattern = CellBase
+                If RegEx.Test(Fields) Then
+                    Set Match = RegEx.Execute(Fields)
+                    Active = (Match.Item(0).SubMatches.Item(4) <> "empty")
+                    GoodMatch = True
+                Else
+                    MsgBox "validGridDefault.txt has not the correct format! " & vbCrLf & "The format should be " & vbCrLf & "(In)active(0 or 1) Row(>=1)--Col(>=1) e.g." & vbCrLf & "0 1--1" & vbCrLf & "1 1--2" & vbCrLf _
+                    & "or CellBase format Well--Row--Col--(Row,Col)--Identifier Identifier = empty=> InactiveWell e.g." & vbCrLf & "1--2--1--(1,1)--empty" & vbCrLf _
+                    & "1--1--2--(1,2)--MyCoolGene"
+                    Exit Function
+                End If
+            End If
+        Loop
+        isValidGridDefault = True
+    Else
+        MsgBox " File validGridDefault.txt needs to be in the output folder"
+    End If
+    Exit Function
+ErrorHandle:
+    MsgBox " Could not load validGridDefault.txt"
+End Function
 '''''
 '   MakeValidGrid( posGridX() As Double, posGridY() As Double, posGridXY_valid() )
 '   Create a grid
@@ -1094,7 +1145,7 @@ End Sub
 '       [posGridXY_valid] In/Out - Array that says if position is valid
 '       [locationNumbersMainGrid] In/Out - location number on main grid
 '''''
-Public Sub MakeValidGrid(posGridXY_Valid() As Boolean, ByVal sFile As String)
+Public Sub MakeValidGrid(posGridXY_Valid() As Boolean, Optional ByVal sFile As String)
     ' A row correspond to Y movement and Column to X shift
     ' entries are posGridX(row, column)!! this what is
     ' counters
@@ -1105,9 +1156,9 @@ Public Sub MakeValidGrid(posGridXY_Valid() As Boolean, ByVal sFile As String)
     Dim Active As Boolean
     Dim GoodMatch As Boolean
     'Well--Row--Col--(Row,Col)--TypeofWell
-    CellBase = "(\d+)--(\d+)--(\d+)--(\S+)--(\S+)"
+    CellBase = "(\d+)\-\-(\d+)\-\-(\d+)\-\-(\S+)\-\-(\S+)"
     'valid Row--Col
-    Default = "(\d+) (\d+)--(\d+)"
+    Default = "(\d+) (\d+)\-\-(\d+)"
     Dim iRow As Long
     Dim iCol As Long
     Dim iRowSub As Long
@@ -1132,8 +1183,9 @@ Public Sub MakeValidGrid(posGridXY_Valid() As Boolean, ByVal sFile As String)
     Next iRow
     
     'File is either a Cellbase file or a series of 1 and zeros vertically ordered
-    If FileExist(sFile) Then
+    If sFile <> "" And FileExist(sFile) Then
         Close
+        On Error GoTo ErrorHandle
         Dim iFileNum As Integer
         Dim Fields As String
         Dim FieldEntries() As String
