@@ -21,8 +21,22 @@ Public Declare Function RegQueryValueEx _
     ByVal lpReserved As Long, lpType As Long, _
     lpData As Any, lpcbData As Long) As Long         ' Note that if you declare the lpData parameter as String, you must pass it By Value.
 
+''''''''''
+'''TYPES''
+''''''''''
+Public Type RepetitionType     'Contains Number and Time interval for repetition of acquisition protocol
+    Number As Integer   'Number of repetitions
+    Time As Double      'Interval between repetitions
+    Interval As Boolean ' If Interval is True than one computes interval between first and second image = Time other wise
+End Type
 
-
+''''Position on grid
+Public Type GridPosType
+    Row As Long
+    Col As Long
+    RowSub As Long
+    ColSub As Long
+End Type
 
 ''''''''''''''''''''
 '''''CONSTANTS''''''
@@ -84,13 +98,14 @@ Public ZBacklash  As Double           'ToDo: is it still recquired?.
                                            'Has to do with the movements of the focus wheel that are "better"
                                            'if they are long enough. For amoment a test did not gave significant differences This is required for ZEN2010
 
-
+Public ZEN As String
 '''''''''''''''''''''
 '''GLOBAL VARIABLE'''
 '''''''''''''''''''''
-
-
-
+Public RowG As Integer
+Public ColG As Integer
+Public RowSubG As Integer
+Public ColSubG As Integer
 Public X11 As Double
 Public X12 As Double
 Public X21 As Double
@@ -207,7 +222,7 @@ Public BackupRecording As DsRecording             ' To remove
 Public GlobalBackupRecording As DsRecording       ' A backupRecording from initial setup (this will not be changed after Re_initialize)
 Public GlobalAutoFocusRecording As DsRecording    ' A global variable for AutofocusRecording
 Public GlobalAcquisitionRecording As DsRecording  ' A global variable for AcquisitionRecording
-Public GlobalZoomRecording As DsRecording         ' A global variable for Micropilot
+Public GlobalMicropilotRecording As DsRecording         ' A global variable for Micropilot
 Public GlobalAltRecording As DsRecording          ' A global variable for AlternativeTrack
 Public GlobalBackupActiveTracks() As Boolean
 
@@ -517,18 +532,18 @@ End Function
 '       [XMass], [YMass], [ZMass]    In - Translation vector
 '       [x], [y], [z] Out - Shifted coordinates. Depends on stage build up and actual position. Positions are rounded up to PrecXY and PrecZ
 ''''''
-Public Function ComputeShiftedCoordinates(ByVal XMass As Double, ByVal YMass As Double, ByVal ZMass As Double, ByRef x As Double, ByRef Y As Double, ByRef Z As Double)
+Public Function ComputeShiftedCoordinates(ByVal XMass As Double, ByVal YMass As Double, ByVal ZMass As Double, ByRef X As Double, ByRef Y As Double, ByRef Z As Double)
 
     If AreStageCoordinateExchanged Then
-        x = x - YMass
+        X = X - YMass
         Y = Y - XMass
     Else
-        x = x + XMass
+        X = X + XMass
         Y = Y - YMass
     End If
         
     Z = Z + ZMass
-    x = Round(x, PrecXY)
+    X = Round(X, PrecXY)
     Y = Round(Y, PrecXY)
     Z = Round(Z, PrecZ)
 End Function
@@ -539,12 +554,12 @@ End Function
 '       [x] In - x-position
 '       [y] In - y-position
 '''''
-Public Function FailSafeMoveStageXY(x As Double, Y As Double) As Boolean
+Public Function FailSafeMoveStageXY(X As Double, Y As Double) As Boolean
     
     FailSafeMoveStageXY = False
 
 
-    Lsm5.Hardware.CpStages.SetXYPosition x, Y
+    Lsm5.Hardware.CpStages.SetXYPosition X, Y
     'TODO Check this
     Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
         Sleep (200)
@@ -608,7 +623,7 @@ Public Function Autofocus_MoveAcquisition(XShift As Double, YShift As Double, ZS
     
     Dim ZFocus As Double
     Dim Zbefore As Double
-    Dim x As Double
+    Dim X As Double
     Dim Y As Double
         
     '''''''''''''''''''''''''''''''''''''''
@@ -636,10 +651,10 @@ Public Function Autofocus_MoveAcquisition(XShift As Double, YShift As Double, ZS
     'Moving to the correct position in X and Y
     If AutofocusForm.ScanFrameToggle Then
         ' Todo: check whether it moves in the correct direction
-        If AutofocusForm.CheckBoxAutofocusTrackXY Then
-            x = Lsm5.Hardware.CpStages.PositionX - XShift
+        If AutofocusForm.AutofocusTrackXY Then
+            X = Lsm5.Hardware.CpStages.PositionX - XShift
             Y = Lsm5.Hardware.CpStages.PositionY - YShift
-            Success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition(x, Y)
+            Success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition(X, Y)
         End If
          
         Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
@@ -698,7 +713,7 @@ Private Sub MovetoCorrectZPosition(ZOffset As Double)
 Const ZBacklash = -50
 Dim ZFocus As Double
 Dim Zbefore As Double
-Dim x As Double
+Dim X As Double
 Dim Y As Double
      ZFocus = Lsm5.Hardware.CpFocus.Position + ZOffset + ZShift
        Lsm5.Hardware.CpFocus.Position = ZFocus + ZBacklash    'Moves down -50uM (ZBacklash) with the focus wheel
@@ -977,7 +992,7 @@ Public Sub Autofocus_MoveAcquisition_HRZ(ZOffset As Double)
     Const ZBacklash = -50
     Dim ZFocus As Double
     Dim Zbefore As Double
-    Dim x As Double
+    Dim X As Double
     Dim Y As Double
 
     AutofocusForm.RestoreAcquisitionParameters
@@ -1028,10 +1043,10 @@ Public Sub Autofocus_MoveAcquisition_HRZ(ZOffset As Double)
     'Moving to the correct position in X and Y
  
     If AutofocusForm.ScanFrameToggle Then
-        If AutofocusForm.CheckBoxAutofocusTrackXY Then
-            x = Lsm5.Hardware.CpStages.PositionX - XShift  'the fact that it is "-" in this line and "+" in the next line  probably has to do with where the XY of the origin is set (top right corner and not botom left, I think)
+        If AutofocusForm.AutofocusTrackXY Then
+            X = Lsm5.Hardware.CpStages.PositionX - XShift  'the fact that it is "-" in this line and "+" in the next line  probably has to do with where the XY of the origin is set (top right corner and not botom left, I think)
             Y = Lsm5.Hardware.CpStages.PositionY - YShift
-            Success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition(x, Y)
+            Success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition(X, Y)
         End If
          
         Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
@@ -1137,6 +1152,8 @@ Public Function isValidGridDefault(ByVal sFile As String) As Boolean
 ErrorHandle:
     MsgBox " Could not load validGridDefault.txt"
 End Function
+
+
 '''''
 '   MakeValidGrid( posGridX() As Double, posGridY() As Double, posGridXY_valid() )
 '   Create a grid
@@ -1675,8 +1692,8 @@ Done:
     SaveDsRecordingDoc = False
     Export.FinishExport
     AutofocusForm.StopAcquisition
-    
 End Function
+
 
 
 '''''
@@ -1731,5 +1748,363 @@ Public Sub UsedDevices40(bLSM As Boolean, bLIVE As Boolean, bCamera As Boolean)
     Next lTrack
 End Sub
 
+'''
+'   StorePositioninHighResArray(HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double, HighResCounter As Integer)
+'   TODO: Test stricter way of passing arguments
+''''
+Public Function StorePositioninHighResArray(Xref As Double, Yref As Double, Zref As Double, HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double) As Boolean
+    
+    ' store postion from windows registry in array
+    Dim Xoffset()  As String 'the string containinig the X-positions
+    Dim Yoffset()  As String 'the string containinig the Y-positions
+    Dim ZOffset() As String
+    Dim PixelSize As Double
+    Dim unit As String
+    Dim LowBound As Integer
+    Dim i As Integer
+    unit = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="unit")
 
+    If unit = "um" Or unit = Chr(181) & "m" Then   'has correct pixelSize of um
+        PixelSize = 1
+    Else                                    'Default is pixel even when Key does not exist
+        PixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing * 1000000
+    End If
+    
+    Xoffset() = Split(GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="offsetx"), ",")
+    Yoffset() = Split(GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="offsety"), ",")
+    If UBound(Xoffset) <> UBound(Yoffset) Then
+        MsgBox ("StorePositioninHighResArray: nr of values in registry offsetx and offsety is not the same!")
+        Exit Function
+    End If
+    'ZOffset() = Split(GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="offsetz"), ",") for a later time point we can also set Z
+    If isArrayEmpty(HighResArrayX) Then
+        LowBound = 1
+        ReDim HighResArrayX(1 To UBound(Xoffset) + 1)
+        ReDim HighResArrayY(1 To UBound(Xoffset) + 1)
+        ReDim HighResArrayZ(1 To UBound(Xoffset) + 1)
+    Else
+        LowBound = UBound(HighResArrayX) + 1
+        ReDim Preserve HighResArrayX(1 To UBound(HighResArrayX) + UBound(Xoffset) + 1)
+        ReDim Preserve HighResArrayY(1 To UBound(HighResArrayY) + UBound(Yoffset) + 1)
+        ReDim Preserve HighResArrayZ(1 To UBound(HighResArrayZ) + UBound(ZOffset) + 1)
+    End If
+    
+    For i = 0 To UBound(Xoffset)
+        HighResArrayX(LowBound + i) = Xref - CDbl(Xoffset(i)) * PixelSize ' this needs to be unified with computing internal AF
+        HighResArrayY(LowBound + i) = Yref + CDbl(Yoffset(i)) * PixelSize ' needs to be unified with computing internal AF
+        HighResArrayZ(LowBound + i) = Zref
+    Next i
+    Dim Xoff As Double
+    Xoff = Xref - CDbl(Xoffset(0)) * PixelSize
+    DisplayProgress "StorePositioninHighResArray - Position stored", RGB(0, &HC0, 0)
+End Function
+
+
+''''''
+'   MicroscopePilot(RecordingDoc As DsRecordingDoc, BleachingActivated As Boolean, HighResExperimentCounter As Integer, HighResCounter As Integer _
+'   HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double)
+'   TODO: test stricter way of passing arguments
+'   [code] passed by MacroPilot can be
+'       0, nothing, Nothing, DoNothing or doNothing: do nothing and exit function
+'       1, wait or Wait: wait that code changes
+'       2, storePositions, or StorePositions: Store positions and exit function
+''''''
+Public Function MicroscopePilot(RecordingDoc As DsRecordingDoc, GridPos As GridPosType, FileNameID As String, HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double) As Boolean
+    
+    Dim code As String
+    Dim Xref As Double
+    Dim Yref As Double
+    Dim Zref As Double
+
+    
+    code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="code")
+    
+    Select Case code
+        Case "1", "wait", "Wait":                                     'Wait for image analysis to finish
+            DisplayProgress "Waiting for image analysis...", RGB(0, &HC0, 0)
+            Do While (code = "1" Or code = "wait" Or code = "Wait")
+                Sleep (200)
+                code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", _
+                          Key:="Code")
+                If GetInputState() <> 0 Then
+                    DoEvents
+                    If ScanStop Then
+                        Exit Function
+                    End If
+                End If
+            Loop
+    End Select
+    
+    Select Case code
+        Case "0", "nothing", "Nothing", "DoNothing", "doNothing":  'Nothing to do
+            
+
+        Case "2", "storePosition", "StorePosition", "storePosition", "StorePosition": 'store positions for later processing
+            DisplayProgress "Registry Code 2 (storePosition): store positions and do nothings ...", RGB(0, &HC0, 0)
+            StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ
+        Case "3", "imagePositions", "ImagePositions", "imagePosition", "ImagePosition":
+            DisplayProgress "Registry Code 3 (imagePositions): store positions and do imaging ...", RGB(0, &HC0, 0)
+            StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ
+            ' BatchHighresImagingRoutine
+            ' HERE THE IMAGES ARE ACQUIRED
+            Dim Repetitions As RepetitionType
+            Repetitions.Number = CInt(AutofocusForm.MicropilotRepetitions.Value)
+            Repetitions.Time = CDbl(AutofocusForm.MicropilotRepetitionTime.Value)
+            Repetitions.Interval = False
+            SubImagingWorkFlow RecordingDoc, GlobalMicropilotRecording, "Micropilot", AutofocusForm.MicropilotAutofocus, AutofocusForm.MicropilotZOffset, Repetitions, _
+            HighResArrayX, HighResArrayY, HighResArrayZ, GridPos, FileNameID
+            Erase HighResArrayX
+            Erase HighResArrayY
+            Erase HighResArrayZ
+        Case Else
+            MsgBox ("Invalid OnlineImageAnalysis Code = " & code)
+            Exit Function
+    End Select
+    MicroscopePilot = True
+     'TODO: create a better procedure to check for cells
+
+'    If (CheckBoxGridScan_FindGoodPositions) Then
+'
+'        codeArray = Split(code, "_")
+'
+'        nGoodCells = CInt(codeArray(1))
+'        minGoodCellsPerImage = CInt(codeArray(2))
+'        minGoodCellsPerWell = CInt(codeArray(3))
+'
+'        GoTo Mark
+'
+'    End If
+'
+    'Reset Code to 0 in Windows Registry
+    'SaveSetting "OnlineImageAnalysis", "Cinput", "Code",
+            
+End Function
+
+'''''
+'   BatchHighresImagingRoutine(RecordingDoc As DsRecordingDoc, HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double, _
+'   HighResCounter As Integer, HighResExperimentCounter As Integer)
+'   TODO: Test stricter way of passing arguments
+'''''
+Public Function SubImagingWorkFlow(RecordingDoc As DsRecordingDoc, Recording As DsRecording, RecordingName As String, Autofocus As Boolean, ByVal ZOffset As Double, Repetitions As RepetitionType, HighResArrayX() As Double, _
+ HighResArrayY() As Double, HighResArrayZ() As Double, GridPos As GridPosType, inFileNameID As String) As Boolean
+    
+
+    Dim Succes As Integer
+    Dim SuccessRecenter As Boolean
+    
+    'Timer and Looping Variables
+    Dim iPos As Integer
+    Dim iRep As Integer
+    Dim StartTime As Double
+    Dim NewTime As Double
+    Dim DiffTime As Double
+    Dim TimeLog As Double  'used in the the log
+    
+    'file name variables
+    Dim FileNameID  As String
+    Dim fullpathname As String
+    Dim BackSlash As String
+    Dim UnderScore As String
+    Dim LogMsg As String
+    'position variables
+    Dim X As Double
+    Dim Y As Double
+    Dim Z As Double
+    Dim posZ As Double 'actual position Z
+
+    ' set up the imaging
+    Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
+    
+    If RecordingDoc Is Nothing Then
+        Set RecordingDoc = Lsm5.NewScanWindow
+        While RecordingDoc.IsBusy
+            Sleep (20)
+            DoEvents
+        Wend
+    End If
+    
+    If Right(AutofocusForm.DatabaseTextbox.Value, 1) = "\" Then
+        BackSlash = ""
+    Else
+        BackSlash = "\"
+    End If
+    
+    If AutofocusForm.TextBoxFileName.Value <> "" Then
+        UnderScore = "_"
+    Else
+        UnderScore = ""
+    End If
+    
+    StartTime = CDbl(GetTickCount) * 0.001
+    For iRep = 1 To Repetitions.Number
+        For iPos = 1 To UBound(HighResArrayX)  ' Postition loop
+                ' Move to Positon in x, y, z for Highresscan
+                DisplayProgress RecordingName & " - Move to Position " & iPos, RGB(0, &HC0, 0)
+                X = HighResArrayX(iPos)
+                Y = HighResArrayY(iPos)
+                Z = HighResArrayZ(iPos)
+                If Not FailSafeMoveStageXY(HighResArrayX(iPos), HighResArrayY(iPos)) Then
+                    Exit Function
+                End If
+                'center acquisition (this should be already at correct position after AF)
+                Recenter_pre Z, SuccessRecenter, ZEN
+                
+                'Autofocus. This does an extra Autofocus also for the HighresImaging with the same parameters as Autofocus
+                If Autofocus Then
+                    DisplayProgress RecordingName & " - Autofocus activate track and recenter...", RGB(0, &HC0, 0)
+                    If Not AutofocusForm.ActivateTrack(GlobalAutoFocusRecording, "Autofocus") Then
+                        MsgBox "No track selected for Autofocus! Cannot Autofocus!"
+                        Exit Function
+                    End If
+                    
+                    '''center
+                    TimeLog = Timer
+                    If Not Recenter_pre(Z, SuccessRecenter, ZEN) Then
+                        Exit Function
+                    End If
+                    LogMsg = "% " & RecordingName & " : recenter Z (pre AFImg) " & Z & ", time required " & Round(Timer - TimeLog)
+                    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+                    
+                    ' take a z-stack and finds the brightest plane:
+                    DisplayProgress RecordingName & " - Autofocus acquire ...", RGB(0, &HC0, 0)
+                    If Not MicroscopeIO.Autofocus_StackShift(RecordingDoc) Then
+                       Exit Function
+                    End If
+                    
+                    'wait for recentering
+                    DisplayProgress RecordingName & " - Wait for recentering after acquisition AF...", RGB(0, &HC0, 0)
+                    TimeLog = Timer
+                    If Not Recenter_post(Z, SuccessRecenter, ZEN) Then
+                        Exit Function
+                    End If
+                    
+                    LogMsg = "% " & RecordingName & ": recenter Z (post AFImg) " & Z
+                    posZ = Round(Lsm5.Hardware.CpFocus.Position, PrecZ)
+                    If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or AutofocusForm.CheckBoxHRZ Then
+                        LogMsg = LogMsg & ", Obtained Z " & posZ & "; actual position " & posZ & ", Time required " & Round(Timer - TimeLog) & ", success within rep. " & SuccessRecenter
+                    Else
+                        LogMsg = LogMsg & ", Obtained Z " & Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + posZ _
+                        & "; actual position " & posZ & ", Time required " & Round(Timer - TimeLog) & ", success within rep. " & SuccessRecenter
+                    End If
+                    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+                        
+                        
+                    ' move the xyz to the right position
+                    ComputeShiftedCoordinates XMass, YMass, ZMass, X, Y, Z
+                    If AutofocusForm.AutofocusTrackXY.Value And AutofocusForm.ScanFrameToggle.Value Then
+                        DisplayProgress RecordingName & " - Autofocus move XY stage", RGB(0, &HC0, 0)
+                        If Not FailSafeMoveStageXY(X, Y) Then
+                            Exit Function
+                        End If
+                    End If
+                    LogMsg = "% " & RecordingName & ":  center of mass  " & XMass & ", " & YMass & ", " & ZMass & ", computed position " & X & ", " & Y & ", " & Z
+                    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+                    HighResArrayX(iPos) = X
+                    HighResArrayY(iPos) = Y
+                    HighResArrayZ(iPos) = Z
+                End If
+                
+                DisplayProgress RecordingName & " - activate micropilot acquisition track and recenter ...", RGB(0, &HC0, 0)
+                If Not AutofocusForm.ActivateTrack(Recording, RecordingName) Then
+                    MsgBox " No Track selected for  " & RecordingName & "! Macro stops here"
+                    Exit Function
+                End If
+                
+                ' set central slice before moving
+                If Not Recenter_pre(Z + ZOffset, SuccessRecenter, ZEN) Then
+                    Exit Function
+                End If
+                
+                DisplayProgress RecordingName & " - Acquisition position " & iPos & "/" & UBound(HighResArrayX), RGB(&HC0, &HC0, 0)
+
+                If Not ScanToImage(RecordingDoc) Then
+                    Exit Function
+                End If
+                
+                fullpathname = AutofocusForm.DatabaseTextbox.Value & BackSlash & "HRExp_" & AutofocusForm.TextBoxFileName.Value & UnderScore & inFileNameID & "\"
+                If Not CheckDir(fullpathname) Then
+                    Exit Function
+                End If
+                FileNameID = FileName(GridPos.Row, GridPos.Col, GridPos.RowSub, GridPos.ColSub, iRep)
+                fullpathname = fullpathname & AutofocusForm.TextBoxFileName.Value & UnderScore & "HRPos" & ZeroString(3 - Len(CStr(iPos))) & _
+                FileNameID & ".lsm"
+                
+                DisplayProgress RecordingName & " - SaveImage", RGB(0, &HC0, 0)
+                If Not SaveDsRecordingDoc(RecordingDoc, fullpathname) Then
+                    Exit Function
+                End If
+
+                'Here the Location-tracking in High-resmode code needs be added! This only if one wants to track extra in the highresmode
+          
+        Next iPos ' End of postions loop
+        'TODO Check
+        DiffTime = CDbl(GetTickCount) * 0.001 - StartTime
+        While DiffTime <= Repetitions.Time
+            Sleep (10)
+            If GetInputState() <> 0 Then
+            DoEvents
+                If ScanStop Then
+                    SubImagingWorkFlow = False
+                    Exit Function
+                End If
+            End If
+            DiffTime = CDbl(GetTickCount) * 0.001 - StartTime
+            DisplayProgress "Waiting " & CStr(CInt(Repetitions.Time - DiffTime)) + " s before scanning repetition  " & (iRep + 1), RGB(&HC0, &HC0, 0)
+        Wend
+    Next iRep  ' End of time repetition loop
+    
+'                If BleachingActivated Then
+'
+'                    DisplayProgress "Bleaching...", &HFF00FF
+'
+'                    Set Track = Lsm5.DsRecording.TrackObjectBleach(Success)
+'                    If Success Then ' This Needs to be checked again
+'                        'move stage
+'                        If Not FailSafeMoveStageZ(Z + MicropilotZOffset.Value) Then
+'                            Exit Function
+'                        End If
+'                        Track.Acquire = True
+'                        Lsm5.DsRecording.TimeSeries = True
+'                        Lsm5.DsRecording.StacksPerRecord = MicropilotRepetitions.Value
+'                        Lsm5.DsRecording.FramesPerStack = 1
+'                        Track.TimeBetweenStacks = MicropilotRepetionTime.Value
+'                        If Not WaitForRecentering(Z + MicropilotZOffset.Value, SuccessRecenter, ZEN) Then
+'                            Exit Function
+'                        End If
+'
+'                        DoEvents
+'                        Track.UseBleachParameters = True            'Bleach parameters are lasers lines, bleach iterations... stored in the bleach control window
+'                        'BleachStartTable(RepetitionNumber) = GetTickCount      'Get the time right before bleach to store this in the image metadata
+'                        Set RecordingDoc = Lsm5.StartScan
+'                        'TODO Check
+'                        Do While RecordingDoc.IsBusy
+'                            Sleep (100)
+'                            If GetInputState() <> 0 Then
+'                                DoEvents
+'                                If ScanStop Then
+'                                    Exit Function
+'                                End If
+'                            End If
+'                        Loop
+'
+'                        Track.UseBleachParameters = False  'switch off the bleaching
+'                        Lsm5.DsRecording.TimeSeries = False
+'                    Else
+'                        MsgBox ("Could not set bleach track. Did not bleach.")
+'                    End If
+'
+'
+'                    'Save Image
+'                    FileNameID = FileName(Row, Col, RowSub, ColSub, -1)
+'                    ' e.g. name_Bleach_HRExp001_HRPos001_W001_P001.lsm
+'                    fullpathname = DatabaseTextbox.Value & BackSlash & TextBoxFileName.Value & "_Bleach" & "_HRExp" & ZeroString(3 - Len(CStr(HighResExperimentCounter))) & _
+'                    HighResExperimentCounter & "_HRPos" & ZeroString(3 - Len(CStr(highrespos))) _
+'                    & highrespos & "_" & FileNameID & ".lsm"
+'                    SaveDsRecordingDoc RecordingDoc, fullpathname
+'                    DisplayProgress "Micropilot Code Bleach - SaveImage", RGB(0, &HC0, 0)
+'
+
+    
+    SubImagingWorkFlow = True
+End Function
 
