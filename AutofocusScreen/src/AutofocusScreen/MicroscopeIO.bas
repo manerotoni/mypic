@@ -1,5 +1,7 @@
 Attribute VB_Name = "MicroscopeIO"
 Option Explicit
+Public LegacyCode As Boolean
+
 Public SystemVersion As String
 
 Public Declare Function GetInputState Lib "user32" () As Long ' Check if mouse or keyboard has been pushed
@@ -1823,44 +1825,93 @@ End Function
 '       1, wait or Wait: wait that code changes
 '       2, storePositions, or StorePositions: Store positions and exit function
 ''''''
-Public Function MicroscopePilot(RecordingDoc As DsRecordingDoc, GridPos As GridPosType, FileNameID As String, HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double) As Boolean
-    
-    Dim code As String
-    Dim Xref As Double
-    Dim Yref As Double
-    Dim Zref As Double
-
-    
-    code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="code")
-    
-    Select Case code
-        Case "1", "wait", "Wait":                                     'Wait for image analysis to finish
-            DisplayProgress "Waiting for image analysis...", RGB(0, &HC0, 0)
-            Do While (code = "1" Or code = "wait" Or code = "Wait")
-                Sleep (200)
-                code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", _
-                          Key:="Code")
-                If GetInputState() <> 0 Then
-                    DoEvents
-                    If ScanStop Then
-                        Exit Function
-                    End If
-                End If
-            Loop
-    End Select
-    
-    Select Case code
-        Case "0", "nothing", "Nothing", "DoNothing", "doNothing":  'Nothing to do
+Public Function MicroscopePilot(RecordingDoc As DsRecordingDoc, GridPos As GridPosType, Xref As Double, Yref As Double, Zref As Double, FileNameID As String, HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double) As Boolean
+    If Not LegacyCode Then
+        Dim code As String
+        code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="code")
+        If LegacyCode Then
             
-
-        Case "2", "storePosition", "StorePosition", "storePosition", "StorePosition": 'store positions for later processing
-            DisplayProgress "Registry Code 2 (storePosition): store positions and do nothings ...", RGB(0, &HC0, 0)
+        Select Case code
+            Case "1", "wait", "Wait":                                     'Wait for image analysis to finish
+                DisplayProgress "Waiting for image analysis...", RGB(0, &HC0, 0)
+                Do While (code = "1" Or code = "wait" Or code = "Wait")
+                    Sleep (200)
+                    code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", _
+                              Key:="Code")
+                    If GetInputState() <> 0 Then
+                        DoEvents
+                        If ScanStop Then
+                            Exit Function
+                        End If
+                    End If
+                Loop
+        End Select
+        
+        Select Case code
+            Case "0", "nothing", "Nothing", "DoNothing", "doNothing":  'Nothing to do
+            Case "2", "storePosition", "StorePosition", "storePosition", "StorePosition": 'store positions for later processing
+                DisplayProgress "Registry Code 2 (storePosition): store positions and do nothings ...", RGB(0, &HC0, 0)
+                StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ
+            Case "3", "imagePositions", "ImagePositions", "imagePosition", "ImagePosition":
+                DisplayProgress "Registry Code 3 (imagePositions): store positions and do imaging ...", RGB(0, &HC0, 0)
+                StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ
+                ' BatchHighresImagingRoutine
+                ' HERE THE IMAGES ARE ACQUIRED
+                Dim Repetitions As RepetitionType
+                Repetitions.Number = CInt(AutofocusForm.MicropilotRepetitions.Value)
+                Repetitions.Time = CDbl(AutofocusForm.MicropilotRepetitionTime.Value)
+                Repetitions.Interval = False
+                SubImagingWorkFlow RecordingDoc, GlobalMicropilotRecording, "Micropilot", AutofocusForm.MicropilotAutofocus, AutofocusForm.MicropilotZOffset, Repetitions, _
+                HighResArrayX, HighResArrayY, HighResArrayZ, GridPos, FileNameID
+                Erase HighResArrayX
+                Erase HighResArrayY
+                Erase HighResArrayZ
+            Case Else
+                MsgBox ("Invalid OnlineImageAnalysis Code = " & code)
+                Exit Function
+        End Select
+        MicroscopePilot = True
+    Else
+    '''Use Same coding as Micropilot old version
+        
+        Dim code As String
+            
+        ' Get Code from Windows registry
+        code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="code")
+        DisplayProgress "Waiting for Micropilot...", RGB(0, &HC0, 0)
+        DoEvents
+        Do While (code = "1" Or code = "0")
+            ' TODO: Check Code
+            Sleep (100)
+            code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", _
+                      Key:="Code")
+            If GetInputState() <> 0 Then
+                DoEvents
+                If ScanStop Then
+                    MicroscopePilot = False
+                    Exit Function
+                End If
+            End If
+        Loop
+        
+        DisplayProgress "Received Code " + CStr(code), RGB(0, &HC0, 0)
+        
+    
+        If code = "2" Then   ' no interesting cell
+        
+            DisplayProgress "Micropilot Code 2", RGB(0, &HC0, 0)
+            SaveSetting "OnlineImageAnalysis", "macro", "Refresh", 0
+            GoTo Mark '(because Image does not show any interesting pheotype)
+        
+        ElseIf code = "4" Then   'store position in a list
+        
+            DisplayProgress "Micropilot Code 4", RGB(0, &HC0, 0)
             StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ
-        Case "3", "imagePositions", "ImagePositions", "imagePosition", "ImagePosition":
-            DisplayProgress "Registry Code 3 (imagePositions): store positions and do imaging ...", RGB(0, &HC0, 0)
+            
+        ElseIf code = "5" Then  ' start Highres Batch Imaging 1 to n postions
+            
+            DisplayProgress "Micropilot Code 5", RGB(0, &HC0, 0)
             StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ
-            ' BatchHighresImagingRoutine
-            ' HERE THE IMAGES ARE ACQUIRED
             Dim Repetitions As RepetitionType
             Repetitions.Number = CInt(AutofocusForm.MicropilotRepetitions.Value)
             Repetitions.Time = CDbl(AutofocusForm.MicropilotRepetitionTime.Value)
@@ -1870,11 +1921,23 @@ Public Function MicroscopePilot(RecordingDoc As DsRecordingDoc, GridPos As GridP
             Erase HighResArrayX
             Erase HighResArrayY
             Erase HighResArrayZ
-        Case Else
+        
+        Else
+            
+            'Error Message "OnlineImageAnalysis Value = 'Code'"
             MsgBox ("Invalid OnlineImageAnalysis Code = " & code)
-            Exit Function
-    End Select
-    MicroscopePilot = True
+    
+        End If
+Mark:
+    
+        MicroscopePilot = True
+    
+    End If
+    
+    'Reset Code to 0 in Windows Registry
+    'SaveSetting "OnlineImageAnalysis", "Cinput", "Code", 0
+      
+
      'TODO: create a better procedure to check for cells
 
 '    If (CheckBoxGridScan_FindGoodPositions) Then

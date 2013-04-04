@@ -23,10 +23,10 @@ Private Const BIF_RETURNONLYFSDIRS = &H1
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''Version Description''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '
-' AutofocusScreen_ZEN_v2.2.0
+' AutofocusScreen_ZEN_v2.1.3.5
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Const Version = " v2.2.0"
+Private Const Version = " v2.1.3.5"
 Public posTempZ  As Double                  'This is position at start after pushing AutofocusButton
 Private Const DebugCode = False             'sets key to run tests visible or not
 Private Const ReleaseName = True            'this adds the ZEN version
@@ -42,6 +42,7 @@ Private ZoomImageInitialize As Boolean  ' first time ZoomImage/Micropilot is act
 '''''
 Public Sub UserForm_Initialize()
     ZEN = "2010"
+    LegacyCode = False
     'Setting of some global variables
     LogFileNameBase = ""
     Log = LogCode
@@ -53,6 +54,7 @@ Public Sub UserForm_Initialize()
     End If
     FormatUserForm (Me.Caption) ' make minimizing button available
     AutofocusForm.Show
+    
     StageSettings MirrorX, MirrorY, ExchangeXY
     Re_Start                    ' Initialize some of the variables
 
@@ -2701,7 +2703,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
         RepMicropilot.Number = CInt(MicropilotRepetitions.Value)
         RepMicropilot.Time = CDbl(MicropilotRepetitionTime.Value)
         RepMicropilot.Interval = False
-        If Not MicroscopePilot(RecordingDoc, GridPos, FileNameID, HighResArrayX, HighResArrayY, HighResArrayZ) Then
+        If Not MicroscopePilot(RecordingDoc, GridPos, Xold, Yold, Zold, FileNameID, HighResArrayX, HighResArrayY, HighResArrayZ) Then
             Exit Function
         End If
     End If
