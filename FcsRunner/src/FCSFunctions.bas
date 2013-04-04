@@ -75,8 +75,9 @@ Public Function FcsMeasurement(Optional FcsData As AimFcsData) As Boolean
     'FcsData.name = "Bla"
     FcsControl.StopAcquisitionAndWait
     FcsControl.StartMeasurement FcsData
+    Sleep (200)
     While FcsControl.IsAcquisitionRunning(1)
-        Sleep (500)
+        Sleep (200)
         If ScanStop Then
             FcsControl.StopAcquisitionAndWait
             Exit Function

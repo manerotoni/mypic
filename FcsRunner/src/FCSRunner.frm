@@ -15,7 +15,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit 'force to declare all variables
-Private Const Version = "v0.3"
+Private Const Version = "v0.4"
 Private IsAcquiring As Boolean
 Private Counter As Integer
 
