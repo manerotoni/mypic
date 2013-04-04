@@ -51,9 +51,9 @@ Public Sub UserForm_Initialize()
     If ReleaseName Then
         Me.Caption = Me.Caption + ZEN
     End If
-
     FormatUserForm (Me.Caption) ' make minimizing button available
     AutofocusForm.Show
+    StageSettings MirrorX, MirrorY, ExchangeXY
     Re_Start                    ' Initialize some of the variables
 
     

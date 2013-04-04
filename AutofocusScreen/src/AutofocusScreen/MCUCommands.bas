@@ -268,12 +268,18 @@ Private Function SendCommandWaitForHexAnswer(command As String) As Long
 
 End Function
 
+'''
+' Function is not used
+'''
 Public Sub NoImageAxisChange(Optional tmp As Boolean) ' tmp is used so that the function does not appear in the menu. Not very clean
     ExchangeXY = False
     MirrorX = False
     MirrorY = False
 End Sub
 
+'''
+' Function is not used
+'''
 Public Sub ImageAxisChange(Optional tmp As Boolean)
     Lsm5.ExternalCpObject.pHardwareObjects.GetImageAxisStateS 1, ExchangeXY, MirrorX, MirrorY
 End Sub
@@ -284,10 +290,7 @@ End Sub
 '       Check weather X and Y axis are exchanged and return True if yes.
 '       Todo: Could also return weather axis are mirrored. Intrestingly althouh axes are not mirrored we use -X??
 ''''''
-Public Function AreStageCoordinateExchanged() As Boolean
-    Dim ExchangeXY As Boolean
-    Dim MirrorX As Boolean
-    Dim MirrorY As Boolean
+Public Sub StageSettings(MirrorX As Boolean, MirrorY As Boolean, ExchangeXY As Boolean)
     Dim bLSM As Boolean
     Dim bLIVE As Boolean
     Dim bCamera As Boolean
@@ -303,6 +306,6 @@ Public Function AreStageCoordinateExchanged() As Boolean
     End If
 
     Lsm5.ExternalCpObject.pHardwareObjects.GetImageAxisStateS lsystem, ExchangeXY, MirrorX, MirrorY
-    AreStageCoordinateExchanged = ExchangeXY
-End Function
+End Sub
+
 

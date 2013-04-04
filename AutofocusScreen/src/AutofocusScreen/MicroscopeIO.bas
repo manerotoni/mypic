@@ -533,13 +533,27 @@ End Function
 '       [x], [y], [z] Out - Shifted coordinates. Depends on stage build up and actual position. Positions are rounded up to PrecXY and PrecZ
 ''''''
 Public Function ComputeShiftedCoordinates(ByVal XMass As Double, ByVal YMass As Double, ByVal ZMass As Double, ByRef X As Double, ByRef Y As Double, ByRef Z As Double)
-
-    If AreStageCoordinateExchanged Then
-        X = X - YMass
-        Y = Y - XMass
+    Dim Xpre As Integer
+    Dim Ypre As Integer
+    
+    If MirrorX Then
+        Xpre = -1
     Else
-        X = X + XMass
-        Y = Y - YMass
+        Xpre = 1
+    End If
+    
+    If MirrorY Then
+        Ypre = -1
+    Else
+        Ypre = 1
+    End If
+    
+    If ExchangeXY Then ' not sure about this
+        X = X + Xpre * YMass
+        Y = Y + Ypre * XMass
+    Else
+        X = X + Xpre * XMass
+        Y = Y + Ypre * YMass
     End If
         
     Z = Z + ZMass
