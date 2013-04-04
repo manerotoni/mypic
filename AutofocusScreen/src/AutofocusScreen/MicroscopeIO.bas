@@ -174,7 +174,7 @@ Public TimerButton3 As Double
 Public TimerButton4 As Double
 Public TimerButton5 As Double
 Public TimerButton6 As Double
-Public TimerUnit As Integer
+Public LoopingTimerUnit As Integer
 Public BlockRepetitions As Long
 
 Public TimerKey As String
@@ -398,7 +398,7 @@ Public Sub SystemVersionOffset(Optional tmp As Boolean) ' tmp is a hack to hide 
     SystemVersion = Lsm5.Info.VersionIs
     If StrComp(SystemVersion, "2.8", vbBinaryCompare) >= 0 Then
         If Lsm5.Info.IsAxioskop Then
-            If AutofocusForm.CheckBoxHighSpeed Then
+            If AutofocusForm.AutofocusMaxSpeed Then
                 GlobalCorrectionOffset = 15
             Else
                 GlobalCorrectionOffset = 1.2
@@ -420,7 +420,7 @@ Public Sub SystemVersionOffset(Optional tmp As Boolean) ' tmp is a hack to hide 
         End If
     Else
         If Lsm5.Info.IsAxioskop Then
-            If AutofocusForm.CheckBoxHighSpeed Then
+            If AutofocusForm.AutofocusMaxSpeed Then
                 GlobalCorrectionOffset = 15
             Else
                 GlobalCorrectionOffset = 1.2
@@ -486,21 +486,21 @@ Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
     ''''''''''''''''''
     
     DisplayProgress "Autofocus reset Z-position", RGB(0, &HC0, 0)
-    If AutofocusForm.CheckBoxHRZ Then
+    If AutofocusForm.AutofocusHRZ Then
         Lsm5.Hardware.CpHrz.Position = 0                ' center the piezo focus (or bring it down again ?)
     End If
     
     Time = Timer
     DisplayProgress "Autofocus acquire", RGB(0, &HC0, 0)
     '''Check a last time that AF stack number and step is correct when in Fast Z-line mode
-    If (Not AutofocusForm.CheckBoxHRZ.Value) And AutofocusForm.ScanLineToggle.Value And AutofocusForm.CheckBoxFastZline.Value Then
+    If (Not AutofocusForm.AutofocusHRZ.Value) And AutofocusForm.ScanLineToggle.Value And AutofocusForm.AutofocusFastZline.Value Then
         If Lsm5.DsRecording.SpecialScanMode = "FocusStep" Then
              DisplayProgress "Highest Z Step of 1.54 um with no piezo and Fast Z line has been reached. Autofocus uses slower Focus Step", RGB(&HC0, &HC0, 0)
         End If
-        If AutofocusForm.BSliderZStep.Value > Round(Lsm5.DsRecording.FrameSpacing, 3) Then
+        If AutofocusForm.AutofocusZStep.Value > Round(Lsm5.DsRecording.FrameSpacing, 3) Then
             DisplayProgress "Autofocus acquire. Highest Z Step with no piezo and Fast Z line " + CStr(Round(Lsm5.DsRecording.FrameSpacing, 3)) + " um. Autofocus uses slower Focus Step", RGB(&HC0, &HC0, 0)
             Lsm5.DsRecording.SpecialScanMode = "FocusStep"
-            Lsm5.DsRecording.FrameSpacing = AutofocusForm.BSliderZStep.Value
+            Lsm5.DsRecording.FrameSpacing = AutofocusForm.AutofocusZStep.Value
         End If
     End If
 
@@ -726,7 +726,7 @@ Dim Y As Double
             Sleep (20)
             DoEvents
         Loop
-''''' If I want to do it properly, I should add a lot of controls here, to wait to be sure the AutofocusForm.CheckBoxHRZ.Value can acces the position, and also to wait it is done...
+''''' If I want to do it properly, I should add a lot of controls here, to wait to be sure the AutofocusForm.AutofocusHRZ.Value can acces the position, and also to wait it is done...
         Sleep (100)
         DoEvents
 End Sub
@@ -1007,7 +1007,7 @@ Public Sub Autofocus_MoveAcquisition_HRZ(ZOffset As Double)
     End If
 
     'Moving to the correct position in Z
-    If AutofocusForm.CheckBoxHRZ.Value And NoZStack Then                                            'If using HRZ for autofocusing and there is no Zstack for image acquisition
+    If AutofocusForm.AutofocusHRZ.Value And NoZStack Then                                            'If using HRZ for autofocusing and there is no Zstack for image acquisition
         Lsm5.Hardware.CpHrz.Stepsize = 0.2
         Lsm5Vba.Application.ThrowEvent eRootReuse, 0
         DoEvents
@@ -1027,7 +1027,7 @@ Public Sub Autofocus_MoveAcquisition_HRZ(ZOffset As Double)
         DoEvents
 
     Else                                        'either there is a Z stack for image acquisition or we're using the focuswheel for autofocussing
-        If AutofocusForm.CheckBoxHRZ.Value Then                             ' Now I'm not sure with the signs and... I some point I just tried random combinations...
+        If AutofocusForm.AutofocusHRZ.Value Then                             ' Now I'm not sure with the signs and... I some point I just tried random combinations...
             ZFocus = Lsm5.Hardware.CpHrz.Position - ZOffset - ZShift '         'ZBefore corresponds to the position where the focuswheel was before doing anything. Zshift is the calculated shift
         Else                                    'If the HRZ is not calibrated the Z shift might be wrong
             ZFocus = Zbefore + ZShift
@@ -1980,7 +1980,7 @@ Public Function SubImagingWorkFlow(RecordingDoc As DsRecordingDoc, Recording As 
                     
                     LogMsg = "% " & RecordingName & ": recenter Z (post AFImg) " & Z
                     posZ = Round(Lsm5.Hardware.CpFocus.Position, PrecZ)
-                    If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or AutofocusForm.CheckBoxHRZ Then
+                    If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or AutofocusForm.AutofocusHRZ Then
                         LogMsg = LogMsg & ", Obtained Z " & posZ & "; actual position " & posZ & ", Time required " & Round(Timer - TimeLog) & ", success within rep. " & SuccessRecenter
                     Else
                         LogMsg = LogMsg & ", Obtained Z " & Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + posZ _

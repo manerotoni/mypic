@@ -78,7 +78,7 @@ Private Sub Re_Start()
     flg = 0
     Lsm5.StopScan
     Wait (delay)
-    TimerUnit = 1
+    LoopingTimerUnit = 1
     CommandTimeSec.BackColor = &HFF8080
     BlockRepetitions = 1
     ReDim Preserve GlobalImageIndex(BlockRepetitions)
@@ -93,27 +93,27 @@ Private Sub Re_Start()
     ' blSM is a flag to decide weather systen is LSM (ZEN is LSM for instance). LIVE is 5Live not anymore in use?
     If bLSM Then
         SystemName = "LSM"
-        CheckBoxHighSpeed.Value = True
-        BSliderFrameSize.Min = 16
-        BSliderFrameSize.Max = 1024
-        BSliderLineSize.Min = 16
-        BSliderLineSize.Max = 1024
-        BSliderFrameSize.Step = 8
-        BSliderLineSize.Step = 8
-        BSliderFrameSize.StepSmall = 4
-        BSliderLineSize.StepSmall = 4
+        AutofocusMaxSpeed.Value = True
+        AutofocusFrameSize.Min = 16
+        AutofocusFrameSize.Max = 1024
+        AutofocusLineSize.Min = 16
+        AutofocusLineSize.Max = 1024
+        AutofocusFrameSize.Step = 8
+        AutofocusLineSize.Step = 8
+        AutofocusFrameSize.StepSmall = 4
+        AutofocusLineSize.StepSmall = 4
         Lsm5Vba.Application.ThrowEvent eRootReuse, 0
         DoEvents
     ElseIf bLIVE Then
         SystemName = "LIVE"
-        BSliderFrameSize.Min = 128
-        BSliderFrameSize.Max = 1024
-        BSliderFrameSize.Step = 128
-        BSliderFrameSize.StepSmall = 128
-        BSliderLineSize.Min = 128
-        BSliderLineSize.Max = 1024
-        BSliderLineSize.Step = 128
-        BSliderLineSize.StepSmall = 128
+        AutofocusFrameSize.Min = 128
+        AutofocusFrameSize.Max = 1024
+        AutofocusFrameSize.Step = 128
+        AutofocusFrameSize.StepSmall = 128
+        AutofocusLineSize.Min = 128
+        AutofocusLineSize.Max = 1024
+        AutofocusLineSize.Step = 128
+        AutofocusLineSize.StepSmall = 128
         Lsm5Vba.Application.ThrowEvent eRootReuse, 0
         DoEvents
     ElseIf bCamera Then
@@ -124,10 +124,10 @@ Private Sub Re_Start()
 
     'Set default value
     ScanLineToggle.Value = True
-    BSliderZOffset.Value = 0
-    BSliderZRange.Value = 80
-    BSliderZStep.Value = 0.1
-    CheckBoxLowZoom.Value = False
+    AutofocusZOffset.Value = 0
+    AutofocusZRange.Value = 80
+    AutofocusZStep.Value = 0.1
+    AutofocusLowZoom.Value = False
     ActiveAutofocus.Value = True
     
     'Set standard values for Post-Acquisition tracking
@@ -136,8 +136,8 @@ Private Sub Re_Start()
     TrackingToggle.Enabled = False
     
     'Set standard values for Looping
-    BSliderRepetitions = 300
-    BSliderTime = 1
+    LoopingRepetitions = 300
+    LoopingRepetitionTime = 1
     
     'Set standard values for Micropilot
     ActiveMicropilot.Value = False
@@ -171,7 +171,7 @@ Private Sub Re_Start()
     End If
 
     AutofocusTrackZ.Visible = DebugCode
-    MultiPage1.Pages("PageTest").Visible = DebugCode
+    MultiPage1.Pages("TestsPage").Visible = DebugCode
     
     
     AlterImageInitialize = True
@@ -208,7 +208,7 @@ Public Sub Re_Initialize()
     FocusMapPresent = False
     'This sets standard values for all task we want to do. This will be changed by the macro
     
-    If CheckBoxHRZ Then
+    If AutofocusHRZ Then
         Lsm5.Hardware.CpHrz.Leveling
         While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy Or Lsm5.Hardware.CpFocus.IsBusy
             Sleep (20)
@@ -277,43 +277,43 @@ Private Sub SaveSettings(FileName As String)
     Print #iFileNum, "AutofocusTrack2 " & AutofocusTrack2.Value
     Print #iFileNum, "AutofocusTrack3 " & AutofocusTrack3.Value
     Print #iFileNum, "AutofocusTrack4 " & AutofocusTrack4.Value
-    Print #iFileNum, "CheckBoxHighSpeed " & CheckBoxHighSpeed.Value
-    Print #iFileNum, "CheckBoxLowZoom " & CheckBoxLowZoom.Value
-    Print #iFileNum, "CheckBoxHRZ " & CheckBoxHRZ.Value
-    Print #iFileNum, "CheckBoxFastZline " & CheckBoxFastZline.Value
+    Print #iFileNum, "AutofocusMaxSpeed " & AutofocusMaxSpeed.Value
+    Print #iFileNum, "AutofocusLowZoom " & AutofocusLowZoom.Value
+    Print #iFileNum, "AutofocusHRZ " & AutofocusHRZ.Value
+    Print #iFileNum, "AutofocusFastZline " & AutofocusFastZline.Value
     Print #iFileNum, "AFeveryNth " & AFeveryNth.Value
     Print #iFileNum, "AutofocusTrackZ " & AutofocusTrackZ.Value
     Print #iFileNum, "AutofocusTrackXY " & AutofocusTrackXY.Value
     Print #iFileNum, "ScanLineToggle " & ScanLineToggle.Value
     Print #iFileNum, "ScanFrameToggle " & ScanFrameToggle.Value
-    Print #iFileNum, "BSliderLineSize " & BSliderLineSize.Value
-    Print #iFileNum, "BSliderFrameSize " & BSliderFrameSize.Value
-    Print #iFileNum, "BSliderZOffset " & BSliderZOffset.Value
-    Print #iFileNum, "BSliderZRange " & BSliderZRange.Value
-    Print #iFileNum, "BSliderZStep " & BSliderZStep.Value
+    Print #iFileNum, "AutofocusLineSize " & AutofocusLineSize.Value
+    Print #iFileNum, "AutofocusFrameSize " & AutofocusFrameSize.Value
+    Print #iFileNum, "AutofocusZOffset " & AutofocusZOffset.Value
+    Print #iFileNum, "AutofocusZRange " & AutofocusZRange.Value
+    Print #iFileNum, "AutofocusZStep " & AutofocusZStep.Value
     Print #iFileNum, "SaveAFImage " & SaveAFImage.Value
     
     'Acquisition
     Print #iFileNum, "% Acquisition "
-    Print #iFileNum, "CheckBoxTrack1 " & CheckBoxTrack1.Value
-    Print #iFileNum, "CheckBoxTrack2 " & CheckBoxTrack2.Value
-    Print #iFileNum, "CheckBoxTrack3 " & CheckBoxTrack3.Value
-    Print #iFileNum, "CheckBoxTrack4 " & CheckBoxTrack4.Value
+    Print #iFileNum, "AcquisitionTrack1 " & AcquisitionTrack1.Value
+    Print #iFileNum, "AcquisitionTrack2 " & AcquisitionTrack2.Value
+    Print #iFileNum, "AcquisitionTrack3 " & AcquisitionTrack3.Value
+    Print #iFileNum, "AcquisitionTrack4 " & AcquisitionTrack4.Value
 
     
     'PostAcquisitionTracking
     Print #iFileNum, "% PostAcquisitionTracking "
     Print #iFileNum, "TrackingToggle " & TrackingToggle.Value
     Print #iFileNum, "ComboBoxTrackingChannel " & ComboBoxTrackingChannel.Value
-    Print #iFileNum, "CheckBoxPostTrackXY " & CheckBoxPostTrackXY.Value
-    Print #iFileNum, "CheckBoxTrackZ " & CheckBoxTrackZ.Value
+    Print #iFileNum, "PostTrackXY " & PostTrackXY.Value
+    Print #iFileNum, "PostTrackZ " & PostTrackZ.Value
     
     'Looping
     Print #iFileNum, "% Looping "
-    Print #iFileNum, "TimerUnit " & TimerUnit
-    Print #iFileNum, "BSliderTime " & BSliderTime.Value
-    Print #iFileNum, "CheckBoxInterval " & CheckBoxInterval.Value
-    Print #iFileNum, "BSliderRepetitions " & BSliderRepetitions.Value
+    Print #iFileNum, "LoopingTimerUnit " & LoopingTimerUnit
+    Print #iFileNum, "LoopingRepetitionTime " & LoopingRepetitionTime.Value
+    Print #iFileNum, "LoopingInterval " & LoopingInterval.Value
+    Print #iFileNum, "LoopingRepetitions " & LoopingRepetitions.Value
     
     'Output
     Print #iFileNum, "% Output "
@@ -354,7 +354,7 @@ Private Sub SaveSettings(FileName As String)
     'Grid Acquisition
     Print #iFileNum, "% Additional Acquisition "
     Print #iFileNum, "ActiveGridScan " & ActiveGridScan.Value
-    Print #iFileNum, "useValidGridDefault " & useValidGridDefault.Value
+    Print #iFileNum, "GridScan_validGridDefault " & GridScan_validGridDefault.Value
     Print #iFileNum, "GridScan_nRow " & GridScan_nRow.Value
     Print #iFileNum, "GridScan_nColumn " & GridScan_nColumn.Value
     Print #iFileNum, "GridScan_dRow " & GridScan_dRow.Value
@@ -392,9 +392,9 @@ Private Sub LoadSettings(FileName As String)
             Line Input #iFileNum, Fields
         Wend
         FieldEntries = Split(Fields, " ", 2)
-        If FieldEntries(0) = "TimerUnit" Then
-            TimerUnit = CDbl(FieldEntries(1))
-            If TimerUnit = 60 Then
+        If FieldEntries(0) = "LoopingTimerUnit" Then
+            LoopingTimerUnit = CDbl(FieldEntries(1))
+            If LoopingTimerUnit = 60 Then
                 CommandTimeMin_Click
             Else
                 CommandTimeSec_Click
@@ -419,13 +419,15 @@ Private Sub ButtonSaveSettings_Click()
   
     Flags = OFN_FILEMUSTEXIST Or OFN_HIDEREADONLY Or _
             OFN_PATHMUSTEXIST
-    Filter$ = "Settings (*.ini)" & Chr$(0) & "*.ini"
+    Filter$ = "Settings (*.ini)" & Chr$(0) & "*.ini" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
             
-    'Filter = "ini file (*.ini) |*.ini"
     
     FileName = CommonDialogAPI.ShowSave(Filter, Flags, "", DatabaseTextbox.Value, "Save AutofocusScreen settings")
     
     If FileName <> "" Then
+        If Right(FileName, 4) <> ".ini" Then
+            FileName = FileName & ".ini"
+        End If
         SaveSettings FileName
     End If
     
@@ -462,7 +464,7 @@ Private Sub FocusMap_Click()
     SaveSettings GlobalDataBaseName & "\tmpSettings.ini"
     AcquisitionTracksSetOff
     'change values
-    BSliderRepetitions.Value = 1
+    LoopingRepetitions.Value = 1
     BlockTimeDelay = 0
     CommandTimeSec_Click
     ActiveMicropilot.Value = False
@@ -476,12 +478,12 @@ End Sub
 
 Private Sub AutofocusTrackXY_Click()
     If AutofocusTrackXY Then
-        CheckBoxPostTrackXY.Value = Not AutofocusTrackXY
+        PostTrackXY.Value = Not AutofocusTrackXY
     End If
 End Sub
 
-Private Sub CheckBoxFastZline_Click()
-    If CheckBoxFastZline Then
+Private Sub AutofocusFastZline_Click()
+    If AutofocusFastZline Then
         LocationTextLabel.Caption = "WARNING: " & vbCrLf & _
         "ScanLine with FastZLine is fast but can have low reliability." & vbCrLf & _
         "Please test reproducibility of LineScan with FastZLine before using AutofocusScreen. Otherwise use piezo or normal mode with large Z Step and smaller Z Range."
@@ -493,9 +495,9 @@ Private Sub CheckBoxFastZline_Click()
         
 End Sub
 
-Private Sub CheckBoxHRZ_Click()
-    CheckBoxFastZline.Enabled = Not CheckBoxHRZ
-    If CheckBoxFastZline And Not CheckBoxHRZ Then
+Private Sub AutofocusHRZ_Click()
+    AutofocusFastZline.Enabled = Not AutofocusHRZ
+    If AutofocusFastZline And Not AutofocusHRZ Then
         LocationTextLabel.Caption = "WARNING: " & vbCrLf & _
         "ScanLine with FastZLine is fast but can have low reliability." & vbCrLf & _
         "Please test reproducibility of LineScan with FastZLine before using AutofocusScreen. Otherwise use piezo or normal mode with large Z Step and smaller Z Range."
@@ -507,9 +509,9 @@ Private Sub CheckBoxHRZ_Click()
 End Sub
 
 
-Private Sub CheckBoxPostTrackXY_Click()
-    If CheckBoxPostTrackXY Then
-        AutofocusTrackXY.Value = Not CheckBoxPostTrackXY
+Private Sub PostTrackXY_Click()
+    If PostTrackXY Then
+        AutofocusTrackXY.Value = Not PostTrackXY
     End If
 End Sub
 
@@ -561,7 +563,7 @@ Private Sub ActiveAutofocus_Click()
                                                     
     If ActiveAutofocus.Value Then
         SwitchEnableAutofocusPage (True)
-        CheckBoxTrackZ.Value = False
+        AutofocusTrackZ.Value = False
     Else
         SwitchEnableAutofocusPage (False)
     End If
@@ -574,22 +576,22 @@ End Sub
 '       [Enable] In - Sets the mini page enable status
 ''''''
 Private Sub SwitchEnableAutofocusPage(Enable As Boolean)
-    CheckBoxHighSpeed.Enabled = Enable
-    CheckBoxHRZ.Enabled = Enable
-    CheckBoxLowZoom.Enabled = Enable
+    AutofocusMaxSpeed.Enabled = Enable
+    AutofocusHRZ.Enabled = Enable
+    AutofocusLowZoom.Enabled = Enable
     AFeveryNth.Enabled = Enable
     AFeveryNthLabel.Enabled = Enable
     AFeveryNthLabel2.Enabled = Enable
     ScanLineToggle.Enabled = Enable
     ScanFrameToggle.Enabled = Enable
     FrameSizeLabel.Enabled = Enable
-    BSliderFrameSize.Enabled = Enable
-    BSliderLineSize.Enabled = Enable
-    BSliderZOffset.Enabled = Enable
+    AutofocusFrameSize.Enabled = Enable
+    AutofocusLineSize.Enabled = Enable
+    AutofocusZOffset.Enabled = Enable
     SliderZOffsetLabel.Enabled = Enable
-    BSliderZRange.Enabled = Enable
+    AutofocusZRange.Enabled = Enable
     SliderZRangeLabel.Enabled = Enable
-    BSliderZStep.Enabled = Enable
+    AutofocusZStep.Enabled = Enable
     SliderZStepLabel.Enabled = Enable
     AutofocusTrack1.Enabled = Enable
     AutofocusTrack2.Enabled = Enable
@@ -597,29 +599,29 @@ Private Sub SwitchEnableAutofocusPage(Enable As Boolean)
     AutofocusTrack4.Enabled = Enable
     AutofocusTrackZ.Enabled = Enable
     AutofocusTrackXY.Enabled = Enable
-    CheckBoxFastZline.Enabled = Enable
+    AutofocusFastZline.Enabled = Enable
     SaveAFImage.Enabled = Enable
 End Sub
 
 ''''''
-'   BSliderZOffset_Change()
-'   BSliderZOffset is the offset added after AF
+'   AutofocusZOffset_Change()
+'   AutofocusZOffset is the offset added after AF
 ''''''
-Private Sub BSliderZOffset_Change()
+Private Sub AutofocusZOffset_Change()
     'make range checks
-     If Abs(BSliderZOffset.Value) > Range() * 0.9 Then
-            BSliderZOffset.Value = 0
+     If Abs(AutofocusZOffset.Value) > Range() * 0.9 Then
+            AutofocusZOffset.Value = 0
             MsgBox "ZOffset has to be less than the working distance of the objective: " + CStr(Range) + " um"
     End If
 End Sub
 
 ''''''
-'   BSliderZRange_Change()
+'   AutofocusZRange_Change()
 '   Set the range in um during AF
 ''''''
-Private Sub BSliderZRange_Change()    ' It should be possible to change the limit of the range to bigger values than half of the working distance
-    If BSliderZRange.Value > Range * 0.9 Then 'make range checks
-            BSliderZRange.Value = Range * 0.9
+Private Sub AutofocusZRange_Change()    ' It should be possible to change the limit of the range to bigger values than half of the working distance
+    If AutofocusZRange.Value > Range * 0.9 Then 'make range checks
+            AutofocusZRange.Value = Range * 0.9
             MsgBox "ZRange has to be less or equal to the working distance of the objective: " + CStr(Range) + " um"
     End If
 End Sub
@@ -641,14 +643,14 @@ Public Function CheckZRanges() As Boolean
         CheckZRanges = True
     End If
     
-    If BSliderZRange.Value > Range() * 0.9 Then 'this is already tested in the slider could be removed
-        AutofocusForm.BSliderZRange.Value = Range() * 0.9
-        MsgBox "Autofocus range is too large! Has been reduced to " + Str(AutofocusForm.BSliderZRange.Value)
+    If AutofocusZRange.Value > Range() * 0.9 Then 'this is already tested in the slider could be removed
+        AutofocusForm.AutofocusZRange.Value = Range() * 0.9
+        MsgBox "Autofocus range is too large! Has been reduced to " + Str(AutofocusForm.AutofocusZRange.Value)
     End If
     
-    If Abs(BSliderZOffset.Value) > Range() * 0.9 Then 'this is already tested in the slider could be removed
-        AutofocusForm.BSliderZOffset = 0
-        MsgBox "ZOffset has to be less than the working distance of the objective: " + CStr(Range) + " um. Has been put back to " + Str(AutofocusForm.BSliderZOffset)
+    If Abs(AutofocusZOffset.Value) > Range() * 0.9 Then 'this is already tested in the slider could be removed
+        AutofocusForm.AutofocusZOffset = 0
+        MsgBox "ZOffset has to be less than the working distance of the objective: " + CStr(Range) + " um. Has been put back to " + Str(AutofocusForm.AutofocusZOffset)
     End If
     
 End Function
@@ -701,7 +703,7 @@ Private Sub ActiveMicropilot_Click()
 
     SwitchEnableOnlineImageAnalysisPage (ActiveMicropilot.Value)
     If ActiveMicropilot.Value And ZoomImageInitialize Then
-        MicropilotZOffset.Value = BSliderZOffset.Value
+        MicropilotZOffset.Value = AutofocusZOffset.Value
         MicropilotZSlices.Value = GlobalAcquisitionRecording.FramesPerStack
         MicropilotFrameSize.Value = GlobalAcquisitionRecording.SamplesPerLine
         MicropilotZoom.Value = GlobalAcquisitionRecording.ZoomX
@@ -738,7 +740,7 @@ Private Sub SwitchEnableOnlineImageAnalysisPage(Enable As Boolean)
     SwitchEnableGridScanPage (ActiveGridScan.Value)
     MicropilotZOffset.Enabled = Enable
     ZoomAutofocusZOffsetLabel.Enabled = Enable
-    MicropilotZOffset.Value = BSliderZOffset.Value
+    MicropilotZOffset.Value = AutofocusZOffset.Value
 End Sub
 
 ''''''
@@ -759,7 +761,7 @@ End Sub
 Private Sub SwitchEnableZoomAutofocus(Enable As Boolean)
 '    MicropilotZOffset.Visible = Enable
 '    ZoomAutofocusZOffsetLabel.Visible = Enable
-'    MicropilotZOffset.Value = BSliderZOffset.Value
+'    MicropilotZOffset.Value = AutofocusZOffset.Value
 End Sub
 
 ''''''
@@ -772,7 +774,7 @@ Private Sub ActiveAlterImage_Click()
     If ActiveAlterImage.Value And AlterImageInitialize Then
         AlterFrameSize.Value = GlobalAcquisitionRecording.SamplesPerLine
         AlterZoom.Value = GlobalAcquisitionRecording.ZoomX
-        AlterZOffset.Value = BSliderZOffset.Value
+        AlterZOffset.Value = AutofocusZOffset.Value
         AlterZStep.Value = GlobalAcquisitionRecording.FrameSpacing
         AlterZSlices.Value = GlobalAcquisitionRecording.FramesPerStack
         AlterImageInitialize = False
@@ -826,11 +828,7 @@ End Sub
 ''''
 Private Sub SwitchEnableGridScanPage(Enable As Boolean)
 
-    If ActiveMicropilot.Value Then
-        CheckBoxGridScan_FindGoodPositions.Enabled = Enable
-    Else
-        CheckBoxGridScan_FindGoodPositions.Enabled = False
-    End If
+    GridScan_validGridDefault.Enabled = Enable
     GridScan_posLabel.Enabled = Enable
     GridScan_nColumnLabel.Enabled = Enable
     GridScan_nRowLabel.Enabled = Enable
@@ -858,13 +856,7 @@ Private Sub SwitchEnableGridScanPage(Enable As Boolean)
     
 End Sub
 
-'''''
-' Where is this used? This should be present only when Frame tracking
-' Not active anymore
-'''''
-Private Sub CheckBoxTrackXY_Click()
-    
-End Sub
+
 
 ''''''''
 '   CommandButtonHelp_Click()
@@ -1327,13 +1319,13 @@ End Function
 Private Sub ScanLineToggle_Click()
     ScanFrameToggle.Value = Not ScanLineToggle.Value 'if ScanFrame is true ScanLine is false (you can only chose one of them)
     FrameSizeLabel.Visible = ScanLineToggle.Value   'FrameSize Label is only displayed if ScanFrame is activated
-    BSliderFrameSize.Visible = ScanFrameToggle.Value 'FrameSize Slider is only displayed if ScanFrame is activated
+    AutofocusFrameSize.Visible = ScanFrameToggle.Value 'FrameSize Slider is only displayed if ScanFrame is activated
     AutofocusTrackXY.Visible = ScanFrameToggle.Value
-    BSliderLineSize.Visible = ScanLineToggle.Value 'LineSize is only displayed if ScanFrame is activated
+    AutofocusLineSize.Visible = ScanLineToggle.Value 'LineSize is only displayed if ScanFrame is activated
     If ScanLineToggle.Value Then
         FrameSizeLabel.Caption = "LineSize (px)"
     End If
-    CheckBoxFastZline.Enabled = ScanLineToggle And Not CheckBoxHRZ
+    AutofocusFastZline.Enabled = ScanLineToggle And Not AutofocusHRZ
 End Sub
 
 '''
@@ -1343,12 +1335,12 @@ End Sub
 Private Sub ScanFrameToggle_Click()
     ScanLineToggle.Value = Not ScanFrameToggle.Value 'if ScanLine is chosen, ScanFrame will be unchecked
     FrameSizeLabel.Visible = ScanFrameToggle.Value
-    BSliderFrameSize.Visible = ScanFrameToggle.Value
+    AutofocusFrameSize.Visible = ScanFrameToggle.Value
     AutofocusTrackXY.Visible = ScanFrameToggle.Value
     If ScanFrameToggle.Value Then
         FrameSizeLabel.Caption = "FrameSize (px)"
     End If
-    CheckBoxFastZline.Enabled = Not ScanFrameToggle.Value And Not CheckBoxHRZ
+    AutofocusFastZline.Enabled = Not ScanFrameToggle.Value And Not AutofocusHRZ
 End Sub
 
 
@@ -1384,7 +1376,7 @@ Private Function GetCurrentPositionOffsetButtonRun() As Boolean
     'recenter only after activation of new track
     If ActiveAutofocus Then
         StopScanCheck
-        If CheckBoxHRZ Then
+        If AutofocusHRZ Then
             Lsm5.Hardware.CpHrz.Leveling
         End If
        'FailSafeMoveStageZ (posTempZ) 'move at position
@@ -1418,7 +1410,7 @@ Private Function GetCurrentPositionOffsetButtonRun() As Boolean
         DisplayProgress "Autofocus: Recenter after AF acquisition...", RGB(0, &HC0, 0)
         Time = Timer
         ComputeShiftedCoordinates XMass, YMass, ZMass, X, Y, Z
-        BSliderZOffset.Value = -ZMass
+        AutofocusZOffset.Value = -ZMass
         
         Time = Timer
         If Not Recenter_post(posTempZ, SuccessRecenter, ZEN) Then
@@ -1426,7 +1418,7 @@ Private Function GetCurrentPositionOffsetButtonRun() As Boolean
         End If
         Time = Round(Timer - Time, 2)
         LogMsg = "% Get current position: recenter Z (post AFImg) " & posTempZ
-        If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
+        If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or AutofocusHRZ Then
                 LogMsg = LogMsg & "; obtained central slide " & pos & "; position " & pos & ", time required " & Time & ", succes within rep. " & SuccessRecenter
         Else
             LogMsg = LogMsg & "; obtained central slide " & Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 _
@@ -1513,7 +1505,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
     'recenter only after activation of new track
     If ActiveAutofocus Then
         
-        If CheckBoxHRZ Then
+        If AutofocusHRZ Then
             Lsm5.Hardware.CpHrz.Leveling
         End If
         
@@ -1541,7 +1533,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         Time = Round(Timer - Time, 2)
         LogMsg = "% AutofocusButton: center Z (pre AFImg) " & posTempZ
         pos = Lsm5.Hardware.CpFocus.Position
-        If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
+        If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or AutofocusHRZ Then
             LogMsg = LogMsg & ", Obtained Z " & pos & "; actual position " & pos & ", time required " & Time & ", succes within rep. " & SuccessRecenter
         Else
             LogMsg = LogMsg & ", Obtained Z " & Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + pos _
@@ -1570,7 +1562,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         pos = Lsm5.Hardware.CpFocus.Position
         LogMsg = "% AutofocusButton: wait return to center Z (post AFImg) " & posTempZ
         Time = Round(Timer - Time, 2)
-        If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
+        If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or AutofocusHRZ Then
             LogMsg = LogMsg & ", Obtained Z " & pos & "; actual position " & pos & ", Time required " & Time & ", success within rep. " & SuccessRecenter
         Else
             LogMsg = LogMsg & ", Obtained Z " & Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + pos _
@@ -1598,7 +1590,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
             End If
         End If
         
-        If CheckBoxHRZ Then
+        If AutofocusHRZ Then
             Lsm5.Hardware.CpHrz.Position = 0
         End If
     End If
@@ -1607,7 +1599,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
     If ActivateAcquisitionTrack(GlobalAcquisitionRecording) Then
         Dim Offset As Double
         If ActiveAutofocus Then
-            Offset = BSliderZOffset
+            Offset = AutofocusZOffset
         Else
             Offset = 0
         End If
@@ -1642,7 +1634,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         Time = Round(Timer - Time, 2)
         pos = Lsm5.Hardware.CpFocus.Position
         LogMsg = "% AutofocusButton: wait return to center Z + Offset (post AQImg) " & Z + Offset
-        If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
+        If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or AutofocusHRZ Then
             LogMsg = LogMsg & ", Obtained Z " & pos & "; actual position " & pos & ", time required " & Time & ", succes within rep. " & SuccessRecenter
         Else
             LogMsg = LogMsg & ", Obtained Z " & Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + pos _
@@ -1651,7 +1643,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
     End If
 
-    If CheckBoxHRZ Then
+    If AutofocusHRZ Then
         Lsm5.Hardware.CpHrz.Position = 0
     End If
 
@@ -1679,7 +1671,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
     Time = Round(Timer - Time, 2)
     pos = Lsm5.Hardware.CpFocus.Position
     LogMsg = "% AutofocusButton: wait return to center Z (end) " & posTempZ
-    If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
+    If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or AutofocusHRZ Then
         LogMsg = LogMsg & ", Obtained Z " & pos & "; actual position " & pos & ", time required " & Time & ", succes within rep. " & SuccessRecenter
     Else
         LogMsg = LogMsg & ", Obtained Z " & Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + pos _
@@ -1929,7 +1921,7 @@ Private Function StartSetting() As Boolean
             ReDim posGridXY_Valid(1 To GridScan_nRow.Value, 1 To GridScan_nColumn.Value, 1 To GridScan_nRowsub.Value, 1 To GridScan_nColumnsub.Value) ' A position may be active or not
             WriteValidFile GlobalDataBaseName & "\validGrid.csv", posGridXY_Valid
 
-            If useValidGridDefault Then
+            If GridScan_validGridDefault Then
                 If isValidGridDefault(GlobalDataBaseName & "\validGridDefault.txt") Then
                     MakeValidGrid posGridXY_Valid, GlobalDataBaseName & "\validGridDefault.txt"
                 Else
@@ -2085,7 +2077,7 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
     Dim Scancontroller As AimScanController ' the controller
   
         'do once leveling
-    If CheckBoxHRZ Then
+    If AutofocusHRZ Then
         Lsm5.Hardware.CpHrz.Leveling ' not sure if this is needed
         Sleep (1000)
     End If
@@ -2187,13 +2179,13 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
                         ' Show position of stage
                         If SingleLocationToggle Then
                             LocationTextLabel.Caption = "X= " & X & ",  Y = " & Y & ", Z = " & Z & vbCrLf & _
-                            "Repetition :" & RepetitionNumber & "/" & BSliderRepetitions.Value
+                            "Repetition :" & RepetitionNumber & "/" & LoopingRepetitions.Value
                         End If
                         
                         If MultipleLocationToggle Then
                             LocationTextLabel.Caption = "Marked Position: " & GridPos.Col & "/" & UBound(posGridX, 2) & vbCrLf & _
                             "X = " & X & ", Y = " & Y & ", Z = " & Z & vbCrLf & _
-                            "Repetition :" & RepetitionNumber & "/" & BSliderRepetitions.Value
+                            "Repetition :" & RepetitionNumber & "/" & LoopingRepetitions.Value
 
                         End If
                         If ActiveGridScan Then
@@ -2202,7 +2194,7 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
                                                         "Subposition   Row: " & GridPos.RowSub & "/" & UBound(posGridX, 3) & "; Column: " & GridPos.ColSub & "/" & UBound(posGridX, 4) & vbCrLf & _
                                                         "X = " & X & ", Y = " & Y & _
                                                         ", Z = " & Z & vbCrLf & _
-                                                        "Repetition :" & RepetitionNumber & "/" & BSliderRepetitions.Value
+                                                        "Repetition :" & RepetitionNumber & "/" & LoopingRepetitions.Value
                                                         
                         End If
                         
@@ -2256,9 +2248,9 @@ NextLocation:
     End If
     
         
-    If (RepetitionNumber < BSliderRepetitions.Value) Then
+    If (RepetitionNumber < LoopingRepetitions.Value) Then
         
-        If (CheckBoxInterval) Then
+        If (LoopingInterval) Then
             ' do nothing => leave GlobalPrvTime as the time that set at the beginng of the position loop
         Else ' delay
             GlobalPrvTime = CDbl(GetTickCount) * 0.001    'Reset the time to NOW
@@ -2371,7 +2363,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
     FilePath = DatabaseTextbox.Value & BackSlash & TextBoxFileName.Value & UnderScore & FileNameID
     FilePathAF = DatabaseTextbox.Value & BackSlash & TextBoxFileName.Value & UnderScore & "AFImg_" & FileNameID
 '
-'    If CheckBoxHRZ Then
+'    If AutofocusHRZ Then
 '        Lsm5.Hardware.CpHrz.Leveling
 '    End If
     
@@ -2442,7 +2434,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
         Time = Round(Timer - Time, 2)
         LogMsg = "% StartButton:  wait to return center Z (post AFimg) " & Zold
         pos = Lsm5.Hardware.CpFocus.Position
-        If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
+        If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or AutofocusHRZ Then
             LogMsg = LogMsg & ", obtained Z " & pos & ", position " & pos & ", time required " & Time & ", success within rep. " & SuccessRecenter
         Else
              LogMsg = LogMsg & ", obtained Z " & Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + pos _
@@ -2471,14 +2463,14 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
     '*Begin Normal acquisition imaging**'
     '''''''''''''''''''''''''''''''''''''
     DisplayProgress "Acquiring  Location   " & TotPos & "/" & UBound(posGridX, 1) * UBound(posGridX, 2) * UBound(posGridX, 3) * UBound(posGridX, 4) & vbCrLf & _
-                    "                   Repetition  " & RepetitionNumber & "/" & BSliderRepetitions.Value, RGB(&HC0, &HC0, 0)
+                    "                   Repetition  " & RepetitionNumber & "/" & LoopingRepetitions.Value, RGB(&HC0, &HC0, 0)
     Time = Timer
     If ActivateAcquisitionTrack(GlobalAcquisitionRecording) Then            'An additional control....
         LogMsg = "% Startbutton: Time activate AQ track " & Round(Timer - Time, 2)
         LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
         
         If ActiveAutofocus Then
-            Offset = BSliderZOffset
+            Offset = AutofocusZOffset
         Else
             Offset = 0
         End If
@@ -2498,7 +2490,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
         LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
         DoEvents
         DisplayProgress "Acquiring  Location   " & TotPos & "/" & UBound(posGridX, 1) * UBound(posGridX, 2) * UBound(posGridX, 3) * UBound(posGridX, 4) & vbCrLf & _
-                    "                   Repetition  " & RepetitionNumber & "/" & BSliderRepetitions.Value, RGB(&HC0, &HC0, 0)
+                    "                   Repetition  " & RepetitionNumber & "/" & LoopingRepetitions.Value, RGB(&HC0, &HC0, 0)
         Time = Timer
         If Not ScanToImage(RecordingDoc) Then
             Exit Function
@@ -2536,7 +2528,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
         LogMsg = "% StartButton:  recenter Z (post AQImg) " & Znew + Offset
         pos = Lsm5.Hardware.CpFocus.Position
         Time = Round(Timer - Time, 2)
-        If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
+        If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or AutofocusHRZ Then
             LogMsg = LogMsg & ", obtained Z " & pos & ", position " & pos & ", time required " & Time & ", success within rep. " & SuccessRecenter
         Else
             LogMsg = LogMsg & ", obtained Z " & Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + pos _
@@ -2571,7 +2563,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
         If AcquireAltImage Then
             Time = Timer
             If ActiveAutofocus Then
-                Offset = BSliderZOffset
+                Offset = AutofocusZOffset
             Else
                 Offset = 0
             End If
@@ -2607,7 +2599,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
             
             LogMsg = "% StartButton:  wait to return center Z (post AltImg) " & Znew + Offset
             pos = Lsm5.Hardware.CpFocus.Position
-            If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
+            If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or AutofocusHRZ Then
                 LogMsg = LogMsg & ", obtained Z " & pos & ", position " & pos & ", success within rep." & SuccessRecenter
             Else
                 LogMsg = LogMsg & ", obtained Z " & Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + pos _
@@ -2725,7 +2717,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
     
     If TrackingToggle Then
         'move to new position
-        If CheckBoxPostTrackXY.Value Then
+        If PostTrackXY.Value Then
             If Not FailSafeMoveStageXY(Xnew, Ynew) Then
                 Exit Function
             End If
@@ -2733,7 +2725,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
         ' update positions for next acquistion
         posGridX(GridPos.Row, GridPos.Col, GridPos.RowSub, GridPos.ColSub) = Xnew
         posGridY(GridPos.Row, GridPos.Col, GridPos.RowSub, GridPos.ColSub) = Ynew
-        If CheckBoxTrackZ Then
+        If AutofocusTrackZ Then
             posGridZ(GridPos.Row, GridPos.Col, GridPos.RowSub, GridPos.ColSub) = Znew
         End If
     Else ' no location tracking
@@ -2907,9 +2899,9 @@ Public Sub AutoFindTracks()
     AutofocusTrack1.Visible = False
     AutofocusTrack1.Enabled = False
     AutofocusTrack1.Value = False
-    CheckBoxTrack1.Visible = False
-    CheckBoxTrack1.Enabled = False
-    CheckBoxTrack1.Value = False
+    AcquisitionTrack1.Visible = False
+    AcquisitionTrack1.Enabled = False
+    AcquisitionTrack1.Value = False
     MicropilotTrack1.Visible = False
     MicropilotTrack1.Enabled = False
     MicropilotTrack1.Value = False
@@ -2921,9 +2913,9 @@ Public Sub AutoFindTracks()
     AutofocusTrack2.Visible = False
     AutofocusTrack2.Enabled = False
     AutofocusTrack2.Value = False
-    CheckBoxTrack2.Visible = False
-    CheckBoxTrack2.Enabled = False
-    CheckBoxTrack2.Value = False
+    AcquisitionTrack2.Visible = False
+    AcquisitionTrack2.Enabled = False
+    AcquisitionTrack2.Value = False
     MicropilotTrack2.Visible = False
     MicropilotTrack2.Enabled = False
     MicropilotTrack2.Value = False
@@ -2934,9 +2926,9 @@ Public Sub AutoFindTracks()
     AutofocusTrack3.Visible = False
     AutofocusTrack3.Enabled = False
     AutofocusTrack3.Value = False
-    CheckBoxTrack3.Visible = False
-    CheckBoxTrack3.Enabled = False
-    CheckBoxTrack3.Value = False
+    AcquisitionTrack3.Visible = False
+    AcquisitionTrack3.Enabled = False
+    AcquisitionTrack3.Value = False
     MicropilotTrack3.Visible = False
     MicropilotTrack3.Enabled = False
     MicropilotTrack3.Value = False
@@ -2947,9 +2939,9 @@ Public Sub AutoFindTracks()
     AutofocusTrack4.Visible = False
     AutofocusTrack4.Enabled = False
     AutofocusTrack4.Value = False
-    CheckBoxTrack4.Visible = False
-    CheckBoxTrack4.Enabled = False
-    CheckBoxTrack4.Value = False
+    AcquisitionTrack4.Visible = False
+    AcquisitionTrack4.Enabled = False
+    AcquisitionTrack4.Value = False
     MicropilotTrack4.Visible = False
     MicropilotTrack4.Enabled = False
     MicropilotTrack4.Value = False
@@ -2995,10 +2987,10 @@ Public Sub AutoFindTracks()
                         AutofocusTrack1.Enabled = True
                         AutofocusTrack1.BackColor = Color
                         
-                        CheckBoxTrack1.Visible = True
-                        CheckBoxTrack1.Caption = TrackName
-                        CheckBoxTrack1.Enabled = True
-                        CheckBoxTrack1.BackColor = Color
+                        AcquisitionTrack1.Visible = True
+                        AcquisitionTrack1.Caption = TrackName
+                        AcquisitionTrack1.Enabled = True
+                        AcquisitionTrack1.BackColor = Color
                         
                         MicropilotTrack1.Visible = True
                         MicropilotTrack1.Caption = TrackName
@@ -3016,10 +3008,10 @@ Public Sub AutoFindTracks()
                         AutofocusTrack2.Caption = TrackName
                         AutofocusTrack2.Enabled = True
                         AutofocusTrack2.BackColor = Color
-                        CheckBoxTrack2.Visible = True
-                        CheckBoxTrack2.Caption = TrackName
-                        CheckBoxTrack2.Enabled = True
-                        CheckBoxTrack2.BackColor = Color
+                        AcquisitionTrack2.Visible = True
+                        AcquisitionTrack2.Caption = TrackName
+                        AcquisitionTrack2.Enabled = True
+                        AcquisitionTrack2.BackColor = Color
                         
                         MicropilotTrack2.Visible = True
                         MicropilotTrack2.Caption = TrackName
@@ -3038,10 +3030,10 @@ Public Sub AutoFindTracks()
                         AutofocusTrack3.Enabled = True
                         AutofocusTrack3.BackColor = Color
                         
-                        CheckBoxTrack3.Visible = True
-                        CheckBoxTrack3.Caption = TrackName
-                        CheckBoxTrack3.Enabled = True
-                        CheckBoxTrack3.BackColor = Color
+                        AcquisitionTrack3.Visible = True
+                        AcquisitionTrack3.Caption = TrackName
+                        AcquisitionTrack3.Enabled = True
+                        AcquisitionTrack3.BackColor = Color
                         
                         MicropilotTrack3.Visible = True
                         MicropilotTrack3.Caption = TrackName
@@ -3060,10 +3052,10 @@ Public Sub AutoFindTracks()
                         AutofocusTrack4.Enabled = True
                         AutofocusTrack4.BackColor = Color
                         
-                        CheckBoxTrack4.Visible = True
-                        CheckBoxTrack4.Caption = TrackName
-                        CheckBoxTrack4.Enabled = True
-                        CheckBoxTrack4.BackColor = Color
+                        AcquisitionTrack4.Visible = True
+                        AcquisitionTrack4.Caption = TrackName
+                        AcquisitionTrack4.Enabled = True
+                        AcquisitionTrack4.BackColor = Color
                         
                         MicropilotTrack4.Visible = True
                         MicropilotTrack4.Caption = TrackName
@@ -3132,25 +3124,25 @@ Private Sub SwitchEnableTrackingToggle(Enable As Boolean)
     If Enable Then
        FillTrackingChannelList
     End If
-    CheckBoxPostTrackXY.Visible = Enable
-    CheckBoxTrackZ.Visible = Enable
+    PostTrackXY.Visible = Enable
+    PostTrackZ.Visible = Enable
     PostAcquisitionLabel.Visible = Enable
     If Lsm5.DsRecording.ScanMode = "Stack" Or Lsm5.DsRecording.ScanMode = "ZScanner" Then
-        CheckBoxTrackZ.Enabled = True
+        PostTrackZ.Enabled = True
     Else
-        CheckBoxTrackZ.Enabled = False
-        CheckBoxTrackZ.Value = False
+        PostTrackZ.Enabled = False
+        PostTrackZ.Value = False
     End If
 End Sub
     
 
 '''''''
-' CheckBoxTrackZ_Click()
+' AutofocusTrackZ_Click()
 '   Activate post-acquisition Z-tracking.
 '   Inactivates Autofocus
 '''''''
-Private Sub CheckBoxTrackZ_Click()
-    If CheckBoxTrackZ.Value = True Then
+Private Sub PostTrackZ_Click()
+    If PostTrackZ.Value = True Then
         ActiveAutofocus.Value = False 'inactivate Autofocus
         SwitchEnableAutofocusPage (False)
     Else
@@ -3198,33 +3190,33 @@ End Sub
 
 
 Private Sub CommandTimeMin_Click()
-    TimerUnit = 60
-    BSliderTime.Max = 60                        'When workings with minutes the maximum delay that can be set with the slider is 1 hour
-    BSliderTime.Value = BlockTimeDelay / 60
+    LoopingTimerUnit = 60
+    LoopingRepetitionTime.Max = 60                        'When workings with minutes the maximum delay that can be set with the slider is 1 hour
+    LoopingRepetitionTime.Value = BlockTimeDelay / 60
     CommandTimeMin.BackColor = &HFF8080
     CommandTimeSec.BackColor = &H8000000F
 End Sub
 
 Private Sub CommandTimeSec_Click()
-    TimerUnit = 1
-    BSliderTime.Max = 180                       'When workings with seconds the maximum delay that can be set with the slider is 3 minutes
-    BSliderTime.Value = BlockTimeDelay
+    LoopingTimerUnit = 1
+    LoopingRepetitionTime.Max = 180                       'When workings with seconds the maximum delay that can be set with the slider is 3 minutes
+    LoopingRepetitionTime.Value = BlockTimeDelay
     CommandTimeSec.BackColor = &HFF8080
     CommandTimeMin.BackColor = &H8000000F
 End Sub
 
-Private Sub BSliderTime_Click()
-    BlockTimeDelay = BSliderTime.Value * TimerUnit                      'BlockTimedelay gets the value of the slider in seconds
+Private Sub LoopingRepetitionTime_Click()
+    BlockTimeDelay = LoopingRepetitionTime.Value * LoopingTimerUnit                      'BlockTimedelay gets the value of the slider in seconds
 End Sub
 
-Private Sub BSliderRepetitions_Change()
+Private Sub LoopingRepetitions_Change()
     If Not Running Then
-        BlockRepetitions = BSliderRepetitions.Value
-    ElseIf Not (BSliderRepetitions.Value <= (RepetitionNumber + 1)) Then
-        BlockRepetitions = BSliderRepetitions.Value
+        BlockRepetitions = LoopingRepetitions.Value
+    ElseIf Not (LoopingRepetitions.Value <= (RepetitionNumber + 1)) Then
+        BlockRepetitions = LoopingRepetitions.Value
     Else
-        BSliderRepetitions.Value = RepetitionNumber + 1
-        BlockRepetitions = BSliderRepetitions.Value
+        LoopingRepetitions.Value = RepetitionNumber + 1
+        BlockRepetitions = LoopingRepetitions.Value
     End If
     
     ReDim Preserve GlobalImageIndex(BlockRepetitions)           'The global image index I'm not sure how this is working.
@@ -3334,7 +3326,7 @@ Private Function ActivateAutofocusTrack(Recording As DsRecording) As Boolean
     If FunSuccess Then
         AutofocusTrack = i - 1
         Recording.TrackObjectByMultiplexOrder(AutofocusTrack, Success).Acquire = True
-        If CheckBoxHighSpeed.Value Then
+        If AutofocusMaxSpeed.Value Then
            Recording.TrackObjectByMultiplexOrder(AutofocusTrack, Success).SamplingNumber = 1  'TODO what happens here
         End If
     Else
@@ -3347,7 +3339,7 @@ Private Function ActivateAutofocusTrack(Recording As DsRecording) As Boolean
         Exit Function
     End If
     
-    If CheckBoxLowZoom.Value Then                   ' Changes the zoom if necessary
+    If AutofocusLowZoom.Value Then                   ' Changes the zoom if necessary
         Recording.ZoomX = 1
         Recording.ZoomY = 1
     Else                                            ' Use AcquisitionRecording as default
@@ -3363,13 +3355,13 @@ Private Function ActivateAutofocusTrack(Recording As DsRecording) As Boolean
     ''''''''''''''''''''''''''''
     If SystemName = "LSM" Then
         '''How to do the Z-stacks
-        If CheckBoxHRZ.Value Then                'Piezo
+        If AutofocusHRZ.Value Then                'Piezo
             Recording.SpecialScanMode = "ZScanner"
         Else
             Recording.SpecialScanMode = "FocusStep"
         End If
         'highspeed does set the pixeldwell time to its minimal possible value
-        If CheckBoxHighSpeed.Value Then
+        If AutofocusMaxSpeed.Value Then
             'compute maximal possible pixwelDwell for given zoom
             For i = 1 To UBound(ZoomPixelSlice, 1) - 1
                 If Recording.ZoomX < ZoomPixelSlice(i, 1) And Recording.ZoomX >= ZoomPixelSlice(i + 1, 1) Then
@@ -3395,22 +3387,22 @@ Private Function ActivateAutofocusTrack(Recording As DsRecording) As Boolean
         '''''''''''''''''''''''''''
         If ScanLineToggle.Value Then
             Recording.ScanMode = "ZScan"             'This acquires  single X-Z image, like with "Range Select" button Z-stack Window.
-            Recording.SamplesPerLine = BSliderLineSize.Value
+            Recording.SamplesPerLine = AutofocusLineSize.Value
             Recording.LinesPerFrame = 1
 
-            If CheckBoxHRZ Then
+            If AutofocusHRZ Then
                 Recording.SpecialScanMode = "ZScanner"
             Else
-                If CheckBoxFastZline And BSliderZStep.Value < ZoomPixelSlice(i, 3) Then
+                If AutofocusFastZline And AutofocusZStep.Value < ZoomPixelSlice(i, 3) Then
                     Recording.SpecialScanMode = "OnTheFly" 'aka: Fast Z-line in Z-Stack menu
                     For i = iZoom To UBound(ZoomPixelSlice, 1)
-                        If BSliderZStep.Value < ZoomPixelSlice(i, 3) Then
+                        If AutofocusZStep.Value < ZoomPixelSlice(i, 3) Then
                             pixelDwell = ZoomPixelSlice(i, 2)
                             Exit For
                         End If
                     Next i
                  Else
-                    If BSliderZStep.Value > ZoomPixelSlice(i, 3) And (CheckBoxFastZline And Not CheckBoxHRZ) Then
+                    If AutofocusZStep.Value > ZoomPixelSlice(i, 3) And (AutofocusFastZline And Not AutofocusHRZ) Then
                         DisplayProgress "Highest Z Step of 1.54 um with no piezo and Fast " & _
                         "Z line has been reached. Autofocus uses slower Focus Step", RGB(&HC0, &HC0, 0)
                     End If
@@ -3424,19 +3416,19 @@ Private Function ActivateAutofocusTrack(Recording As DsRecording) As Boolean
         ''''''''''''''''''''''''''''
         If ScanFrameToggle.Value Then
             Recording.ScanMode = "Stack"                       'This is defining to acquire a Z stack of Z-Y images
-            Recording.SamplesPerLine = BSliderFrameSize.Value  'If doing frame autofocussing it uses the userdefined frame size
-            Recording.LinesPerFrame = BSliderFrameSize.Value
+            Recording.SamplesPerLine = AutofocusFrameSize.Value  'If doing frame autofocussing it uses the userdefined frame size
+            Recording.LinesPerFrame = AutofocusFrameSize.Value
         End If
         pixelDwell = pixelDwell * 256 / Recording.SamplesPerLine
     End If  ' If SystemName = "LSM"
     
     Sleep (100)
     ' set the pixelDwellTime globally
-    NoFrames = CLng(BSliderZRange.Value / BSliderZStep.Value) + 1   'Calculates the number of frames per stack. Clng converts it to a long and rounds up the fraction
+    NoFrames = CLng(AutofocusZRange.Value / AutofocusZStep.Value) + 1   'Calculates the number of frames per stack. Clng converts it to a long and rounds up the fraction
     If NoFrames > 2048 Then                                         'overwrites the userdefined value if too many frames have been defined by the user
         NoFrames = 2048
     End If
-    Recording.FrameSpacing = BSliderZStep.Value
+    Recording.FrameSpacing = AutofocusZStep.Value
     Recording.FramesPerStack = NoFrames
     Recording.TimeSeries = True   ' This is for the concatenation I think: we're doing a timeseries with one timepoint. I'm not sure what is the reason for this
     Recording.StacksPerRecord = 1 ' why only one and not more
@@ -3444,12 +3436,12 @@ Private Function ActivateAutofocusTrack(Recording As DsRecording) As Boolean
     Recording.TrackObjectByMultiplexOrder(AutofocusTrack, 1).SampleObservationTime = pixelDwell
     Lsm5.DsRecording.Copy Recording
     Lsm5.DsRecording.TrackObjectByMultiplexOrder(AutofocusTrack, 1).SampleObservationTime = pixelDwell
-    Lsm5.DsRecording.FrameSpacing = BSliderZStep.Value
+    Lsm5.DsRecording.FrameSpacing = AutofocusZStep.Value
     Lsm5.DsRecording.FramesPerStack = NoFrames
     
     ' need to do it twice:  set new pixelDwell and FrameSpacing This is asolutely required
     Lsm5.DsRecording.TrackObjectByMultiplexOrder(AutofocusTrack, 1).SampleObservationTime = pixelDwell
-    Lsm5.DsRecording.FrameSpacing = BSliderZStep.Value
+    Lsm5.DsRecording.FrameSpacing = AutofocusZStep.Value
     Lsm5.DsRecording.SpecialScanMode = Recording.SpecialScanMode
 
     ActivateAutofocusTrack = FunSuccess
@@ -3471,16 +3463,16 @@ Private Function ActivateAcquisitionTrack(Recording As DsRecording) As Boolean
 
     For i = 1 To TrackNumber
         Activate = False
-        If CheckBoxTrack1.Value = True And i = 1 Then
+        If AcquisitionTrack1.Value = True And i = 1 Then
             Activate = True
             FunSuccess = True
-        ElseIf CheckBoxTrack2.Value = True And i = 2 Then
+        ElseIf AcquisitionTrack2.Value = True And i = 2 Then
             Activate = True
             FunSuccess = True
-        ElseIf CheckBoxTrack3.Value = True And i = 3 Then
+        ElseIf AcquisitionTrack3.Value = True And i = 3 Then
             Activate = True
             FunSuccess = True
-        ElseIf CheckBoxTrack4.Value = True And i = 4 Then
+        ElseIf AcquisitionTrack4.Value = True And i = 4 Then
             Activate = True
             FunSuccess = True
         End If
@@ -3601,7 +3593,7 @@ Private Function ActivateMicropilotTrack(Recording As DsRecording) As Boolean
 
 
     Lsm5.DsRecording.ScanMode = "Stack"
-    If CheckBoxHRZ.Value Then
+    If AutofocusHRZ.Value Then
         Lsm5.DsRecording.SpecialScanMode = "ZScanner"
     Else
         Lsm5.DsRecording.SpecialScanMode = "FocusStep"
@@ -3629,9 +3621,9 @@ Public Sub SetBlockValues()
 '    Dim Position As Long
 '    Dim Range As Double
  
-    CheckBoxHighSpeed.Value = BlockHighSpeed
-    CheckBoxLowZoom.Value = BlockLowZoom
-    CheckBoxHRZ.Value = BlockHRZ
+    AutofocusMaxSpeed.Value = BlockHighSpeed
+    AutofocusLowZoom.Value = BlockLowZoom
+    AutofocusHRZ.Value = BlockHRZ
 '    Position = Lsm5.Hardware.CpObjectiveRevolver.RevolverPosition
 '    If Position >= 0 Then
 '        Range = Lsm5.Hardware.CpObjectiveRevolver.FreeWorkingDistance(Position) * 1000#
@@ -3639,15 +3631,15 @@ Public Sub SetBlockValues()
 '        Range = 0#
 '    End If
 'substituted29.06.2010 by Function Range
-    If BSliderZRange.Value > Range() * 0.9 Then
-        BSliderZRange.Value = Range() * 0.9
+    If AutofocusZRange.Value > Range() * 0.9 Then
+        AutofocusZRange.Value = Range() * 0.9
     End If
-    If Abs(BSliderZOffset.Value) > Range() * 0.9 Then
-        BSliderZOffset.Value = 0
+    If Abs(AutofocusZOffset.Value) > Range() * 0.9 Then
+        AutofocusZOffset.Value = 0
     End If
-    BSliderZOffset.Value = BSliderZOffset.Value
-    BSliderZRange.Value = BSliderZRange.Value
-    BSliderZStep.Value = BlockZStep
+    AutofocusZOffset.Value = AutofocusZOffset.Value
+    AutofocusZRange.Value = AutofocusZRange.Value
+    AutofocusZStep.Value = BlockZStep
 
 End Sub
 
@@ -3657,12 +3649,12 @@ End Sub
 '''''
 Public Sub GetBlockValues()
    
-    BlockHighSpeed = CheckBoxHighSpeed.Value
-    BlockLowZoom = CheckBoxLowZoom.Value
-    HRZ = CheckBoxHRZ.Value  ' this is for the piezo
-    BlockZOffset = BSliderZOffset.Value
-    BlockZRange = BSliderZRange.Value
-    BlockZStep = BSliderZStep.Value
+    BlockHighSpeed = AutofocusMaxSpeed.Value
+    BlockLowZoom = AutofocusLowZoom.Value
+    HRZ = AutofocusHRZ.Value  ' this is for the piezo
+    BlockZOffset = AutofocusZOffset.Value
+    BlockZRange = AutofocusZRange.Value
+    BlockZStep = AutofocusZStep.Value
 
 End Sub
 
@@ -3698,19 +3690,19 @@ Public Function AcquisitionTime() As Double
     Track2Speed = 0
     Track3Speed = 0
     Track4Speed = 0
-    If CheckBoxTrack1.Value = True Then
+    If AcquisitionTrack1.Value = True Then
         Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, Success)
         Track1Speed = Track.SampleObservationTime
     End If
-    If CheckBoxTrack2.Value = True Then
+    If AcquisitionTrack2.Value = True Then
         Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(1, Success)
         Track2Speed = Track.SampleObservationTime
     End If
-    If CheckBoxTrack3.Value = True Then
+    If AcquisitionTrack3.Value = True Then
         Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(2, Success)
         Track3Speed = Track.SampleObservationTime
     End If
-    If CheckBoxTrack4.Value = True Then
+    If AcquisitionTrack4.Value = True Then
         Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(3, Success)
         Track4Speed = Track.SampleObservationTime
     End If
@@ -3726,7 +3718,7 @@ End Function
 
 
 
-Private Sub CheckBoxTrack1_Change()
+Private Sub AcquisitionTrack1_Change()
     TrackingToggle.Enabled = AcquisitionTracksOn
     If Not TrackingToggle.Enabled Then
         TrackingToggle.Value = False
@@ -3734,7 +3726,7 @@ Private Sub CheckBoxTrack1_Change()
     SwitchEnableTrackingToggle TrackingToggle.Value
 End Sub
 
-Private Sub CheckBoxTrack2_Change()
+Private Sub AcquisitionTrack2_Change()
     TrackingToggle.Enabled = AcquisitionTracksOn
     If Not TrackingToggle.Enabled Then
         TrackingToggle.Value = False
@@ -3742,7 +3734,7 @@ Private Sub CheckBoxTrack2_Change()
     SwitchEnableTrackingToggle TrackingToggle.Value
 End Sub
 
-Private Sub CheckBoxTrack3_Change()
+Private Sub AcquisitionTrack3_Change()
     TrackingToggle.Enabled = AcquisitionTracksOn
     If Not TrackingToggle.Enabled Then
         TrackingToggle.Value = False
@@ -3750,7 +3742,7 @@ Private Sub CheckBoxTrack3_Change()
     SwitchEnableTrackingToggle TrackingToggle.Value
 End Sub
 
-Private Sub CheckBoxTrack4_Change()
+Private Sub AcquisitionTrack4_Change()
     TrackingToggle.Enabled = AcquisitionTracksOn
     If Not TrackingToggle.Enabled Then
         TrackingToggle.Value = False
@@ -3763,16 +3755,16 @@ End Sub
 '  Checks if at least one track for acquisition is on
 '''
 Private Function AcquisitionTracksOn() As Boolean
-    If CheckBoxTrack1 Then
+    If AcquisitionTrack1 Then
         AcquisitionTracksOn = True
     End If
-    If CheckBoxTrack2 Then
+    If AcquisitionTrack2 Then
         AcquisitionTracksOn = True
     End If
-    If CheckBoxTrack3 Then
+    If AcquisitionTrack3 Then
         AcquisitionTracksOn = True
     End If
-    If CheckBoxTrack4 Then
+    If AcquisitionTrack4 Then
         AcquisitionTracksOn = True
     End If
 End Function
@@ -3781,10 +3773,10 @@ End Function
 ' Sets all acquisitions to off
 '''
 Private Function AcquisitionTracksSetOff() As Boolean
-    CheckBoxTrack1.Value = 0
-    CheckBoxTrack2.Value = 0
-    CheckBoxTrack3.Value = 0
-    CheckBoxTrack4.Value = 0
+    AcquisitionTrack1.Value = 0
+    AcquisitionTrack2.Value = 0
+    AcquisitionTrack3.Value = 0
+    AcquisitionTrack4.Value = 0
 End Function
 
 Public Function AutofocusTime() As Double
@@ -3795,7 +3787,7 @@ Public Function AutofocusTime() As Double
     Dim i As Integer
 
     Speed = 0
-    If CheckBoxHighSpeed.Value = True Then
+    If AutofocusMaxSpeed.Value = True Then
         Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, Success)
         Speed = 1.76 * 10 ^ -6
     Else
@@ -3818,13 +3810,13 @@ Public Function AutofocusTime() As Double
     End If
     Pixels = 512
     AutofocusForm.GetBlockValues
-    FrameNumber = CLng(BSliderZRange.Value / BSliderZStep.Value) + 1
+    FrameNumber = CLng(AutofocusZRange.Value / AutofocusZStep.Value) + 1
     If Lsm5.DsRecording.ScanDirection = 0 Then
         ScanDirection = 1
     Else
         ScanDirection = 2
     End If
-    If CheckBoxHRZ.Value = True Then
+    If AutofocusHRZ.Value = True Then
         AutofocusTime = Speed * Pixels * FrameNumber * 3.3485 + 4.9
     Else
         AutofocusTime = Speed * Pixels * FrameNumber / ScanDirection * 3.3485 + 4.9
@@ -4050,14 +4042,14 @@ Private Function AFTest1Run() As Boolean
         Exit Function
     End If
         
-    CheckBoxTrack1.Value = AutofocusTrack1.Value
-    CheckBoxTrack2.Value = AutofocusTrack2.Value
-    CheckBoxTrack3.Value = AutofocusTrack3.Value
-    CheckBoxTrack4.Value = AutofocusTrack4.Value
-    CheckBoxHighSpeed.Value = True
-    CheckBoxFastZline = True
-    CheckBoxHRZ.Value = False
-    CheckBoxLowZoom.Value = False
+    AcquisitionTrack1.Value = AutofocusTrack1.Value
+    AcquisitionTrack2.Value = AutofocusTrack2.Value
+    AcquisitionTrack3.Value = AutofocusTrack3.Value
+    AcquisitionTrack4.Value = AutofocusTrack4.Value
+    AutofocusMaxSpeed.Value = True
+    AutofocusFastZline = True
+    AutofocusHRZ.Value = False
+    AutofocusLowZoom.Value = False
         
     '''''''
     ' No Z-Tracking, Acquistion after Autofocus
@@ -4122,14 +4114,14 @@ Private Function AFTest2Run() As Boolean
         Exit Function
     End If
         
-    CheckBoxTrack1.Value = AutofocusTrack1.Value
-    CheckBoxTrack2.Value = AutofocusTrack2.Value
-    CheckBoxTrack3.Value = AutofocusTrack3.Value
-    CheckBoxTrack4.Value = AutofocusTrack4.Value
-    CheckBoxHighSpeed.Value = True
-    CheckBoxFastZline = False
-    CheckBoxHRZ.Value = True
-    CheckBoxLowZoom.Value = False
+    AcquisitionTrack1.Value = AutofocusTrack1.Value
+    AcquisitionTrack2.Value = AutofocusTrack2.Value
+    AcquisitionTrack3.Value = AutofocusTrack3.Value
+    AcquisitionTrack4.Value = AutofocusTrack4.Value
+    AutofocusMaxSpeed.Value = True
+    AutofocusFastZline = False
+    AutofocusHRZ.Value = True
+    AutofocusLowZoom.Value = False
         
     '''''''
     ' No Z-Tracking, Acquistion after Autofocus
@@ -4191,14 +4183,14 @@ Private Function AFTest3Run() As Boolean
         Exit Function
     End If
         
-    CheckBoxTrack1.Value = AutofocusTrack1.Value
-    CheckBoxTrack2.Value = AutofocusTrack2.Value
-    CheckBoxTrack3.Value = AutofocusTrack3.Value
-    CheckBoxTrack4.Value = AutofocusTrack4.Value
-    CheckBoxHighSpeed.Value = True
-    CheckBoxFastZline = False
-    CheckBoxHRZ.Value = False
-    CheckBoxLowZoom.Value = False
+    AcquisitionTrack1.Value = AutofocusTrack1.Value
+    AcquisitionTrack2.Value = AutofocusTrack2.Value
+    AcquisitionTrack3.Value = AutofocusTrack3.Value
+    AcquisitionTrack4.Value = AutofocusTrack4.Value
+    AutofocusMaxSpeed.Value = True
+    AutofocusFastZline = False
+    AutofocusHRZ.Value = False
+    AutofocusLowZoom.Value = False
         
     '''''''
     ' No Z-Tracking, Acquistion after Autofocus
@@ -4260,14 +4252,14 @@ Private Function AFTest4Run() As Boolean
         Exit Function
     End If
         
-    CheckBoxTrack1.Value = AutofocusTrack1.Value
-    CheckBoxTrack2.Value = AutofocusTrack2.Value
-    CheckBoxTrack3.Value = AutofocusTrack3.Value
-    CheckBoxTrack4.Value = AutofocusTrack4.Value
-    CheckBoxHighSpeed.Value = True
-    CheckBoxFastZline = False
-    CheckBoxHRZ.Value = True
-    CheckBoxLowZoom.Value = False
+    AcquisitionTrack1.Value = AutofocusTrack1.Value
+    AcquisitionTrack2.Value = AutofocusTrack2.Value
+    AcquisitionTrack3.Value = AutofocusTrack3.Value
+    AcquisitionTrack4.Value = AutofocusTrack4.Value
+    AutofocusMaxSpeed.Value = True
+    AutofocusFastZline = False
+    AutofocusHRZ.Value = True
+    AutofocusLowZoom.Value = False
         
     '''''''
     ' No Z-Tracking, Acquistion after Autofocus
@@ -4327,53 +4319,53 @@ Private Function AFTest5Run() As Boolean
     End If
 
     AutofocusTrackZ.Value = False
-    CheckBoxTrack1.Value = False
-    CheckBoxTrack2.Value = False
-    CheckBoxTrack3.Value = False
-    CheckBoxTrack4.Value = False
-    CheckBoxHighSpeed.Value = True
-    CheckBoxHRZ.Value = False
-    CheckBoxLowZoom.Value = False
-    CheckBoxFastZline.Value = True
-    BSliderLineSize.Value = 256
+    AcquisitionTrack1.Value = False
+    AcquisitionTrack2.Value = False
+    AcquisitionTrack3.Value = False
+    AcquisitionTrack4.Value = False
+    AutofocusMaxSpeed.Value = True
+    AutofocusHRZ.Value = False
+    AutofocusLowZoom.Value = False
+    AutofocusFastZline.Value = True
+    AutofocusLineSize.Value = 256
     If Not RunTestFastZline(RecordingDoc, 1, AFTest_Repetitions.Value, 1, "AFTest5_FastZlineTest", 5000) Then
         Exit Function
     End If
-    BSliderLineSize.Value = 128
+    AutofocusLineSize.Value = 128
     If Not RunTestFastZline(RecordingDoc, 2, AFTest_Repetitions.Value, 1, "AFTest5_FastZlineTest", 5000) Then
         Exit Function
     End If
-    BSliderLineSize.Value = 64
+    AutofocusLineSize.Value = 64
     If Not RunTestFastZline(RecordingDoc, 3, AFTest_Repetitions.Value, 1, "AFTest5_FastZlineTest", 5000) Then
         Exit Function
     End If
-    BSliderLineSize.Value = 256
+    AutofocusLineSize.Value = 256
     If Not RunTestFastZline(RecordingDoc, 4, AFTest_Repetitions.Value, 2, "AFTest5_FastZlineTest", 5000) Then
         Exit Function
     End If
 
 
-    BSliderLineSize.Value = 128
+    AutofocusLineSize.Value = 128
     If Not RunTestFastZline(RecordingDoc, 5, AFTest_Repetitions.Value, 2, "AFTest5_FastZlineTest", 5000) Then
         Exit Function
     End If
-    BSliderLineSize.Value = 256
+    AutofocusLineSize.Value = 256
     If Not RunTestFastZline(RecordingDoc, 6, AFTest_Repetitions.Value, 3, "AFTest5_FastZlineTest", 5000) Then
         Exit Function
     End If
 
 
-    BSliderLineSize.Value = 128
+    AutofocusLineSize.Value = 128
     If Not RunTestFastZline(RecordingDoc, 7, AFTest_Repetitions.Value, 3, "AFTest5_FastZlineTest", 5000) Then
         Exit Function
     End If
         
-    BSliderLineSize.Value = 256
+    AutofocusLineSize.Value = 256
     If Not RunTestFastZline(RecordingDoc, 8, AFTest_Repetitions.Value, 4, "AFTest5_FastZlineTest", 5000) Then
         Exit Function
     End If
       
-    BSliderLineSize.Value = 128
+    AutofocusLineSize.Value = 128
     If Not RunTestFastZline(RecordingDoc, 9, AFTest_Repetitions.Value, 4, "AFTest5_FastZlineTest", 5000) Then
         Exit Function
     End If
@@ -4419,14 +4411,14 @@ Private Function AFTest6Run() As Boolean
         Exit Function
     End If
         
-    CheckBoxTrack1.Value = AutofocusTrack1.Value
-    CheckBoxTrack2.Value = AutofocusTrack2.Value
-    CheckBoxTrack3.Value = AutofocusTrack3.Value
-    CheckBoxTrack4.Value = AutofocusTrack4.Value
-    CheckBoxHighSpeed.Value = True
-    CheckBoxFastZline = False
-    CheckBoxHRZ.Value = True
-    CheckBoxLowZoom.Value = False
+    AcquisitionTrack1.Value = AutofocusTrack1.Value
+    AcquisitionTrack2.Value = AutofocusTrack2.Value
+    AcquisitionTrack3.Value = AutofocusTrack3.Value
+    AcquisitionTrack4.Value = AutofocusTrack4.Value
+    AutofocusMaxSpeed.Value = True
+    AutofocusFastZline = False
+    AutofocusHRZ.Value = True
+    AutofocusLowZoom.Value = False
         
         
     '''''''
@@ -4435,8 +4427,8 @@ Private Function AFTest6Run() As Boolean
     AutofocusTrackZ.Value = True
 
     MultipleLocationToggle.Value = True
-    BSliderRepetitions = AFTest_Repetitions.Value
-    BSliderTime.Value = 0
+    LoopingRepetitions = AFTest_Repetitions.Value
+    LoopingRepetitionTime.Value = 0
     If Not StartSetting() Then
         Exit Function
     End If
@@ -4445,9 +4437,9 @@ Private Function AFTest6Run() As Boolean
     GlobalAcquisitionRecording.ScanMode = "Stack"                       'This is defining to acquire a Z stack of Z-Y images
     GlobalAcquisitionRecording.SamplesPerLine = 32  'If doing frame autofocussing it uses the userdefined frame size
     GlobalAcquisitionRecording.LinesPerFrame = 32
-    If BSliderZStep.Value > 0 Then
-        GlobalAcquisitionRecording.FramesPerStack = Round(10 / BSliderZStep.Value)
-        GlobalAcquisitionRecording.FrameSpacing = BSliderZStep.Value
+    If AutofocusZStep.Value > 0 Then
+        GlobalAcquisitionRecording.FramesPerStack = Round(10 / AutofocusZStep.Value)
+        GlobalAcquisitionRecording.FrameSpacing = AutofocusZStep.Value
     Else
         GlobalAcquisitionRecording.FramesPerStack = 10
         GlobalAcquisitionRecording.FrameSpacing = 10
@@ -4497,14 +4489,14 @@ Private Function AFTest7Run() As Boolean
         Exit Function
     End If
         
-    CheckBoxTrack1.Value = AutofocusTrack1.Value
-    CheckBoxTrack2.Value = AutofocusTrack2.Value
-    CheckBoxTrack3.Value = AutofocusTrack3.Value
-    CheckBoxTrack4.Value = AutofocusTrack4.Value
-    CheckBoxHighSpeed.Value = True
-    CheckBoxFastZline = True
-    CheckBoxHRZ.Value = False
-    CheckBoxLowZoom.Value = False
+    AcquisitionTrack1.Value = AutofocusTrack1.Value
+    AcquisitionTrack2.Value = AutofocusTrack2.Value
+    AcquisitionTrack3.Value = AutofocusTrack3.Value
+    AcquisitionTrack4.Value = AutofocusTrack4.Value
+    AutofocusMaxSpeed.Value = True
+    AutofocusFastZline = True
+    AutofocusHRZ.Value = False
+    AutofocusLowZoom.Value = False
         
         
     '''''''
@@ -4513,8 +4505,8 @@ Private Function AFTest7Run() As Boolean
     AutofocusTrackZ.Value = True
 
     MultipleLocationToggle.Value = True
-    BSliderRepetitions = AFTest_Repetitions.Value
-    BSliderTime.Value = 0
+    LoopingRepetitions = AFTest_Repetitions.Value
+    LoopingRepetitionTime.Value = 0
     If Not StartSetting() Then
         Exit Function
     End If
@@ -4523,9 +4515,9 @@ Private Function AFTest7Run() As Boolean
     GlobalAcquisitionRecording.ScanMode = "Stack"                       'This is defining to acquire a Z stack of Z-Y images
     GlobalAcquisitionRecording.SamplesPerLine = 8  'If doing frame autofocussing it uses the userdefined frame size
     GlobalAcquisitionRecording.LinesPerFrame = 8
-    If BSliderZStep.Value > 0 Then
-        GlobalAcquisitionRecording.FramesPerStack = Round(20 / BSliderZStep.Value)
-        GlobalAcquisitionRecording.FrameSpacing = BSliderZStep.Value
+    If AutofocusZStep.Value > 0 Then
+        GlobalAcquisitionRecording.FramesPerStack = Round(20 / AutofocusZStep.Value)
+        GlobalAcquisitionRecording.FrameSpacing = AutofocusZStep.Value
     Else
         GlobalAcquisitionRecording.FramesPerStack = 10
         GlobalAcquisitionRecording.FrameSpacing = 10
@@ -4591,8 +4583,8 @@ Private Function RunTestAutofocusButton(RecordingDoc As DsRecordingDoc, ResetPos
     If Log Then
         SafeOpenTextFile LogFileName, LogFile, FileSystem
         LogFile.WriteLine "% Autofocus Test. Repeated AutofocusButton executions. "
-        LogFile.WriteLine "% MaxSpeed " & CheckBoxHighSpeed.Value & ", Zoom1 " & CheckBoxLowZoom.Value & ", Piezo " & CheckBoxHRZ.Value & ", AFTrackZ " & AutofocusTrackZ.Value & _
-        ", AFTrackXY " & AutofocusTrackXY.Value & ", FastZLine" & CheckBoxFastZline.Value
+        LogFile.WriteLine "% MaxSpeed " & AutofocusMaxSpeed.Value & ", Zoom1 " & AutofocusLowZoom.Value & ", Piezo " & AutofocusHRZ.Value & ", AFTrackZ " & AutofocusTrackZ.Value & _
+        ", AFTrackXY " & AutofocusTrackXY.Value & ", FastZLine" & AutofocusFastZline.Value
     End If
     Zold = posTempZ
     While TestRepeats < MaxTestRepeats + 1
@@ -4660,8 +4652,8 @@ Private Function RunTestFastZline(RecordingDoc As DsRecordingDoc, TestNr As Inte
     
     If Log Then
         SafeOpenTextFile LogFileName, LogFile, FileSystem
-        LogFile.WriteLine "% FastZlineTest " & TestNr & ". Repeated fast Zline executions. PixelDwellfactor: " & pixelDwellfactor & ", LineSize: " & BSliderLineSize.Value & ", pause: " & pause
-        LogFile.WriteLine "% MaxSpeed " & CheckBoxHighSpeed.Value & ", Zoom1 " & CheckBoxLowZoom.Value & ", Piezo " & CheckBoxHRZ.Value & ", AFTrackZ " & AutofocusTrackZ.Value & _
+        LogFile.WriteLine "% FastZlineTest " & TestNr & ". Repeated fast Zline executions. PixelDwellfactor: " & pixelDwellfactor & ", LineSize: " & AutofocusLineSize.Value & ", pause: " & pause
+        LogFile.WriteLine "% MaxSpeed " & AutofocusMaxSpeed.Value & ", Zoom1 " & AutofocusLowZoom.Value & ", Piezo " & AutofocusHRZ.Value & ", AFTrackZ " & AutofocusTrackZ.Value & _
         ", AFTrackXY " & AutofocusTrackXY.Value
     End If
     
@@ -4694,7 +4686,7 @@ Private Function RunTestFastZline(RecordingDoc As DsRecordingDoc, TestNr As Inte
             'pos = Lsm5.Hardware.CpFocus.Position
             LogFile.WriteLine ("% AutofocusButton: center and wait 1st  Z = " & posTempZ & ", Time required " & Time & ", success Recenter " & SuccessRecenter)
 '            Sleep (100)
-'            If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
+'            If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or AutofocusHRZ Then
 '                LogFile.WriteLine ("% AutofocusButton: Target Central slide AQ  " & posTempZ & "; obtained Central slide " & pos & "; position " & pos)
 '            Else
 '                LogFile.WriteLine ("% AutofocusButton: Target Central slide AQ  " & posTempZ & "; obtained Central slide " & _
@@ -4714,7 +4706,7 @@ Private Function RunTestFastZline(RecordingDoc As DsRecordingDoc, TestNr As Inte
             Time = Timer - Time
             pos = Lsm5.Hardware.CpFocus.Position
             LogFile.WriteLine ("% AutofocusButton: recenter 1st  Z = " & posTempZ & ", Time required " & Time & ", waiting repeats (max 9) " & Round(Time / 0.4))
-            If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or CheckBoxHRZ Then
+            If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or AutofocusHRZ Then
                 LogFile.WriteLine ("% AutofocusButton: Target Central slide AQ (after img) " & posTempZ & "; obtained Central slide " & Lsm5.Hardware.CpFocus.Position & "; position " & Lsm5.Hardware.CpFocus.Position)
             Else
                 LogFile.WriteLine ("% AutofocusButton: Target Central slide AQ (after img) " & posTempZ & "; obtained Central slide " & _
