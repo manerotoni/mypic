@@ -1768,12 +1768,14 @@ End Sub
 '   StorePositioninHighResArray(HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double, HighResCounter As Integer)
 '   TODO: Test stricter way of passing arguments
 ''''
-Public Function StorePositioninHighResArray(Xref As Double, Yref As Double, Zref As Double, HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double) As Boolean
-    
+Public Function StorePositioninHighResArray(ByVal Xref As Double, ByVal Yref As Double, ByVal Zref As Double, HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double) As Boolean
     ' store postion from windows registry in array
     Dim Xoffset()  As String 'the string containinig the X-positions
     Dim Yoffset()  As String 'the string containinig the Y-positions
-    Dim ZOffset() As String
+    Dim ZOffset() As String  'the string containinig the Z-positions
+    Dim Xnew As Double
+    Dim Ynew As Double
+    Dim Znew As Double
     Dim PixelSize As Double
     Dim unit As String
     Dim LowBound As Integer
@@ -1787,7 +1789,31 @@ Public Function StorePositioninHighResArray(Xref As Double, Yref As Double, Zref
     End If
     
     Xoffset() = Split(GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="offsetx"), ",")
+    If isArrayEmpty(Xoffset) Then
+        ReDim Xoffset(0)
+        Xoffset(0) = 0
+    End If
     Yoffset() = Split(GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="offsety"), ",")
+    If isArrayEmpty(Yoffset) Then
+        ReDim Yoffset(0)
+        Yoffset(0) = 0
+    End If
+    ZOffset() = Split(GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="offsetz"), ",")
+    If isArrayEmpty(ZOffset) Then
+        ReDim ZOffset(UBound(Xoffset))
+        For i = 0 To UBound(Xoffset)
+            ZOffset(i) = 0
+        Next i
+    End If
+        
+    If UBound(ZOffset) <> UBound(Xoffset) Then 'Z position as not been set
+        
+        ReDim Preserve ZOffset(UBound(Xoffset))
+        For i = 0 To UBound(Xoffset)
+            ZOffset(i) = ZOffset(0)
+        Next i
+    End If
+    
     If UBound(Xoffset) <> UBound(Yoffset) Then
         MsgBox ("StorePositioninHighResArray: nr of values in registry offsetx and offsety is not the same!")
         Exit Function
@@ -1806,9 +1832,13 @@ Public Function StorePositioninHighResArray(Xref As Double, Yref As Double, Zref
     End If
     
     For i = 0 To UBound(Xoffset)
-        HighResArrayX(LowBound + i) = Xref - CDbl(Xoffset(i)) * PixelSize ' this needs to be unified with computing internal AF
-        HighResArrayY(LowBound + i) = Yref + CDbl(Yoffset(i)) * PixelSize ' needs to be unified with computing internal AF
-        HighResArrayZ(LowBound + i) = Zref
+        Xnew = Xref
+        Ynew = Yref
+        Znew = Zref
+        ComputeShiftedCoordinates CDbl(Xoffset(i)) * PixelSize, CDbl(Yoffset(i)) * PixelSize, CDbl(ZOffset(i)), Xnew, Ynew, Znew
+        HighResArrayX(LowBound + i) = Xnew  ' this needs to be unified with computing internal AF
+        HighResArrayY(LowBound + i) = Ynew ' needs to be unified with computing internal AF
+        HighResArrayZ(LowBound + i) = Znew
     Next i
     Dim Xoff As Double
     Xoff = Xref - CDbl(Xoffset(0)) * PixelSize
@@ -1821,46 +1851,63 @@ End Function
 '   HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double)
 '   TODO: test stricter way of passing arguments
 '   [code] passed by MacroPilot can be
-'       0, nothing, Nothing, DoNothing or doNothing: do nothing and exit function
-'       1, wait or Wait: wait that code changes
-'       2, storePositions, or StorePositions: Store positions and exit function
+'       0, wait, Wait, DoNothing or doNothing: Macro waits, but no image is ready to analyse
+'       1, newImage: Macro waits and there is a new image available
+'       2, "nothing", "Nothing", "DoNothing", "doNothing", "donothing": Do nothing
+'       4, "storePosition", "StorePosition", "storePosition", "StorePosition", "store", "Store": Store positions and exit function
+'       5, "imagePositions", "ImagePositions", "imagePosition", "ImagePosition", "imageposition", "image", "Image": Image all stored positions
 ''''''
 Public Function MicroscopePilot(RecordingDoc As DsRecordingDoc, GridPos As GridPosType, Xref As Double, Yref As Double, Zref As Double, FileNameID As String, HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double) As Boolean
+    Dim code As String
+    Dim Repetitions As RepetitionType
     If Not LegacyCode Then
-        Dim code As String
         code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="code")
-        If LegacyCode Then
-            
         Select Case code
-            Case "1", "wait", "Wait":                                     'Wait for image analysis to finish
+            Case "1", "newImage", "0", "wait", "Wait":
+                'Wait for image analysis to finish
                 DisplayProgress "Waiting for image analysis...", RGB(0, &HC0, 0)
-                Do While (code = "1" Or code = "wait" Or code = "Wait")
-                    Sleep (200)
+                Do While (code = "1" Or code = "wait" Or code = "Wait" Or code = "0")
+                    Sleep (50)
                     code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", _
                               Key:="Code")
-                    If GetInputState() <> 0 Then
-                        DoEvents
-                        If ScanStop Then
-                            Exit Function
-                        End If
+                    DoEvents
+                    If ScanStop Then
+                        Exit Function
                     End If
+'                    If GetInputState() <> 0 Then
+'                        DoEvents
+'                        If ScanStop Then
+'                            Exit Function
+'                        End If
+'                    End If
                 Loop
         End Select
         
         Select Case code
-            Case "0", "nothing", "Nothing", "DoNothing", "doNothing":  'Nothing to do
-            Case "2", "storePosition", "StorePosition", "storePosition", "StorePosition": 'store positions for later processing
-                DisplayProgress "Registry Code 2 (storePosition): store positions and do nothings ...", RGB(0, &HC0, 0)
+            Case "2", "nothing", "Nothing", "DoNothing", "doNothing", "donothing":  'Nothing to do
+            Case "4", "storePosition", "StorePosition", "storePosition", "StorePosition", "store", "Store": 'store positions for later processing
+                DisplayProgress "Registry Code 4 (storePosition): store positions and do nothings ...", RGB(0, &HC0, 0)
                 StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ
-            Case "3", "imagePositions", "ImagePositions", "imagePosition", "ImagePosition":
-                DisplayProgress "Registry Code 3 (imagePositions): store positions and do imaging ...", RGB(0, &HC0, 0)
+                If AutofocusForm.MicropilotMaxPositions.Value <> "" Then
+                    If UBound(HighResArrayX) = CInt(AutofocusForm.MicropilotMaxPositions.Value) Then
+                        Repetitions.Number = CInt(AutofocusForm.MicropilotRepetitions.Value)
+                        Repetitions.Time = CDbl(AutofocusForm.MicropilotRepetitionTime.Value)
+                        Repetitions.Interval = True
+                        SubImagingWorkFlow RecordingDoc, GlobalMicropilotRecording, "Micropilot", AutofocusForm.MicropilotAutofocus, AutofocusForm.MicropilotZOffset, Repetitions, _
+                        HighResArrayX, HighResArrayY, HighResArrayZ, GridPos, FileNameID
+                        Erase HighResArrayX
+                        Erase HighResArrayY
+                        Erase HighResArrayZ
+                    End If
+                End If
+            Case "5", "imagePositions", "ImagePositions", "imagePosition", "ImagePosition", "imageposition", "image", "Image":
+                DisplayProgress "Registry Code 5 (imagePositions): store positions and do imaging ...", RGB(0, &HC0, 0)
                 StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ
                 ' BatchHighresImagingRoutine
                 ' HERE THE IMAGES ARE ACQUIRED
-                Dim Repetitions As RepetitionType
                 Repetitions.Number = CInt(AutofocusForm.MicropilotRepetitions.Value)
                 Repetitions.Time = CDbl(AutofocusForm.MicropilotRepetitionTime.Value)
-                Repetitions.Interval = False
+                Repetitions.Interval = True
                 SubImagingWorkFlow RecordingDoc, GlobalMicropilotRecording, "Micropilot", AutofocusForm.MicropilotAutofocus, AutofocusForm.MicropilotZOffset, Repetitions, _
                 HighResArrayX, HighResArrayY, HighResArrayZ, GridPos, FileNameID
                 Erase HighResArrayX
@@ -1871,71 +1918,9 @@ Public Function MicroscopePilot(RecordingDoc As DsRecordingDoc, GridPos As GridP
                 Exit Function
         End Select
         MicroscopePilot = True
-    Else
-    '''Use Same coding as Micropilot old version
-        
-        Dim code As String
-            
-        ' Get Code from Windows registry
-        code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="code")
-        DisplayProgress "Waiting for Micropilot...", RGB(0, &HC0, 0)
-        DoEvents
-        Do While (code = "1" Or code = "0")
-            ' TODO: Check Code
-            Sleep (100)
-            code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", _
-                      Key:="Code")
-            If GetInputState() <> 0 Then
-                DoEvents
-                If ScanStop Then
-                    MicroscopePilot = False
-                    Exit Function
-                End If
-            End If
-        Loop
-        
-        DisplayProgress "Received Code " + CStr(code), RGB(0, &HC0, 0)
-        
-    
-        If code = "2" Then   ' no interesting cell
-        
-            DisplayProgress "Micropilot Code 2", RGB(0, &HC0, 0)
-            SaveSetting "OnlineImageAnalysis", "macro", "Refresh", 0
-            GoTo Mark '(because Image does not show any interesting pheotype)
-        
-        ElseIf code = "4" Then   'store position in a list
-        
-            DisplayProgress "Micropilot Code 4", RGB(0, &HC0, 0)
-            StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ
-            
-        ElseIf code = "5" Then  ' start Highres Batch Imaging 1 to n postions
-            
-            DisplayProgress "Micropilot Code 5", RGB(0, &HC0, 0)
-            StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ
-            Dim Repetitions As RepetitionType
-            Repetitions.Number = CInt(AutofocusForm.MicropilotRepetitions.Value)
-            Repetitions.Time = CDbl(AutofocusForm.MicropilotRepetitionTime.Value)
-            Repetitions.Interval = False
-            SubImagingWorkFlow RecordingDoc, GlobalMicropilotRecording, "Micropilot", AutofocusForm.MicropilotAutofocus, AutofocusForm.MicropilotZOffset, Repetitions, _
-            HighResArrayX, HighResArrayY, HighResArrayZ, GridPos, FileNameID
-            Erase HighResArrayX
-            Erase HighResArrayY
-            Erase HighResArrayZ
-        
-        Else
-            
-            'Error Message "OnlineImageAnalysis Value = 'Code'"
-            MsgBox ("Invalid OnlineImageAnalysis Code = " & code)
-    
-        End If
-Mark:
-    
-        MicroscopePilot = True
-    
     End If
-    
     'Reset Code to 0 in Windows Registry
-    'SaveSetting "OnlineImageAnalysis", "Cinput", "Code", 0
+    'SaveSetting "OnlineImageAnalysis", "Cinput", "Code", 0 ' this should be done by the image analysis software
       
 
      'TODO: create a better procedure to check for cells
@@ -1968,7 +1953,7 @@ Public Function SubImagingWorkFlow(RecordingDoc As DsRecordingDoc, Recording As 
 
     Dim Succes As Integer
     Dim SuccessRecenter As Boolean
-    
+    Dim LocationLabel As String
     'Timer and Looping Variables
     Dim iPos As Integer
     Dim iRep As Integer
@@ -2012,8 +1997,10 @@ Public Function SubImagingWorkFlow(RecordingDoc As DsRecordingDoc, Recording As 
         UnderScore = ""
     End If
     
-    StartTime = CDbl(GetTickCount) * 0.001
+    
+    LocationLabel = AutofocusForm.LocationTextLabel.Caption
     For iRep = 1 To Repetitions.Number
+        StartTime = CDbl(GetTickCount) * 0.001
         For iPos = 1 To UBound(HighResArrayX)  ' Postition loop
                 ' Move to Positon in x, y, z for Highresscan
                 DisplayProgress RecordingName & " - Move to Position " & iPos, RGB(0, &HC0, 0)
@@ -2025,7 +2012,11 @@ Public Function SubImagingWorkFlow(RecordingDoc As DsRecordingDoc, Recording As 
                 End If
                 'center acquisition (this should be already at correct position after AF)
                 Recenter_pre Z, SuccessRecenter, ZEN
-                
+                AutofocusForm.LocationTextLabel.Caption = LocationLabel & _
+                RecordingName & " Locations: " & iPos & "/" & UBound(HighResArrayX) & _
+                "; X = " & X & ", Y = " & Y & ", Z = " & Z & vbCrLf & _
+                "Repetition :" & iRep & "/" & Repetitions.Number
+                DoEvents
                 'Autofocus. This does an extra Autofocus also for the HighresImaging with the same parameters as Autofocus
                 If Autofocus Then
                     DisplayProgress RecordingName & " - Autofocus activate track and recenter...", RGB(0, &HC0, 0)
@@ -2092,7 +2083,8 @@ Public Function SubImagingWorkFlow(RecordingDoc As DsRecordingDoc, Recording As 
                     Exit Function
                 End If
                 
-                DisplayProgress RecordingName & " - Acquisition position " & iPos & "/" & UBound(HighResArrayX), RGB(&HC0, &HC0, 0)
+                DisplayProgress RecordingName & " - Acquisition position " & iPos & "/" & UBound(HighResArrayX) & " Repetition " & iRep _
+                & "/" & Repetitions.Number, RGB(&HC0, &HC0, 0)
 
                 If Not ScanToImage(RecordingDoc) Then
                     Exit Function
@@ -2103,8 +2095,8 @@ Public Function SubImagingWorkFlow(RecordingDoc As DsRecordingDoc, Recording As 
                     Exit Function
                 End If
                 FileNameID = FileName(GridPos.Row, GridPos.Col, GridPos.RowSub, GridPos.ColSub, iRep)
-                fullpathname = fullpathname & AutofocusForm.TextBoxFileName.Value & UnderScore & "HRPos" & ZeroString(3 - Len(CStr(iPos))) & _
-                FileNameID & ".lsm"
+                fullpathname = fullpathname & AutofocusForm.TextBoxFileName.Value & UnderScore & "HRPos" & ZeroString(3 - Len(CStr(iPos))) & iPos & _
+                 "_" & FileNameID & ".lsm"
                 
                 DisplayProgress RecordingName & " - SaveImage", RGB(0, &HC0, 0)
                 If Not SaveDsRecordingDoc(RecordingDoc, fullpathname) Then
@@ -2115,8 +2107,11 @@ Public Function SubImagingWorkFlow(RecordingDoc As DsRecordingDoc, Recording As 
           
         Next iPos ' End of postions loop
         'TODO Check
+        If Not Repetitions.Interval Then
+            StartTime = CDbl(GetTickCount) * 0.001
+        End If
         DiffTime = CDbl(GetTickCount) * 0.001 - StartTime
-        While DiffTime <= Repetitions.Time
+        While DiffTime <= Repetitions.Time And iRep < Repetitions.Number
             Sleep (10)
             If GetInputState() <> 0 Then
             DoEvents

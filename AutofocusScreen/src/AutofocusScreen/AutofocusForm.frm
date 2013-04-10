@@ -26,7 +26,7 @@ Private Const BIF_RETURNONLYFSDIRS = &H1
 ' AutofocusScreen_ZEN_v2.1.3.5
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Const Version = " v2.1.3.5"
+Private Const Version = " v2.1.3.6"
 Public posTempZ  As Double                  'This is position at start after pushing AutofocusButton
 Private Const DebugCode = False             'sets key to run tests visible or not
 Private Const ReleaseName = True            'this adds the ZEN version
@@ -41,7 +41,7 @@ Private ZoomImageInitialize As Boolean  ' first time ZoomImage/Micropilot is act
 '   Load and initialize form
 '''''
 Public Sub UserForm_Initialize()
-    ZEN = "2010"
+    ZEN = "2011"
     LegacyCode = False
     'Setting of some global variables
     LogFileNameBase = ""
@@ -143,7 +143,7 @@ Private Sub Re_Start()
     
     'Set standard values for Micropilot
     ActiveMicropilot.Value = False
-    SwitchEnableOnlineImageAnalysisPage (False)
+    SwitchEnableMicropilotPage (False)
     MicropilotAutofocus.Value = False
     SwitchEnableZoomAutofocus (False)
     
@@ -199,7 +199,7 @@ Public Sub Re_Initialize()
     AutoFindTracks
     SwitchEnableAutofocusPage ActiveAutofocus
     SwitchEnableAlterImagePage ActiveAlterImage
-    SwitchEnableOnlineImageAnalysisPage ActiveMicropilot
+    SwitchEnableMicropilotPage ActiveMicropilot
     
     PubSearchScan = False
     NoReflectionSignal = False
@@ -331,6 +331,7 @@ Private Sub SaveSettings(FileName As String)
     Print #iFileNum, "MicropilotTrack4 " & MicropilotTrack4.Value
     Print #iFileNum, "MicropilotRepetitions " & MicropilotRepetitions.Value
     Print #iFileNum, "MicropilotRepetitionTime " & MicropilotRepetitionTime.Value
+    Print #iFileNum, "MicropilotMaxPositions " & MicropilotMaxPositions.Value
     Print #iFileNum, "MicropilotFrameSize " & MicropilotFrameSize.Value
     Print #iFileNum, "MicropilotZOffset " & MicropilotZOffset.Value
     Print #iFileNum, "MicropilotZSlices " & MicropilotZSlices.Value
@@ -445,7 +446,7 @@ Private Sub ButtonLoadSettings_Click()
   
     Flags = OFN_FILEMUSTEXIST Or OFN_HIDEREADONLY Or _
             OFN_PATHMUSTEXIST
-    Filter$ = "Settings (*.ini)" & Chr$(0) & "*.ini"
+    Filter$ = "Settings (*.ini)" & Chr$(0) & "*.ini" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
             
     'Filter = "ini file (*.ini) |*.ini"
     
@@ -703,7 +704,7 @@ End Sub
 ''''''
 Private Sub ActiveMicropilot_Click()
 
-    SwitchEnableOnlineImageAnalysisPage (ActiveMicropilot.Value)
+    SwitchEnableMicropilotPage (ActiveMicropilot.Value)
     If ActiveMicropilot.Value And ZoomImageInitialize Then
         MicropilotZOffset.Value = AutofocusZOffset.Value
         MicropilotZSlices.Value = GlobalAcquisitionRecording.FramesPerStack
@@ -716,11 +717,11 @@ Private Sub ActiveMicropilot_Click()
 End Sub
 
 ''''''
-'   SwitchEnableOnlineImageAnalysisPage(Enable As Boolean)
+'   SwitchEnableMicropilotPage(Enable As Boolean)
 '   Disable or enable all buttons and slider (aka Micropilot)
 '       [Enable] In -  Sets the mini page enable status
 ''''''
-Private Sub SwitchEnableOnlineImageAnalysisPage(Enable As Boolean)
+Private Sub SwitchEnableMicropilotPage(Enable As Boolean)
     MicropilotTrack1.Enabled = Enable
     MicropilotTrack2.Enabled = Enable
     MicropilotTrack3.Enabled = Enable
@@ -743,6 +744,10 @@ Private Sub SwitchEnableOnlineImageAnalysisPage(Enable As Boolean)
     MicropilotZOffset.Enabled = Enable
     ZoomAutofocusZOffsetLabel.Enabled = Enable
     MicropilotZOffset.Value = AutofocusZOffset.Value
+    MicropilotMaxPositions.Enabled = Enable
+    MicropilotMaxPositionsLabel1.Enabled = Enable
+    MicroPilotMaxPositionsLabel2.Enabled = Enable
+    
 End Sub
 
 ''''''
@@ -2050,12 +2055,13 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
     
     ' ActiveMicropilot  refers to the MicroPilot
     If ActiveMicropilot Then
-        Erase HighResArrayX()  'define 100 a priori (even if there are less)
+        Erase HighResArrayX()
         Erase HighResArrayY()
         Erase HighResArrayZ()
-        SaveSetting "OnlineImageAnalysis", "macro", "code", 0
+        SaveSetting "OnlineImageAnalysis", "macro", "code", "2"     'this causes to do anything
         SaveSetting "OnlineImageAnalysis", "macro", "offsetx", 0
         SaveSetting "OnlineImageAnalysis", "macro", "offsety", 0
+        SaveSetting "OnlineImageAnalysis", "macro", "offsetz", 0
     End If
   
     'Coordinates
@@ -2179,26 +2185,8 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
                         End If
                         
                         ' Show position of stage
-                        If SingleLocationToggle Then
-                            LocationTextLabel.Caption = "X= " & X & ",  Y = " & Y & ", Z = " & Z & vbCrLf & _
-                            "Repetition :" & RepetitionNumber & "/" & LoopingRepetitions.Value
-                        End If
+                        LocationTextLabel.Caption = SetLocationTextLabel(X, Y, Z, GridPos, TotPos, RepetitionNumber)
                         
-                        If MultipleLocationToggle Then
-                            LocationTextLabel.Caption = "Marked Position: " & GridPos.Col & "/" & UBound(posGridX, 2) & vbCrLf & _
-                            "X = " & X & ", Y = " & Y & ", Z = " & Z & vbCrLf & _
-                            "Repetition :" & RepetitionNumber & "/" & LoopingRepetitions.Value
-
-                        End If
-                        If ActiveGridScan Then
-                            LocationTextLabel.Caption = "Locations : " & TotPos & "/" & UBound(posGridX, 1) * UBound(posGridX, 2) * UBound(posGridX, 3) * UBound(posGridX, 4) & vbCrLf & _
-                                                        "Well/Position Row: " & GridPos.Row & "/" & UBound(posGridX, 1) & "; Column: " & GridPos.Col & "/" & UBound(posGridX, 2) & vbCrLf & _
-                                                        "Subposition   Row: " & GridPos.RowSub & "/" & UBound(posGridX, 3) & "; Column: " & GridPos.ColSub & "/" & UBound(posGridX, 4) & vbCrLf & _
-                                                        "X = " & X & ", Y = " & Y & _
-                                                        ", Z = " & Z & vbCrLf & _
-                                                        "Repetition :" & RepetitionNumber & "/" & LoopingRepetitions.Value
-                                                        
-                        End If
                         
                         If ScanPause Then
                             If Not pause Then ' Pause is true is Resume
@@ -2262,7 +2250,7 @@ NextLocation:
         DiffTime = rettime - GlobalPrvTime
         'TODO: Check this
         'This loops define the waiting delay before going back to the first location
-        Do While (DiffTime <= BlockTimeDelay) And Not (BleachTable(RepetitionNumber + 1) = True)
+        Do While (DiffTime <= CDbl(LoopingRepetitionTime.Value)) And Not (BleachTable(RepetitionNumber + 1) = True)
             Sleep (100)
             If GetInputState() <> 0 Then
                 DoEvents
@@ -2421,6 +2409,9 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
             End If
             posGridX(GridPos.Row, GridPos.Col, GridPos.RowSub, GridPos.ColSub) = Xnew
             posGridY(GridPos.Row, GridPos.Col, GridPos.RowSub, GridPos.ColSub) = Ynew
+        Else
+            Xnew = Xold
+            Ynew = Yold
         End If
         
         LogMsg = "% StartButton:  center of mass XYZ  " & XMass & ", " & YMass & ", " & ZMass & ". Computed position XYZ " & Xnew & ", " & Ynew & ", " & Znew
@@ -2453,8 +2444,9 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
 
     FilePath = FilePath & ".lsm"
 
+    LocationTextLabel.Caption = SetLocationTextLabel(Xnew, Ynew, Znew, GridPos, TotPos, RepetitionNumber)
 
-
+       
     If ScanPause Then
         If Not pause Then ' Pause is true if Resume
             Exit Function
@@ -2696,7 +2688,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
         Loop
         
         SaveSetting "OnlineImageAnalysis", "macro", "Refresh", 0
-        SaveSetting "OnlineImageAnalysis", "macro", "code", 1
+        SaveSetting "OnlineImageAnalysis", "macro", "code", "1"
         'recenter
         Recenter_pre Zold, SuccessRecenter, ZEN
         Dim RepMicropilot As RepetitionType
@@ -2743,14 +2735,20 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
 
 End Function
     
+Private Function SetLocationTextLabel(X As Double, Y As Double, Z As Double, GridPos As GridPosType, TotPos As Long, iRep As Integer) As String
+    Dim Caption As String
+    Caption = "Locations : " & TotPos & "/" & UBound(posGridX, 1) * UBound(posGridX, 2) * UBound(posGridX, 3) * UBound(posGridX, 4) & "; X= " & X & ", Y = " & Y & ", Z = " & Z & vbCrLf & _
+                                "Repetition :" & iRep & "/" & LoopingRepetitions.Value & vbCrLf & _
+                                "Well/Position Row: " & GridPos.Row & "/" & UBound(posGridX, 1) & "; Column: " & GridPos.Col & "/" & UBound(posGridX, 2) & vbCrLf
 
-
-
-
-''''''
-'   MassCenter(Context As String)
-'   TODO: No test of Goodness of Mass estimation. Very slow function
-''''''
+                                
+     If MultipleLocationToggle Or ActiveGridScan Then
+        If GridScan_nRowsub.Value > 1 Or GridScan_nColumnsub.Value > 1 Then
+            Caption = Caption & "Subposition   Row: " & GridPos.RowSub & "/" & UBound(posGridX, 3) & "; Column: " & GridPos.ColSub & "/" & UBound(posGridX, 4) & vbCrLf
+        End If
+    End If
+    SetLocationTextLabel = Caption
+End Function
 
 '''''
 '   Pause()
@@ -3125,16 +3123,17 @@ Private Sub SwitchEnableTrackingToggle(Enable As Boolean)
     ComboBoxTrackingChannel.Visible = Enable
     If Enable Then
        FillTrackingChannelList
+        If GlobalAcquisitionRecording.ScanMode = "Stack" Or GlobalAcquisitionRecording.ScanMode = "ZScanner" Then
+            PostTrackZ.Enabled = True
+        Else
+            PostTrackZ.Enabled = False
+            PostTrackZ.Value = False
+        End If
     End If
     PostTrackXY.Visible = Enable
     PostTrackZ.Visible = Enable
     PostAcquisitionLabel.Visible = Enable
-    If Lsm5.DsRecording.ScanMode = "Stack" Or Lsm5.DsRecording.ScanMode = "ZScanner" Then
-        PostTrackZ.Enabled = True
-    Else
-        PostTrackZ.Enabled = False
-        PostTrackZ.Value = False
-    End If
+
 End Sub
     
 
