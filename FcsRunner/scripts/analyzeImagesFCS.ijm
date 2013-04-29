@@ -1,11 +1,11 @@
 //Properties that can be set by the user
 //property of overlayd points on image
-ROIsize= 6; //a ROIsizexROIsize is averaged use even numbers
+ROIsize= 12; //a ROIsizexROIsize is averaged
 labelSize = 5; //little dot on overlay
 setForegroundColor(255,0,0); //color of dot
 colorText = "red"; //color of Text
 format = "jpeg"; //format output overlay png (small-size, good look), tiff (bigsize, goodlook), jpeg (smallsize, badlook)
-setBatchMode(true); // if true no images are shown and macro runs faster
+setBatchMode(false); // if true no images are shown and macro runs faster
 
 //Start the macro
 
@@ -62,7 +62,7 @@ function computeFiles(filelsm, fileout, ROIs, color, format) {
 	 	makePoint(posX, posY);
 	 	roiManager("Add");
 	 	for(j=0; j<ROIs.length; j++) {
-	 		makeRectangle(posX - (ROIs[j]+1)/2, posY-(ROIs[j]+1)/2, ROIs[j], ROIs[j]); 
+	 		makeRectangle(posX - (ROIs[j])/2, posY-(ROIs[j]+1)/2, ROIs[j], ROIs[j]); 
 			roiManager("Add");
 		}
 	}
@@ -72,8 +72,7 @@ function computeFiles(filelsm, fileout, ROIs, color, format) {
 		File.append("FCSpt \t" + getResult("Mean",i) + "\t" + getResult("StdDev",i) + "\t " + getResult("X",i) + "\t" + getResult("Y",i), fileout);
 		File.append("ROI_"+ ROIs[0] + "x" + ROIs[0] + "px" + "\t" + getResult("Mean",i+1) + "\t" + getResult("StdDev",i+1) + "\t " + getResult("X",i+1) + "\t " + getResult("Y",i+1), fileout);
 	}
-	run("From ROI Manager");
-	saveAs("Tiff", File.directory +  File.nameWithoutExtension + ".tif");
+	
 	roiManager("reset");
 	run("RGB Color");
 	//First create a jpg of image with point where measurment was taken and ROI for 
