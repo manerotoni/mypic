@@ -1,6 +1,5 @@
 Attribute VB_Name = "MicroscopeIO"
 Option Explicit
-Public LegacyCode As Boolean
 
 Public SystemVersion As String
 
@@ -128,9 +127,6 @@ Public ZOffset As Double
 Public TrackingChannelString As String
 'Public PositionData As Workbook
 'position variables
-Public XMass As Double
-Public YMass As Double
-Public ZMass As Double
 Public ZShift As Double
 Public XShift As Double
 Public YShift As Double
@@ -265,6 +261,10 @@ Public HighResCounter As Integer
 Public HighResArrayX() As Double ' this is an array of values why do you need to store values?
 Public HighResArrayY() As Double
 Public HighResArrayZ() As Double
+Public HighResArrayDeltaX() As Double ' width of acquisition in um. Default is as set from the main window 'not implemented yet (better to define ROIs)
+Public HighResArrayDeltaY() As Double ' width of acquisition in um. Default is as set from the main window 'not implemented yet (better to define ROIs)
+Public HighResArrayDeltaZ() As Double ' size of acquisition in um. Default is a set from the main window
+
 Public HelpNamePDF As String
 
 Public GlobalStageControlZValues As Boolean
@@ -512,15 +512,15 @@ Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
     
     LogMsg = "% Autofocus_stackshift: acquire time " & Round(Timer - Time, 2)
     LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
-    
-    Time = Timer
-    DisplayProgress "Autofocus compute", RGB(0, &HC0, 0)
-    
-    ' Computes XMass, YMass and ZMass
-    MassCenter ("Autofocus")
-    
-    LogMsg = "% Autofocus_stackshift: compute time " & Round(Timer - Time, 2)
-    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+    'perform the computation outside
+'    Time = Timer
+'    DisplayProgress "Autofocus compute", RGB(0, &HC0, 0)
+'
+'    ' Computes XMass, YMass and ZMass
+'    MassCenter ("Autofocus")
+'
+'    LogMsg = "% Autofocus_stackshift: compute time " & Round(Timer - Time, 2)
+'    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
 
     If Not ScanStop Then
         Autofocus_StackShift = True
@@ -701,7 +701,7 @@ End Function
 '       [Mark] In - Number of position where to move.
 '''''
 Public Sub MoveToNextLocation(Optional Mark As Integer = 0)
-        Dim Markcount As Long
+        Dim MarkCount As Long
         Dim count As Long
         Dim idx As Long
         Dim dX As Double
@@ -1259,7 +1259,7 @@ ErrorHandle:
 End Sub
 
 
-Public Sub MassCenter(Context As String)
+Public Sub MassCenter(RecordingDoc As DsRecordingDoc, XMass As Double, YMass As Double, ZMass As Double, Context As String)
     Dim scrline As Variant
     Dim spl As Long
     Dim bpp As Long
@@ -1301,30 +1301,30 @@ Public Sub MassCenter(Context As String)
     DoEvents
     'Gets the dimensions of the image in X (Columns), Y (lines) and Z (Frames)
     If AutofocusForm.ScanFrameToggle And SystemName = "LIVE" Then ' binning only with LIVE device
-        ColMax = Lsm5.DsRecordingActiveDocObject.Recording.RtRegionWidth '/ Lsm5.DsRecordingActiveDocObject.Recording.RtBinning
-        LineMax = Lsm5.DsRecordingActiveDocObject.Recording.RtRegionHeight
+        ColMax = RecordingDoc.Recording.RtRegionWidth '/ Lsm5.DsRecordingActiveDocObject.Recording.RtBinning
+        LineMax = RecordingDoc.Recording.RtRegionHeight
     Else
         If SystemName = "LIVE" Then
-            ColMax = Lsm5.DsRecordingActiveDocObject.Recording.RtRegionWidth
-            LineMax = Lsm5.DsRecordingActiveDocObject.Recording.RtRegionHeight
+            ColMax = RecordingDoc.Recording.RtRegionWidth
+            LineMax = RecordingDoc.Recording.RtRegionHeight
         ElseIf SystemName = "LSM" Then
-            ColMax = Lsm5.DsRecordingActiveDocObject.Recording.SamplesPerLine
-            LineMax = Lsm5.DsRecordingActiveDocObject.Recording.LinesPerFrame
+            ColMax = RecordingDoc.Recording.SamplesPerLine
+            LineMax = RecordingDoc.Recording.LinesPerFrame
         Else
             MsgBox "The System is not LIVE or LSM! SystemName: " + SystemName
             Exit Sub
         End If
     End If
     
-    If Lsm5.DsRecordingActiveDocObject.Recording.ScanMode = "ZScan" Or Lsm5.DsRecordingActiveDocObject.Recording.ScanMode = "Stack" Then
-        FrameNumber = Lsm5.DsRecordingActiveDocObject.Recording.FramesPerStack
+    If RecordingDoc.Recording.ScanMode = "ZScan" Or RecordingDoc.Recording.ScanMode = "Stack" Then
+        FrameNumber = RecordingDoc.Recording.FramesPerStack
     Else
         FrameNumber = 1
     End If
     'Gets the pixel size
-    PixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing * 1000000
+    PixelSize = RecordingDoc.Recording.SampleSpacing * 1000000
     'Gets the distance between frames in Z
-    FrameSpacing = Lsm5.DsRecordingActiveDocObject.Recording.FrameSpacing
+    FrameSpacing = RecordingDoc.Recording.FrameSpacing
     
     'Initiallize tables to store projected (integrated) pixels values in the 3 dimensions
     ReDim Intline(LineMax) As Long
@@ -1348,8 +1348,8 @@ Public Sub MassCenter(Context As String)
             name_channel = Match.Item(0).SubMatches.Item(0)
         End If
         
-        For channel = 0 To Lsm5.DsRecordingActiveDocObject.GetDimensionChannels - 1
-            If Lsm5.DsRecordingActiveDocObject.ChannelName(channel) = name_channel Then ' old Code: Left(TrackingChannel,4)
+        For channel = 0 To RecordingDoc.GetDimensionChannels - 1
+            If RecordingDoc.ChannelName(channel) = name_channel Then ' old Code: Left(TrackingChannel,4)
                 FoundChannel = True
                 Exit For
             End If
@@ -1367,7 +1367,7 @@ Public Sub MassCenter(Context As String)
         For Line = 1 To LineMax
             bpp = 0
             'channel = 0: This will allow to do the tracking on a different channel
-            scrline = Lsm5.DsRecordingActiveDocObject.ScanLine(channel, 0, frame - 1, Line - 1, spl, bpp) 'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
+            scrline = RecordingDoc.ScanLine(channel, 0, frame - 1, Line - 1, spl, bpp) 'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
             For Col = 2 To ColMax               'Now I'm scanning all the pixels in the line
                 Intline(Line - 1) = Intline(Line - 1) + scrline(Col - 1)
                 IntCol(Col - 1) = IntCol(Col - 1) + scrline(Col - 1)
@@ -1461,193 +1461,65 @@ Public Sub MassCenter(Context As String)
 End Sub
 
 ''''''
-'   MassCenterF(Context As String)
-'   TODO: Make a faster procedure here
-''''''
-Public Sub MassCenterF(Context As String)
-    Dim scrline As Variant
-    Dim spl As Long ' samples per line
-    Dim bpp As Long ' bytes per pixel
-    Dim ColMax As Long
-    Dim LineMax As Long
-    Dim FrameNumber As Integer
-    Dim PixelSize As Double
-    Dim FrameSpacing As Double
-    Dim Intline() As Long
-    Dim IntCol() As Long
-    Dim IntFrame() As Long
-    Dim channel As Integer
-    Dim frame As Long
-    Dim Line As Long
-    Dim Col As Long
-    Dim MinColValue As Single
-    Dim minLineValue As Single
-    Dim minFrameValue As Single
-    Dim MaxColValue As Single
-    Dim MaxLineValue As Single
-    Dim MaxframeValue As Single
-    Dim LineSum As Double
-    Dim LineWeight As Single
-    Dim MidLine As Single
-    Dim Threshold As Single
-    Dim LineValue As Single
-    Dim PosValue As Single
-    Dim ColSum As Single
-    Dim ColWeight As Single
-    Dim MidCol As Single
-    Dim ColValue As Single
-    Dim FrameSum As Single
-    Dim FrameWeight As Single
-    Dim MidFrame As Single
-    Dim FrameValue As Single
+' ComputeNewCoordinatesAfterAF(RecordingDoc As DsRecordingDoc, X As Double, Y As Double, Z As Double, DeltaZ As Double, Context As String) As Boolean
+'   Computes new coordinates X, Y, Z and DeltaZ given a recording and a method
+'   [RecordingDoc] In - A recording
+'   [X] In/Out - The old and new X coordinate (physical size)
+'   [Y] In/Out - The old and new Y coordinate (physical size)
+'   [Z] In/Out - The old and new Z coordinate (physical size)
+'   [DeltaZ] (In)/Out -  Default is < 0 => No changes in Thickness of imaging
+'   [Context] In - Either "Autofocus" or "Tracking"
+'   [method]  In - Either "internal" or "external", i.e. online image analysis
+'''''
+Public Function ComputeNewCoordinatesAfterAF(ByVal RecordingDoc As DsRecordingDoc, X As Double, Y As Double, Z As Double, _
+DeltaZ As Double, ByVal Context As String, Optional ByVal method As String = "internal") As Boolean
+    Dim XMass As Double
+    Dim YMass As Double
+    Dim ZMass As Double
+    Dim GridPos As GridPosType
+    Dim LogMsg As String
+    GridPos.Col = 1
+    GridPos.Row = 1
+    GridPos.ColSub = 1
+    GridPos.RowSub = 1
     
-   
-    'Lsm5Vba.Application.ThrowEvent eRootReuse, 0                   'Was there in the initial Zeiss macro, but it seems notnecessary
-    DoEvents
-    'Gets the dimensions of the image in X (Columns), Y (lines) and Z (Frames)
-    If AutofocusForm.ScanFrameToggle And SystemName = "LIVE" Then ' binning only with LIVE device
-        ColMax = Lsm5.DsRecordingActiveDocObject.Recording.RtRegionWidth '/ Lsm5.DsRecordingActiveDocObject.Recording.RtBinning
-        LineMax = Lsm5.DsRecordingActiveDocObject.Recording.RtRegionHeight
-    Else
-        If SystemName = "LIVE" Then
-            ColMax = Lsm5.DsRecordingActiveDocObject.Recording.RtRegionWidth
-            LineMax = Lsm5.DsRecordingActiveDocObject.Recording.RtRegionHeight
-        ElseIf SystemName = "LSM" Then
-            ColMax = Lsm5.DsRecordingActiveDocObject.Recording.SamplesPerLine
-            LineMax = Lsm5.DsRecordingActiveDocObject.Recording.LinesPerFrame
-        Else
-            MsgBox "The System is not LIVE or LSM! SystemName: " + SystemName
-            Exit Sub
-        End If
-    End If
-    If Lsm5.DsRecordingActiveDocObject.Recording.ScanMode = "ZScan" Or Lsm5.DsRecordingActiveDocObject.Recording.ScanMode = "Stack" Then
-        FrameNumber = Lsm5.DsRecordingActiveDocObject.Recording.FramesPerStack
-    Else
-        FrameNumber = 1
-    End If
-    'Gets the pixel size
-    PixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing * 1000000
-    'Gets the distance between frames in Z
-    FrameSpacing = Lsm5.DsRecordingActiveDocObject.Recording.FrameSpacing
+    Dim XArray() As Double
+    Dim YArray() As Double
+    Dim ZArray() As Double
+    Dim DeltaZArray() As Double
+    Dim Time As Double
     
-    'Initiallize tables to store projected (integrated) pixels values in the 3 dimensions
-    ReDim Intline(LineMax) As Long
-    ReDim IntCol(ColMax) As Long
-    ReDim IntFrame(FrameNumber) As Long
-
-    'Select the image channel on which to do the calculations
-    If Context = "Autofocus" Then       'Takes the first channel in the context of preacquisition focussing
-        channel = 0
-    ElseIf Context = "Tracking" Then    'Takes the channel selected in the pop-up menue when doing postacquisition tracking
-        For channel = 0 To Lsm5.DsRecordingActiveDocObject.GetDimensionChannels - 1
-            If Lsm5.DsRecordingActiveDocObject.ChannelName(channel) = Left(TrackingChannelString, 4) Then
-                Exit For
-            End If
-        Next channel
-    End If
-    
-    'Tracking is not the correct word. It just does center of mass on an additional channel
-
-    'Reads the pixel values and fills the tables with the projected (integrated) pixels values in the three directions
-    For frame = 1 To FrameNumber
-        For Line = 1 To LineMax
-            bpp = 0 ' bytesperpixel
-            'channel = 0: This will allow to do the tracking on a different channel
-            scrline = Lsm5.DsRecordingActiveDocObject.ScanLine(channel, 0, frame - 1, Line - 1, spl, bpp) 'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
-            For Col = 2 To ColMax               'Now I'm scanning all the pixels in the line
-                Intline(Line - 1) = Intline(Line - 1) + scrline(Col - 1)
-                IntCol(Col - 1) = IntCol(Col - 1) + scrline(Col - 1)
-                IntFrame(frame - 1) = IntFrame(frame - 1) + scrline(Col - 1)
-            Next Col
-        Next Line
-    Next frame
-    
-    'First it finds the minimum and maximum projected (integrated) pixel values in the 3 dimensions
-    MinColValue = 4095 * LineMax * FrameNumber          'The maximum values are initially set to the maximum possible value
-    minLineValue = 4095 * ColMax * FrameNumber
-    minFrameValue = 4095 * LineMax * ColMax
-    MaxColValue = 0                                     'The maximun values are initialliy set to 0
-    MaxLineValue = 0
-    MaxframeValue = 0
-    For Line = 1 To LineMax
-        If Intline(Line - 1) < minLineValue Then
-            minLineValue = Intline(Line - 1)
-        End If
-        If Intline(Line - 1) > MaxLineValue Then
-            MaxLineValue = Intline(Line - 1)
-        End If
-    Next Line
-    For Col = 1 To ColMax
-        If IntCol(Col - 1) < MinColValue Then
-            MinColValue = IntCol(Col - 1)
-        End If
-        If IntCol(Col - 1) > MaxColValue Then
-            MaxColValue = IntCol(Col - 1)
-        End If
-    Next Col
-    For frame = 1 To FrameNumber
-        If IntFrame(frame - 1) < minFrameValue Then
-            minFrameValue = IntFrame(frame - 1)
-        End If
-        If IntFrame(frame - 1) > MaxframeValue Then
-            MaxframeValue = IntFrame(frame - 1)
-        End If
-    Next frame
-    ' Why do you need to threshold the image? (this is probably to remove noise
-    'Calculates the threshold values. It is set to an arbitrary value of the minimum projected value plus 20% of the difference between the minimum and the maximum projected value.
-    'Then calculates the center of mass
-    LineSum = 0
-    LineWeight = 0
-    MidLine = (LineMax + 1) / 2
-    Threshold = minLineValue + (MaxLineValue - minLineValue) * 0.8         'Threshold calculation
-    For Line = 1 To LineMax
-        LineValue = Intline(Line - 1) - Threshold                           'Subtracs the threshold
-        PosValue = LineValue + Abs(LineValue)                               'Makes sure that the value is positive or zero. If LineValue is negative, the Posvalue = 0; if Line value is positive, then Posvalue = 2*LineValue
-        LineWeight = LineWeight + (PixelSize * (Line - MidLine)) * PosValue 'Calculates the weight of the Thresholded projected pixel values according to their position relative to the center of the image and sums them up
-        LineSum = LineSum + PosValue                                        'Calculates the sum of the thresholded pixel values
-    Next Line
-    If LineSum = 0 Then
-        YMass = 0
-    Else
-        YMass = LineWeight / LineSum                                       'Normalizes the weights to get the center of mass
-    End If
-
-    ColSum = 0
-    ColWeight = 0
-    MidCol = (ColMax + 1) / 2
-    Threshold = MinColValue + (MaxColValue - MinColValue) * 0.8
-    For Col = 1 To ColMax
-        ColValue = IntCol(Col - 1) - Threshold
-        PosValue = ColValue + Abs(ColValue)
-        ColWeight = ColWeight + (PixelSize * (Col - MidCol)) * PosValue
-        ColSum = ColSum + PosValue
-    Next Col
-    If ColSum = 0 Then
-        XMass = 0
-    Else
-        XMass = ColWeight / ColSum
-    End If
-
-    FrameSum = 0
-    FrameWeight = 0
-    MidFrame = (FrameNumber + 1) / 2
-    Threshold = minFrameValue + (MaxframeValue - minFrameValue) * 0.8
-    For frame = 1 To FrameNumber
-        FrameValue = IntFrame(frame - 1) - Threshold
-        PosValue = FrameValue + Abs(FrameValue)
-        FrameWeight = FrameWeight + (FrameSpacing * (frame - MidFrame)) * PosValue
-        FrameSum = FrameSum + PosValue
-    Next frame
-    
-    If FrameSum = 0 Then
-        ZMass = 0
-    Else
-        ZMass = FrameWeight / FrameSum
-    End If
+    Time = Timer
+    If method = "internal" Then
+        MassCenter RecordingDoc, XMass, YMass, ZMass, Context
+        ComputeShiftedCoordinates XMass, YMass, ZMass, X, Y, Z
+        DeltaZ = -1
         
-End Sub
+    ElseIf method = "external" Then
 
-
+        If Not MicroscopePilot(RecordingDoc, GridPos, X, Y, Z, "", XArray, YArray, ZArray, _
+            DeltaZArray) Then
+            MsgBox "Online Image analysis for Autofocus was not succesfull!  Exit Now!"
+            Exit Function
+        End If
+        
+        If isArrayEmpty(XArray) Or isArrayEmpty(YArray) Or isArrayEmpty(ZArray) Then
+            MsgBox "Online Image analysis for Autofocus gave back empty arrays  Exit Now!"
+            Exit Function
+        Else
+            X = XArray(1)
+            Y = YArray(1)
+            Z = ZArray(1)
+            DeltaZ = DeltaZArray(1)
+        End If
+    Else
+        MsgBox "No Method for analysis of Autofocus has been found! Exit Now!"
+        Exit Function
+    End If
+    LogMsg = "% compute Autofocus " & Round(Timer - Time, 2)
+    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+    ComputeNewCoordinatesAfterAF = True
+End Function
 
 ''''''
 ' SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As String) As Boolean
@@ -1768,36 +1640,43 @@ End Sub
 '   StorePositioninHighResArray(HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double, HighResCounter As Integer)
 '   TODO: Test stricter way of passing arguments
 ''''
-Public Function StorePositioninHighResArray(ByVal Xref As Double, ByVal Yref As Double, ByVal Zref As Double, HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double) As Boolean
+Public Function StorePositioninHighResArray(ByVal Xref As Double, ByVal Yref As Double, ByVal Zref As Double, HighResArrayX() As Double, HighResArrayY() As Double, _
+HighResArrayZ() As Double, HighResArrayDeltaZ() As Double) As Boolean
     ' store postion from windows registry in array
     Dim Xoffset()  As String 'the string containinig the X-positions
     Dim Yoffset()  As String 'the string containinig the Y-positions
     Dim ZOffset() As String  'the string containinig the Z-positions
+    Dim DeltaZ() As String
+    Dim defaultDeltaZ As Double
     Dim Xnew As Double
     Dim Ynew As Double
     Dim Znew As Double
-    Dim PixelSize As Double
+    Dim PixelSizeXY As Double
+    Dim PixelSizeZ As Double
     Dim unit As String
     Dim LowBound As Integer
     Dim i As Integer
     unit = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="unit")
-
     If unit = "um" Or unit = Chr(181) & "m" Then   'has correct pixelSize of um
-        PixelSize = 1
+        PixelSizeXY = 1
+        PixelSizeZ = 1
     Else                                    'Default is pixel even when Key does not exist
-        PixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing * 1000000
+        PixelSizeXY = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing * 1000000
+        PixelSizeZ = Lsm5.DsRecordingActiveDocObject.Recording.FrameSpacing
     End If
-    
+     
     Xoffset() = Split(GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="offsetx"), ",")
     If isArrayEmpty(Xoffset) Then
         ReDim Xoffset(0)
         Xoffset(0) = 0
     End If
+    
     Yoffset() = Split(GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="offsety"), ",")
     If isArrayEmpty(Yoffset) Then
         ReDim Yoffset(0)
         Yoffset(0) = 0
     End If
+    
     ZOffset() = Split(GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="offsetz"), ",")
     If isArrayEmpty(ZOffset) Then
         ReDim ZOffset(UBound(Xoffset))
@@ -1807,12 +1686,28 @@ Public Function StorePositioninHighResArray(ByVal Xref As Double, ByVal Yref As 
     End If
         
     If UBound(ZOffset) <> UBound(Xoffset) Then 'Z position as not been set
-        
         ReDim Preserve ZOffset(UBound(Xoffset))
         For i = 0 To UBound(Xoffset)
             ZOffset(i) = ZOffset(0)
         Next i
     End If
+    
+    DeltaZ() = Split(GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="deltaZ"), ",")
+    If isArrayEmpty(DeltaZ) Then
+        ReDim DeltaZ(UBound(Xoffset)) ' this means it is not used
+        For i = 0 To UBound(DeltaZ)
+            DeltaZ(i) = -1
+        Next i
+    End If
+    
+    If UBound(DeltaZ) <> UBound(Xoffset) Then 'Z position as not been set
+        ReDim Preserve DeltaZ(UBound(Xoffset))
+        For i = 0 To UBound(DeltaZ)
+            DeltaZ(i) = DeltaZ(0)
+        Next i
+    End If
+
+
     
     If UBound(Xoffset) <> UBound(Yoffset) Then
         MsgBox ("StorePositioninHighResArray: nr of values in registry offsetx and offsety is not the same!")
@@ -1824,24 +1719,26 @@ Public Function StorePositioninHighResArray(ByVal Xref As Double, ByVal Yref As 
         ReDim HighResArrayX(1 To UBound(Xoffset) + 1)
         ReDim HighResArrayY(1 To UBound(Xoffset) + 1)
         ReDim HighResArrayZ(1 To UBound(Xoffset) + 1)
+        ReDim HighResArrayDeltaZ(1 To UBound(Xoffset) + 1)
+        
     Else
         LowBound = UBound(HighResArrayX) + 1
         ReDim Preserve HighResArrayX(1 To UBound(HighResArrayX) + UBound(Xoffset) + 1)
         ReDim Preserve HighResArrayY(1 To UBound(HighResArrayY) + UBound(Yoffset) + 1)
         ReDim Preserve HighResArrayZ(1 To UBound(HighResArrayZ) + UBound(ZOffset) + 1)
+        ReDim Preserve HighResArrayDeltaZ(1 To UBound(HighResArrayDeltaZ) + UBound(DeltaZ) + 1)
     End If
     
     For i = 0 To UBound(Xoffset)
         Xnew = Xref
         Ynew = Yref
         Znew = Zref
-        ComputeShiftedCoordinates CDbl(Xoffset(i)) * PixelSize, CDbl(Yoffset(i)) * PixelSize, CDbl(ZOffset(i)), Xnew, Ynew, Znew
+        ComputeShiftedCoordinates CDbl(Xoffset(i)) * PixelSizeXY, CDbl(Yoffset(i)) * PixelSizeXY, CDbl(ZOffset(i)) * PixelSizeZ, Xnew, Ynew, Znew
         HighResArrayX(LowBound + i) = Xnew  ' this needs to be unified with computing internal AF
         HighResArrayY(LowBound + i) = Ynew ' needs to be unified with computing internal AF
         HighResArrayZ(LowBound + i) = Znew
+        HighResArrayDeltaZ(LowBound + i) = CDbl(DeltaZ(i)) * PixelSizeZ
     Next i
-    Dim Xoff As Double
-    Xoff = Xref - CDbl(Xoffset(0)) * PixelSize
     DisplayProgress "StorePositioninHighResArray - Position stored", RGB(0, &HC0, 0)
 End Function
 
@@ -1856,87 +1753,95 @@ End Function
 '       2, "nothing", "Nothing", "DoNothing", "doNothing", "donothing": Do nothing
 '       4, "storePosition", "StorePosition", "storePosition", "StorePosition", "store", "Store": Store positions and exit function
 '       5, "imagePositions", "ImagePositions", "imagePosition", "ImagePosition", "imageposition", "image", "Image": Image all stored positions
+'       6, "setFocus": store just one position for the focus
 ''''''
-Public Function MicroscopePilot(RecordingDoc As DsRecordingDoc, GridPos As GridPosType, Xref As Double, Yref As Double, Zref As Double, FileNameID As String, HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double) As Boolean
+Public Function MicroscopePilot(RecordingDoc As DsRecordingDoc, GridPos As GridPosType, Xref As Double, Yref As Double, Zref As Double, _
+FileNameID As String, HighResArrayX() As Double, HighResArrayY() As Double, HighResArrayZ() As Double, HighResArrayDeltaZ() As Double) As Boolean
     Dim code As String
     Dim Repetitions As RepetitionType
-    If Not LegacyCode Then
-        code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="code")
-        Select Case code
-            Case "1", "newImage", "0", "wait", "Wait":
-                'Wait for image analysis to finish
-                DisplayProgress "Waiting for image analysis...", RGB(0, &HC0, 0)
-                Do While (code = "1" Or code = "wait" Or code = "Wait" Or code = "0")
-                    Sleep (50)
-                    code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", _
-                              Key:="Code")
-                    DoEvents
-                    If ScanStop Then
-                        Exit Function
-                    End If
+    code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="code")
+    Select Case code
+        Case "1", "newImage", "0", "wait", "Wait":
+            'Wait for image analysis to finish
+            DisplayProgress "Waiting for image analysis...", RGB(0, &HC0, 0)
+            Do While (code = "1" Or code = "wait" Or code = "Wait" Or code = "0")
+                Sleep (50)
+                code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", _
+                          Key:="Code")
+                DoEvents
+                If ScanStop Then
+                    Exit Function
+                End If
 '                    If GetInputState() <> 0 Then
 '                        DoEvents
 '                        If ScanStop Then
 '                            Exit Function
 '                        End If
 '                    End If
-                Loop
-        End Select
-        
-        Select Case code
-            Case "2", "nothing", "Nothing", "DoNothing", "doNothing", "donothing":  'Nothing to do
-            Case "4", "storePosition", "StorePosition", "storePosition", "StorePosition", "store", "Store": 'store positions for later processing
-                DisplayProgress "Registry Code 4 (storePosition): store positions and do nothings ...", RGB(0, &HC0, 0)
-                StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ
-                If AutofocusForm.MicropilotMaxPositions.Value <> "" Then
-                    If UBound(HighResArrayX) = CInt(AutofocusForm.MicropilotMaxPositions.Value) Then
-                        Repetitions.Number = CInt(AutofocusForm.MicropilotRepetitions.Value)
-                        Repetitions.Time = CDbl(AutofocusForm.MicropilotRepetitionTime.Value)
-                        Repetitions.Interval = True
-                        SubImagingWorkFlow RecordingDoc, GlobalMicropilotRecording, "Micropilot", AutofocusForm.MicropilotAutofocus, AutofocusForm.MicropilotZOffset, Repetitions, _
-                        HighResArrayX, HighResArrayY, HighResArrayZ, GridPos, FileNameID
-                        Erase HighResArrayX
-                        Erase HighResArrayY
-                        Erase HighResArrayZ
-                    End If
+            Loop
+    End Select
+    
+    Select Case code
+        Case "2", "nothing", "Nothing", "DoNothing", "doNothing", "donothing":  'Nothing to do
+        Case "4", "storePosition", "StorePosition", "storePosition", "StorePosition", "store", "Store": 'store positions for later processing
+            DisplayProgress "Registry Code 4 (storePosition): store positions and do nothings ...", RGB(0, &HC0, 0)
+            StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ, HighResArrayDeltaZ
+            If AutofocusForm.MicropilotMaxPositions.Value <> "" Then
+                If UBound(HighResArrayX) = CInt(AutofocusForm.MicropilotMaxPositions.Value) Then
+                    Repetitions.Number = CInt(AutofocusForm.MicropilotRepetitions.Value)
+                    Repetitions.Time = CDbl(AutofocusForm.MicropilotRepetitionTime.Value)
+                    Repetitions.Interval = True
+                    SubImagingWorkFlow RecordingDoc, GlobalMicropilotRecording, "Micropilot", AutofocusForm.MicropilotAutofocus, AutofocusForm.MicropilotZOffset, Repetitions, _
+                    HighResArrayX, HighResArrayY, HighResArrayZ, HighResArrayDeltaZ, GridPos, FileNameID
+                    Erase HighResArrayX
+                    Erase HighResArrayY
+                    Erase HighResArrayZ
+                    Erase HighResArrayDeltaZ
                 End If
-            Case "5", "imagePositions", "ImagePositions", "imagePosition", "ImagePosition", "imageposition", "image", "Image":
-                DisplayProgress "Registry Code 5 (imagePositions): store positions and do imaging ...", RGB(0, &HC0, 0)
-                StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ
-                ' BatchHighresImagingRoutine
-                ' HERE THE IMAGES ARE ACQUIRED
-                Repetitions.Number = CInt(AutofocusForm.MicropilotRepetitions.Value)
-                Repetitions.Time = CDbl(AutofocusForm.MicropilotRepetitionTime.Value)
-                Repetitions.Interval = True
-                SubImagingWorkFlow RecordingDoc, GlobalMicropilotRecording, "Micropilot", AutofocusForm.MicropilotAutofocus, AutofocusForm.MicropilotZOffset, Repetitions, _
-                HighResArrayX, HighResArrayY, HighResArrayZ, GridPos, FileNameID
-                Erase HighResArrayX
-                Erase HighResArrayY
-                Erase HighResArrayZ
-            Case Else
-                MsgBox ("Invalid OnlineImageAnalysis Code = " & code)
-                Exit Function
-        End Select
-        MicroscopePilot = True
-    End If
+            End If
+        
+        Case "5", "imagePositions", "ImagePositions", "imagePosition", "ImagePosition", "imageposition", "image", "Image":
+            DisplayProgress "Registry Code 5 (imagePositions): store positions and do imaging ...", RGB(0, &HC0, 0)
+            StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ, HighResArrayDeltaZ
+            ' BatchHighresImagingRoutine
+            ' HERE THE IMAGES ARE ACQUIRED
+            Repetitions.Number = CInt(AutofocusForm.MicropilotRepetitions.Value)
+            Repetitions.Time = CDbl(AutofocusForm.MicropilotRepetitionTime.Value)
+            Repetitions.Interval = True
+            SubImagingWorkFlow RecordingDoc, GlobalMicropilotRecording, "Micropilot", AutofocusForm.MicropilotAutofocus, AutofocusForm.MicropilotZOffset, Repetitions, _
+            HighResArrayX, HighResArrayY, HighResArrayZ, HighResArrayDeltaZ, GridPos, FileNameID
+            Erase HighResArrayX
+            Erase HighResArrayY
+            Erase HighResArrayZ
+            Erase HighResArrayDeltaZ
+            
+        Case "6", "setFocus":
+            Erase HighResArrayX
+            Erase HighResArrayY
+            Erase HighResArrayZ
+            Erase HighResArrayDeltaZ
+            DisplayProgress "Registry Code 6 (setFocus): setFocus and number of DeltaZ ...", RGB(0, &HC0, 0)
+            StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ, HighResArrayDeltaZ
+        Case Else
+            MsgBox ("Invalid OnlineImageAnalysis Code = " & code)
+            Exit Function
+    End Select
+    MicroscopePilot = True
     'Reset Code to 0 in Windows Registry
     'SaveSetting "OnlineImageAnalysis", "Cinput", "Code", 0 ' this should be done by the image analysis software
-      
-
-     'TODO: create a better procedure to check for cells
-
-'    If (CheckBoxGridScan_FindGoodPositions) Then
-'
-'        codeArray = Split(code, "_")
-'
-'        nGoodCells = CInt(codeArray(1))
-'        minGoodCellsPerImage = CInt(codeArray(2))
-'        minGoodCellsPerWell = CInt(codeArray(3))
-'
-'        GoTo Mark
-'
-'    End If
-'
+    'TODO: create a better procedure to check for cells
+    '    If (CheckBoxGridScan_FindGoodPositions) Then
+    '
+    '        codeArray = Split(code, "_")
+    '
+    '        nGoodCells = CInt(codeArray(1))
+    '        minGoodCellsPerImage = CInt(codeArray(2))
+    '        minGoodCellsPerWell = CInt(codeArray(3))
+    '
+    '        GoTo Mark
+    '
+    '    End If
+    '
     'Reset Code to 0 in Windows Registry
     'SaveSetting "OnlineImageAnalysis", "Cinput", "Code",
             
@@ -1948,7 +1853,7 @@ End Function
 '   TODO: Test stricter way of passing arguments
 '''''
 Public Function SubImagingWorkFlow(RecordingDoc As DsRecordingDoc, Recording As DsRecording, RecordingName As String, Autofocus As Boolean, ByVal ZOffset As Double, Repetitions As RepetitionType, HighResArrayX() As Double, _
- HighResArrayY() As Double, HighResArrayZ() As Double, GridPos As GridPosType, inFileNameID As String) As Boolean
+ HighResArrayY() As Double, HighResArrayZ() As Double, HighResArrayDeltaZ() As Double, GridPos As GridPosType, inFileNameID As String) As Boolean
     
 
     Dim Succes As Integer
@@ -1972,6 +1877,8 @@ Public Function SubImagingWorkFlow(RecordingDoc As DsRecordingDoc, Recording As 
     Dim X As Double
     Dim Y As Double
     Dim Z As Double
+    Dim DeltaZ As Double
+    DeltaZ = -1  ' default no changes in Stackheight
     Dim posZ As Double 'actual position Z
 
     ' set up the imaging
@@ -2017,8 +1924,12 @@ Public Function SubImagingWorkFlow(RecordingDoc As DsRecordingDoc, Recording As 
                 "; X = " & X & ", Y = " & Y & ", Z = " & Z & vbCrLf & _
                 "Repetition :" & iRep & "/" & Repetitions.Number
                 DoEvents
+                
                 'Autofocus. This does an extra Autofocus also for the HighresImaging with the same parameters as Autofocus
                 If Autofocus Then
+                    If AutofocusAlgorithm.Value = "external" Then
+                        SaveSetting "OnlineImageAnalysis", "macro", "code", "wait"     'this causes to do anything as defaults
+                    End If
                     DisplayProgress RecordingName & " - Autofocus activate track and recenter...", RGB(0, &HC0, 0)
                     If Not AutofocusForm.ActivateTrack(GlobalAutoFocusRecording, "Autofocus") Then
                         MsgBox "No track selected for Autofocus! Cannot Autofocus!"
@@ -2039,14 +1950,20 @@ Public Function SubImagingWorkFlow(RecordingDoc As DsRecordingDoc, Recording As 
                        Exit Function
                     End If
                     
+                    DisplayProgress " Autofocus compute ...", RGB(0, &HC0, 0)
+                    'Delta Z is not used for the moment but could be used later
+                    If Not ComputeNewCoordinatesAfterAF(RecordingDoc, X, Y, Z, DeltaZ, "Autofocus") Then
+                        Exit Function
+                    End If
                     'wait for recentering
                     DisplayProgress RecordingName & " - Wait for recentering after acquisition AF...", RGB(0, &HC0, 0)
                     TimeLog = Timer
                     If Not Recenter_post(Z, SuccessRecenter, ZEN) Then
                         Exit Function
                     End If
-                    
+                
                     LogMsg = "% " & RecordingName & ": recenter Z (post AFImg) " & Z
+                    
                     posZ = Round(Lsm5.Hardware.CpFocus.Position, PrecZ)
                     If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or AutofocusForm.AutofocusHRZ Then
                         LogMsg = LogMsg & ", Obtained Z " & posZ & "; actual position " & posZ & ", Time required " & Round(Timer - TimeLog) & ", success within rep. " & SuccessRecenter
@@ -2054,26 +1971,27 @@ Public Function SubImagingWorkFlow(RecordingDoc As DsRecordingDoc, Recording As 
                         LogMsg = LogMsg & ", Obtained Z " & Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + posZ _
                         & "; actual position " & posZ & ", Time required " & Round(Timer - TimeLog) & ", success within rep. " & SuccessRecenter
                     End If
+                    LogMsg = LogMsg & vbCrLf & "% " & RecordingName & ":  center of mass  " & X - HighResArrayX(iPos) & ", " & Y - HighResArrayY(iPos) & ", " & Z - HighResArrayZ(iPos) & ", computed position " & X & ", " & Y & ", " & Z
                     LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
                         
-                        
-                    ' move the xyz to the right position
-                    ComputeShiftedCoordinates XMass, YMass, ZMass, X, Y, Z
                     If AutofocusForm.AutofocusTrackXY.Value And AutofocusForm.ScanFrameToggle.Value Then
                         DisplayProgress RecordingName & " - Autofocus move XY stage", RGB(0, &HC0, 0)
                         If Not FailSafeMoveStageXY(X, Y) Then
                             Exit Function
                         End If
+                        HighResArrayX(iPos) = X
+                        HighResArrayY(iPos) = Y
                     End If
-                    LogMsg = "% " & RecordingName & ":  center of mass  " & XMass & ", " & YMass & ", " & ZMass & ", computed position " & X & ", " & Y & ", " & Z
-                    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
-                    HighResArrayX(iPos) = X
-                    HighResArrayY(iPos) = Y
+                    If DeltaZ > 0 Then
+                        HighResArrayDeltaZ(iPos) = DeltaZ
+                    End If
+     
                     HighResArrayZ(iPos) = Z
                 End If
                 
                 DisplayProgress RecordingName & " - activate micropilot acquisition track and recenter ...", RGB(0, &HC0, 0)
-                If Not AutofocusForm.ActivateTrack(Recording, RecordingName) Then
+                
+                If Not AutofocusForm.ActivateTrack(Recording, RecordingName, HighResArrayDeltaZ(iPos)) Then
                     MsgBox " No Track selected for  " & RecordingName & "! Macro stops here"
                     Exit Function
                 End If
@@ -2094,6 +2012,7 @@ Public Function SubImagingWorkFlow(RecordingDoc As DsRecordingDoc, Recording As 
                 If Not CheckDir(fullpathname) Then
                     Exit Function
                 End If
+                
                 FileNameID = FileName(GridPos.Row, GridPos.Col, GridPos.RowSub, GridPos.ColSub, iRep)
                 fullpathname = fullpathname & AutofocusForm.TextBoxFileName.Value & UnderScore & "HRPos" & ZeroString(3 - Len(CStr(iPos))) & iPos & _
                  "_" & FileNameID & ".lsm"
@@ -2124,58 +2043,6 @@ Public Function SubImagingWorkFlow(RecordingDoc As DsRecordingDoc, Recording As 
             DisplayProgress "Waiting " & CStr(CInt(Repetitions.Time - DiffTime)) + " s before scanning repetition  " & (iRep + 1), RGB(&HC0, &HC0, 0)
         Wend
     Next iRep  ' End of time repetition loop
-    
-'                If BleachingActivated Then
-'
-'                    DisplayProgress "Bleaching...", &HFF00FF
-'
-'                    Set Track = Lsm5.DsRecording.TrackObjectBleach(Success)
-'                    If Success Then ' This Needs to be checked again
-'                        'move stage
-'                        If Not FailSafeMoveStageZ(Z + MicropilotZOffset.Value) Then
-'                            Exit Function
-'                        End If
-'                        Track.Acquire = True
-'                        Lsm5.DsRecording.TimeSeries = True
-'                        Lsm5.DsRecording.StacksPerRecord = MicropilotRepetitions.Value
-'                        Lsm5.DsRecording.FramesPerStack = 1
-'                        Track.TimeBetweenStacks = MicropilotRepetionTime.Value
-'                        If Not WaitForRecentering(Z + MicropilotZOffset.Value, SuccessRecenter, ZEN) Then
-'                            Exit Function
-'                        End If
-'
-'                        DoEvents
-'                        Track.UseBleachParameters = True            'Bleach parameters are lasers lines, bleach iterations... stored in the bleach control window
-'                        'BleachStartTable(RepetitionNumber) = GetTickCount      'Get the time right before bleach to store this in the image metadata
-'                        Set RecordingDoc = Lsm5.StartScan
-'                        'TODO Check
-'                        Do While RecordingDoc.IsBusy
-'                            Sleep (100)
-'                            If GetInputState() <> 0 Then
-'                                DoEvents
-'                                If ScanStop Then
-'                                    Exit Function
-'                                End If
-'                            End If
-'                        Loop
-'
-'                        Track.UseBleachParameters = False  'switch off the bleaching
-'                        Lsm5.DsRecording.TimeSeries = False
-'                    Else
-'                        MsgBox ("Could not set bleach track. Did not bleach.")
-'                    End If
-'
-'
-'                    'Save Image
-'                    FileNameID = FileName(Row, Col, RowSub, ColSub, -1)
-'                    ' e.g. name_Bleach_HRExp001_HRPos001_W001_P001.lsm
-'                    fullpathname = DatabaseTextbox.Value & BackSlash & TextBoxFileName.Value & "_Bleach" & "_HRExp" & ZeroString(3 - Len(CStr(HighResExperimentCounter))) & _
-'                    HighResExperimentCounter & "_HRPos" & ZeroString(3 - Len(CStr(highrespos))) _
-'                    & highrespos & "_" & FileNameID & ".lsm"
-'                    SaveDsRecordingDoc RecordingDoc, fullpathname
-'                    DisplayProgress "Micropilot Code Bleach - SaveImage", RGB(0, &HC0, 0)
-'
-
     
     SubImagingWorkFlow = True
 End Function
