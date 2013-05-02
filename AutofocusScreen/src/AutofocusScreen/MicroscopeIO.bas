@@ -439,10 +439,7 @@ End Sub
 
 '''''''
 ' Autofocus_StackShift ( NewPicture As DsRecordingDoc )
-' Performs image scan as in GlobalAutofocusRecording, calculation of signal centroid (mass)
-' global variables [ZMass] and [XMass], [YMasss] (FrameScan).
-'                  GlobalAutofocusRecording is set in function
-' This function does not change the focus just computes it
+' Performs image scan as in GlobalAutofocusRecording
 '       [NewPicture] In/Out - Contains the image
 '''''''
 Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
@@ -512,15 +509,6 @@ Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
     
     LogMsg = "% Autofocus_stackshift: acquire time " & Round(Timer - Time, 2)
     LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
-    'perform the computation outside
-'    Time = Timer
-'    DisplayProgress "Autofocus compute", RGB(0, &HC0, 0)
-'
-'    ' Computes XMass, YMass and ZMass
-'    MassCenter ("Autofocus")
-'
-'    LogMsg = "% Autofocus_stackshift: compute time " & Round(Timer - Time, 2)
-'    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
 
     If Not ScanStop Then
         Autofocus_StackShift = True
@@ -1494,7 +1482,6 @@ DeltaZ As Double, ByVal Context As String, Optional ByVal method As String = "in
         MassCenter RecordingDoc, XMass, YMass, ZMass, Context
         ComputeShiftedCoordinates XMass, YMass, ZMass, X, Y, Z
         DeltaZ = -1
-        
     ElseIf method = "external" Then
 
         If Not MicroscopePilot(RecordingDoc, GridPos, X, Y, Z, "", XArray, YArray, ZArray, _
@@ -1502,9 +1489,11 @@ DeltaZ As Double, ByVal Context As String, Optional ByVal method As String = "in
             MsgBox "Online Image analysis for Autofocus was not succesfull!  Exit Now!"
             Exit Function
         End If
-        
+        If GetSetting("OnlineImageAnalysis", "macro", "code") = "nothing" Then
+            GoTo NoResponse
+        End If
         If isArrayEmpty(XArray) Or isArrayEmpty(YArray) Or isArrayEmpty(ZArray) Then
-            MsgBox "Online Image analysis for Autofocus gave back empty arrays  Exit Now!"
+            MsgBox "Online Image analysis for Autofocus gave back empty arrays!  Exit Now!"
             Exit Function
         Else
             X = XArray(1)
@@ -1512,12 +1501,20 @@ DeltaZ As Double, ByVal Context As String, Optional ByVal method As String = "in
             Z = ZArray(1)
             DeltaZ = DeltaZArray(1)
         End If
+        LogMsg = "% compute Autofocus (external) " & Round(Timer - Time, 2)
+        LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
     Else
         MsgBox "No Method for analysis of Autofocus has been found! Exit Now!"
         Exit Function
     End If
-    LogMsg = "% compute Autofocus " & Round(Timer - Time, 2)
+
+    ComputeNewCoordinatesAfterAF = True
+    Exit Function
+NoResponse:
+    LogMsg = "% compute Autofocus (external) did not respond after " & Round(Timer - Time, 2)
     LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+    DisplayProgress "Autofocus: Compute Autofocus external failed...", RGB(&HC0, 0, 0)
+    Sleep (1000)
     ComputeNewCoordinatesAfterAF = True
 End Function
 
@@ -1760,25 +1757,27 @@ FileNameID As String, HighResArrayX() As Double, HighResArrayY() As Double, High
     Dim code As String
     Dim Repetitions As RepetitionType
     code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="code")
+    Dim TimeWait, TimeStart, MaxTimeWait As Double
+    MaxTimeWait = 20
     Select Case code
         Case "1", "newImage", "0", "wait", "Wait":
             'Wait for image analysis to finish
             DisplayProgress "Waiting for image analysis...", RGB(0, &HC0, 0)
-            Do While (code = "1" Or code = "wait" Or code = "Wait" Or code = "0")
+            TimeStart = CDbl(GetTickCount) * 0.001
+            Do While ((TimeWait < MaxTimeWait) And (code = "1" Or code = "wait" Or code = "Wait" Or code = "0"))
                 Sleep (50)
+                TimeWait = CDbl(GetTickCount) * 0.001 - TimeStart
                 code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", _
                           Key:="Code")
                 DoEvents
                 If ScanStop Then
                     Exit Function
                 End If
-'                    If GetInputState() <> 0 Then
-'                        DoEvents
-'                        If ScanStop Then
-'                            Exit Function
-'                        End If
-'                    End If
             Loop
+            If TimeWait > MaxTimeWait Then
+                code = "nothing"
+                SaveSetting "OnlineImageAnalysis", "macro", "code", code
+            End If
     End Select
     
     Select Case code
@@ -1815,12 +1814,12 @@ FileNameID As String, HighResArrayX() As Double, HighResArrayY() As Double, High
             Erase HighResArrayZ
             Erase HighResArrayDeltaZ
             
-        Case "6", "setFocus":
+        Case "6", "focus":
             Erase HighResArrayX
             Erase HighResArrayY
             Erase HighResArrayZ
             Erase HighResArrayDeltaZ
-            DisplayProgress "Registry Code 6 (setFocus): setFocus and number of DeltaZ ...", RGB(0, &HC0, 0)
+            DisplayProgress "Registry Code 6 (focus): focus and number of DeltaZ ...", RGB(0, &HC0, 0)
             StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ, HighResArrayDeltaZ
         Case Else
             MsgBox ("Invalid OnlineImageAnalysis Code = " & code)
@@ -1927,9 +1926,15 @@ Public Function SubImagingWorkFlow(RecordingDoc As DsRecordingDoc, Recording As 
                 
                 'Autofocus. This does an extra Autofocus also for the HighresImaging with the same parameters as Autofocus
                 If Autofocus Then
-                    If AutofocusAlgorithm.Value = "external" Then
-                        SaveSetting "OnlineImageAnalysis", "macro", "code", "wait"     'this causes to do anything as defaults
+                
+                    If AutofocusForm.AutofocusAlgorithm.Value = "external" Then
+                        SaveSetting "OnlineImageAnalysis", "macro", "code", "wait"     'wait for imageAnalysis
+                        If Not AutofocusForm.SaveAFImage Then
+                            MsgBox "Tick Save AFImage for external image analysis of focus!"
+                            Exit Function
+                        End If
                     End If
+                    
                     DisplayProgress RecordingName & " - Autofocus activate track and recenter...", RGB(0, &HC0, 0)
                     If Not AutofocusForm.ActivateTrack(GlobalAutoFocusRecording, "Autofocus") Then
                         MsgBox "No track selected for Autofocus! Cannot Autofocus!"

@@ -14,7 +14,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Option Explicit 'force to declare all variables
+'Option Explicit 'force to declare all variables
 
 Private shlShell As Shell32.Shell
 Private shlFolder As Shell32.Folder
@@ -23,10 +23,10 @@ Private Const BIF_RETURNONLYFSDIRS = &H1
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''Version Description''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '
-' AutofocusScreen_ZEN_v2.1.3.5
+' AutofocusScreen_ZEN_v2.1.3.8
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Const Version = " v2.1.3.7"
+Private Const Version = " v2.1.3.8"
 Public posTempZ  As Double                  'This is position at start after pushing AutofocusButton
 Private Const DebugCode = False             'sets key to run tests visible or not
 Private Const ReleaseName = True            'this adds the ZEN version
@@ -34,6 +34,12 @@ Private Const LogCode = True                'sets key to run tests visible or no
 
 Private AlterImageInitialize As Boolean ' first time aternative image is activated values from acquisition are loaded. Then variable is ste to false
 Private ZoomImageInitialize As Boolean  ' first time ZoomImage/Micropilot is activated values from acquisition are loaded
+
+Private Sub AutofocusAlgorithm_Change()
+    If AutofocusAlgorithm.Value = "external" Then
+        SaveAFImage.Value = True
+    End If
+End Sub
 
 ''''''
 ' UserForm_Initialize()
@@ -266,13 +272,14 @@ Private Sub SaveSettings(FileName As String)
     iFileNum = FreeFile()
     Open FileName For Output As iFileNum
     
+    Print #iFileNum, "% Settings for AutofocusMacro for ZEN " & ZEN & "  " & Version
+
     'Single MultipelocationToggle
     Print #iFileNum, "% Single Multiple "
     Print #iFileNum, "MultipleLocationToggle " & MultipleLocationToggle.Value
     Print #iFileNum, "SingleLocationToggle " & SingleLocationToggle.Value
     
     'Autofocus
-    Print #iFileNum, "% Settings for AutofocusMacro for ZEN " & ZEN & "  " & Version
     Print #iFileNum, "% Autofocus "
     Print #iFileNum, "ActiveAutofocus " & ActiveAutofocus.Value
     Print #iFileNum, "AutofocusTrack1 " & AutofocusTrack1.Value
@@ -391,21 +398,24 @@ Private Sub LoadSettings(FileName As String)
     iFileNum = FreeFile()
     Open FileName For Input As iFileNum
     Do While Not EOF(iFileNum)
-        Line Input #iFileNum, Fields
-        While Left(Fields, 1) = "%"
+  
             Line Input #iFileNum, Fields
-        Wend
-        FieldEntries = Split(Fields, " ", 2)
-        If FieldEntries(0) = "LoopingTimerUnit" Then
-            LoopingTimerUnit = CDbl(FieldEntries(1))
-            If LoopingTimerUnit = 60 Then
-                CommandTimeMin_Click
+            While Left(Fields, 1) = "%"
+                Line Input #iFileNum, Fields
+            Wend
+            FieldEntries = Split(Fields, " ", 2)
+            If FieldEntries(0) = "LoopingTimerUnit" Then
+                LoopingTimerUnit = CDbl(FieldEntries(1))
+                If LoopingTimerUnit = 60 Then
+                    CommandTimeMin_Click
+                Else
+                    CommandTimeSec_Click
+                End If
             Else
-                CommandTimeSec_Click
+                On Error GoTo nextLine
+                Me.Controls(FieldEntries(0)).Value = FieldEntries(1)
+nextLine:
             End If
-        Else
-            Me.Controls(FieldEntries(0)).Value = FieldEntries(1)
-        End If
     Loop
     Close #iFileNum
     Exit Sub
@@ -1492,7 +1502,7 @@ Public Sub AutofocusButton_Click()
     For i = 0 To Lsm5.DsRecording.TrackCount - 1
        GlobalBackupActiveTracks(i) = Lsm5.DsRecording.TrackObjectByMultiplexOrder(i, 1).Acquire
     Next i
-    AutofocusButtonRun RecordingDoc
+    AutofocusButtonRun RecordingDoc, GlobalDataBaseName
     StopAcquisition
 End Sub
 
@@ -1533,9 +1543,19 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
 
     'recenter only after activation of new track
     If ActiveAutofocus Then
+    
         If AutofocusAlgorithm.Value = "external" Then
-            SaveSetting "OnlineImageAnalysis", "macro", "code", "wait"     'this causes to do anything as defaults
+            SaveSetting "OnlineImageAnalysis", "macro", "code", "wait"     'this causes to wait as defaults
+            If FilePath = "" Then
+                MsgBox "Define an Outputfolder to save AF image for external image analysis!"
+                Exit Function
+            End If
+            If Not SaveAFImage Then
+                MsgBox "Tick Save AFImage to use external image analysis for focus!"
+                Exit Function
+            End If
         End If
+        
         If AutofocusHRZ Then
             Lsm5.Hardware.CpHrz.Leveling
         End If
@@ -1575,14 +1595,20 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         '''''''acquire
         DisplayProgress "Autofocus: Acquire AFimg.... ", RGB(0, &HC0, 0)
         Time = Timer
-        'Use internal agorithm to compute Xmass etc.
+        'Just acquire image and save
         If Not MicroscopeIO.Autofocus_StackShift(AutofocusDoc) Then
             Exit Function
         End If
         
         DisplayProgress "Autofocus compute", RGB(0, &HC0, 0)
         
-        If Not ComputeNewCoordinatesAfterAF(AutofocusDoc, X, Y, Z, DeltaZ, "AutoFocus") Then
+        If SaveAFImage Then
+            If Not SaveDsRecordingDoc(AutofocusDoc, FilePath & "\" & "AFImg.lsm") Then
+                Exit Function
+            End If
+        End If
+        
+        If Not ComputeNewCoordinatesAfterAF(AutofocusDoc, X, Y, Z, DeltaZ, "AutoFocus", AutofocusAlgorithm.Value) Then
             Exit Function
         End If
         LogMsg = "% AutofocusButton: computed position XYZ " & X & " " & Y & " " & Z
@@ -1605,12 +1631,6 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
             & "; actual position " & pos & ", Time required " & Time & ", success within rep. " & SuccessRecenter
         End If
         LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
-            
-        '''''''' save AFImg in case of logging
-        If Log And FilePath <> "" Then
-            SaveDsRecordingDoc AutofocusDoc, FilePath
-        End If
-        
         
         'move X and Y if tracking is on
         If ScanFrameToggle And AutofocusTrackXY Then
@@ -2392,6 +2412,10 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
     If ActiveAutofocus And ((RepetitionNumber - 1) Mod AFeveryNth = 0) Then    ' Perform Autofocus if active
         If AutofocusAlgorithm.Value = "external" Then
             SaveSetting "OnlineImageAnalysis", "macro", "code", "wait"     'this causes to do anything as defaults
+            If Not SaveAFImage Then
+                MsgBox "Tick Save AFImage if you want to use an external image analysis for computing the focus!"
+                Exit Function
+            End If
         End If
         
         StopScanCheck 'stop any running jobs
@@ -3212,7 +3236,9 @@ Private Sub FillTrackingChannelList()
 End Sub
 
 Private Sub ComboBoxTrackingChannel_Change()        'Sets the name of the channel for PostAcquisition tracking.
+If AcquisitionTracksOn Then
     TrackingChannelString = ActiveChannels(ComboBoxTrackingChannel.ListIndex + 1)
+End If
 End Sub
 
 
