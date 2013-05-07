@@ -451,7 +451,6 @@ Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
 
     
     
-    Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
     DisplayProgress "Autofocus SetupScanWindow", RGB(0, &HC0, 0)
     If NewPicture Is Nothing Then
         Set NewPicture = Lsm5.NewScanWindow
@@ -473,13 +472,14 @@ Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
     
     DisplayProgress "Autofocus: CheckZRange", RGB(0, &HC0, 0)
     'checks again if Zranges are good
+    Time = Timer
     If Not AutofocusForm.CheckZRanges() Then
         Autofocus_StackShift = False
         Exit Function
     End If
-    
-    SystemVersionOffset         ' extra offset depending on macroscope
-
+    LogMsg = "% Autofocus_stackshift: check Z-range " & Round(Timer - Time, 2)
+    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+ 
     ''''''''''''''''''
     '** Autofocus ***'
     ''''''''''''''''''
@@ -510,8 +510,7 @@ Public Function Autofocus_StackShift(NewPicture As DsRecordingDoc) As Boolean
     LogMsg = "% Autofocus_stackshift: acquire time " & Round(Timer - Time, 2)
     LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
 
-    If Not ScanStop Then
-        Autofocus_StackShift = True
+         Autofocus_StackShift = True
     End If
 End Function
 

@@ -23,10 +23,10 @@ Private Const BIF_RETURNONLYFSDIRS = &H1
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''Version Description''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '
-' AutofocusScreen_ZEN_v2.1.3.8
+' AutofocusScreen_ZEN_v2.1.3.9
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Const Version = " v2.1.3.8"
+Private Const Version = " v2.1.3.9"
 Public posTempZ  As Double                  'This is position at start after pushing AutofocusButton
 Private Const DebugCode = False             'sets key to run tests visible or not
 Private Const ReleaseName = True            'this adds the ZEN version
@@ -95,7 +95,8 @@ Private Sub Re_Start()
     GlobalProjectName = GlobalProject + ".lvb"
     HelpNamePDF = "AutofocusScreen_help.pdf"
     UsedDevices40 bLSM, bLIVE, bCamera
-    
+    SystemVersionOffset         ' extra offset depending on macroscope
+
     ' Set standard values for Autofocus
     ' blSM is a flag to decide weather systen is LSM (ZEN is LSM for instance). LIVE is 5Live not anymore in use?
     If bLSM Then
@@ -2293,7 +2294,7 @@ NextLocation:
         DiffTime = rettime - GlobalPrvTime
         'TODO: Check this
         'This loops define the waiting delay before going back to the first location
-        Do While (DiffTime <= CDbl(LoopingRepetitionTime.Value)) And Not (BleachTable(RepetitionNumber + 1) = True)
+        Do While (DiffTime <= CDbl(LoopingRepetitionTime.Value * LoopingTimerUnit)) And Not (BleachTable(RepetitionNumber + 1) = True)
             Sleep (100)
             If GetInputState() <> 0 Then
                 DoEvents
