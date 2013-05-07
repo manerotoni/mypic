@@ -2314,7 +2314,7 @@ NextLocation:
                     Exit Sub
                 End If
             End If
-            DisplayProgress "Waiting " & CStr(CInt(BlockTimeDelay - DiffTime)) + " s before scanning repetition  " & (RepetitionNumber + 1), RGB(&HC0, &HC0, 0)
+            DisplayProgress "Waiting " & CStr(CInt(LoopingRepetitionTime.Value * LoopingTimerUnit - DiffTime)) + " s before scanning repetition  " & (RepetitionNumber + 1), RGB(&HC0, &HC0, 0)
             rettime = CDbl(GetTickCount) * 0.001
             DiffTime = rettime - GlobalPrvTime
         Loop
