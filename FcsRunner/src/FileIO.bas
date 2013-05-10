@@ -22,15 +22,15 @@ Public Log     As Boolean          'If true we log data during the macro
 Public Function ZeroString(NrofZeros As Integer) As String
     'convert numbers into a string
     Dim i As Integer
-    Dim Name As String
-    Name = ""
+    Dim name As String
+    name = ""
     If NrofZeros > 0 Then
         For i = 1 To NrofZeros
-            Name = Name + "0"
+            name = name + "0"
         Next i
     End If
         
-    ZeroString = Name
+    ZeroString = name
 End Function
 
 '''''
@@ -116,26 +116,26 @@ Public Function FileName(Row As Long, Col As Long, RowSub As Long, ColSub As Lon
     Dim iWell As Long
     Dim iPosition As Long
 
-    Dim Name As String
+    Dim name As String
     Dim nrZero As Integer
     Dim maxZeros As Integer
     maxZeros = 3
-    Name = ""
+    name = ""
     iWell = (Row - 1) * UBound(posGridX, 2) + Col
     iPosition = (RowSub - 1) * UBound(posGridX, 4) + ColSub
     If iWell >= 0 Then
         nrZero = maxZeros - Len(CStr(iWell))
-        Name = Name + "W" + ZeroString(nrZero) + CStr(iWell)
+        name = name + "W" + ZeroString(nrZero) + CStr(iWell)
     End If
     If iPosition >= 0 Then
         nrZero = maxZeros - Len(CStr(iPosition))
-        Name = Name + "_P" + ZeroString(nrZero) + CStr(iPosition)
+        name = name + "_P" + ZeroString(nrZero) + CStr(iPosition)
     End If
     If iRepetition >= 0 Then
         nrZero = maxZeros - Len(CStr(iRepetition))
-        Name = Name + "_T" + ZeroString(nrZero) + CStr(iRepetition)
+        name = name + "_T" + ZeroString(nrZero) + CStr(iRepetition)
     End If
-    FileName = Name
+    FileName = name
 End Function
 
 

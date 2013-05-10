@@ -9,18 +9,11 @@ Public viewerGuiServer As AimViewerGuiServer
 Public FcsPositions As AimFcsSamplePositionParameters
 Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
 Public FcsData As AimFcsData
-Public ScanStop As Boolean
-Public AcquisitionController  As AimScanController
-Public Const PrecXY = 3
+'Public ScanStop As Boolean
+'Public AcquisitionController  As AimScanController
+'Public Const PrecXY = 3
 Public Const Pause = 100 'pause in ms
 
-Public Sub Start()
-    Initialize_Controller
-    ScanStop = False
-    Set viewerGuiServer = Lsm5.viewerGuiServer
-    'viewerGuiServer.FcsSelectLsmImagePositions = True
-    FCSRunner.Show
-End Sub
 
 '''''
 '   Set the FCS controller and data stuff
@@ -35,15 +28,17 @@ End Sub
 Public Sub NewRecord(RecordingDoc As DsRecordingDoc, Optional name As String, Optional Container As Long = 0)
     Dim node As AimExperimentTreeNode
     Set viewerGuiServer = Lsm5.viewerGuiServer
-    Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
-    node.Type = eExperimentTeeeNodeTypeLsm
-    viewerGuiServer.InsertExperimentTreeNode node, True, Container
-    Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
-    While RecordingDoc.IsBusy
-        Sleep (Pause)
-        DoEvents
-    Wend
-    RecordingDoc.SetTitle name
+    If RecordingDoc Is Nothing Then
+        Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
+        node.Type = eExperimentTeeeNodeTypeLsm
+        viewerGuiServer.InsertExperimentTreeNode node, True, Container
+        Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
+        While RecordingDoc.IsBusy
+            Sleep (Pause)
+            DoEvents
+        Wend
+        RecordingDoc.SetTitle name
+    End If
 End Sub
 
 
@@ -92,99 +87,100 @@ Public Function FcsMeasurement(Optional FcsData As AimFcsData) As Boolean
 End Function
 
 
-'''''
-'   ScanToImage ( RecordingDoc As DsRecordingDoc) As Boolean
-'   scan overwrite the same image, even with several z-slices
-'''''
-Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
-    Dim ProgressFifo As IAimProgressFifo ' what is this?
-    Dim gui As Object, treenode As Object
-    'Set gui = Lsm5.ViewerGuiServer
-    If RecordingDoc Is Nothing Then
-        NewRecord RecordingDoc
-    End If
-    If Not RecordingDoc Is Nothing Then
-        Set treenode = RecordingDoc.RecordingDocument.image(0, True)
-        'Set treenode = Lsm5.NewDocument why not this?
-        Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller ' public variable
-        AcquisitionController.DestinationImage(0) = treenode 'EngelImageToHechtImage(GlobalSingleImage).Image(0, True)
-        AcquisitionController.DestinationImage(1) = Nothing
-        Set ProgressFifo = AcquisitionController.DestinationImage(0)
-        Lsm5.tools.CheckLockControllers True
-        AcquisitionController.StartGrab eGrabModeSingle
-        'Set RecordingDoc = Lsm5.StartScan this does not overwrite
-        If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
-    End If
-    Sleep (Pause)
-    While AcquisitionController.IsGrabbing
-        Sleep (Pause) ' this sometimes hangs if we use GetInputState. Try now without it and test if it does not hang
-        DoEvents
-        If ScanStop Then
-            Lsm5.StopAcquisition
-            Exit Function
-        End If
-    Wend
-    ScanToImage = True
-End Function
-
-
 ''''''
-' SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As String) As Boolean
-' Copied and adapted from MultiTimeSeries macro
+''   ScanToImage ( RecordingDoc As DsRecordingDoc) As Boolean
+''   scan overwrite the same image, even with several z-slices
 ''''''
-Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As String) As Boolean
-    Dim Export As AimImageExport
-    Dim image As AimImageMemory
-    Dim Error As AimError
-    Dim Planes As Long
-    Dim Plane As Long
-    Dim Horizontal As enumAimImportExportCoordinate
-    Dim Vertical As enumAimImportExportCoordinate
+'Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
+'    Dim ProgressFifo As IAimProgressFifo ' what is this?
+'    Dim gui As Object, treenode As Object
+'    'Set gui = Lsm5.ViewerGuiServer
+'    If RecordingDoc Is Nothing Then
+'        NewRecord RecordingDoc
+'    End If
+'    If Not RecordingDoc Is Nothing Then
+'        Set treenode = RecordingDoc.RecordingDocument.image(0, True)
+'        'Set treenode = Lsm5.NewDocument why not this?
+'        Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller ' public variable
+'        AcquisitionController.DestinationImage(0) = treenode 'EngelImageToHechtImage(GlobalSingleImage).Image(0, True)
+'        AcquisitionController.DestinationImage(1) = Nothing
+'        Set ProgressFifo = AcquisitionController.DestinationImage(0)
+'        Lsm5.tools.CheckLockControllers True
+'        AcquisitionController.StartGrab eGrabModeSingle
+'        'Set RecordingDoc = Lsm5.StartScan this does not overwrite
+'        If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
+'    End If
+'    Sleep (Pause)
+'    While AcquisitionController.IsGrabbing
+'        Sleep (Pause) ' this sometimes hangs if we use GetInputState. Try now without it and test if it does not hang
+'        DoEvents
+'        If ScanStop Then
+'            Lsm5.StopAcquisition
+'            Exit Function
+'        End If
+'    Wend
+'    ScanToImage = True
+'End Function
 
 
-    'Set Image = EngelImageToHechtImage(Document).Image(0, True)
-    If Not Document Is Nothing Then
-        Set image = Document.RecordingDocument.image(0, True)
-    End If
-    
-    Set Export = Lsm5.CreateObject("AimImageImportExport.Export.4.5")
-    'Set Export = New AimImageExport
-    Export.FileName = FileName
-    Export.Format = eAimExportFormatLsm5
-    Export.StartExport image, image
-    Set Error = Export
-    Error.LastErrorMessage
-    
-    Planes = 1
-    Export.GetPlaneDimensions Horizontal, Vertical
-    
-    Select Case Vertical
-        Case eAimImportExportCoordinateY:
-             Planes = image.GetDimensionZ * image.GetDimensionT
-        Case eAimImportExportCoordinateZ:
-            Planes = image.GetDimensionT
-    End Select
-    
-    'TODO check. what happens here with Export.ExportPlane Nothing why Nothing (thumbnails)
-    For Plane = 0 To Planes - 1
-        If GetInputState() <> 0 Then
-            DoEvents
-             If ScanStop Then
-                Export.FinishExport
-                Exit Function
-            End If
-        End If
-        Export.ExportPlane Nothing
-    Next Plane
-    Export.FinishExport
-    SaveDsRecordingDoc = True
-    
-End Function
+'''''''
+'' SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As String) As Boolean
+'' Copied and adapted from MultiTimeSeries macro
+'''''''
+'Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As String) As Boolean
+'    Dim Export As AimImageExport
+'    Dim image As AimImageMemory
+'    Dim Error As AimError
+'    Dim Planes As Long
+'    Dim Plane As Long
+'    Dim Horizontal As enumAimImportExportCoordinate
+'    Dim Vertical As enumAimImportExportCoordinate
+'
+'
+'    'Set Image = EngelImageToHechtImage(Document).Image(0, True)
+'    If Not Document Is Nothing Then
+'        Set image = Document.RecordingDocument.image(0, True)
+'    End If
+'
+'    Set Export = Lsm5.CreateObject("AimImageImportExport.Export.4.5")
+'    'Set Export = New AimImageExport
+'    Export.FileName = FileName
+'    Export.Format = eAimExportFormatLsm5
+'    Export.StartExport image, image
+'    Set Error = Export
+'    Error.LastErrorMessage
+'
+'    Planes = 1
+'    Export.GetPlaneDimensions Horizontal, Vertical
+'
+'    Select Case Vertical
+'        Case eAimImportExportCoordinateY:
+'             Planes = image.GetDimensionZ * image.GetDimensionT
+'        Case eAimImportExportCoordinateZ:
+'            Planes = image.GetDimensionT
+'    End Select
+'
+'    'TODO check. what happens here with Export.ExportPlane Nothing why Nothing (thumbnails)
+'    For Plane = 0 To Planes - 1
+'        If GetInputState() <> 0 Then
+'            DoEvents
+'             If ScanStop Then
+'                Export.FinishExport
+'                Exit Function
+'            End If
+'        End If
+'        Export.ExportPlane Nothing
+'    Next Plane
+'    Export.FinishExport
+'    SaveDsRecordingDoc = True
+'
+'End Function
 
 ''''
 ' SaveFcsMeasurment to File
 ''''
-Public Sub SaveFcsMeasurement(FcsData As AimFcsData, FileName As String)
+Public Sub SaveFcsMeasurement(FcsData As AimFcsData, fileName As String)
+    
     If FcsData Is Nothing Then
         MsgBox "No Fcs Recording to Save"
         Exit Sub
@@ -192,22 +188,22 @@ Public Sub SaveFcsMeasurement(FcsData As AimFcsData, FileName As String)
     ' Write to file
     Dim writer As AimFcsFileWrite
     Set writer = Lsm5.CreateObject("AimFcsFile.Write")
-           writer.FileName = FileName
-        writer.FileWriteType = eFcsFileWriteTypeAll
-        writer.Format = eFcsFileFormatConfoCor3WithRawData
-    
-        writer.Source = FcsData
-        writer.Run
+    writer.fileName = fileName
+    writer.FileWriteType = eFcsFileWriteTypeAll
+    writer.Format = eFcsFileFormatConfoCor3WithRawData
+
+    writer.Source = FcsData
+    writer.Run
        
-    If Not writer.DestinationFilesExist(FileName) Then
-        writer.FileName = FileName
+    If Not writer.DestinationFilesExist(fileName) Then
+        writer.fileName = fileName
         writer.FileWriteType = eFcsFileWriteTypeAll
         writer.Format = eFcsFileFormatConfoCor3WithRawData
     
         writer.Source = FcsData
         writer.Run
     Else
- 
+    
     End If
 End Sub
 
@@ -290,7 +286,7 @@ Public Sub SaveFcsPositionList(sFile As String, pixelSizeXY As Double, pixelSize
         If pixelSizeXY > 0 And pixelSizeZ > 0 Then
             Print #iFileNum, Round(PosX * 1000000, PrecXY) & " " & Round(PosY * 1000000, PrecXY) & " " & Round(PosZ * 1000000, PrecXY) & " " & PosX / pixelSizeXY & " " & PosY / pixelSizeXY & " " & PosZ / pixelSizeZ
         Else
-             Print #iFileNum, Round(PosX * 1000000, PrecXY) & " " & Round(PosY * 1000000, PrecXY) & " " & Round(PosZ * 1000000, PrecXY)
+            Print #iFileNum, Round(PosX * 1000000, PrecXY) & " " & Round(PosY * 1000000, PrecXY) & " " & Round(PosZ * 1000000, PrecXY)
         End If
     Next i
     Close
@@ -299,44 +295,8 @@ ErrorHandle:
     MsgBox "Can't write " & sFile & " for the FcsPositions"
 End Sub
 
-Sub FocusOnLastDocument(Optional name As String = "")
-    '**************************************
-    'Recorded: 26/03/2013
-    'Description:
-    '**************************************
-    Dim ZEN As Zeiss_Micro_AIM_ApplicationInterface.ApplicationInterface
-    Set ZEN = Application.ApplicationInterface
-    Dim Items As Long
-    If name <> "" Then
-        ZEN.gui.Document.ByName = name ' this does not work
-    Else
-        ZEN.gui.Document.ByIndex = ZEN.gui.Document.ItemCount - 2
-    End If
-End Sub
 
-'Sub Macro2()
-'    '**************************************
-'    'Recorded: 13/03/2013
-'    'Description:
-'    '**************************************
-'    Dim ZEN As Zeiss_Micro_AIM_ApplicationInterface.ApplicationInterface
-'    Set ZEN = Application.ApplicationInterface
-'    'ZEN.GUI.Fcs.Positions.PositionListRemoveAll.Execute
-'    Dim pos As ZEN.GUI.Fcs.Positions.SelectedPosition
-'    Set pos = ZEN.GUI.Fcs.Positions.SelectedPosition
-'    ZEN.GUI.Fcs.Positions.AddPosition.Execute
-'
-''    ZEN.GUI.Fcs.Positions.EnableCurrentPosition.Value = True
-''    ZEN.GUI.Fcs.Positions.CurrentPositionX.Value = -150
-''    ZEN.GUI.Fcs.Positions.CurrentPositionY.Value = 20
-''    ZEN.GUI.Fcs.Positions.CurrentPositionCrossHair.Value = False
-''    ZEN.GUI.Fcs.Positions.CurrentPositionCrossHair.Value = True
-''
-''
-''    'ZEN.GUI.Fcs.Positions.AddPosition.Execute
-'
-'
-'End Sub
+
 
 
 

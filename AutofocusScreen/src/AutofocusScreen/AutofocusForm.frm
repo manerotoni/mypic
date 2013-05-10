@@ -23,10 +23,10 @@ Private Const BIF_RETURNONLYFSDIRS = &H1
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''Version Description''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '
-' AutofocusScreen_ZEN_v2.1.3.9
+' AutofocusScreen_ZEN_v2.1.3.10
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Const Version = " v2.1.3.9"
+Private Const Version = " v2.1.3.10"
 Public posTempZ  As Double                  'This is position at start after pushing AutofocusButton
 Private Const DebugCode = False             'sets key to run tests visible or not
 Private Const ReleaseName = True            'this adds the ZEN version
@@ -231,11 +231,13 @@ Public Sub Re_Initialize()
     Set GlobalAutoFocusRecording = Lsm5.CreateBackupRecording
     Set GlobalAcquisitionRecording = Lsm5.CreateBackupRecording
     Set GlobalMicropilotRecording = Lsm5.CreateBackupRecording
+    Set GlobalBleachRecording = Lsm5.CreateBackupRecording
     Set GlobalAltRecording = Lsm5.CreateBackupRecording
     Set GlobalBackupRecording = Lsm5.CreateBackupRecording
     GlobalAutoFocusRecording.Copy Lsm5.DsRecording
     GlobalAcquisitionRecording.Copy Lsm5.DsRecording
     GlobalMicropilotRecording.Copy Lsm5.DsRecording
+    GlobalBleachRecording.Copy Lsm5.DsRecording
     GlobalAltRecording.Copy Lsm5.DsRecording
     GlobalBackupRecording.Copy Lsm5.DsRecording ' this will not be changed remains always the same
     GlobalBackupSampleObservationTime = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
@@ -266,12 +268,12 @@ End Sub
 '   SaveSettings of the UserForm AutofocusForm in file name FileName.
 '   Name should correspond exactly to name used in Form
 '''''
-Private Sub SaveSettings(FileName As String)
+Private Sub SaveSettings(fileName As String)
     Dim iFileNum As Integer
     Close
     On Error GoTo ErrorHandle
     iFileNum = FreeFile()
-    Open FileName For Output As iFileNum
+    Open fileName For Output As iFileNum
     
     Print #iFileNum, "% Settings for AutofocusMacro for ZEN " & ZEN & "  " & Version
 
@@ -382,14 +384,14 @@ Private Sub SaveSettings(FileName As String)
     Close #iFileNum
     Exit Sub
 ErrorHandle:
-    MsgBox "Not able to open " & FileName & " for saving settings"
+    MsgBox "Not able to open " & fileName & " for saving settings"
 End Sub
 
 ''''
 '   LoadSettings(FileName As String)
 '   LoadSettings of Form from FileName
 ''''
-Private Sub LoadSettings(FileName As String)
+Private Sub LoadSettings(fileName As String)
     Dim iFileNum As Integer
     Dim Fields As String
     Dim FieldEntries() As String
@@ -397,7 +399,7 @@ Private Sub LoadSettings(FileName As String)
     Close
     On Error GoTo ErrorHandle
     iFileNum = FreeFile()
-    Open FileName For Input As iFileNum
+    Open fileName For Input As iFileNum
     Do While Not EOF(iFileNum)
   
             Line Input #iFileNum, Fields
@@ -421,7 +423,7 @@ nextLine:
     Close #iFileNum
     Exit Sub
 ErrorHandle:
-    MsgBox "Not able to read " & FileName & " for AutofocusScreen settings"
+    MsgBox "Not able to read " & fileName & " for AutofocusScreen settings"
 End Sub
 
 ''''
@@ -429,7 +431,7 @@ End Sub
 '   Open a dialog to save setting of the macro
 ''''
 Private Sub ButtonSaveSettings_Click()
-    Dim Filter As String, FileName As String
+    Dim Filter As String, fileName As String
     Dim Flags As Long
   
     Flags = OFN_FILEMUSTEXIST Or OFN_HIDEREADONLY Or _
@@ -437,13 +439,13 @@ Private Sub ButtonSaveSettings_Click()
     Filter$ = "Settings (*.ini)" & Chr$(0) & "*.ini" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
             
     
-    FileName = CommonDialogAPI.ShowSave(Filter, Flags, "", DatabaseTextbox.Value, "Save AutofocusScreen settings")
+    fileName = CommonDialogAPI.ShowSave(Filter, Flags, "", DatabaseTextbox.Value, "Save AutofocusScreen settings")
     
-    If FileName <> "" Then
-        If Right(FileName, 4) <> ".ini" Then
-            FileName = FileName & ".ini"
+    If fileName <> "" Then
+        If Right(fileName, 4) <> ".ini" Then
+            fileName = fileName & ".ini"
         End If
-        SaveSettings FileName
+        SaveSettings fileName
     End If
     
 End Sub
@@ -453,7 +455,7 @@ End Sub
 '   Open a dialog to save setting of the macro
 ''''
 Private Sub ButtonLoadSettings_Click()
-    Dim Filter As String, FileName As String
+    Dim Filter As String, fileName As String
     Dim Flags As Long
   
     Flags = OFN_FILEMUSTEXIST Or OFN_HIDEREADONLY Or _
@@ -462,10 +464,10 @@ Private Sub ButtonLoadSettings_Click()
             
     'Filter = "ini file (*.ini) |*.ini"
     
-    FileName = CommonDialogAPI.ShowOpen(Filter, Flags, "", DatabaseTextbox.Value, "Load AutofocusScreen settings")
+    fileName = CommonDialogAPI.ShowOpen(Filter, Flags, "", DatabaseTextbox.Value, "Load AutofocusScreen settings")
     
-    If FileName <> "" Then
-        LoadSettings FileName
+    If fileName <> "" Then
+        LoadSettings fileName
     End If
 End Sub
 
@@ -1022,18 +1024,18 @@ End Sub
 '   Open a Dialog to set output folder where to save the results. then cal SetDatabase to set global variables
 '''''
 Private Sub CommandButtonNewDataBase_Click()
-    Dim Filter As String, FileName As String
+    Dim Filter As String, fileName As String
     Dim Flags As Long
   
     Flags = OFN_PATHMUSTEXIST Or OFN_HIDEREADONLY Or OFN_NOCHANGEDIR Or OFN_EXPLORER Or OFN_NOVALIDATE
             
     Filter = "Alle Dateien (*.*)" & Chr$(0) & "*.*"
     
-    FileName = CommonDialogAPI.ShowOpen(Filter, Flags, "*.*", "", "Select output folder")
+    fileName = CommonDialogAPI.ShowOpen(Filter, Flags, "*.*", "", "Select output folder")
     
-    If Len(FileName) > 3 Then
-        FileName = Left(FileName, Len(FileName) - 3)
-        DatabaseTextbox.Value = FileName
+    If Len(fileName) > 3 Then
+        fileName = Left(fileName, Len(fileName) - 3)
+        DatabaseTextbox.Value = fileName
         SetDatabase
     End If
     
@@ -1041,7 +1043,7 @@ End Sub
 
 '''''
 '   DatabaseTextbox_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
-'   Only update the outputfolder when enter is pressed. This avois creating a folde at every keystroke
+'   Only update the outputfolder when enter is pressed. This avoids creating a folded at every keystroke
 '''''
 Private Sub DatabaseTextbox_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = 13 Then 'this is the enter key
@@ -1070,6 +1072,11 @@ Private Sub SetDatabase()
         DatabaseLable.Caption = GlobalDataBaseName
         SaveSetting "OnlineImageAnalysis", "macro", "OutputFolder", GlobalDataBaseName
         LogFileNameBase = GlobalDataBaseName & "\AutofocusScreen.log"
+        If Right(GlobalDataBaseName, 1) = "\" Then
+            BackSlash = ""
+        Else
+            BackSlash = "\"
+        End If
     End If
 
     If LogCode And LogFileNameBase <> "" Then
@@ -1489,11 +1496,13 @@ Public Sub AutofocusButton_Click()
     Set GlobalAutoFocusRecording = Lsm5.CreateBackupRecording
     Set GlobalAcquisitionRecording = Lsm5.CreateBackupRecording
     Set GlobalMicropilotRecording = Lsm5.CreateBackupRecording
+    Set GlobalBleachRecording = Lsm5.CreateBackupRecording
     Set GlobalAltRecording = Lsm5.CreateBackupRecording
     Set GlobalBackupRecording = Lsm5.CreateBackupRecording
     GlobalAutoFocusRecording.Copy Lsm5.DsRecording
     GlobalAcquisitionRecording.Copy Lsm5.DsRecording
     GlobalMicropilotRecording.Copy Lsm5.DsRecording
+    GlobalBleachRecording.Copy Lsm5.DsRecording
     GlobalAltRecording.Copy Lsm5.DsRecording
     GlobalBackupRecording.Copy Lsm5.DsRecording ' this will not be changed remains always the same
     GlobalBackupSampleObservationTime = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
@@ -2031,11 +2040,13 @@ Private Function StartSetting() As Boolean
     Set GlobalAutoFocusRecording = Lsm5.CreateBackupRecording
     Set GlobalAcquisitionRecording = Lsm5.CreateBackupRecording
     Set GlobalMicropilotRecording = Lsm5.CreateBackupRecording
+    Set GlobalBleachRecording = Lsm5.CreateBackupRecording
     Set GlobalAltRecording = Lsm5.CreateBackupRecording
     Set GlobalBackupRecording = Lsm5.CreateBackupRecording
     GlobalAutoFocusRecording.Copy Lsm5.DsRecording
     GlobalAcquisitionRecording.Copy Lsm5.DsRecording
     GlobalMicropilotRecording.Copy Lsm5.DsRecording
+    GlobalBleachRecording.Copy Lsm5.DsRecording
     GlobalAltRecording.Copy Lsm5.DsRecording
     GlobalBackupRecording.Copy Lsm5.DsRecording ' this will not be changed remains always the same
     GlobalBackupSampleObservationTime = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
@@ -2126,6 +2137,7 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
     Dim FileNameID As String ' ID name of file (Well/Position, Subpositio, Timepoint)
     Dim FilePath As String   ' full path of file to save (changes through function)
     Dim RecordingDoc As DsRecordingDoc  ' contains the images
+    Dim FcsData As AimFcsData           ' contains the data of the FCS measurement
     Dim Scancontroller As AimScanController ' the controller
   
         'do once leveling
@@ -2137,18 +2149,18 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
     
     ' Set the offset in z-stack to 0; otherwise there can be errors...
     Recenter (Lsm5.Hardware.CpFocus.Position)
-                           
     ' set up the imaging
     Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
-    Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
-    ' set up RecordingDoc
-    If RecordingDoc Is Nothing Then
-        Set RecordingDoc = Lsm5.NewScanWindow
-        While RecordingDoc.IsBusy
-            Sleep (20)
-            DoEvents
-        Wend
-    End If
+    NewRecord RecordingDoc, "W001_P001_T001", 0
+'    Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
+'    ' set up RecordingDoc
+'    If RecordingDoc Is Nothing Then
+'        Set RecordingDoc = Lsm5.NewScanWindow
+'        While RecordingDoc.IsBusy
+'            Sleep (20)
+'            DoEvents
+'        Wend
+'    End If
 
     InitializeStageProperties
     SetStageSpeed 9, True
@@ -2233,7 +2245,7 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
                         
                         
                         If ScanPause Then
-                            If Not pause Then ' Pause is true is Resume
+                            If Not Pause Then ' Pause is true is Resume
                                 ScanStop = True
                                 StopAcquisition
                                 Exit Sub
@@ -2246,7 +2258,7 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
                         
                         'Do the imaging
                         
-                        If Not ImagingWorkFlow(RecordingDoc, StartTime, GridPos, TotPos, RepetitionNumber) Then
+                        If Not ImagingWorkFlow(RecordingDoc, FcsData, StartTime, GridPos, TotPos, RepetitionNumber) Then
                             StopAcquisition
                             Exit Sub
                         End If
@@ -2254,7 +2266,7 @@ Private Sub StartAcquisition(BleachingActivated As Boolean)
 NextLocation:
                         TotPos = TotPos + 1
                         If ScanPause Then
-                            If Not pause Then ' Pause is true is Resume
+                            If Not Pause Then ' Pause is true is Resume
                                 ScanStop = True
                                 StopAcquisition
                                 Exit Sub
@@ -2299,7 +2311,7 @@ NextLocation:
             If GetInputState() <> 0 Then
                 DoEvents
                 If ScanPause = True Then
-                    If Not pause Then ' Pause is true is Resume
+                    If Not Pause Then ' Pause is true is Resume
                         ScanStop = True
                         StopAcquisition
                         Exit Sub
@@ -2347,7 +2359,7 @@ End Sub
 '       [RowSub] In - Row of subpositions grid
 '       [ColSub] In - Column of subpositions grid
 '''''
-Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Double, GridPos As GridPosType, TotPos As Long, RepetitionNumber As Integer) As Boolean
+Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, StartTime As Double, GridPos As GridPosType, TotPos As Long, RepetitionNumber As Integer) As Boolean
     
     ImagingWorkFlow = False
     Dim Xnew As Double
@@ -2366,8 +2378,6 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
     Dim Offset As Double ' a localyy used Zoffset variable
     Dim pos As Double ' a tmp variable for position
     Dim Sample0Z As Double
-    Dim BackSlash As String
-    Dim UnderScore As String
     Dim LogMsg As String
     Dim SuccessRecenter As Boolean
     Dim WarningAcq As Boolean
@@ -2382,19 +2392,8 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
     Yold = Ynew
     Zold = Znew
 
-    FileNameID = FileName(GridPos.Row, GridPos.Col, GridPos.RowSub, GridPos.ColSub, RepetitionNumber)
+    FileNameID = fileName(GridPos.Row, GridPos.Col, GridPos.RowSub, GridPos.ColSub, RepetitionNumber)
 
-    If Right(DatabaseTextbox.Value, 1) = "\" Then
-        BackSlash = ""
-    Else
-        BackSlash = "\"
-    End If
-    
-    If TextBoxFileName.Value <> "" Then
-        UnderScore = "_"
-    Else
-        UnderScore = ""
-    End If
     
     FilePath = DatabaseTextbox.Value & BackSlash & TextBoxFileName.Value & UnderScore & FileNameID
     FilePathAF = DatabaseTextbox.Value & BackSlash & TextBoxFileName.Value & UnderScore & "AFImg_" & FileNameID
@@ -2488,7 +2487,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
         End If
         LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
         If ScanPause Then
-            If Not pause Then ' Pause is true if Resume
+            If Not Pause Then ' Pause is true if Resume
                 Exit Function
             End If
         End If
@@ -2500,7 +2499,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
 
        
     If ScanPause Then
-        If Not pause Then ' Pause is true if Resume
+        If Not Pause Then ' Pause is true if Resume
             Exit Function
         End If
     End If
@@ -2584,7 +2583,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
     End If
     
     If ScanPause Then
-        If Not pause Then ' Pause is true is Resume
+        If Not Pause Then ' Pause is true is Resume
             Exit Function
         End If
     End If
@@ -2667,7 +2666,7 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
     End If
     
     If ScanPause Then
-        If Not pause Then ' Pause is true if Resume
+        If Not Pause Then ' Pause is true if Resume
             ScanStop = True
             Exit Function
         End If
@@ -2742,11 +2741,8 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, StartTime As Do
         SaveSetting "OnlineImageAnalysis", "macro", "code", "1"
         'recenter
         Recenter_pre Zold, SuccessRecenter, ZEN
-        Dim RepMicropilot As RepetitionType
-        RepMicropilot.Number = CInt(MicropilotRepetitions.Value)
-        RepMicropilot.Time = CDbl(MicropilotRepetitionTime.Value)
-        RepMicropilot.Interval = False
-        If Not MicroscopePilot(RecordingDoc, GridPos, Xold, Yold, Zold, FileNameID, HighResArrayX, HighResArrayY, HighResArrayZ, HighResArrayDeltaZ) Then
+        
+        If Not MicroscopePilot(RecordingDoc, GridPos, Xold, Yold, Zold, FileNameID, HighResArrayX, HighResArrayY, HighResArrayZ, HighResArrayDeltaZ, FcsData) Then
             Exit Function
         End If
     End If
@@ -2806,7 +2802,7 @@ End Function
 '   Function called when ScanPause = True
 '   Checks state and wait for action in Form
 '''''
-Public Function pause() As Boolean
+Public Function Pause() As Boolean
     
     Dim rettime As Double
     Dim GlobalPrvTime As Double
@@ -2824,13 +2820,13 @@ Public Function pause() As Boolean
         DoEvents
         If ScanStop Then
             StopAcquisition
-            pause = False
+            Pause = False
             Exit Function
         End If
         If ScanPause = False Then
             GetCurrentPositionOffsetButton.Enabled = False
             AutofocusButton.Enabled = False
-            pause = True
+            Pause = True
             Exit Function
         End If
 
@@ -3207,7 +3203,7 @@ End Sub
 'fills popup menu for chosing a track for post-acquisition tracking
 ' TODO: move in form
 Private Sub FillTrackingChannelList()
-    Dim t As Integer
+    Dim T As Integer
     Dim c As Integer
     Dim ca As Integer
     Dim channel As DsDetectionChannel
@@ -3219,8 +3215,8 @@ Private Sub FillTrackingChannelList()
     ca = 0
     
     If ActivateTrack(GlobalAcquisitionRecording, "Acquisition") Then
-        For t = 1 To TrackNumber 'This loop goes through all tracks and will collect all activated channels to display them in popup menu
-            Set Track = GlobalAcquisitionRecording.TrackObjectByMultiplexOrder(t - 1, Success)
+        For T = 1 To TrackNumber 'This loop goes through all tracks and will collect all activated channels to display them in popup menu
+            Set Track = GlobalAcquisitionRecording.TrackObjectByMultiplexOrder(T - 1, Success)
             If Track.Acquire Then 'if track is activated for acquisition
                 For c = 1 To Track.DetectionChannelCount 'for every detection channel of track
                     Set channel = Track.DetectionChannelObjectByIndex(c - 1, Success)
@@ -3231,7 +3227,7 @@ Private Sub FillTrackingChannelList()
                     End If
                 Next c
             End If
-        Next t
+        Next T
         ComboBoxTrackingChannel.Value = ComboBoxTrackingChannel.List(0) 'initially displayed text in popup menu is a blank line (first channel is 1).
     End If
 End Sub
@@ -3284,6 +3280,11 @@ End Sub
 
 Private Sub TextBoxFileName_Change()
     GlobalFileName = TextBoxFileName.Value
+    If AutofocusForm.TextBoxFileName.Value <> "" Then
+        UnderScore = "_"
+    Else
+        UnderScore = ""
+    End If
 End Sub
 
 '''''
@@ -3300,7 +3301,9 @@ Public Function ActivateTrack(ByRef Recording As DsRecording, ByVal Track As Str
         Case "AlterAcquisition":
             ActivateTrack = ActivateAlterAcquisitionTrack(Recording, DeltaZ)
         Case "Micropilot":
-             ActivateTrack = ActivateMicropilotTrack(Recording, DeltaZ)
+            ActivateTrack = ActivateMicropilotTrack(Recording, DeltaZ)
+        Case "Bleach":
+            ActivateTrack = ActivateBleachTrack(Recording, DeltaZ)
         Case Else:
             MsgBox "ActivateTrack: Not able to find appropriate imging track to activate! Exit function now!"
     End Select
@@ -3616,7 +3619,76 @@ End Function
 
 
 '''''''''
-' ActivateZoomTrack()
+' ActivateMicropilotTrack()
+' Micropilotpage. This is extra track for micropilot
+' TODO: Test and change name
+''''''''''
+Private Function ActivateBleachTrack(Recording As DsRecording, Optional DeltaZ As Double = -1) As Boolean
+    Dim i As Integer
+    Dim FunSuccess As Boolean
+    Dim ToActivate() As Boolean
+    ReDim ToActivate(1 To TrackNumber)
+    
+    FunSuccess = False
+    ' Set all tracks to non-acquisition first
+
+    For i = 1 To TrackNumber
+        ToActivate(i) = False
+        If BleachTrack1.Value = True And i = 1 Then
+            ToActivate(i) = True
+            FunSuccess = True
+        ElseIf BleachTrack2.Value = True And i = 2 Then
+            ToActivate(i) = True
+            FunSuccess = True
+        ElseIf BleachTrack3.Value = True And i = 3 Then
+            ToActivate(i) = True
+            FunSuccess = True
+        ElseIf BleachTrack4.Value = True And i = 4 Then
+            ToActivate(i) = True
+            FunSuccess = True
+        End If
+    Next i
+    
+    If FunSuccess Then
+        Recording.ScanMode = "Stack"
+        Recording.SamplesPerLine = BleachFrameSize.Value
+        Recording.LinesPerFrame = BleachFrameSize.Value
+        Recording.ZoomX = BleachZoom.Value
+        Recording.ZoomY = BleachZoom.Value
+        Recording.FramesPerStack = 1
+        
+        Set Track = Recording.TrackObjectBleach(Success)
+        If Success Then
+            Track.Acquire = True
+            Track.UseBleachParameters = True            'Bleach parameters are lasers lines, bleach iterations... stored in the bleach control window
+        End If
+        
+        Lsm5.DsRecording.Copy Recording
+        Recording.StacksPerRecord = BleachRepetitions.Value
+        Track.TimeBetweenStacks = BleachRepetitionTime.Value
+        
+        Lsm5.DsRecording.Copy Recording
+        Lsm5.DsRecording.TimeSeries = True
+        Lsm5.DsRecording.StacksPerRecord = BleachRepetitions.Value
+        Lsm5.DsRecording.FramesPerStack = 1
+        Lsm5.DsRecording.ScanMode = "Stack"
+        'set the correct dwelltime
+        For i = 1 To TrackNumber
+            Lsm5.DsRecording.TrackObjectByMultiplexOrder(i - 1, 1).Acquire = ToActivate(i)
+        Next i
+        Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime = GlobalBackupSampleObservationTime
+    Else
+        Exit Function
+    End If
+    If Not ScanStop Then
+        ActivateBleachTrack = FunSuccess
+    End If
+End Function
+
+
+
+'''''''''
+' ActivateBleachTrack()
 ' Micropilotpage. This is extra track for micropilot
 ' TODO: Test and change name
 ''''''''''
@@ -4648,14 +4720,14 @@ End Sub
 '       [TestNr]       - Number of the test, this sets the name of the image files and logfiles.
 '       [MaxTestRepeats] - Maximal number of tests for each repeat
 ''''
-Private Function RunTestAutofocusButton(RecordingDoc As DsRecordingDoc, ResetPos As Boolean, MaxTestRepeats As Integer, Optional FileName As String = "AutofocusTest", Optional pause As Integer = 1000) As Boolean
+Private Function RunTestAutofocusButton(RecordingDoc As DsRecordingDoc, ResetPos As Boolean, MaxTestRepeats As Integer, Optional fileName As String = "AutofocusTest", Optional Pause As Integer = 1000) As Boolean
 
     Dim FilePath As String
     Dim TestRepeats As Integer
     Dim Zold As Double
     Dim pos As Double
     TestRepeats = 1
-    LogFileName = GlobalDataBaseName & "\" & FileName & "_Log" & ".txt"
+    LogFileName = GlobalDataBaseName & "\" & fileName & "_Log" & ".txt"
     
     If Log Then
         SafeOpenTextFile LogFileName, LogFile, FileSystem
@@ -4665,9 +4737,9 @@ Private Function RunTestAutofocusButton(RecordingDoc As DsRecordingDoc, ResetPos
     End If
     Zold = posTempZ
     While TestRepeats < MaxTestRepeats + 1
-        DisplayProgress "Running Test " & FileName & ". Repeat " & TestRepeats & "/" & MaxTestRepeats & ".......", RGB(0, &HC0, 0)
+        DisplayProgress "Running Test " & fileName & ". Repeat " & TestRepeats & "/" & MaxTestRepeats & ".......", RGB(0, &HC0, 0)
                 
-        FilePath = GlobalDataBaseName & "\" & FileName & "_" & TestRepeats
+        FilePath = GlobalDataBaseName & "\" & fileName & "_" & TestRepeats
         If Log Then
             SafeOpenTextFile LogFileName, LogFile, FileSystem
             LogFile.WriteLine " "
@@ -4676,7 +4748,7 @@ Private Function RunTestAutofocusButton(RecordingDoc As DsRecordingDoc, ResetPos
             LogFile.Close
         End If
         DoEvents
-        Sleep (pause)
+        Sleep (Pause)
         DoEvents
 
         If ResetPos Then
@@ -4692,7 +4764,7 @@ Private Function RunTestAutofocusButton(RecordingDoc As DsRecordingDoc, ResetPos
                 DoEvents
             Wend
         End If
-        If Not AutofocusButtonRun(RecordingDoc, GlobalDataBaseName & "\AFimg_" & FileName & "_" & TestRepeats & ".lsm") Then
+        If Not AutofocusButtonRun(RecordingDoc, GlobalDataBaseName & "\AFimg_" & fileName & "_" & TestRepeats & ".lsm") Then
             Exit Function
         End If
         'save file
@@ -4717,7 +4789,7 @@ End Function
 '       [TestNr]       - Number of the test, this sets the name of the image files and logfiles.
 '       [MaxTestRepeats] - Maximal number of tests for each repeat
 ''''
-Private Function RunTestFastZline(RecordingDoc As DsRecordingDoc, TestNr As Integer, MaxTestRepeats As Integer, Optional pixelDwellfactor As Double = 1, Optional FileName As String = "AutofocusTest", Optional pause As Integer = 5000) As Boolean
+Private Function RunTestFastZline(RecordingDoc As DsRecordingDoc, TestNr As Integer, MaxTestRepeats As Integer, Optional pixelDwellfactor As Double = 1, Optional fileName As String = "AutofocusTest", Optional Pause As Integer = 5000) As Boolean
 
     Dim FilePath As String
     Dim TestRepeats As Integer
@@ -4725,18 +4797,18 @@ Private Function RunTestFastZline(RecordingDoc As DsRecordingDoc, TestNr As Inte
     Dim Time As Double
     Dim pos As Double ' position temp variable
     TestRepeats = 1
-    LogFileName = GlobalDataBaseName & "\" & FileName & TestNr & ".txt"
+    LogFileName = GlobalDataBaseName & "\" & fileName & TestNr & ".txt"
     
     If Log Then
         SafeOpenTextFile LogFileName, LogFile, FileSystem
-        LogFile.WriteLine "% FastZlineTest " & TestNr & ". Repeated fast Zline executions. PixelDwellfactor: " & pixelDwellfactor & ", LineSize: " & AutofocusLineSize.Value & ", pause: " & pause
+        LogFile.WriteLine "% FastZlineTest " & TestNr & ". Repeated fast Zline executions. PixelDwellfactor: " & pixelDwellfactor & ", LineSize: " & AutofocusLineSize.Value & ", pause: " & Pause
         LogFile.WriteLine "% MaxSpeed " & AutofocusMaxSpeed.Value & ", Zoom1 " & AutofocusLowZoom.Value & ", Piezo " & AutofocusHRZ.Value & ", AFTrackZ " & AutofocusTrackZ.Value & _
         ", AFTrackXY " & AutofocusTrackXY.Value
     End If
     
     While TestRepeats < MaxTestRepeats + 1
         DisplayProgress "Running Test " & TestNr & ". Repeat " & TestRepeats & "/" & MaxTestRepeats & ".......", RGB(0, &HC0, 0)
-        FilePath = GlobalDataBaseName & "\" & FileName & TestNr & "_" & TestRepeats
+        FilePath = GlobalDataBaseName & "\" & fileName & TestNr & "_" & TestRepeats
         If Log Then
             SafeOpenTextFile LogFileName, LogFile, FileSystem
             LogFile.WriteLine " "
@@ -4744,7 +4816,7 @@ Private Function RunTestFastZline(RecordingDoc As DsRecordingDoc, TestNr As Inte
             LogFile.Close
         End If
         DoEvents
-        Sleep (pause)
+        Sleep (Pause)
         DoEvents
         If Not AutofocusForm.ActivateTrack(GlobalAutoFocusRecording, "Autofocus") Then
             MsgBox "No track selected for Autofocus! Cannot Autofocus!"
@@ -4755,7 +4827,7 @@ Private Function RunTestFastZline(RecordingDoc As DsRecordingDoc, TestNr As Inte
         
         Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime * pixelDwellfactor
         
-        Sleep (pause)
+        Sleep (Pause)
         DoEvents
         If Log Then
             SafeOpenTextFile LogFileName, LogFile, FileSystem

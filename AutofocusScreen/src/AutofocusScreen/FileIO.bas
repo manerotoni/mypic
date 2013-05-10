@@ -13,6 +13,12 @@ Public FileSystem As FileSystemObject
 Public Log     As Boolean          'If true we log data during the macro
 
 
+'''''
+' Variables that are set to build the name of the files
+'''''
+Public BackSlash As String
+Public UnderScore As String
+
 
 '''''
 '   ZeroString(NrofZeros As Integer) As String
@@ -111,7 +117,7 @@ End Function
 '       [ColSub]  In - subcol
 '       [iRepetition] In - time point
 '''''
-Public Function FileName(Row As Long, Col As Long, RowSub As Long, ColSub As Long, iRepetition As Integer) As String
+Public Function fileName(Row As Long, Col As Long, RowSub As Long, ColSub As Long, iRepetition As Integer) As String
     'convert numbers into a string
     Dim iWell As Long
     Dim iPosition As Long
@@ -135,7 +141,7 @@ Public Function FileName(Row As Long, Col As Long, RowSub As Long, ColSub As Lon
         nrZero = maxZeros - Len(CStr(iRepetition))
         name = name + "_T" + ZeroString(nrZero) + CStr(iRepetition)
     End If
-    FileName = name
+    fileName = name
 End Function
 
 

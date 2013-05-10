@@ -61,6 +61,7 @@ End Sub
 '   Default save actual recording, save FCSpositions and perform FCS measurement
 ''''
 Private Sub FcsRecord(PreImg As Boolean, PostImg As Boolean)
+    
     Dim node As AimExperimentTreeNode
     Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
     Dim iExp As Integer
@@ -68,7 +69,9 @@ Private Sub FcsRecord(PreImg As Boolean, PostImg As Boolean)
     Dim FileID As String
     Dim Record As DsRecordingDoc
     Dim FcsData As AimFcsData
-    Dim pixelSize As Double
+    Dim pixelSizeXY As Double
+    Dim pixelSizeZ  As Double
+    Dim UnderScore As String
     If OutputFolderTextBox.Value = "" Then
         MsgBox "No Outputolder!"
         Exit Sub
@@ -77,13 +80,20 @@ Private Sub FcsRecord(PreImg As Boolean, PostImg As Boolean)
         MsgBox "No points selected for FCS!"
         Exit Sub
     End If
+    
+    If BaseNameTextBox.Value = "" Then
+        UnderScore = ""
+    Else
+        UnderScore = "_"
+    End If
+    
     IsAcquiring = True
     iExp = 0
     Dim FileCol As String
-    FileID = BaseNameTextBox.Value & "_" & iExp & "_preFCS.lsm"
+    FileID = BaseNameTextBox.Value & UnderScore & iExp & "_preFCS.lsm"
     While FileExist(OutputFolderTextBox.Value & "\" & FileID)
         iExp = iExp + 1
-        FileID = BaseNameTextBox.Value & "_" & iExp & "_preFCS.lsm"
+        FileID = BaseNameTextBox.Value & UnderScore & iExp & "_preFCS.lsm"
     Wend
     FileCol = FileID
     'Scan and save record
@@ -97,27 +107,27 @@ Private Sub FcsRecord(PreImg As Boolean, PostImg As Boolean)
         Set Record = Lsm5.DsRecordingActiveDocObject
         Record.SetTitle FileID
     End If
-    
-
+    pixelSizeXY = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing
+    pixelSizeZ = Lsm5.DsRecordingActiveDocObject.Recording.FrameSpacing
     'Fcs Measurment
-    FileID = BaseNameTextBox.Value & "_" & iExp & ".fcs"
-    NewFcsRecord FcsData, FileID, 1
+    FileID = BaseNameTextBox.Value & UnderScore & iExp & ".fcs"
+    NewFcsRecord FcsData, FileID, 0
     If Not FcsMeasurement(FcsData) Then
         GoTo Abort
     End If
     
     'Save Files
-    SaveDsRecordingDoc Record, OutputFolderTextBox.Value & "\" & BaseNameTextBox.Value & "_" & iExp & "_preFCS.lsm"
-    pixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing
+    SaveDsRecordingDoc Record, OutputFolderTextBox.Value & "\" & BaseNameTextBox.Value & UnderScore & iExp & "_preFCS.lsm"
+    
     'save positions in a file
-    SaveFcsPositionList OutputFolderTextBox.Value & "\" & BaseNameTextBox.Value & "_" & iExp & ".txt", pixelSize
+    SaveFcsPositionList OutputFolderTextBox.Value & "\" & BaseNameTextBox.Value & UnderScore & iExp & ".txt", pixelSizeXY, pixelSizeZ
 
     SaveFcsMeasurement FcsData, OutputFolderTextBox.Value & "\" & FileID
     'node.NumberImages = 2 ??
     
     'Scan and save record after FCS
     If PostImg Then
-        FileID = BaseNameTextBox.Value & "_" & iExp & "_postFCS.lsm"
+        FileID = BaseNameTextBox.Value & UnderScore & iExp & "_postFCS.lsm"
         NewRecord Record, FileID, 0
         If Not ScanToImage(Record) Then
             GoTo Abort
@@ -177,7 +187,7 @@ Private Sub OutputFolderButton_Click()
   
     Flags = OFN_PATHMUSTEXIST Or OFN_HIDEREADONLY Or OFN_NOCHANGEDIR Or OFN_EXPLORER Or OFN_NOVALIDATE
             
-    Filter = "Alle Dateien (*.*)" & Chr$(0) & "*.*"
+    Filter = "Alle Dateien (*.*)" & Chr(0) & "*.*"
     
     FileName = CommonDialogAPI.ShowOpen(Filter, Flags, "*.*", "", "Select output folder")
     
