@@ -26,7 +26,7 @@ Private Const BIF_RETURNONLYFSDIRS = &H1
 ' AutofocusScreen_ZEN_v2.1.3.10
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Const Version = " v2.1.3.10"
+Private Const Version = " v2.1.3.11"
 Public posTempZ  As Double                  'This is position at start after pushing AutofocusButton
 Private Const DebugCode = False             'sets key to run tests visible or not
 Private Const ReleaseName = True            'this adds the ZEN version

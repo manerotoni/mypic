@@ -1707,6 +1707,7 @@ HighResArrayZ() As Double, HighResArrayDeltaZ() As Double) As Boolean
     Dim Xnew As Double
     Dim Ynew As Double
     Dim Znew As Double
+    Dim Xtmp As Double
     Dim pixelSizeXY As Double
     Dim pixelSizeZ As Double
     Dim unit As String
@@ -1789,6 +1790,7 @@ HighResArrayZ() As Double, HighResArrayDeltaZ() As Double) As Boolean
         Xnew = Xref
         Ynew = Yref
         Znew = Zref
+        Xtmp = CDbl(Xoffset(i))
         ComputeShiftedCoordinates CDbl(Xoffset(i)) * pixelSizeXY, CDbl(Yoffset(i)) * pixelSizeXY, CDbl(ZOffset(i)) * pixelSizeZ, Xnew, Ynew, Znew
         HighResArrayX(LowBound + i) = Xnew  ' this needs to be unified with computing internal AF
         HighResArrayY(LowBound + i) = Ynew ' needs to be unified with computing internal AF
@@ -1888,6 +1890,7 @@ FileNameID As String, HighResArrayX() As Double, HighResArrayY() As Double, High
             StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ, HighResArrayDeltaZ
         
         Case "7", "fcs":
+            Dim i As Integer
             SaveSetting "OnlineImageAnalysis", "macro", "code", "nothing"
             DisplayProgress "Registry Code 7 (fcs): peform a fcs measurment ...", RGB(0, &HC0, 0)
             ' read potitions from
@@ -1897,6 +1900,13 @@ FileNameID As String, HighResArrayX() As Double, HighResArrayY() As Double, High
             Erase HighResArrayDeltaZ
             DisplayProgress "Registry Code 7 (fcs): perform FCS measurement ...", RGB(0, &HC0, 0)
             StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ, HighResArrayDeltaZ
+            'convert in meter
+            For i = LBound(HighResArrayX) To UBound(HighResArrayX)
+                HighResArrayX(i) = (HighResArrayX(i) - Xref) * 0.000001
+                HighResArrayY(i) = (Yref - HighResArrayY(i)) * 0.000001 'inverted image this needs to be tested again
+                HighResArrayZ(i) = HighResArrayZ(i) * 0.000001
+           Next i
+                
             DisplayProgress "Registry Code 7 (fcs): perform FCS measurement ...", RGB(0, &HC0, 0)
             SubImagingWorkFlowFcs FcsData, HighResArrayX, HighResArrayY, HighResArrayZ, GlobalDataBaseName & BackSlash, AutofocusForm.TextBoxFileName.Value & UnderScore & FileNameID, _
             RecordingDoc.Recording.SampleSpacing, RecordingDoc.Recording.FrameSpacing
@@ -1912,6 +1922,9 @@ FileNameID As String, HighResArrayX() As Double, HighResArrayY() As Double, High
             LocHighResArrayY(1) = Yref
             LocHighResArrayZ(1) = Zref + AutofocusForm.BleachZOffset.Value
             LocHighResArrayDeltaZ(1) = -1
+            
+            
+            'Cooridinates need to be in px
             
             Repetitions.Number = 1
             Repetitions.Time = 0
@@ -1993,16 +2006,16 @@ Public Function SubImagingWorkFlowFcs(FcsData As AimFcsData, HighResArrayX() As 
     If Not CheckDir(fileDir) Then
         Exit Function
     End If
-    
+
     NewFcsRecord FcsData, "fcs_" & fileName, 1
-    
+
     If Not FcsMeasurement(FcsData) Then
         Exit Function
     End If
-        
+
     Set Recording = Lsm5.DsRecordingActiveDocObject
     Recording.SetTitle "fcs_" & fileName
-    
+
     SaveFcsPositionList fileDir & fileName & "_fcsPos.txt", pixelSizeXY, pixelSizeZ
     'save measurement
     SaveFcsMeasurement FcsData, fileDir & fileName & ".fcs"
