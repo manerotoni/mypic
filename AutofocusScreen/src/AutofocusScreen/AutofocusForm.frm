@@ -26,7 +26,7 @@ Private Const BIF_RETURNONLYFSDIRS = &H1
 ' AutofocusScreen_ZEN_v2.1.3.10
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Const Version = " v2.1.3.11"
+Private Const Version = " v2.1.3.12"
 Public posTempZ  As Double                  'This is position at start after pushing AutofocusButton
 Private Const DebugCode = False             'sets key to run tests visible or not
 Private Const ReleaseName = True            'this adds the ZEN version
@@ -34,6 +34,8 @@ Private Const LogCode = True                'sets key to run tests visible or no
 
 Private AlterImageInitialize As Boolean ' first time aternative image is activated values from acquisition are loaded. Then variable is ste to false
 Private ZoomImageInitialize As Boolean  ' first time ZoomImage/Micropilot is activated values from acquisition are loaded
+
+
 
 Private Sub AutofocusAlgorithm_Change()
     If AutofocusAlgorithm.Value = "external" Then
@@ -161,6 +163,11 @@ Private Sub Re_Start()
     'Set standard values for Additional Acquisition
     ActiveAlterImage.Value = False
     SwitchEnableAlterImagePage (False)
+    
+    'Set default for bleach
+    ActiveBleach.Value = False
+    SwitchEnableBleachPage (False)
+    
     
     'Set Database name
     DatabaseTextbox.Value = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="OutputFolder")
@@ -380,7 +387,21 @@ Private Sub SaveSettings(fileName As String)
     Print #iFileNum, "GridScan_dRowsub " & GridScan_dRowsub.Value
     Print #iFileNum, "GridScan_dColumnsub " & GridScan_dColumnsub.Value
 
-    
+       'Additional Acquisition
+    Print #iFileNum, "% Bleach Acquisition "
+    Print #iFileNum, "ActiveBleach " & ActiveBleach.Value
+    Print #iFileNum, "BleachTrack1 " & BleachTrack1.Value
+    Print #iFileNum, "BleachTrack2 " & BleachTrack2.Value
+    Print #iFileNum, "BleachTrack3 " & BleachTrack3.Value
+    Print #iFileNum, "BleachTrack4 " & BleachTrack4.Value
+    Print #iFileNum, "BleachRepetitions " & BleachRepetitions.Value
+    Print #iFileNum, "BleachRepetitionTime " & BleachRepetitionTime.Value
+    Print #iFileNum, "BleachFrameSize " & BleachFrameSize.Value
+    Print #iFileNum, "BleachZOffset " & BleachZOffset.Value
+    Print #iFileNum, "BleachZSlices " & BleachZSlices.Value
+    Print #iFileNum, "BleachZStep " & BleachZStep.Value
+    Print #iFileNum, "BleachZoom " & BleachZoom.Value
+
     Close #iFileNum
     Exit Sub
 ErrorHandle:
@@ -844,6 +865,34 @@ Private Sub SwitchEnableAlterImagePage(Enable As Boolean)
     
 End Sub
 
+Private Sub ActiveBleach_Click()
+      SwitchEnableBleachPage (ActiveBleach.Value)
+End Sub
+
+
+
+Private Sub SwitchEnableBleachPage(Enable As Boolean)
+    BleachTrack1.Enabled = Enable
+    BleachTrack2.Enabled = Enable
+    BleachTrack3.Enabled = Enable
+    BleachTrack4.Enabled = Enable
+    BleachFrameSizeLabel.Enabled = Enable
+    BleachFrameSize.Enabled = Enable
+    BleachZoomLabel.Enabled = Enable
+    BleachZoom.Enabled = Enable
+    BleachZSlicesLabel.Enabled = Enable
+    BleachZSlices.Enabled = Enable
+    BleachZStepLabel.Enabled = Enable
+    BleachZStep.Enabled = Enable
+    BleachZOffset.Enabled = Enable
+    BleachZOffsetLabel.Enabled = Enable
+    BleachRepetitionsLabel.Enabled = Enable
+    BleachRepetitions.Enabled = Enable
+    BleachRepetitionTimeLabel.Enabled = Enable
+    BleachRepetitionTime.Enabled = Enable
+
+End Sub
+
 ''''
 ' ActiveGridScan_Click()
 '   Set the grid scan on or off. Changes also
@@ -889,6 +938,8 @@ Private Sub SwitchEnableGridScanPage(Enable As Boolean)
     GridScanDescriptionLabel.Enabled = Enable
     
 End Sub
+
+
 
 
 
@@ -2723,9 +2774,9 @@ Private Function ImagingWorkFlow(RecordingDoc As DsRecordingDoc, FcsData As AimF
 
     ' COMMUNICATION WITH MICROPILOT: START *****************
       
-    If ActiveMicropilot Then
+    If ActiveMicropilot Or ActiveBleach Then
         SaveSetting "OnlineImageAnalysis", "macro", "filepath", FilePath
-        'Wait for anything to stop
+        'Wait for anything to sto
         Do While RecordingDoc.IsBusy
             Sleep (100)
             If GetInputState() <> 0 Then
@@ -2955,7 +3006,9 @@ Public Sub AutoFindTracks()
     AlterTrack1.Visible = False
     AlterTrack1.Enabled = False
     AlterTrack1.Value = False
-                         
+    BleachTrack1.Visible = False
+    BleachTrack1.Enabled = False
+    BleachTrack1.Value = False
     
     AutofocusTrack2.Visible = False
     AutofocusTrack2.Enabled = False
@@ -2969,6 +3022,9 @@ Public Sub AutoFindTracks()
     AlterTrack2.Visible = False
     AlterTrack2.Enabled = False
     AlterTrack2.Value = False
+    BleachTrack2.Visible = False
+    BleachTrack2.Enabled = False
+    BleachTrack2.Value = False
     
     AutofocusTrack3.Visible = False
     AutofocusTrack3.Enabled = False
@@ -2982,6 +3038,9 @@ Public Sub AutoFindTracks()
     AlterTrack3.Visible = False
     AlterTrack3.Enabled = False
     AlterTrack3.Value = False
+    BleachTrack3.Visible = False
+    BleachTrack3.Enabled = False
+    BleachTrack3.Value = False
    
     AutofocusTrack4.Visible = False
     AutofocusTrack4.Enabled = False
@@ -2995,7 +3054,9 @@ Public Sub AutoFindTracks()
     AlterTrack4.Visible = False
     AlterTrack4.Enabled = False
     AlterTrack4.Value = False
-   
+    BleachTrack4.Visible = False
+    BleachTrack4.Enabled = False
+    BleachTrack4.Value = False
 
     ConfiguredTracks = Lsm5.DsRecording.TrackCount
     ChannelOK = False
@@ -3031,7 +3092,7 @@ Public Sub AutoFindTracks()
                     If GoodTracks = 1 Then
                         AutofocusTrack1.Visible = True
                         AutofocusTrack1.Caption = TrackName
-                        AutofocusTrack1.Enabled = True
+                        AutofocusTrack1.Enabled = ActiveAutofocus.Value
                         AutofocusTrack1.BackColor = Color
                         
                         AcquisitionTrack1.Visible = True
@@ -3049,12 +3110,18 @@ Public Sub AutoFindTracks()
                         AlterTrack1.Enabled = ActiveAlterImage.Value
                         AlterTrack1.BackColor = Color
                         
+                        BleachTrack1.Visible = True
+                        BleachTrack1.Caption = TrackName
+                        BleachTrack1.Enabled = ActiveBleach.Value
+                        BleachTrack1.BackColor = Color
+                        
                     End If
                     If GoodTracks = 2 Then
                         AutofocusTrack2.Visible = True
                         AutofocusTrack2.Caption = TrackName
-                        AutofocusTrack2.Enabled = True
+                        AutofocusTrack2.Enabled = ActiveAutofocus
                         AutofocusTrack2.BackColor = Color
+                        
                         AcquisitionTrack2.Visible = True
                         AcquisitionTrack2.Caption = TrackName
                         AcquisitionTrack2.Enabled = True
@@ -3062,19 +3129,24 @@ Public Sub AutoFindTracks()
                         
                         MicropilotTrack2.Visible = True
                         MicropilotTrack2.Caption = TrackName
-                        MicropilotTrack2.Enabled = True
+                        MicropilotTrack2.Enabled = ActiveMicropilot.Value
                         MicropilotTrack2.BackColor = Color
                         
                         AlterTrack2.Visible = True
                         AlterTrack2.Caption = TrackName
-                        AlterTrack2.Enabled = True
+                        AlterTrack2.Enabled = ActiveAlterImage.Value
                         AlterTrack2.BackColor = Color
+                        
+                        BleachTrack2.Visible = True
+                        BleachTrack2.Caption = TrackName
+                        BleachTrack2.Enabled = ActiveBleach.Value
+                        BleachTrack2.BackColor = Color
                         
                     End If
                     If GoodTracks = 3 Then
                         AutofocusTrack3.Visible = True
                         AutofocusTrack3.Caption = TrackName
-                        AutofocusTrack3.Enabled = True
+                        AutofocusTrack3.Enabled = ActiveAutofocus
                         AutofocusTrack3.BackColor = Color
                         
                         AcquisitionTrack3.Visible = True
@@ -3084,19 +3156,24 @@ Public Sub AutoFindTracks()
                         
                         MicropilotTrack3.Visible = True
                         MicropilotTrack3.Caption = TrackName
-                        MicropilotTrack3.Enabled = True
+                        MicropilotTrack3.Enabled = ActiveMicropilot.Value
                         MicropilotTrack3.BackColor = Color
                         
                         AlterTrack3.Visible = True
                         AlterTrack3.Caption = TrackName
-                        AlterTrack3.Enabled = True
+                        AlterTrack3.Enabled = ActiveAlterImage.Value
                         AlterTrack3.BackColor = Color
+                        
+                        BleachTrack3.Visible = True
+                        BleachTrack3.Caption = TrackName
+                        BleachTrack3.Enabled = ActiveBleach.Value
+                        BleachTrack3.BackColor = Color
                         
                     End If
                     If GoodTracks = 4 Then
                         AutofocusTrack4.Visible = True
                         AutofocusTrack4.Caption = TrackName
-                        AutofocusTrack4.Enabled = True
+                        AutofocusTrack4.Enabled = ActiveAutofocus
                         AutofocusTrack4.BackColor = Color
                         
                         AcquisitionTrack4.Visible = True
@@ -3106,13 +3183,18 @@ Public Sub AutoFindTracks()
                         
                         MicropilotTrack4.Visible = True
                         MicropilotTrack4.Caption = TrackName
-                        MicropilotTrack4.Enabled = True
+                        MicropilotTrack4.Enabled = ActiveMicropilot.Value
                         MicropilotTrack4.BackColor = Color
                         
                         AlterTrack4.Visible = True
                         AlterTrack4.Caption = TrackName
-                        AlterTrack4.Enabled = True
+                        AlterTrack4.Enabled = ActiveAlterImage.Value
                         AlterTrack4.BackColor = Color
+                        
+                        BleachTrack4.Visible = True
+                        BleachTrack4.Caption = TrackName
+                        BleachTrack4.Enabled = ActiveBleach.Value
+                        BleachTrack4.BackColor = Color
                         
                     End If
                 Else
@@ -3670,7 +3752,8 @@ Private Function ActivateBleachTrack(Recording As DsRecording, Optional DeltaZ A
         Lsm5.DsRecording.Copy Recording
         Lsm5.DsRecording.TimeSeries = True
         Lsm5.DsRecording.StacksPerRecord = BleachRepetitions.Value
-        Lsm5.DsRecording.FramesPerStack = 1
+        Lsm5.DsRecording.FramesPerStack = BleachZSlices.Value
+        Lsm5.DsRecording.FrameSpacing = BleachZStep.Value
         Lsm5.DsRecording.ScanMode = "Stack"
         'set the correct dwelltime
         For i = 1 To TrackNumber

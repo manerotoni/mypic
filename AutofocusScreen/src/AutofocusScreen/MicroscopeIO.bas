@@ -1491,12 +1491,13 @@ DeltaZ As Double, ByVal Context As String, Optional ByVal method As String = "in
             MsgBox "Online Image analysis for Autofocus was not succesfull!  Exit Now!"
             Exit Function
         End If
-        If GetSetting("OnlineImageAnalysis", "macro", "code") = "nothing" Then
-            GoTo NoResponse
-        End If
+'       If GetSetting("OnlineImageAnalysis", "macro", "code") = "nothing" Then
+'           GoTo NoResponse
+'       End If
         If isArrayEmpty(XArray) Or isArrayEmpty(YArray) Or isArrayEmpty(ZArray) Then
-            MsgBox "Online Image analysis for Autofocus gave back empty arrays!  Exit Now!"
-            Exit Function
+            GoTo NoResponse
+            'MsgBox "Online Image analysis for Autofocus gave back empty arrays!  Exit Now!"
+            'Exit Function
         Else
             X = XArray(1)
             Y = YArray(1)
@@ -1516,7 +1517,7 @@ NoResponse:
     LogMsg = "% compute Autofocus (external) did not respond after " & Round(Timer - Time, 2)
     LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
     DisplayProgress "Autofocus: Compute Autofocus external failed...", RGB(&HC0, 0, 0)
-    Sleep (1000)
+    'Sleep (100)
     ComputeNewCoordinatesAfterAF = True
 End Function
 
@@ -1793,7 +1794,7 @@ HighResArrayZ() As Double, HighResArrayDeltaZ() As Double) As Boolean
         Xtmp = CDbl(Xoffset(i))
         ComputeShiftedCoordinates CDbl(Xoffset(i)) * pixelSizeXY, CDbl(Yoffset(i)) * pixelSizeXY, CDbl(ZOffset(i)) * pixelSizeZ, Xnew, Ynew, Znew
         HighResArrayX(LowBound + i) = Xnew  ' this needs to be unified with computing internal AF
-        HighResArrayY(LowBound + i) = Ynew ' needs to be unified with computing internal AF
+        HighResArrayY(LowBound + i) = Ynew  ' needs to be unified with computing internal AF
         HighResArrayZ(LowBound + i) = Znew
         HighResArrayDeltaZ(LowBound + i) = CDbl(DeltaZ(i)) * pixelSizeZ
     Next i
@@ -1886,6 +1887,7 @@ FileNameID As String, HighResArrayX() As Double, HighResArrayY() As Double, High
             Erase HighResArrayY
             Erase HighResArrayZ
             Erase HighResArrayDeltaZ
+            
             DisplayProgress "Registry Code 6 (focus): focus and number of DeltaZ ...", RGB(0, &HC0, 0)
             StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ, HighResArrayDeltaZ
         
@@ -1914,37 +1916,40 @@ FileNameID As String, HighResArrayX() As Double, HighResArrayY() As Double, High
             SaveSetting "OnlineImageAnalysis", "macro", "code", "nothing"
             DisplayProgress "Registry Code 8 (bleach): peform a bleach measurment ...", RGB(0, &HC0, 0)
             ' read potitions from
-            Dim LocHighResArrayX(1) As Double
-            Dim LocHighResArrayY(1) As Double
-            Dim LocHighResArrayZ(1) As Double
-            Dim LocHighResArrayDeltaZ(1) As Double
-            LocHighResArrayX(1) = Xref
-            LocHighResArrayY(1) = Yref
-            LocHighResArrayZ(1) = Zref + AutofocusForm.BleachZOffset.Value
-            LocHighResArrayDeltaZ(1) = -1
-            
-            
-            'Cooridinates need to be in px
-            
-            Repetitions.Number = 1
-            Repetitions.Time = 0
-            Repetitions.Interval = True
-            DisplayProgress "Registry Code 8 (bleach): perform Bleaching ...", RGB(0, &HC0, 0)
-            'Delete All ROI's
-            Dim AcquisitionController As AimAcquisitionController40.AimScanController
-            Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
-            Dim vo As AimImageVectorOverlay
-            Set vo = AcquisitionController.AcquisitionRegions
-            vo.Cleanup
-            CreateRoisFromRegistry
-            
-            'StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ, HighResArrayDeltaZ
-            DisplayProgress "Registry Code 8 (bleach): perform Bleaching ...", RGB(0, &HC0, 0)
-            SubImagingWorkFlow RecordingDoc, GlobalBleachRecording, "Bleach", AutofocusForm.MicropilotAutofocus, AutofocusForm.MicropilotZOffset, Repetitions, _
-            LocHighResArrayX, LocHighResArrayY, LocHighResArrayZ, LocHighResArrayDeltaZ, GridPos, FileNameID, iRepStart
-            Set Track = Lsm5.DsRecording.TrackObjectBleach(Success)
-            Track.UseBleachParameters = False  'switch off the bleaching
-        
+            If AutofocusForm.ActiveBleach Then
+                Dim LocHighResArrayX(1) As Double
+                Dim LocHighResArrayY(1) As Double
+                Dim LocHighResArrayZ(1) As Double
+                Dim LocHighResArrayDeltaZ(1) As Double
+                LocHighResArrayX(1) = Xref
+                LocHighResArrayY(1) = Yref
+                LocHighResArrayZ(1) = Zref + AutofocusForm.BleachZOffset.Value
+                LocHighResArrayDeltaZ(1) = -1
+                
+                
+                'Cooridinates need to be in px
+                
+                Repetitions.Number = 1
+                Repetitions.Time = 0
+                Repetitions.Interval = True
+                DisplayProgress "Registry Code 8 (bleach): perform Bleaching ...", RGB(0, &HC0, 0)
+                'Delete All ROI's
+                Dim AcquisitionController As AimAcquisitionController40.AimScanController
+                Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
+                Dim vo As AimImageVectorOverlay
+                Set vo = AcquisitionController.AcquisitionRegions
+                vo.Cleanup
+                CreateRoisFromRegistry
+                
+                'StorePositioninHighResArray Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ, HighResArrayDeltaZ
+                DisplayProgress "Registry Code 8 (bleach): perform Bleaching ...", RGB(0, &HC0, 0)
+                SubImagingWorkFlow RecordingDoc, GlobalBleachRecording, "Bleach", AutofocusForm.MicropilotAutofocus, AutofocusForm.MicropilotZOffset, Repetitions, _
+                LocHighResArrayX, LocHighResArrayY, LocHighResArrayZ, LocHighResArrayDeltaZ, GridPos, FileNameID, iRepStart
+                Set Track = Lsm5.DsRecording.TrackObjectBleach(Success)
+                Track.UseBleachParameters = False  'switch off the bleaching
+            Else
+                MsgBox "Command for bleach but not Bleach track setted"
+            End If
         Case Else
             MsgBox ("Invalid OnlineImageAnalysis Code = " & code)
             Exit Function
