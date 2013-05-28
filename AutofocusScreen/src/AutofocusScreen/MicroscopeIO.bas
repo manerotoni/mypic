@@ -1917,13 +1917,12 @@ FileNameID As String, HighResArrayX() As Double, HighResArrayY() As Double, High
             DisplayProgress "Registry Code 8 (bleach): peform a bleach measurment ...", RGB(0, &HC0, 0)
             ' read potitions from
             If AutofocusForm.ActiveBleach Then
-                Dim LocHighResArrayX(1) As Double
-                Dim LocHighResArrayY(1) As Double
-                Dim LocHighResArrayZ(1) As Double
-                Dim LocHighResArrayDeltaZ(1) As Double
-                LocHighResArrayX(1) = Xref
-                LocHighResArrayY(1) = Yref
-                LocHighResArrayZ(1) = Zref + AutofocusForm.BleachZOffset.Value
+                Dim LocHighResArrayX() As Double
+                Dim LocHighResArrayY() As Double
+                Dim LocHighResArrayZ() As Double
+                Dim LocHighResArrayDeltaZ() As Double
+                StorePositioninHighResArray Xref, Yref, Zref, LocHighResArrayX, LocHighResArrayY, LocHighResArrayZ, LocHighResArrayDeltaZ
+                LocHighResArrayZ(1) = LocHighResArrayZ(1) + AutofocusForm.BleachZOffset.Value
                 LocHighResArrayDeltaZ(1) = -1
                 
                 

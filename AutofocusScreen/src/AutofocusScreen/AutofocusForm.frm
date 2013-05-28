@@ -26,7 +26,7 @@ Private Const BIF_RETURNONLYFSDIRS = &H1
 ' AutofocusScreen_ZEN_v2.1.3.10
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-Private Const Version = " v2.1.3.12"
+Private Const Version = " v2.1.3.13"
 Public posTempZ  As Double                  'This is position at start after pushing AutofocusButton
 Private Const DebugCode = False             'sets key to run tests visible or not
 Private Const ReleaseName = True            'this adds the ZEN version
@@ -3732,13 +3732,18 @@ Private Function ActivateBleachTrack(Recording As DsRecording, Optional DeltaZ A
     Next i
     
     If FunSuccess Then
-        Recording.ScanMode = "Stack"
+        If BleachZSlices.Value = 1 Then
+            Recording.ScanMode = "Plane"
+        Else
+            Recording.ScanMode = "Stack"
+        End If
         Recording.SamplesPerLine = BleachFrameSize.Value
         Recording.LinesPerFrame = BleachFrameSize.Value
         Recording.ZoomX = BleachZoom.Value
         Recording.ZoomY = BleachZoom.Value
-        Recording.FramesPerStack = 1
-        
+        Recording.FramesPerStack = BleachZSlices.Value
+        Recording.FrameSpacing = BleachZStep.Value
+        Recording.StacksPerRecord = BleachRepetitions.Value
         Set Track = Recording.TrackObjectBleach(Success)
         If Success Then
             Track.Acquire = True
@@ -3746,20 +3751,17 @@ Private Function ActivateBleachTrack(Recording As DsRecording, Optional DeltaZ A
         End If
         
         Lsm5.DsRecording.Copy Recording
-        Recording.StacksPerRecord = BleachRepetitions.Value
-        Track.TimeBetweenStacks = BleachRepetitionTime.Value
         
-        Lsm5.DsRecording.Copy Recording
         Lsm5.DsRecording.TimeSeries = True
-        Lsm5.DsRecording.StacksPerRecord = BleachRepetitions.Value
-        Lsm5.DsRecording.FramesPerStack = BleachZSlices.Value
-        Lsm5.DsRecording.FrameSpacing = BleachZStep.Value
-        Lsm5.DsRecording.ScanMode = "Stack"
+
+
+
         'set the correct dwelltime
         For i = 1 To TrackNumber
             Lsm5.DsRecording.TrackObjectByMultiplexOrder(i - 1, 1).Acquire = ToActivate(i)
         Next i
         Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime = GlobalBackupSampleObservationTime
+        Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).TimeBetweenStacks = BleachRepetitionTime.Value
     Else
         Exit Function
     End If
