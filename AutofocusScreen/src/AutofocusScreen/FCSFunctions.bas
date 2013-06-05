@@ -25,24 +25,30 @@ Private Sub Initialize_Controller()
     viewerGuiServer.FcsSelectLsmImagePositions = True
 End Sub
 
-Public Sub NewRecord(RecordingDoc As DsRecordingDoc, Optional name As String, Optional Container As Long = 0)
+
+'''
+' Creates New DsRecordingDoc or use available one if present
+''''
+Public Sub NewRecord(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0)
     Dim node As AimExperimentTreeNode
     Set viewerGuiServer = Lsm5.viewerGuiServer
     If RecordingDoc Is Nothing Then
         Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
         node.Type = eExperimentTeeeNodeTypeLsm
         viewerGuiServer.InsertExperimentTreeNode node, True, Container
+        Set node = viewerGuiServer.ExperimentTreeNodeSelected
+        
         Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
         While RecordingDoc.IsBusy
             Sleep (Pause)
             DoEvents
         Wend
-        RecordingDoc.SetTitle name
     End If
+    RecordingDoc.SetTitle Name
 End Sub
 
 
-Public Sub NewFcsRecord(FcsData As AimFcsData, Optional name As String, Optional Container As Long = 0)
+Public Sub NewFcsRecord(FcsData As AimFcsData, Optional Name As String, Optional Container As Long = 0)
     Dim node As AimExperimentTreeNode
     Set viewerGuiServer = Lsm5.viewerGuiServer
     Dim Recording As DsRecordingDoc
@@ -52,9 +58,9 @@ Public Sub NewFcsRecord(FcsData As AimFcsData, Optional name As String, Optional
         viewerGuiServer.InsertExperimentTreeNode node, True, Container
         ' Insert an FCS document into ZEN
         Set FcsData = node.FcsData
-        FcsData.name = name
+        FcsData.Name = Name
         Set Recording = Lsm5.DsRecordingActiveDocObject
-        Recording.SetTitle name
+        Recording.SetTitle Name
     End If
 
 End Sub
@@ -179,7 +185,7 @@ End Function
 ''''
 ' SaveFcsMeasurment to File
 ''''
-Public Sub SaveFcsMeasurement(FcsData As AimFcsData, fileName As String)
+Public Sub SaveFcsMeasurement(FcsData As AimFcsData, FileName As String)
     
     If FcsData Is Nothing Then
         MsgBox "No Fcs Recording to Save"
@@ -188,17 +194,17 @@ Public Sub SaveFcsMeasurement(FcsData As AimFcsData, fileName As String)
     ' Write to file
     Dim writer As AimFcsFileWrite
     Set writer = Lsm5.CreateObject("AimFcsFile.Write")
-    writer.fileName = fileName
+    writer.FileName = FileName
     writer.FileWriteType = eFcsFileWriteTypeAll
-    writer.Format = eFcsFileFormatConfoCor3WithRawData
+    writer.format = eFcsFileFormatConfoCor3WithRawData
 
     writer.Source = FcsData
     writer.Run
        
-    If Not writer.DestinationFilesExist(fileName) Then
-        writer.fileName = fileName
+    If Not writer.DestinationFilesExist(FileName) Then
+        writer.FileName = FileName
         writer.FileWriteType = eFcsFileWriteTypeAll
-        writer.Format = eFcsFileFormatConfoCor3WithRawData
+        writer.format = eFcsFileFormatConfoCor3WithRawData
     
         writer.Source = FcsData
         writer.Run

@@ -62,9 +62,9 @@ Private Sub DisplayAmplifierDescriptions()
     Set channel = Track.DetectionChannelObjectByIndex(0, Success)
 
     channel.DetectorGain = 300
-    MsgBox "Detector 0: " + CStr(channel.name) + " " + CStr(channel.DetectorGain)
+    MsgBox "Detector 0: " + CStr(channel.Name) + " " + CStr(channel.DetectorGain)
     channel.DetectorGain = 500
-    MsgBox "Detector 0: " + CStr(channel.name) + " " + CStr(channel.DetectorGain)
+    MsgBox "Detector 0: " + CStr(channel.Name) + " " + CStr(channel.DetectorGain)
                         
     
     'If Track.Acquire Then 'if track is activated for acquisition

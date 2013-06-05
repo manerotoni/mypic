@@ -10,7 +10,7 @@ Public MirrorX As Boolean
 Public MirrorY As Boolean
   
 
-Public Sub InitializeStageProperties(Optional tmp As Boolean) ' tmp is a hack so that function does not appear in menu
+Public Sub InitializeStageProperties(Optional Tmp As Boolean) ' tmp is a hack so that function does not appear in menu
     Set Interface = Lsm5.ExternalCpObject.pHardwareObjects.pInterfaces
     Set Interface = Interface.pItem("CANN")
     
@@ -271,7 +271,7 @@ End Function
 '''
 ' Function is not used
 '''
-Public Sub NoImageAxisChange(Optional tmp As Boolean) ' tmp is used so that the function does not appear in the menu. Not very clean
+Public Sub NoImageAxisChange(Optional Tmp As Boolean) ' tmp is used so that the function does not appear in the menu. Not very clean
     ExchangeXY = False
     MirrorX = False
     MirrorY = False
@@ -280,7 +280,7 @@ End Sub
 '''
 ' Function is not used
 '''
-Public Sub ImageAxisChange(Optional tmp As Boolean)
+Public Sub ImageAxisChange(Optional Tmp As Boolean)
     Lsm5.ExternalCpObject.pHardwareObjects.GetImageAxisStateS 1, ExchangeXY, MirrorX, MirrorY
 End Sub
 

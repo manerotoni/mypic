@@ -10,15 +10,35 @@ End Sub
 '  Returns false if not an array or dynamic array that has not been initialised (ReDim) or has been erased (Erase)
 '''''
 Public Function isArrayEmpty(parArray As Variant) As Boolean
-
     If IsArray(parArray) = False Then isArrayEmpty = True
     On Error Resume Next
     If UBound(parArray) < LBound(parArray) Then isArrayEmpty = True: Exit Function Else: isArrayEmpty = False
-
 End Function
 
+''''
+' Check if key is in collection
+''''
+Public Function InCollection(Col As Collection, key As String) As Boolean
+  Dim var As Variant
+  Dim errNumber As Long
 
+  InCollection = False
+  Set var = Nothing
 
+  Err.Clear
+  On Error Resume Next
+    var = Col.Item(key)
+    errNumber = CLng(Err.number)
+  On Error GoTo 0
+
+  '5 is not in, 0 and 438 represent incollection
+  If errNumber = 5 Then ' it is 5 if not in collection
+    InCollection = False
+  Else
+    InCollection = True
+  End If
+
+End Function
 
 '''''
 '   FServerFromDescription(strName As String, StrPath As String, ExecName As String) As Boolean

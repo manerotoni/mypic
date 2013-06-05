@@ -8,8 +8,8 @@ Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
 '   Aim               (In) - Either "acquisition", "bleaching" (also includes analysis) or "analysis"
 ''''
 Public Function MakeVectorElement(ByVal TypeVectorOverlay As String, X() As Double, Y() As Double, ByVal Aim As String) As Boolean
-    Dim AcquisitionController As AimAcquisitionController40.AimScanController
-    Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
+'    Dim AcquisitionParameter As AimAcquisitionController40.AimAcquisitionParameters
+'    Set AcquisitionParameter = Lsm5.ExternalDsObject.Scancontroller
     ' Get the Acquisition/Bleach ROIs
     Dim vo As AimImageVectorOverlay
     Set vo = AcquisitionController.AcquisitionRegions
