@@ -1,5 +1,5 @@
 Attribute VB_Name = "MCUCommands"
-
+Option Explicit
 Public Abort As Boolean
 Private Interface As Object
 Private Frequency As Double

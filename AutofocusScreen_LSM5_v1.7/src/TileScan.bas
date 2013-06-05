@@ -1,5 +1,5 @@
 Attribute VB_Name = "TileScan"
-
+Option Explicit
 Dim TileX As Integer
 Dim TileY As Integer
 Dim GlobalPositionsStageOld As Integer

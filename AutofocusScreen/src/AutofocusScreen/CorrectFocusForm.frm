@@ -23,7 +23,7 @@ Attribute VB_Exposed = False
 Private Sub ChangeFocusButton_Click()
 ChangeFocus = True
 FocusChanged = True
-RestoreAquisitionParameters
+RestoreAcquisitionParameters
 Lsm5Vba.Application.ThrowEvent eRootReuse, 0
 DoEvents
 AutofocusForm.ActivateAcquisitionTrack

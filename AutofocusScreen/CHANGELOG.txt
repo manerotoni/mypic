@@ -1,0 +1,37 @@
+Version 2.1
+
+Relevant changes to the user:
+
+	* Setting for acquistion are read at the start of the macro. Any changes to pixel dwell time, Z-stacks etc 
+	  must now be updated using Re-Initialize
+	* Postfix for saving files uses a different format that conforms with Cellbase
+		e.g. Position ("W"ell) 2 subposition ("P"osition) 1 and Repetion 3 ("T"time) reads --W00002--P00001--T00003.lsm
+	* Cellbase format is also used for Additional acquisition and Micropilot acquistion
+	* Corrected autofocus_button: Only the Z0Slice is changed during the acquisition. At the end the Zposition is updated if AutofocusTrackZ is on
+
+
+New features/Bug fixes (visible to user)
+	* Re-initialize updates the imaging setting not the macro parameters
+	* Autofocus MaxSpeed setting is independet of acquisition setting. The macro tries to set minimal pixel dwell time for given imaging
+	* Autofocus in the absence of piezo works als large z-Step. To use Fast Z-line pixel dwell time is adapted to the Z-step
+	* More reliable StopButton and recovery of imaging setting 
+	* Default output folder is loaded from registry ("OutputFolder"). If macro is used for the first time no default output folder 
+	* Activation of Autofocus/Micropilot/Additional Acquisition etc. is now done by a similar "Active" checkbox. This automatically enable/disables minipages.
+	* Crossdependency of modes is implemented by enabling/disabling features
+	* The actual position is shown in  locations
+	* After pressing start button acquistion always start at first position, first subPosition, first repetition. 
+	* Continue from current location will start from current physical location (with correct numbering), and current repetition
+	* Macro asks once if files should be overwritten
+	* Micropilot and Additional acquistion works without piezo
+	
+Code changes (visible to developers)
+	* Heavily clean up of unused and obsolete code commenting of (nearly) all functions. Function/Sub declartion and variable passing is now consistent.
+	* Removing of many not necessary global variables.
+	* Improved choice of tracks
+	* MultipleLocation reads positions from stage when start is pressed (then stored in array). These positions are also updated. 
+	  Previously it was continuously permuting marked position from stage 
+	* GetOffssetValue uses now Autofocus_StackShift.
+	* Tracking has been modified so that it does move in the same way as during Autofocusin (see next point)
+	* All functions use for computing new coordinates and moving the same subroutine. This should simplify any problems in mapping
+	  physical and image position
+	

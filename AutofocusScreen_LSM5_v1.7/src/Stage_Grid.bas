@@ -1,5 +1,5 @@
 Attribute VB_Name = "Stage_Grid"
-
+Option Explicit
 Public Const PubGridPathData = "c:\AIM\macros\datafiles\"
 Public Const PubGridPath = "c:\AIM\macros\"
 Public Const GlobalMaximumPositions = 800
@@ -68,7 +68,7 @@ BitsPerSample As Long, bpp As Long, Visible As Boolean, _
 ImgName As String, TimeSeries As Boolean, NumberScans As Long, XPixels As Long, YPixels As Long, Channels As Long)
 Dim i As Long
 
-Dim Success As Integer
+Dim success As Integer
 Dim DataChannel As DsDataChannel
 Dim DataChannelIndex As Long
 Dim Track As DsTrack
@@ -85,7 +85,7 @@ Dim fSize As Double
 Dim hFile As Long
 Dim zIndex As Long
 Dim TimeIndex As Long
-Dim channel As Long
+Dim Channel As Long
 Dim SourceChannel As Long
 Dim NumberChannels As Long
 Dim DestStackNumber As Long
@@ -150,8 +150,8 @@ Dim YGroup As Long
 Dim xIndx As Long
 Dim yIndx As Long
 Dim Start As Long
-Dim ix As Long
-Dim iy As Long
+Dim iX As Long
+Dim iY As Long
 Dim PlaneSize As Long
 
     If GridImage Is Nothing Then Exit Sub
@@ -169,19 +169,19 @@ Dim PlaneSize As Long
         For xIndx = 1 To GlobalXGrid
             Start = YGroup * XPixels + (3 * YGroup * XPixels) * (yIndx - 1) + XGroup + _
             3 * XGroup * (xIndx - 1) - 1
-            For iy = 1 To 2 * YGroup
-                For ix = 1 To 2 * XGroup
+            For iY = 1 To 2 * YGroup
+                For iX = 1 To 2 * XGroup
                     If Not GlobalDeActivatedLocations(xIndx, yIndx) Then
-                        SpareArrayGreen(Start + ix + (iy - 1) * XPixels) = 0
-                        SpareArrayBlue(Start + ix + (iy - 1) * XPixels) = 4000
-                        SpareArrayRed(Start + ix + (iy - 1) * XPixels) = 0
+                        SpareArrayGreen(Start + iX + (iY - 1) * XPixels) = 0
+                        SpareArrayBlue(Start + iX + (iY - 1) * XPixels) = 4000
+                        SpareArrayRed(Start + iX + (iY - 1) * XPixels) = 0
                     Else
-                        SpareArrayRed(Start + ix + (iy - 1) * XPixels) = 1000
-                        SpareArrayGreen(Start + ix + (iy - 1) * XPixels) = 0
-                        SpareArrayBlue(Start + ix + (iy - 1) * XPixels) = 0
+                        SpareArrayRed(Start + iX + (iY - 1) * XPixels) = 1000
+                        SpareArrayGreen(Start + iX + (iY - 1) * XPixels) = 0
+                        SpareArrayBlue(Start + iX + (iY - 1) * XPixels) = 0
                     End If
-                Next ix
-            Next iy
+                Next iX
+            Next iY
         Next xIndx
     Next yIndx
     LsmMath.WriteImagePlaneXY GridImage, 0, 0, 0, PlaneSize, SpareArrayRed(0)
@@ -204,8 +204,8 @@ Dim YGroup As Long
 Dim xIndx As Long
 Dim yIndx As Long
 Dim Start As Long
-Dim ix As Long
-Dim iy As Long
+Dim iX As Long
+Dim iY As Long
 Dim PlaneSize As Long
 Dim MinZValue As Double
 Dim MaxZValue As Double
@@ -251,17 +251,17 @@ ColorStep = 4000 / ZGridRange
             Start = YGroup * XPixels + (3 * YGroup * XPixels) * (yIndx - 1) + XGroup + _
             3 * XGroup * (xIndx - 1) - 1
             
-                For iy = 1 To 2 * YGroup
-                    For ix = 1 To 2 * XGroup
+                For iY = 1 To 2 * YGroup
+                    For iX = 1 To 2 * XGroup
                         If Not GlobalDeActivatedLocations(xIndx, yIndx) Then
-                          SpareArrayBlue(Start + ix + (iy - 1) * XPixels) = (GlobalZpos(idpos) - MinZValue) * ColorStep + 96
-                          SpareArrayRed(Start + ix + (iy - 1) * XPixels) = 0
+                          SpareArrayBlue(Start + iX + (iY - 1) * XPixels) = (GlobalZpos(idpos) - MinZValue) * ColorStep + 96
+                          SpareArrayRed(Start + iX + (iY - 1) * XPixels) = 0
                         Else
-                            SpareArrayRed(Start + ix + (iy - 1) * XPixels) = 500
-                            SpareArrayBlue(Start + ix + (iy - 1) * XPixels) = 0
+                            SpareArrayRed(Start + iX + (iY - 1) * XPixels) = 500
+                            SpareArrayBlue(Start + iX + (iY - 1) * XPixels) = 0
                         End If
-                    Next ix
-                Next iy
+                    Next iX
+                Next iY
             
          Next xIndx
     Next yIndx
@@ -275,8 +275,8 @@ Dim XPixels As Long
 Dim YPixels As Long
 Dim XGroup As Long
 Dim YGroup As Long
-Dim ix As Long
-Dim iy As Long
+Dim iX As Long
+Dim iY As Long
 Dim x1 As Long
 Dim Y1 As Long
 Dim X2 As Long
@@ -431,7 +431,7 @@ Select Case EventNr
 '                    " " + Strings.Chr(181) + "m"
 '                End If
             End If
-        ElseIf (EventNr = DS45.eImageWindowRightButtonUpEvent) Then
+        ElseIf (EventNr = ds.eImageWindowRightButtonUpEvent) Then
             If Not GlobalGridImage Is Nothing Then
                 If GlobalGridImage.GetCurrentMousePosition(c, t, z, y, x) <> 0 Then
                     AutofocusForm.DisplayGridSelection x, y, xIndx, yIndx
@@ -601,24 +601,24 @@ marke1:
 End Sub
 
 Public Sub GridSelection(x As Long, y As Long, XR As Long, YR As Long, Activate As Boolean)
-    Dim XPixels As Long
-    Dim YPixels As Long
-    Dim XGroup As Long
-    Dim YGroup As Long
-    Dim xIndx As Long
-    Dim yIndx As Long
-    Dim Start As Long
-    Dim ix As Long
-    Dim iy As Long
-    Dim Xmin As Long
-    Dim Xmax As Long
-    Dim Ymin As Long
-    Dim Ymax As Long
-    Dim xImage As Long
-    Dim StartX As Long
-    Dim yImage As Long
-    Dim StartY As Long
-    Dim Found As Boolean
+Dim XPixels As Long
+Dim YPixels As Long
+Dim XGroup As Long
+Dim YGroup As Long
+Dim xIndx As Long
+Dim yIndx As Long
+Dim Start As Long
+Dim iX As Long
+Dim iY As Long
+Dim Xmin As Long
+Dim Xmax As Long
+Dim Ymin As Long
+Dim Ymax As Long
+Dim xImage As Long
+Dim StartX As Long
+Dim yImage As Long
+Dim StartY As Long
+Dim Found As Boolean
 
     If GlobalGridImage Is Nothing Then Exit Sub
     If x >= XR Then
@@ -646,42 +646,41 @@ Public Sub GridSelection(x As Long, y As Long, XR As Long, YR As Long, Activate 
             StartX = XGroup + 3 * XGroup * (xIndx - 1)
             StartY = YGroup + 3 * YGroup * (yIndx - 1)
             Found = False
-            For iy = 1 To 2 * YGroup
-                For ix = 1 To 2 * XGroup
-                    xImage = StartX + ix
-                    yImage = StartY + iy
+            For iY = 1 To 2 * YGroup
+                For iX = 1 To 2 * XGroup
+                    xImage = StartX + iX
+                    yImage = StartY + iY
                     If xImage >= Xmin And xImage <= Xmax And yImage >= Ymin And yImage <= Ymax Then
                         GlobalDeActivatedLocations(xIndx, yIndx) = Not Activate
                         Found = True
                         Exit For
                     End If
                     If Found Then Exit For
-                Next ix
-            Next iy
+                Next iX
+            Next iY
         Next xIndx
     Next yIndx
     GlobalOrderChanged = True
 End Sub
-
 Public Sub GridOnOff(x As Long, y As Long, XR As Long, YR As Long)
-    Dim XPixels As Long
-    Dim YPixels As Long
-    Dim XGroup As Long
-    Dim YGroup As Long
-    Dim xIndx As Long
-    Dim yIndx As Long
-    Dim Start As Long
-    Dim ix As Long
-    Dim iy As Long
-    Dim Xmin As Long
-    Dim Xmax As Long
-    Dim Ymin As Long
-    Dim Ymax As Long
-    Dim xImage As Long
-    Dim StartX As Long
-    Dim yImage As Long
-    Dim StartY As Long
-    Dim Found As Boolean
+Dim XPixels As Long
+Dim YPixels As Long
+Dim XGroup As Long
+Dim YGroup As Long
+Dim xIndx As Long
+Dim yIndx As Long
+Dim Start As Long
+Dim iX As Long
+Dim iY As Long
+Dim Xmin As Long
+Dim Xmax As Long
+Dim Ymin As Long
+Dim Ymax As Long
+Dim xImage As Long
+Dim StartX As Long
+Dim yImage As Long
+Dim StartY As Long
+Dim Found As Boolean
 
     If GlobalGridImage Is Nothing Then Exit Sub
     If x >= XR Then
@@ -709,22 +708,27 @@ Public Sub GridOnOff(x As Long, y As Long, XR As Long, YR As Long)
             StartX = XGroup + 3 * XGroup * (xIndx - 1)
             StartY = YGroup + 3 * YGroup * (yIndx - 1)
             Found = False
-            For iy = 1 To 2 * YGroup
-                For ix = 1 To 2 * XGroup
-                    xImage = StartX + ix
-                    yImage = StartY + iy
+            For iY = 1 To 2 * YGroup
+                For iX = 1 To 2 * XGroup
+                    xImage = StartX + iX
+                    yImage = StartY + iY
                     If xImage >= Xmin And xImage <= Xmax And yImage >= Ymin And yImage <= Ymax Then
                         GlobalDeActivatedLocations(xIndx, yIndx) = Not GlobalDeActivatedLocations(xIndx, yIndx)
                         Found = True
                         Exit For
                     End If
                     If Found Then Exit For
-                Next ix
-            Next iy
+                Next iX
+            Next iY
         Next xIndx
     Next yIndx
     GlobalOrderChanged = True
 End Sub
+
+
+
+
+
 
 Public Sub ReadLoc(x As Double, y As Double)
     Dim cnt As Long
@@ -760,13 +764,15 @@ Public Sub CoordinateConversion(bExchangeXY As Boolean, bMirrorX As Boolean, bMi
 
 End Sub
 
+
+
+
 Public Sub UsedDevices40(bLSM As Boolean, bLIVE As Boolean, bCamera As Boolean)
-    Dim Scancontroller As AimScanController
-    Dim TrackParameters As AimTrackParameters
-    Dim Size As Long
-    Dim lTrack As Long
-    Dim eDeviceMode As Long
-    
+Dim Scancontroller As AimScanController
+Dim TrackParameters As Object
+Dim Size As Long
+Dim lTrack As Long
+Dim eDeviceMode As Long
     bLSM = False
     bLIVE = False
     bCamera = False
@@ -793,11 +799,9 @@ Public Sub UsedDevices40(bLSM As Boolean, bLIVE As Boolean, bCamera As Boolean)
                 Case eAimDeviceModeSpectralImager
                     bLSM = True
                     Exit Sub
-                
                 Case eAimDeviceModeRtScanner
                     bLIVE = True
                     Exit Sub
-                
                 Case eAimDeviceModeCamera1
                     bCamera = True
                     Exit Sub

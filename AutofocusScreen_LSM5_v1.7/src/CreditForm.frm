@@ -14,11 +14,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
-
 Private Sub CloseButton_Click()
     CreditForm.Hide
 End Sub
 
-Private Sub UserForm_Click()
-
-End Sub

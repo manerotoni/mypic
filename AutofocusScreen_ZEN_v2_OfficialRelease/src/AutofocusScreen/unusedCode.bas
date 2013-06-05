@@ -265,3 +265,169 @@ Attribute VB_Name = "unusedCode"
 '    DoEvents
 '    DisplayProgress "Autofocus 15", RGB(0, &HC0, 0)
 'End Sub
+
+
+Public Function ComputeCenterAndAxis(dX As Double, dY As Double)
+
+    Dim i, j, iFrame, channel, ni, bitDepth As Long
+    Dim nj As Long
+    
+    Dim ic, jc, di, dj, PixelSize As Double
+    Dim tot As Double
+    
+    Dim th As Double
+    th = 20
+    
+    
+    'Dim ColMax As Integer
+    'Dim iRow As Integer
+    'Dim nRow As Integer
+    'Dim iFrame As Integer
+    'Dim gvRow As Variant  ' gv = gray value
+    'Dim iCol As Long
+    'Dim nCol As Long
+    'Dim bitDepth As Long
+    'Dim channel As Integer
+    'Dim gvMax As Double
+    'Dim gvMaxBitRange As Double
+    'Dim nSaturatedPixels As Long
+    'Dim maxGV_nSat(2) As Double
+    
+    
+    'DisplayProgress "Measuring Exposure...", RGB(0, &HC0, 0)
+  
+    'ColMax = Lsm5.DsRecordingActiveDocObject.Recording.RtRegionWidth '/ Lsm5.DsRecordingActiveDocObject.Recording.RtBinning
+    
+    'nRow = Lsm5.DsRecordingActiveDocObject.Recording.LinesPerFrame
+    'MsgBox "nRow = " + CStr(nRow)
+    
+'        ElseIf SystemName = "LSM" Then
+'            ColMax = Lsm5.DsRecordingActiveDocObject.Recording.SamplesPerLine
+'            LineMax = Lsm5.DsRecordingActiveDocObject.Recording.LinesPerFrame
+'        Else
+'            MsgBox "The System is not LIVE or LSM! SystemName: " + SystemName
+''            Exit Sub
+ '       End If
+ '   End If
+    
+    'Initiallize tables to store projected (integrated) pixels values in the 3 dimensions
+    'ReDim Intline(nLines) As Long
+    
+    'iFrame = 0
+    'gvMax = -1
+        
+    'iRow = 0
+    'channel = 0
+    'bitDepth = 0 ' leaves the internal bit depth
+    'gvRow = Lsm5.DsRecordingActiveDocObject.ScanLine(channel, 0, iFrame, iRow, nCol, bitDepth) 'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
+    
+    
+    
+    ni = Lsm5.DsRecordingActiveDocObject.Recording.LinesPerFrame
+    'nCol = 0
+    nj = Lsm5.DsRecordingActiveDocObject.Recording.SamplesPerLine
+    
+    'Dim image(,) As Variant
+    
+    'Dim replyCounts(,,) As Short = New Short(2, 1, 2) {}
+    
+    Dim srcline As Variant
+    
+    Dim image() As Long
+    ReDim image(ni, nj)
+    
+    
+    'Dim x(1 To ni, 1 To 4) As Variant
+
+    'MsgBox "ni = " + CStr(ni) + " nj = " + CStr(nj)
+    
+   ' image = GetSubRegion(channel, xs, ys, zs, ts
+    
+    
+    'Lsm5.DsRecordingActiveDocObject.ScanLine(channel, 0, iFrame, iRow, nCol, bitDepth) 'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
+        
+    PixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing * 1000000
+        
+        
+    ' get the image  (put into a subprocedure)
+    iFrame = 0
+    channel = 0
+    bitDepth = 0 ' leaves the internal bit depth
+    For i = 0 To ni - 1
+        srcline = Lsm5.DsRecordingActiveDocObject.ScanLine(channel, 0, iFrame, i, nj, bitDepth) 'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
+        For j = 0 To nj - 1
+            image(i, j) = srcline(j)
+        Next j
+    Next i
+    'MsgBox "im = " + CStr(image(100, 100))
+        
+    ' computer center of mass
+    ic = 0
+    jc = 0
+    tot = 0
+    For i = 0 To ni - 1
+        For j = 0 To nj - 1
+            If (image(i, j) > th) Then
+                ic = ic + image(i, j) * i
+                jc = jc + image(i, j) * j
+                tot = tot + image(i, j)
+            End If
+        Next j
+    Next i
+    
+    ic = ic / tot
+    jc = jc / tot
+    'MsgBox "ic = " + CStr(ic) + " jc = " + CStr(jc) + " tot = " + CStr(tot)
+    
+    dX = (ic - ni / 2) * PixelSize
+    dY = (jc - nj / 2) * PixelSize
+    
+    ' compute displacement vector
+    di = 0
+    dj = 0
+    
+    For i = 0 To ni - 1
+        For j = 0 To nj - 1
+            If (image(i, j) > th) Then
+                di = di + image(i, j) * (i - ic) * Sgn(i - ic)
+                dj = dj + image(i, j) * (j - jc) * Sgn(i - ic)
+            End If
+        Next j
+    Next i
+    
+    di = di / tot
+    dj = dj / tot
+    'MsgBox "di = " + CStr(di) + " dj = " + CStr(dj) + " tot = " + CStr(tot)
+        
+        
+    'PixelSize
+        
+        
+        
+    '    For iCol = 0 To nCol - 1            'Now I'm scanning all the pixels in the line
+            
+     '       If (gvRow(iCol) > gvMax) Then
+      '          gvMax = gvRow(iCol)
+       '     End If
+
+    
+    
+    'iFrame = 0
+    'gvMax = -1
+    'iRow = 0
+    'Channel = 0
+    'bitDepth = 0 ' leaves the internal bit depth
+    'gvRow = Lsm5.DsRecordingActiveDocObject.ScanLine(Channel, 0, iFrame, iRow, nCol, bitDepth) 'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
+    'MsgBox "nCol = " + CStr(nCol)
+    'MsgBox "bytes per pixel = " + CStr(bitDepth)
+
+    ' todo: is there another function to find this out??
+    'If (bitDepth = 1) Then
+    '    gvMaxBitRange = 255
+    'ElseIf (bitDepth = 2) Then
+    '    gvMaxBitRange = 65536
+    'End If
+    
+    'nSaturatedPixels = 0
+ 
+End Function

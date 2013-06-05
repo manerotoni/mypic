@@ -1,16 +1,4 @@
 Attribute VB_Name = "Functions"
-
-Public Function Range() As Double
-    Dim RevolverPosition As Long
-    RevolverPosition = Lsm5.Hardware.CpObjectiveRevolver.RevolverPosition
-    If RevolverPosition >= 0 Then
-        Range = Lsm5.Hardware.CpObjectiveRevolver.FreeWorkingDistance(RevolverPosition) * 1000#
-    Else
-        Range = 0#
-    End If
-End Function
-
-
 Public Function GetGlobalZZero(SetZeroMarked As Boolean, ZeroChanged As Boolean)
     Dim Count As Integer
     Dim idx As Long
@@ -22,7 +10,7 @@ Public Function GetGlobalZZero(SetZeroMarked As Boolean, ZeroChanged As Boolean)
     Dim Y1 As Double
     Dim res1 As Integer
 
-    Dim Success As Boolean
+    Dim success As Boolean
     Dim result As Long
     Dim Positions As Long
     ZeroChanged = False

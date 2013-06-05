@@ -15,7 +15,6 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
 
-
 Private Sub DeselctButton_Click()
 GridSelection x, y, XR, YR, False
 SelectLocs.Hide
