@@ -1,13 +1,25 @@
 Attribute VB_Name = "RoiControl"
 Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
 
+
+
+
+'''''
+' remove all vector elements
+'''''
+Public Function ClearVectorElements() As Boolean
+    Dim vo As AimImageVectorOverlay
+    Set vo = AcquisitionController.AcquisitionRegions
+    vo.Cleanup
+End Function
+
 ''''
 ' Make a Vectorelement (a ROI) to be used for bleaching or imaging
 '   TypeVectorOverlay (In) - speifies type of ROI. "circle", "reactangle", "polyline", "ellipse"
 '   X, Y              (In) - X and Y coordinates in pixel!! Upper left corner of image is 0, 0
 '   Aim               (In) - Either "acquisition", "bleaching" (also includes analysis) or "analysis"
 ''''
-Public Function MakeVectorElement(ByVal TypeVectorOverlay As String, X() As Double, Y() As Double, ByVal Aim As String) As Boolean
+Public Function MakeVectorElement(ByVal TypeVectorOverlay As String, X() As Double, Y() As Double, ByVal aim As String) As Boolean
 '    Dim AcquisitionParameter As AimAcquisitionController40.AimAcquisitionParameters
 '    Set AcquisitionParameter = Lsm5.ExternalDsObject.Scancontroller
     ' Get the Acquisition/Bleach ROIs
@@ -52,7 +64,7 @@ Public Function MakeVectorElement(ByVal TypeVectorOverlay As String, X() As Doub
         vo.AppendElementKnot ElementNumber, X(i), Y(i), 0, 0
     Next i
     Sleep 50 ' this pause is require to finish setting the elements
-    Select Case Aim
+    Select Case aim
         Case "Acquisition", "acquisition":
             vo.ElementAcquisitionFlags(ElementNumber) = AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAcquisition
             vo.ElementColor(ElementNumber) = "&H0000C000" 'this is green

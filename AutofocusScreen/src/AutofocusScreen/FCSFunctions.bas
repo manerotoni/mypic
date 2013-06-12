@@ -34,7 +34,7 @@ Public Sub NewRecord(RecordingDoc As DsRecordingDoc, Optional Name As String, Op
     Set viewerGuiServer = Lsm5.viewerGuiServer
     If RecordingDoc Is Nothing Then
         Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
-        node.Type = eExperimentTeeeNodeTypeLsm
+        node.type = eExperimentTeeeNodeTypeLsm
         viewerGuiServer.InsertExperimentTreeNode node, True, Container
         Set node = viewerGuiServer.ExperimentTreeNodeSelected
         
@@ -54,7 +54,7 @@ Public Sub NewFcsRecord(FcsData As AimFcsData, Optional Name As String, Optional
     Dim Recording As DsRecordingDoc
     If FcsData Is Nothing Then
         Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
-        node.Type = eExperimentTeeeNodeTypeConfoCor
+        node.type = eExperimentTeeeNodeTypeConfoCor
         viewerGuiServer.InsertExperimentTreeNode node, True, Container
         ' Insert an FCS document into ZEN
         Set FcsData = node.FcsData

@@ -13,7 +13,8 @@ Attribute VB_Exposed = False
 
 
 '''' We can use number or a dictionary to find a Job in Jobs
-Private Jobs As Collection
+Private Jobs() As AJob
+Private JobNames As Dictionary
 Private ZENv As Integer
 Private ZoomPixelSlice(1 To 9, 1 To 3) As Double
 
@@ -26,11 +27,13 @@ End Sub
 '   Initialize a series of Jobs with given name
 '''
 Public Sub initialize(Names() As String, Recording As DsRecording)
-    Dim Name As Variant
-    Set Jobs = New Collection
-    For Each Name In Names
-        AddJob CStr(Name), Lsm5.DsRecording
-    Next Name
+    Dim i As Integer
+    Set Jobs = New AJob
+    ReDim Jobs(0 To UBound(Names))
+    Set JobNames = New Dictionary
+    For i = 0 To Names
+        AddJob CStr(Names(i)), Lsm5.DsRecording
+    Next i
     
     
     ' This may be different depending on the setting and microscope
@@ -66,40 +69,47 @@ Public Sub initialize(Names() As String, Recording As DsRecording)
     ZoomPixelSlice(7, 3) = 0.38
     ZoomPixelSlice(8, 3) = 0.77
     ZoomPixelSlice(9, 3) = 1.54
-
-    
 End Sub
 
 Public Function getZENv() As Integer
     getZENv = ZENv
 End Function
+
 Public Function setZENv(Value As Integer)
     ZENv = Value
 End Function
 
-
+Public Sub resetJobs()
+    Erase Jobs
+    Erase JobNames
+End Sub
 
 '''
 ' AddJob
-'   Add Job to Jobs Collection with key Name and use Recording
+'   Add Job and increase number of Jobs
 '''
 Public Sub AddJob(Name As String, Recording As DsRecording)
-    Dim Job As AJob
+    If isArrayEmpty(Jobs) Then
+        ReDim Jobs(0)
+    Else
+        ReDim Preserve Jobs(0 To UBound(Jobs) + 1)
+    End If
+    JobNames.Add Name, UBound(Jobs)
+    
     Dim i As Integer
-    Dim pixelDwell As Double
-    Set Job = New AJob
-    Job.Name = Name
-    Job.SetRecording Lsm5.DsRecording
+    Dim iJob As Integer
+    iJob = JobNames.Item(Name)
+    Jobs(iJob).Name = Name
+    Jobs(iJob).SetRecording Lsm5.DsRecording
 
     Dim Aq() As Boolean
     ReDim Aq(Job.TrackNumber - 1)
-    For i = 0 To Job.TrackNumber - 1
+    For i = 0 To Jobs(iJob).TrackNumber - 1
         Aq(i) = Recording.TrackObjectByMultiplexOrder(i, 1).Acquire
     Next i
-    Job.AcquireTrack = Aq
-    Job.TimeBetweenStacks = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).TimeBetweenStacks
-    Jobs.Add Job, Name
-    SetPixelDwell Name, Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
+    Jobs(iJob).AcquireTrack = Aq
+    Jobs(iJob).TimeBetweenStacks = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).TimeBetweenStacks
+    Jobs(iJob).pixelDwell Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
 End Sub
 
 
@@ -111,36 +121,49 @@ Public Sub SetJob(Name As String, Recording As DsRecording, ZEN As Object)
     Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
     Dim AcquisitionParameters As AimAcquisitionController40.AimAcquisitionParameters
     Set AcquisitionParameters = AcquisitionController.AcquisitionParameters
-    If InCollection(Jobs, Name) Then
-        Jobs(Name).SetRecording Recording
-        Jobs(Name).TrackNumber = Jobs(Name).Recording.GetNormalTrackCount
-        Jobs(Name).TimeBetweenStacks = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).TimeBetweenStacks
-        If ZENv > 2010 Then
-            If GetScanDirection(Name) = 1 Then
-                SetCorrX Name, ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value
-                SetCorrY Name, ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value
-            End If
-        End If
-        SetPixelDwell Name, Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
-        Dim Aq() As Boolean
-        ReDim Aq(Jobs(Name).TrackNumber - 1)
-        For i = 0 To Jobs(Name).TrackNumber - 1
-            Aq(i) = Recording.TrackObjectByMultiplexOrder(i, 1).Acquire
-        Next i
-        Jobs(Name).AcquireTrack = Aq
-        Dim bo As Boolean
-        bo = AcquisitionParameters.UseROIs
-        SetUseRoi Name, AcquisitionParameters.UseROIs
-    Else
+    Dim iJob As Integer
+    If Not JobNames.Exists(Name) Then
         MsgNoJob Name
+        Exit Sub
+    Else
+        iJob = JobNames.Item(Name)
     End If
-    
+    Jobs(iJob).SetRecording Recording
+    Jobs(iJob).TrackNumber = Jobs(Name).Recording.GetNormalTrackCount
+    Jobs(iJob).TimeBetweenStacks = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).TimeBetweenStacks
+    If ZENv > 2010 Then
+        If Jobs(iJob).Recording.ScanDirection = 1 Then
+            Jobs(iJob).CorrX = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value
+            Jobs(iJob).CorrY = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value
+        End If
+    End If
+    Jobs(iJob).pixelDwell Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
+    Dim Aq() As Boolean
+    ReDim Aq(Jobs(iJob).TrackNumber - 1)
+    For i = 0 To Jobs(iJob).TrackNumber - 1
+        Aq(i) = Recording.TrackObjectByMultiplexOrder(i, 1).Acquire
+    Next i
+    Jobs(iJob).AcquireTrack = Aq
+    Jobs(iJob).UseRoi AcquisitionParameters.UseROIs
 End Sub
 
 
 Public Function GetRecording(Name As String) As DsRecording
-    Set GetRecording = Jobs(Name).GetRecording
+    If JobNames.Exists(Name) Then
+        Set GetRecording = Jobs(JobNames(key)).GetRecording
+    Else
+       MsgNoJob Name
+    End If
 End Function
+
+Private Function checkJobName(Name As String) As Boolean
+    If JobNames.Exists(Name) Then
+        checkJobName = True
+    Else
+        MsgNoJob Name
+    End If
+End Function
+
 '''
 '   Put the job with Name from Macro into ZEN
 '''
@@ -150,68 +173,128 @@ Public Sub PutJob(Name As String, ZEN As Object)
     Dim AcquisitionParameters As AimAcquisitionController40.AimAcquisitionParameters
     Set AcquisitionParameters = AcquisitionController.AcquisitionParameters
     Dim iTrack As Integer
-    If InCollection(Jobs, Name) Then
-        If Not Jobs(Name).Recording Is Nothing Then
-            Lsm5.DsRecording.Copy Jobs(Name).Recording
-        End If
-        'at the moment we just set the active/inactive track and TimeBetweenStacks
-        For iTrack = 0 To Jobs(Name).TrackNumber - 1
-            Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire = Jobs(Name).GetAcquireTrack(iTrack)
-            Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).TimeBetweenStacks = GetTimeBetweenStacks(Name)
-            Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).SampleObservationTime = GetPixelDwell(Name)
-        Next iTrack
-        AcquisitionParameters.UseROIs = GetUseRoi(Name)
-        'AcquisitionParameters.Bidirectional = True
-        
+    
+    Dim iJob As Integer
+    If Not checkJobName Then
+        Exit Sub
     End If
+    iJob = JobNames.Item(Names)
+    
+    If Not Jobs(iJob).Recording Is Nothing Then
+        Lsm5.DsRecording.Copy Jobs(iJob).Recording
+    End If
+    'at the moment we just set the active/inactive track and TimeBetweenStacks
+    For iTrack = 0 To Jobs(Name).TrackNumber - 1
+        Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire = Jobs(iJob).GetAcquireTrack(iTrack)
+        Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).TimeBetweenStacks = Jobs(iJob).TimeBetweenStacks
+        Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).SampleObservationTime = Jobs(iJob).pixelDwell
+    Next iTrack
+    AcquisitionParameters.UseROIs = Jobs(iJob).UseRoi
     
     If ZENv > 2010 Then
-        ZEN.gui.Acquisition.AcquisitionMode.ScanArea.Zoom.Value = GetZoom(Name)
-        ZEN.SetListEntrySelected "Scan.Mode.DirectionX", GetScanDirection(Name)
-        If GetScanDirection(Name) = 1 Then
-            ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value = GetCorrX(Name)
-            ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value = GetCorrY(Name)
+        ZEN.gui.Acquisition.AcquisitionMode.ScanArea.Zoom.Value = Jobs(iJob).Recording.ZoomX
+        ZEN.SetListEntrySelected "Scan.Mode.DirectionX", Jobs(iJob).Recording.ScanDirection
+        If Jobs(iJob).Recording.ScanDirection Then
+            ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value = Jobs(iJob).CorrX
+            ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value = Jobs(iJob).CorrY
         End If
-  
     End If
  End Sub
 
+
+''''
+'Roi Handler. This manages vectorElements in ZEN. Every Job can have some Rois associated to
+''''
+Public Sub setRoiMaxNr(Name As String, roiMaxNr As Integer)
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    iJob = JobNames.Item(Names)
+End Sub
+
+Public Sub setRoi(Name As String, ARoi As Roi, roiNr As Integer)
+    If Not checkJobName Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).setRoi ARoi, roiNr
+End Sub
+
+Public Function getRoi(Name As String, roiNr As Integer) As Roi
+    If Not checkJobName Then
+        Exit Function
+    End If
+    Set getRoi = Jobs(JobNames.Item(Name)).getRoi
+End Function
+
+Public Sub createRois(Name As String)
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).createRois
+End Sub
+
+
+Public Sub clearRois(Name As String)
+    Jobs(iJob).clearRois
+End Sub
+
+
+''''''
 Public Function TrackNumber(Name As String)
     TrackNumber = Jobs(Name).TrackNumber
 End Function
+
 
 ''''''
 '    UpdateJobTimeSeries: if True the Job also has time Series
 ''''''
 Public Sub SetTimeSeries(Name As String, Value As Boolean)
-    Jobs(Name).Recording.TimeSeries = Value
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).Recording.TimeSeries = Value
 End Sub
 
 Public Function GetTimeSeries(Name As String) As Boolean
-    GetTimeSeries = Jobs(Name).Recording.TimeSeries
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    GetTimeSeries = Jobs(JobNames.Item(Name)).Recording.TimeSeries
 End Function
 
 Public Sub SetFrameSize(Name As String, Value As Integer)
-    Jobs(Name).Recording.LinesPerFrame = CLng(Value)  'This is Y (check)
-    Jobs(Name).Recording.SamplesPerLine = CLng(Value) 'This is X (check)
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).Recording.LinesPerFrame = CLng(Value)  'This is Y (check)
+    Jobs(JobNames.Item(Name)).Recording.SamplesPerLine = CLng(Value) 'This is X (check)
 End Sub
 
-Public Function GetFrameSize(Name As String)
-    GetFrameSize = Jobs(Name).Recording.SamplesPerLine
+Public Function GetFrameSize(Name As String) As Long
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    GetFrameSize = Jobs(JobNames.Item(Name)).Recording.SamplesPerLine
 End Function
 
 '''
 ' X-Lines
 '''
-Public Function GetSamplesPerLine(Name As String)
-    GetSamplesPerLine = Jobs(Name).Recording.SamplesPerLine
+Public Function GetSamplesPerLine(Name As String) As Long
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    GetSamplesPerLine = Jobs(JobNames.Item(Name)).Recording.SamplesPerLine
 End Function
 
 '''
 ' Y-Lines
 ''''
-Public Function GetLinesPerFrame(Name As String)
-    GetLinesPerFrame = Jobs(Name).Recording.LinesPerFrame
+Public Function GetLinesPerFrame(Name As String) As Long
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    GetLinesPerFrame = Jobs(JobNames.Item(Name)).Recording.LinesPerFrame
 End Function
 
 
@@ -219,33 +302,51 @@ End Function
 ' Interval for time series
 '''
 Public Sub SetTimeBetweenStacks(Name As String, Value As Double)
-    Jobs(Name).TimeBetweenStacks = Value
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).TimeBetweenStacks = Value
 End Sub
 
 Public Function GetTimeBetweenStacks(Name As String) As Double
-    GetTimeBetweenStacks = Jobs(Name).TimeBetweenStacks
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    GetTimeBetweenStacks = Jobs(JobNames.Item(Name)).TimeBetweenStacks
 End Function
 
 Public Sub SetTrackNumber(Name As String, Value As Integer)
-    Jobs(Name).TrackNumber = Value
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).TrackNumber = Value
 End Sub
 
 
 Public Sub SetAcquireTrack(Name As String, iTrack As Integer, Value As Boolean)
-    Jobs(Name).ReDimAcquireTrack (Jobs(Name).TrackNumber - 1)
-    Jobs(Name).SetAcquireTrack iTrack, Value
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).ReDimAcquireTrack (Jobs(JobNames.Item(Name)).TrackNumber - 1)
+    Jobs(JobNames.Item(Name)).SetAcquireTrack iTrack, Value
 End Sub
 
 Public Function GetAcquireTrack(Name As String, iTrack As Integer) As Boolean
-    If iTrack < Jobs(Name).TrackNumber Then
-        GetAcquireTrack = Jobs(Name).GetAcquireTrack(iTrack)
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    If iTrack < Jobs(JobNames.Item(Name)).TrackNumber Then
+        GetAcquireTrack = Jobs(JobNames.Item(Name)).GetAcquireTrack(iTrack)
     End If
 End Function
 
 Public Sub SetBleachTrack(Name As String, Value As Boolean)
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
     Dim Success As Integer
-    Jobs(Name).Recording.TrackObjectBleach(Success).Acquire = Value
-    Jobs(Name).Recording.TrackObjectBleach(Success).UseBleachParameters = Value
+    Jobs(JobNames.Item(Name)).Recording.TrackObjectBleach(Success).Acquire = Value
+    Jobs(JobNames.Item(Name)).Recording.TrackObjectBleach(Success).UseBleachParameters = Value
 End Sub
 
 ''''
@@ -253,81 +354,119 @@ End Sub
 ''''
 Public Function GetBleachTrack(Name As String) As Boolean
     Dim Success As Integer
-    GetBleachTrack = Jobs(Name).Recording.TrackObjectBleach(Success).Acquire And Jobs(Name).Recording.TrackObjectBleach(Success).UseBleachParameters
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    GetBleachTrack = Jobs(JobNames.Item(Name)).Recording.TrackObjectBleach(Success).Acquire And Jobs(JobNames.Item(Name)).Recording.TrackObjectBleach(Success).UseBleachParameters
 End Function
 
-Public Sub SetStacks(JobName As String, ZRange As Double, ZStep As Double)
-    SetFramesPerStack JobName, CLng(ZRange / ZStep) + 1
-    SetFrameSpacing JobName, ZStep
-End Sub
 
 ''''
 '   This is the number of Z-stacks
 ''''
 Public Sub SetFramesPerStack(Name As String, Value As Integer)
-    Jobs(Name).Recording.FramesPerStack = Value
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).Recording.FramesPerStack = Value
 End Sub
 
 Public Function GetFramesPerStack(Name As String) As Integer
-    GetFramesPerStack = Jobs(Name).Recording.FramesPerStack
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    GetFramesPerStack = Jobs(JobNames.Item(Name)).Recording.FramesPerStack
 End Function
 
 ''''
 '   This is dZ (in um)
 ''''
 Public Sub SetFrameSpacing(Name As String, Value As Double)
-    Jobs(Name).Recording.FrameSpacing = Value
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).Recording.FrameSpacing = Value
 End Sub
 
 Public Function GetFrameSpacing(Name As String) As Double
-    GetFrameSpacing = Jobs(Name).Recording.FrameSpacing
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    GetFrameSpacing = Jobs(JobNames.Item(Name)).Recording.FrameSpacing
 End Function
 
 '''
 '   This is dXdY in meter
 '''
 Public Function GetSampleSpacing(Name As String) As Double
-    GetSampleSpacing = Jobs(Name).Recording.SampleSpacing
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    GetSampleSpacing = Jobs(JobNames.Item(Name)).Recording.SampleSpacing
 End Function
 
 
 Public Sub SetZoom(Name As String, Value As Double)
-    Jobs(Name).Recording.ZoomX = Value
-    Jobs(Name).Recording.ZoomY = Value
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).Recording.ZoomX = Value
+    Jobs(JobNames.Item(Name)).Recording.ZoomY = Value
 End Sub
 
 Public Function GetZoom(Name As String) As Double
-    GetZoom = Jobs(Name).Recording.ZoomX
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    GetZoom = Jobs(JobNames.Item(Name)).Recording.ZoomX
 End Function
 
 Public Function GetCorrX(Name As String) As Double
-    GetCorrX = Jobs(Name).CorrX
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    GetCorrX = Jobs(JobNames.Item(Name)).CorrX
 End Function
 
 
 Public Function GetCorrY(Name As String) As Double
-    GetCorrY = Jobs(Name).CorrY
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    GetCorrY = Jobs(JobNames.Item(Name)).CorrY
 End Function
 
 Public Sub SetCorrX(Name As String, Value As Double)
-    Jobs(Name).CorrX = Value
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).CorrX = Value
 End Sub
 
 
 Public Sub SetCorrY(Name As String, Value As Double)
-    Jobs(Name).CorrY = Value
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).CorrY = Value
 End Sub
 
 ''''
 '   Number of time points
 '''
 Public Sub SetStacksPerRecord(Name As String, Value As Integer)
-    Jobs(Name).Recording.StacksPerRecord = Value
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).Recording.StacksPerRecord = Value
 End Sub
 
 
 Public Function GetStacksPerRecord(Name As String) As Integer
-    GetStacksPerRecord = Jobs(Name).Recording.StacksPerRecord
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    GetStacksPerRecord = Jobs(JobNames.Item(Name)).Recording.StacksPerRecord
 End Function
 
 
@@ -339,11 +478,17 @@ End Function
 '   Line: A Line
 '''''
 Public Sub SetScanMode(Name As String, Value As String)
-    Jobs(Name).Recording.ScanMode = Value
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).Recording.ScanMode = Value
 End Sub
 
 Public Function GetScanMode(Name As String) As String
-    GetScanMode = Jobs(Name).Recording.ScanMode
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    GetScanMode = Jobs(JobNames.Item(Name)).Recording.ScanMode
 End Function
 
 
@@ -354,11 +499,17 @@ End Function
 '   OnTheFly: Focuswheel that is not syncronized with imaging
 '''''
 Public Sub SetSpecialScanMode(Name As String, Value As String)
-     Jobs(Name).Recording.SpecialScanMode = Value
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).Recording.SpecialScanMode = Value
 End Sub
 
 Public Function GetSpecialScanMode(Name As String) As String
-    GetSpecialScanMode = Jobs(Name).Recording.SpecialScanMode
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    GetSpecialScanMode = Jobs(JobNames.Item(Name)).Recording.SpecialScanMode
 End Function
 '''''
 ' Sets Unidirectional or bidirectional scan
@@ -366,33 +517,51 @@ End Function
 '    1: bidirectional scan
 '''''
 Public Sub SetScanDirection(Name As String, Value As Integer)
-    Jobs(Name).Recording.ScanDirection = Value
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).Recording.ScanDirection = Value
 End Sub
 
 Public Function GetScanDirection(Name As String) As Integer
-    GetScanDirection = Jobs(Name).Recording.ScanDirection
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    GetScanDirection = Jobs(JobNames.Item(Name)).Recording.ScanDirection
 End Function
 
 '''
 ' Set and Get the usage of ROIs
 '''
 Public Function SetUseRoi(Name As String, Value As Boolean)
-    Jobs(Name).UseRoi = Value
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).UseRoi = Value
 End Function
 
 Public Function GetUseRoi(Name As String) As Boolean
-    GetUseRoi = Jobs(Name).UseRoi
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    GetUseRoi = Jobs(JobNames.Item(Name)).UseRoi
 End Function
 
 '''
 ' Set and Get the pixelDwellTime of Job
 '''
 Public Sub SetPixelDwell(Name As String, pixelDwell As Double)
-    Jobs(Name).pixelDwell = pixelDwell
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).pixelDwell = pixelDwell
 End Sub
 
 Public Function GetPixelDwell(Name As String) As Double
-    GetPixelDwell = Jobs(Name).pixelDwell
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    GetPixelDwell = Jobs(JobNames.Item(Name)).pixelDwell
 End Function
 
 
@@ -400,27 +569,27 @@ End Function
 ''''
 ' Create a string with the description of a Job
 ''''
-Public Function JobDescriptor1(JobName As String) As String
+Public Function JobDescriptor1(Name As String) As String
     Dim Recording As DsRecording
     Dim Description As String
     Dim iTrack As Integer
-    If (GetScanMode(JobName) = "ZScan") Or (GetScanMode(JobName) = "Line") Then
+    If (GetScanMode(JobNames.Item(Name)) = "ZScan") Or (GetScanMode(JobNames.Item(Name)) = "Line") Then
         Description = Description & "ScanMode = Line" & vbCrLf
-        Description = Description & "       X = " & GetSamplesPerLine(JobName) & ", Y = " & 1 & vbCrLf
+        Description = Description & "       X = " & GetSamplesPerLine(JobNames.Item(Name)) & ", Y = " & 1 & vbCrLf
     Else
         Description = Description & "ScanMode = Frame" & vbCrLf
-        Description = Description & "       X = " & GetSamplesPerLine(JobName) & ", Y = " & GetLinesPerFrame(JobName) & vbCrLf
+        Description = Description & "       X = " & GetSamplesPerLine(JobNames.Item(Name)) & ", Y = " & GetLinesPerFrame(JobNames.Item(Name)) & vbCrLf
     End If
     
-    Description = Description & "Bleaching = " & GetBleachTrack(JobName) & vbCrLf
-    Description = Description & "Regions = " & GetUseRoi(JobName) & vbCrLf
+    Description = Description & "Bleaching = " & GetBleachTrack(JobNames.Item(Name)) & vbCrLf
+    Description = Description & "Regions = " & GetUseRoi(JobNames.Item(Name)) & vbCrLf
     
     
-    Description = Description & "PixelDwell = " & Round(GetPixelDwell(JobName) * 1000000#, 2) & " us" & vbCrLf
-    Description = Description & "Zoom = " & GetZoom(JobName) & vbCrLf
+    Description = Description & "PixelDwell = " & Round(GetPixelDwell(JobNames.Item(Name)) * 1000000#, 2) & " us" & vbCrLf
+    Description = Description & "Zoom = " & GetZoom(JobNames.Item(Name)) & vbCrLf
     
-    Description = Description & "Piezo = " & (GetSpecialScanMode(JobName) = "ZScanner") & vbCrLf
-    Description = Description & "Fast-Z-Line = " & (GetSpecialScanMode(JobName) = "OnTheFly") & vbCrLf
+    Description = Description & "Piezo = " & (GetSpecialScanMode(JobNames.Item(Name)) = "ZScanner") & vbCrLf
+    Description = Description & "Fast-Z-Line = " & (GetSpecialScanMode(JobNames.Item(Name)) = "OnTheFly") & vbCrLf
 
     
         
@@ -430,20 +599,20 @@ End Function
 ''''
 ' Create a string with the description of a Job
 ''''
-Public Function JobDescriptor2(JobName As String) As String
+Public Function JobDescriptor2(Name As String) As String
     Dim Description As String
     Dim iTrack As Integer
-    Description = "Z-Stack = " & (GetScanMode(JobName) = "Stack" Or GetScanMode(JobName) = "ZScan") & vbCrLf
-    If GetScanMode(JobName) = "Stack" Or GetScanMode(JobName) = "ZScan" Then
-        Description = Description & "       Z-Slices    = " & GetFramesPerStack(JobName) & vbCrLf
-        Description = Description & "       Z-Interval  = " & Round(GetFrameSpacing(JobName), 2) & " um" & vbCrLf
-        Description = Description & "       Z-Range   = " & Round(GetFrameSpacing(JobName), 2) * (GetFramesPerStack(JobName) - 1) & " um" & vbCrLf
+    Description = "Z-Stack = " & (GetScanMode(JobNames.Item(Name)) = "Stack" Or GetScanMode(JobNames.Item(Name)) = "ZScan") & vbCrLf
+    If GetScanMode(JobNames.Item(Name)) = "Stack" Or GetScanMode(JobNames.Item(Name)) = "ZScan" Then
+        Description = Description & "       Z-Slices    = " & GetFramesPerStack(JobNames.Item(Name)) & vbCrLf
+        Description = Description & "       Z-Interval  = " & Round(GetFrameSpacing(JobNames.Item(Name)), 2) & " um" & vbCrLf
+        Description = Description & "       Z-Range   = " & Round(GetFrameSpacing(JobNames.Item(Name)), 2) * (GetFramesPerStack(JobNames.Item(Name)) - 1) & " um" & vbCrLf
     End If
 
-    Description = Description & "TimeSeries = " & GetTimeSeries(JobName) & vbCrLf
-    If GetTimeSeries(JobName) Then
-        Description = Description & "       Cycles     = " & GetStacksPerRecord(JobName) & vbCrLf
-        Description = Description & "       Interval    = " & GetTimeBetweenStacks(JobName) & " sec" & vbCrLf
+    Description = Description & "TimeSeries = " & GetTimeSeries(JobNames.Item(Name)) & vbCrLf
+    If GetTimeSeries(JobNames.Item(Name)) Then
+        Description = Description & "       Cycles     = " & GetStacksPerRecord(JobNames.Item(Name)) & vbCrLf
+        Description = Description & "       Interval    = " & GetTimeBetweenStacks(JobNames.Item(Name)) & " sec" & vbCrLf
     End If
 
 

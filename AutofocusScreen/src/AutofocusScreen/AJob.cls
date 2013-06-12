@@ -17,13 +17,8 @@ Public UseRoi As Boolean
 Public CorrX  As Double ' corretion for double directional scanning
 Public CorrY As Double  ' corretion for double directional scanning
 
-'    pixelDwell = pPixelDwell
-'End Property
-'
-'
-'Public Property Let pixelDwell(Value As Double)
-'    pPixelDwell = Value
-'End Property
+Private Rois() As Roi
+Private pRoiMaxNr As Integer
 
 Public Property Get AcquireTrack() As Boolean()
     AcquireTrack = pAcquireTrack
@@ -55,9 +50,6 @@ Public Sub ReDimAcquireTrack(Value As Integer)
 End Sub
 
 
-
-
-
 Public Function GetRecording() As DsRecording
     Set GetRecording = Recording
 End Function
@@ -68,7 +60,55 @@ Public Sub SetRecording(Value As DsRecording)
    TrackNumber = Recording.GetNormalTrackCount
 End Sub
 
+Public Sub setRoiMaxNr(roiMaxNr As Integer)
+    pRoiMaxNr = roiMaxNr
+    If pRoiMaxNr = 0 Then
+        Erase Rois
+    Else
+        ReDim Rois(0 To pRoiMaxNr - 1)
+    End If
+End Sub
 
+Public Function getRoiMaxNr() As Integer
+    getRoiNr = pRoiMaxNr
+End Function
+
+Public Sub clearRois()
+    ClearVectorElements
+    pRoiMaxNr = 0
+    Erase Rois
+End Sub
+
+Public Sub setRoi(ARoi As Roi, roiNr As Integer)
+    If UBound(Rois) <= roiNr Then
+        Rois(roiNr).setRoi ARoi.roiType, ARoi.roiAim, ARoi.getX, ARoi.getY
+    Else
+        MsgBox (" No Roi of nr" + roiNr + " initialize Rois first ")
+    End If
+End Sub
+
+Public Function getRoi(roiNr As Integer) As Roi
+    If UBound(Rois) <= roiNr Then
+        Set getRoi = Rois(roiNr)
+    Else
+        MsgBox (" No Roi of nr" + roiNr + " initialize Rois first ")
+    End If
+End Function
+
+
+
+Public Function createRois() As Boolean
+    Dim ARoi As Roi
+    Dim i As Integer
+    Rois(i).ClearVectorElements
+    For i = 0 To pRoiMaxNr - 1
+            If Not Rois(i).MakeVectorElement Then
+                Exit Function
+            End If
+        Next i
+    End If
+    createRois = True
+End Function
 
 'Public Property Get TrackNumber(Value As Integer)
 '    pTrackNumber =

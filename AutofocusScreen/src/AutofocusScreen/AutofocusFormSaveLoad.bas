@@ -91,16 +91,14 @@ Private Sub SaveFormPage(JobName As String, iFileNum As Integer)
     End If
     
     Print #iFileNum, JobName & "Period " & AutofocusForm.Controls(JobName & "Period").Value
-    If JobName <> "AlterAcquisition" Then
-        Print #iFileNum, JobName & "TrackZ " & AutofocusForm.Controls(JobName & "TrackZ").Value
-        Print #iFileNum, JobName & "TrackXY " & AutofocusForm.Controls(JobName & "TrackXY").Value
-        Print #iFileNum, JobName & "OfflineTrack " & AutofocusForm.Controls(JobName & "OfflineTrack").Value
-        Print #iFileNum, JobName & "OfflineTrackChannel " & _
-        AutofocusForm.Controls(JobName & "OfflineTrackChannel").Value
-        Print #iFileNum, JobName & "OiaActive " & AutofocusForm.Controls(JobName & "OiaActive").Value
-        Print #iFileNum, JobName & "OiaSequential " & AutofocusForm.Controls(JobName & "OiaSequential").Value
-        Print #iFileNum, JobName & "OiaParallel " & AutofocusForm.Controls(JobName & "OiaParallel").Value
-    End If
+    Print #iFileNum, JobName & "TrackZ " & AutofocusForm.Controls(JobName & "TrackZ").Value
+    Print #iFileNum, JobName & "TrackXY " & AutofocusForm.Controls(JobName & "TrackXY").Value
+    Print #iFileNum, JobName & "OfflineTrack " & AutofocusForm.Controls(JobName & "OfflineTrack").Value
+    Print #iFileNum, JobName & "OfflineTrackChannel " & _
+    AutofocusForm.Controls(JobName & "OfflineTrackChannel").Value
+    Print #iFileNum, JobName & "OiaActive " & AutofocusForm.Controls(JobName & "OiaActive").Value
+    Print #iFileNum, JobName & "OiaSequential " & AutofocusForm.Controls(JobName & "OiaSequential").Value
+    Print #iFileNum, JobName & "OiaParallel " & AutofocusForm.Controls(JobName & "OiaParallel").Value
     
     If JobName = "Trigger1" Or JobName = "Trigger2" Then
         Print #iFileNum, JobName & "RepetitionTime " & AutofocusForm.Controls(JobName & "RepetitionTime").Value

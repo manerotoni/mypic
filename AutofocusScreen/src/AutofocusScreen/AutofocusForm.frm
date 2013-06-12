@@ -74,22 +74,10 @@ NoError:
     LogFileNameBase = ""
     Log = LogCode
         
-    ' set name of jobs. These must correspond to the names of buttons etc in the form!!
     
-    'This variable contains the keys for the OnlineImageanalysis
-    ReDim OiaKeyNames(11)
-    OiaKeyNames(0) = "code"
-    OiaKeyNames(1) = "fileAnalyzed"
-    OiaKeyNames(2) = "filePath"
-    OiaKeyNames(3) = "X"
-    OiaKeyNames(4) = "Y"
-    OiaKeyNames(5) = "Z"
-    OiaKeyNames(6) = "deltaZ"
-    OiaKeyNames(7) = "roiType"
-    OiaKeyNames(8) = "roiAim"
-    OiaKeyNames(9) = "roiX"
-    OiaKeyNames(10) = "roiY"
-    OiaKeyNames(11) = "unit"
+    Dim OiaSettings As OnlineIASettings
+    OiaSettings = New OnlineIASettings
+    OiaSettings.resetRegistry
     
     
     ''''This variable contains all the imagingJobs
@@ -1467,7 +1455,7 @@ Public Sub AutofocusButton_Click()
     'Check if there is an existing document then start acquisition
     Set node = viewerGuiServer.ExperimentTreeNodeSelected
     If Not node Is Nothing Then
-        If node.Type <> eExperimentTeeeNodeTypeLsm Then
+        If node.type <> eExperimentTeeeNodeTypeLsm Then
             Lsm5.NewScanWindow
         End If
         Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
@@ -1497,13 +1485,13 @@ End Sub
 ''''''''
 Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = Nothing, Optional FilePath As String = "") As Boolean
     Running = True
-    Dim OiaSettings As Dictionary
+    Dim OiaSettings As OnlineIASettings
+    Set OiaSettings = New OnlineIASettings
+    Dim StgPos As StagePosition
     Dim FileName As String
     Dim time As Double
-    Dim X As Double, Y As Double, Z As Double
     Dim NewCoord() As Double
     Dim deltaZ As Double
-    Dim GridPos As GridPosType
     Dim Sample0Z As Double ' test variable
     Dim pos As Double ' test variable for position
     Dim LogMsg  As String
@@ -1513,36 +1501,35 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
     StopScanCheck
     ' Recenter and move where it should be
     
-
-    Z = posTempZ
-    X = Lsm5.Hardware.CpStages.PositionX
-    Y = Lsm5.Hardware.CpStages.PositionY
+    StgPos.Z = posTempZ
+    StgPos.X = Lsm5.Hardware.CpStages.PositionX
+    StgPos.Y = Lsm5.Hardware.CpStages.PositionY
     
-
-    'initialize offsets. Default is no offset
-    ResetRegistry
-    ReadOiaSettingsFromRegistry OiaSettings, OiaKeyNames
+    OiaSettings.resetRegistry
+    
     FileName = "AF_T000.lsm"
 
 
     'recenter only after activation of new track
     If AutofocusActive Then
-        OiaJobInitialize "Autofocus", OiaSettings, FilePath, FileName
-        ExecuteJob "Autofocus", AutofocusDoc, FilePath, FileName, X, Y, Z, CInt(deltaZ)
+        ExecuteJob "Autofocus", AutofocusDoc, FilePath, FileName, StgPos, CInt(deltaZ)
     End If
     If AcquisitionActive Then
         FileName = "AQ_T000.lsm"
-        OiaJobInitialize "Acquisition", OiaSettings, FilePath, FileName
-        ExecuteJob "Acquisition", AutofocusDoc, FilePath, FileName, X, Y, Z + AcquisitionZOffset.Value, CInt(deltaZ)
+        StgPos.Z = StgPos.Z + AcquisitionZOffset.Value
+        ExecuteJob "Acquisition", AutofocusDoc, FilePath, FileName, StgPos, CInt(deltaZ)
+        StgPos.Z = StgPos.Z - AcquisitionZOffset.Value
+        
     End If
     
     If AlterAcquisitionActive Then
         FileName = "AL_T000.lsm"
-        OiaJobInitialize "AlterAcquisition", OiaSettings, FilePath, FileName
-        ExecuteJob "AlterAcquisition", AutofocusDoc, FilePath, FileName, X, Y, Z + AlterAcquisitionZOffset.Value, CInt(deltaZ)
+        StgPos.Z = StgPos.Z + AlterAcquisitionZOffset.Value
+        ExecuteJob "AlterAcquisition", AutofocusDoc, FilePath, FileName, StgPos, CInt(deltaZ)
+        StgPos.Z = StgPos.Z - AlterAcquisitionZOffset.Value
     End If
     
-    posTempZ = Z
+    posTempZ = StgPos.Z
     AutofocusButtonRun = True
 
 End Function
@@ -1738,20 +1725,7 @@ End Function
 
 
     
-Private Function SetLocationTextLabel(X As Double, Y As Double, Z As Double, GridPos As GridPosType, TotPos As Long, iRep As Integer) As String
-    Dim Caption As String
-    Caption = "Locations : " & TotPos & "/" & UBound(posGridX, 1) * UBound(posGridX, 2) * UBound(posGridX, 3) * UBound(posGridX, 4) & "; X= " & X & ", Y = " & Y & ", Z = " & Z & vbCrLf & _
-                                "Repetition :" & iRep & "/" & GlobalRepetitionNumber.Value & vbCrLf & _
-                                "Well/Position Row: " & GridPos.Row & "/" & UBound(posGridX, 1) & "; Column: " & GridPos.Col & "/" & UBound(posGridX, 2) & vbCrLf
 
-                                
-     If MultipleLocationToggle Or GridScanActive Then
-        If GridScan_nRowsub.Value > 1 Or GridScan_nColumnsub.Value > 1 Then
-            Caption = Caption & "Subposition   Row: " & GridPos.RowSub & "/" & UBound(posGridX, 3) & "; Column: " & GridPos.ColSub & "/" & UBound(posGridX, 4) & vbCrLf
-        End If
-    End If
-    SetLocationTextLabel = Caption
-End Function
 
 '''''
 '   Pause()

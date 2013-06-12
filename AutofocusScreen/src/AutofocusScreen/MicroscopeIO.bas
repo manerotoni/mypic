@@ -32,16 +32,6 @@ Public RepNames() As String
 Public OiaKeyNames() As String
 
 
-
-
-''''Position on grid
-Public Type GridPosType
-    Row As Long
-    Col As Long
-    RowSub As Long
-    ColSub As Long
-End Type
-
 ''''''''''''''''''''
 '''''CONSTANTS''''''
 ''''''''''''''''''''
