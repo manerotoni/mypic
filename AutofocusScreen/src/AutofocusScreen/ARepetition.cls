@@ -15,7 +15,7 @@ Public Name As String            ' this is should belong to the upper class but 
 Public number As Integer        'Number of repetitions
 Public index As Integer          'currentindex of repetition
 Public time As Double         ' Time between repetition
-Private timeStart As Double     'Time start of current repetition this will be updated if Interval is used
+Private TimeStart As Double     'Time start of current repetition this will be updated if Interval is used
 Public interval As Boolean
 Const maxZeros = 4
 
@@ -25,14 +25,14 @@ Const maxZeros = 4
 Public Function nextRep() As Boolean
     If index <= number Then
         index = index + 1
-        timeStart = CDbl(GetTickCount) * 0.001
+        TimeStart = CDbl(GetTickCount) * 0.001
         nextRep = True
     End If
 End Function
 
 Public Sub updateTimeStart()
     If interval Then
-        timeStart = CDbl(GetTickCount) * 0.001
+        TimeStart = CDbl(GetTickCount) * 0.001
     End If
 End Sub
 
@@ -54,7 +54,7 @@ End Function
 '   Calculate that remains to wait
 '''
 Public Function wait() As Double
-    wait = time + timeStart - CDbl(GetTickCount) * 0.001
+    wait = time + TimeStart - CDbl(GetTickCount) * 0.001
 End Function
 
 '''

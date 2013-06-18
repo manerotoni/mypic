@@ -36,6 +36,12 @@ Private Const LogCode = True                'sets key to run tests visible or no
 
 
 
+Private Sub Label22_Click()
+
+End Sub
+
+
+
 ''''''
 ' UserForm_Initialize()
 '   Function called from e.g. AutoFocusForm.Show
@@ -76,7 +82,7 @@ NoError:
         
     
     Dim OiaSettings As OnlineIASettings
-    OiaSettings = New OnlineIASettings
+    Set OiaSettings = New OnlineIASettings
     OiaSettings.resetRegistry
     
     
@@ -120,7 +126,7 @@ End Sub
 ''''
 Private Sub Re_Start()
     Dim i As Integer
-    Dim delay As Single
+    Dim Delay As Single
     Dim bLSM As Boolean
     Dim bLIVE As Boolean
     Dim bCamera As Boolean
@@ -129,11 +135,11 @@ Private Sub Re_Start()
     Set tools = Lsm5.tools
     GlobalMacroKey = "Autofocus"
     
-    delay = 1
+    Delay = 1
     flgEvent = 7
     flg = 0
     Lsm5.StopScan
-    wait (delay)
+    wait (Delay)
     LoopingTimerUnit = 1
     GlobalRepetitionSec.BackColor = &HFF8080
     BlockRepetitions = 1
@@ -184,7 +190,10 @@ Private Sub Re_Start()
     SwitchEnableGridScanPage (False)
     
     Set Grids = New ImagingGrids
-    Grids.AddGrid "Global", 1, 1, 1, 1
+    ' this adds grids with LBound 0.
+    Grids.AddGrid "Global"
+    Grids.AddGrid "Trigger1"
+    Grids.AddGrid "Trigger2"
     
     'Set standard values for Additional Acquisition
     AlterAcquisitionActive.Value = False
@@ -232,7 +241,7 @@ End Sub
 '''''
 Public Sub Re_Initialize()
     Dim Name As Variant
-    Dim delay As Single
+    Dim Delay As Single
     Dim standType As String
     Dim count As Long
     Dim SuccessRecenter As Boolean
@@ -261,7 +270,7 @@ Public Sub Re_Initialize()
     End If
     SetDefaultRecordings
     Jobs.initialize JobNames, Lsm5.DsRecording
-    posTempZ = Lsm5.Hardware.CpFocus.Position
+    posTempZ = Lsm5.Hardware.CpFocus.position
     Recenter_pre posTempZ, SuccessRecenter, ZENv
     If Not Recenter_post(posTempZ, SuccessRecenter, ZENv) Then
         Exit Sub
@@ -717,6 +726,26 @@ Private Sub Trigger2OiaActive_Click()
     JobOiaActiveClick "Trigger2"
 End Sub
 
+
+Private Sub TriggermaxWait(JobName As String)
+On Error GoTo ErrorHandle:
+    If Me.Controls(JobName + "maxWait").Value < 0 Then
+        MsgBox JobName + "waiting time for setting positions is >=0"
+        Me.Controls(JobName + "maxWait").Value = 0
+    End If
+    Exit Sub
+ErrorHandle:
+    MsgBox "There is no property in form called " + JobName + "maxWait!"
+End Sub
+
+Private Sub Trigger2maxWait_Change()
+    TriggermaxWait ("Trigger1")
+End Sub
+
+Private Sub Trigger1maxWait_Change()
+    TriggermaxWait ("Trigger1")
+End Sub
+
 '''''''
 '  Sequential online image analysis. VBA Macro waits after acquisition of image for a change in registry code
 '''''''
@@ -970,26 +999,26 @@ Private Sub GridScanActive_Click()
         If MultipleLocationToggle.Value Then
             GridScan_nRow = 1
             GridScan_nColumn = Lsm5.Hardware.CpStages.MarkCount
-            Grids.updateGrid "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
+            Grids.updateGridSize "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
         End If
     End If
 End Sub
 
 
 Private Sub GridScan_nRow_Click()
-     Grids.updateGrid "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
+     Grids.updateGridSize "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
 End Sub
 
 Private Sub GridScan_nColumn_Click()
-     Grids.updateGrid "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
+     Grids.updateGridSize "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
 End Sub
 
 Private Sub GridScan_nColumnSub_Click()
-     Grids.updateGrid "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
+     Grids.updateGridSize "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
 End Sub
 
 Private Sub GridScan_nRowSub_Click()
-     Grids.updateGrid "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
+     Grids.updateGridSize "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
 End Sub
 
 
@@ -1280,7 +1309,7 @@ Public Sub RestoreAcquisitionParameters()
     
     time = Timer
     Lsm5.DsRecording.Copy GlobalBackupRecording
-    Lsm5.DsRecording.FrameSpacing = GlobalBackupRecording.FrameSpacing
+    Lsm5.DsRecording.frameSpacing = GlobalBackupRecording.frameSpacing
     Lsm5.DsRecording.FramesPerStack = GlobalBackupRecording.FramesPerStack
     For i = 0 To Lsm5.DsRecording.TrackCount - 1
        Lsm5.DsRecording.TrackObjectByMultiplexOrder(i, 1).Acquire = GlobalBackupActiveTracks(i)
@@ -1293,7 +1322,7 @@ Public Sub RestoreAcquisitionParameters()
  
     time = Timer
     Recenter_pre posTempZ, SuccessRecenter, ZENv
-    pos = Lsm5.Hardware.CpFocus.Position
+    pos = Lsm5.Hardware.CpFocus.position
     'move to posTempZ
     If ZENv = "2011" Or ZENv = "2010" Then
         If Round(pos, PrecZ) <> Round(posTempZ, PrecZ) Then
@@ -1430,7 +1459,7 @@ Public Sub AutofocusButton_Click()
     Dim RecordingDoc As DsRecordingDoc
     Dim SuccessRecenter As Boolean
     Running = True
-    posTempZ = Lsm5.Hardware.CpFocus.Position
+    posTempZ = Lsm5.Hardware.CpFocus.position
     Recenter_pre posTempZ, SuccessRecenter, ZENv
     Set GlobalAutoFocusRecording = Lsm5.CreateBackupRecording
     Set GlobalAcquisitionRecording = Lsm5.CreateBackupRecording
@@ -1487,7 +1516,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
     Running = True
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
-    Dim StgPos As StagePosition
+    Dim StgPos As Vector
     Dim FileName As String
     Dim time As Double
     Dim NewCoord() As Double
@@ -1624,9 +1653,9 @@ Private Function StartSetting() As Boolean
             End If
             GridScan_nColumn.Value = MarkCount
             GridScan_nRow.Value = 1
-            Grids.updateGrid "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
+            Grids.updateGridSize "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
         Else
-            Grids.updateGrid "Global", 1, MarkCount, 1, 1
+            Grids.updateGridSize "Global", 1, MarkCount, 1, 1
         End If
     End If
     
@@ -1638,16 +1667,16 @@ Private Function StartSetting() As Boolean
                 StopAcquisition
                 Exit Function
             End If
-            Grids.updateGrid "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
+            Grids.updateGridSize "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
         Else
-            Grids.updateGrid "Global", 1, 1, 1, 1
+            Grids.updateGridSize "Global", 1, 1, 1, 1
         End If
     End If
     
     If SingleLocationToggle And Not GridScanActive Then
         Grids.setX "Global", Lsm5.Hardware.CpStages.PositionX, 1, 1, 1, 1
         Grids.setY "Global", Lsm5.Hardware.CpStages.PositionY, 1, 1, 1, 1
-        Grids.setZ "Global", Lsm5.Hardware.CpFocus.Position, 1, 1, 1, 1
+        Grids.setZ "Global", Lsm5.Hardware.CpFocus.position, 1, 1, 1, 1
         Grids.setValid "Global", True, 1, 1, 1, 1
         GoTo GridReady
     End If
@@ -1685,7 +1714,7 @@ Private Function StartSetting() As Boolean
                 Grids.makeGridFromManyPts "Global", X, Y, Z, GridScan_dColumnsub.Value, GridScan_dRowsub.Value
             Else
                 Lsm5.Hardware.CpStages.MarkGetZ 0, XStart, YStart, ZStart
-                Grids.updateGrid "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
+                Grids.updateGridSize "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
                 Grids.makeGridFromOnePt "Global", XStart, YStart, ZStart, GridScan_dColumnsub.Value, GridScan_dRowsub.Value, _
                 GridScan_refColumn.Value, GridScan_refRow.Value
                 DisplayProgress "Initialize all grid positions...DONE", RGB(0, &HC0, 0)

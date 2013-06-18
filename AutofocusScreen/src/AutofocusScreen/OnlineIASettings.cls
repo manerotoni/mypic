@@ -24,19 +24,19 @@ Private Keys() As String
 '''
 Public Sub initializeDefault()
 'This variable contains the keys for the OnlineImageanalysis
-    ReDim Keys(11)
-    Keys(0) = "code"
-    Keys(1) = "fileAnalyzed"
-    Keys(2) = "filePath"
-    Keys(3) = "X"
-    Keys(4) = "Y"
-    Keys(5) = "Z"
-    Keys(6) = "deltaZ"
-    Keys(7) = "roiType"
-    Keys(8) = "roiAim"
-    Keys(9) = "roiX"
-    Keys(10) = "roiY"
-    Keys(11) = "unit"
+    ReDim Keys(0 To 11)
+    Keys(0) = "codeIn"
+    Keys(1) = "codeOut"
+    Keys(2) = "fileAnalyzed"
+    Keys(3) = "filePath"
+    Keys(4) = "X"
+    Keys(5) = "Y"
+    Keys(6) = "Z"
+    Keys(7) = "deltaZ"
+    Keys(8) = "roiType"
+    Keys(9) = "roiAim"
+    Keys(10) = "roiX"
+    Keys(11) = "roiY"
     Set Settings = New Dictionary
 End Sub
 
@@ -173,12 +173,12 @@ Public Function getRois(Rois() As Roi) As Boolean
     Dim YD()  As Double 'the double array containinig the Y-positions
     Dim i As Integer
     Dim iRoi As Integer
+    Dim roiType() As String
+    Dim roiAim() As String
     If Settings.Item("roiType") = "" Then
         Exit Function
     End If
-    
     roiType = Split(Settings.Item("roiType"), ";")
-    
     If Settings.Item("roiAim") = "" Or Settings.Item("roiX") = "" Or Settings.Item("roiY") = "" Then
         MsgBox ("GetRoisFromRegistry: For each roi you need to define roiType, roiAim, roiX, and roiY!" + vbCrLf + "roiType1 ; roiType2; etc." & vbCrLf & _
         "roiX1_roi1, roiX2_roi1; roiX1_roi2, roiX2_roi2, roiX3_roi2; etc. Coordinates in pixels")
@@ -208,8 +208,8 @@ Public Function getRois(Rois() As Roi) As Boolean
             XD(i) = CDbl(X(i))
             YD(i) = CDbl(Y(i))
         Next i
-        Rois(iRoi).setRoi roiType(iRoi), roiAim(iRoi), CDbl(X), CDbl(YK)
-        If Not Rois(iRoi).roiConsitency Then
+        Rois(iRoi).setRoi roiType(iRoi), roiAim(iRoi), XD, YD
+        If Not Rois(iRoi).roiConsistency Then
             Exit Function
         End If
     Next iRoi
@@ -218,14 +218,14 @@ End Function
 
 
 '''
-'   GetPositionsFromSettings(Settings As Dictionary, X() As Double, Y() As Double, Z() As Double, deltaZ() As Integer) As Boolean
-'   Settings contains all settings for OnlineImageanalysis (see OiaKeys)
+'   GetPositionsFromSettings(Settings As Dictionary, StgPos() As Vector) As Boolean
+'   Settings contains all settings for OnlineImageanalysis
 '   StgPos containes the coordinates
 '   StgPos.X, StgPos.Y: defined 0,0 at upper left corner
-'   StgPos.Z: defined 0 at central slice
+'   StgPos.Z: defined 0 for the central slice
 '   units are converted afterwards as it depends on the type of Job (default unit is px)
 ''''
-Public Function getPositions(StgPos() As StagePosition) As Boolean
+Public Function getPositions(StgPos() As Vector) As Boolean
     checkKeys
     ' store postion from windows registry in array
     Dim locX()  As String 'the string containinig the X-positions
@@ -243,10 +243,10 @@ Public Function getPositions(StgPos() As StagePosition) As Boolean
 '            MsgBox "GetPositionsFromSettings: Do not understand unit " & Settings.Item("unit") & ". Possible value for registry entry unit are um or px!"
 '            Exit Function
 '        End If
-'    Else
+'     Else
 '        pixelSizeXY = Jobs.GetSampleSpacing(JobName) * 1000000
 '        pixelSizeZ = Jobs.GetFrameSpacing(JobName)
-'    End If
+'     End If
     
     If Settings.Exists("X") Then
         locX() = Split(Settings.Item("X"), ",")
@@ -265,7 +265,7 @@ Public Function getPositions(StgPos() As StagePosition) As Boolean
     End If
     
     If UBound(locX) <> UBound(locY) Then
-        MsgBox ("StorePositionsFromRegistry: nr of values in registry for X, Y are not the same, separate the values with comma!")
+        MsgBox ("OnlineIASettings.getPositions: nr of values in registry for X, Y are not the same, separate the values with comma!")
         Exit Function
     End If
     
@@ -281,25 +281,25 @@ Public Function getPositions(StgPos() As StagePosition) As Boolean
     End If
         
     If UBound(locZ) <> UBound(locX) Then 'Z has not been set for all positions
-        MsgBox ("StorePositionsFromRegistry: nr of values in registry for offsetX, offsetZ are not the same, separate the values with comma!")
+        MsgBox ("OnlineIASettings.getPositions: nr of values in registry for offsetX, offsetZ are not the same, separate the values with comma!")
         Exit Function
     End If
     
-    If Settings.Exists("deltaZ") Then
-        locDeltaZ() = Split(Settings.Item("deltaZ"), ",")
-    End If
-    
-    If isArrayEmpty(locDeltaZ) Then
-        ReDim locDeltaZ(UBound(locX)) 'deltaZ has not been set. We use a default values
-        For i = 0 To UBound(locDeltaZ)
-            locDeltaZ(i) = -1
-        Next i
-    End If
-    
-    If UBound(locDeltaZ) <> UBound(locX) Then 'deltaZ has not been set for all positions
-        MsgBox ("StorePositionsFromRegistry: nr of values in registry for deltaz, z are not the same, separate the values with comma!")
-        Exit Function
-    End If
+'    If Settings.Exists("deltaZ") Then
+'        locDeltaZ() = Split(Settings.Item("deltaZ"), ",")
+'    End If
+'
+'    If isArrayEmpty(locDeltaZ) Then
+'        ReDim locDeltaZ(UBound(locX)) 'deltaZ has not been set. We use a default values
+'        For i = 0 To UBound(locDeltaZ)
+'            locDeltaZ(i) = -1
+'        Next i
+'    End If
+'
+'    If UBound(locDeltaZ) <> UBound(locX) Then 'deltaZ has not been set for all positions
+'        MsgBox ("StorePositionsFromRegistry: nr of values in registry for deltaz, z are not the same, separate the values with comma!")
+'        Exit Function
+'    End If
     
     ' Convert values to Double
     ReDim StgPos(0 To UBound(locX))
@@ -308,7 +308,7 @@ Public Function getPositions(StgPos() As StagePosition) As Boolean
         StgPos(i).Y = CDbl(locY(i))
         StgPos(i).Z = CDbl(locZ(i))
     Next i
-    GetPositionsFromSettings = True
+    getPositions = True
 End Function
 
 

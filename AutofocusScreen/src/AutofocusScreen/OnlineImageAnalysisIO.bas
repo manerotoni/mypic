@@ -1,4 +1,9 @@
 Attribute VB_Name = "OnlineImageAnalysisIO"
+Public Sub testOiaSettings()
+    Dim Settings As OnlineIASettings
+    Set Settings = New OnlineIASettings
+    
+End Sub
 ''''
 '' A set of functions to IN/OUT parameters for Onlineimageanalisys this should be a class!!!
 '''''
@@ -183,7 +188,7 @@ Attribute VB_Name = "OnlineImageAnalysisIO"
 ''   StgPos.Z: defined 0 at central slice
 ''   units are converted afterwards as it depends on the type of Job (default unit is px)
 '''''
-'Public Function GetPositionsFromSettings(OiaSettings As Dictionary, StgPos() As StagePosition) As Boolean
+'Public Function GetPositionsFromSettings(OiaSettings As Dictionary, StgPos() As Vector) As Boolean
 '
 '    ' store postion from windows registry in array
 '    Dim locX()  As String 'the string containinig the X-positions

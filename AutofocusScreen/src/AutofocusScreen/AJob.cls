@@ -102,11 +102,10 @@ Public Function createRois() As Boolean
     Dim i As Integer
     Rois(i).ClearVectorElements
     For i = 0 To pRoiMaxNr - 1
-            If Not Rois(i).MakeVectorElement Then
-                Exit Function
-            End If
-        Next i
-    End If
+        If Not Rois(i).MakeVectorElement Then
+            Exit Function
+        End If
+    Next i
     createRois = True
 End Function
 

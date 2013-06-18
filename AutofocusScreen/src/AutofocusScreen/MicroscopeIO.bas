@@ -422,41 +422,6 @@ Public Sub SystemVersionOffset(Optional Tmp As Boolean) ' tmp is a hack to hide 
 End Sub
 
 
-'''''''
-'   ComputeShiftedCoordinates(XMass, ....)
-'   Calculates new coordinates after translation
-'       [XMass], [YMass], [ZMass]    In - Translation vector
-'       [x], [y], [z] Out - Shifted coordinates. Depends on stage build up and actual position. Positions are rounded up to PrecXY and PrecZ
-''''''
-Public Function ComputeShiftedCoordinates(ByVal XMass As Double, ByVal YMass As Double, ByVal ZMass As Double, ByRef X As Double, ByRef Y As Double, ByRef Z As Double)
-    Dim Xpre As Integer
-    Dim Ypre As Integer
-    
-    If MirrorX Then
-        Xpre = -1
-    Else
-        Xpre = 1
-    End If
-    
-    If MirrorY Then
-        Ypre = -1
-    Else
-        Ypre = 1
-    End If
-    
-    If ExchangeXY Then ' not sure about this
-        X = X + Xpre * YMass
-        Y = Y + Ypre * XMass
-    Else
-        X = X + Xpre * XMass
-        Y = Y + Ypre * YMass
-    End If
-        
-    Z = Z + ZMass
-    X = Round(X, PrecXY)
-    Y = Round(Y, PrecXY)
-    Z = Round(Z, PrecZ)
-End Function
 
 ''''' ' this should move to function
 '   FailSafeMoveStage(Optional Mark As Integer = 0)
@@ -495,7 +460,7 @@ End Function
 Public Function FailSafeMoveStageZ(Z As Double) As Boolean
     FailSafeMoveStageZ = False
     If ZBacklash <> 0 Then
-        Lsm5.Hardware.CpFocus.Position = Z - ZBacklash ' move at correct position
+        Lsm5.Hardware.CpFocus.position = Z - ZBacklash ' move at correct position
         Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy Or Lsm5.Hardware.CpFocus.IsBusy
             Sleep (20)
             If GetInputState() <> 0 Then
@@ -507,7 +472,7 @@ Public Function FailSafeMoveStageZ(Z As Double) As Boolean
             End If
         Loop
     End If
-    Lsm5.Hardware.CpFocus.Position = Z  ' move at correct position
+    Lsm5.Hardware.CpFocus.position = Z  ' move at correct position
     Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy Or Lsm5.Hardware.CpFocus.IsBusy
         Sleep (20)
         If GetInputState() <> 0 Then
@@ -560,13 +525,13 @@ Dim ZFocus As Double
 Dim Zbefore As Double
 Dim X As Double
 Dim Y As Double
-     ZFocus = Lsm5.Hardware.CpFocus.Position + ZOffset + ZShift
-       Lsm5.Hardware.CpFocus.Position = ZFocus + ZBacklash    'Moves down -50uM (ZBacklash) with the focus wheel
+     ZFocus = Lsm5.Hardware.CpFocus.position + ZOffset + ZShift
+       Lsm5.Hardware.CpFocus.position = ZFocus + ZBacklash    'Moves down -50uM (ZBacklash) with the focus wheel
         Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
             Sleep (20)
             DoEvents
         Loop
-        Lsm5.Hardware.CpFocus.Position = ZFocus                     'Moves up to the focus position with the focus wheel
+        Lsm5.Hardware.CpFocus.position = ZFocus                     'Moves up to the focus position with the focus wheel
         Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
             Sleep (20)
             DoEvents
@@ -614,7 +579,7 @@ Public Function WaitForRecentering2010(Z As Double, Optional Success As Boolean 
     ' this waits for central slice at Z
     Dim pos As Double
     Dim Sample0Z As Double
-    pos = Lsm5.Hardware.CpFocus.Position
+    pos = Lsm5.Hardware.CpFocus.position
     If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then
         While Round(pos, 1) <> Round(Z, 1) And Cnt < MaxCnt
             Sleep (400)
@@ -625,7 +590,7 @@ Public Function WaitForRecentering2010(Z As Double, Optional Success As Boolean 
             End If
         Wend
         If Cnt = MaxCnt Then
-            Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + pos - Z
+            Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + pos - Z
             If Not FailSafeMoveStageZ(Z) Then
                 Exit Function
             End If
@@ -641,7 +606,7 @@ Public Function WaitForRecentering2010(Z As Double, Optional Success As Boolean 
 '            End If
 '        Wend
     Else
-        While Round(Lsm5.DsRecording.Sample0Z, 1) <> Round(Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + _
+        While Round(Lsm5.DsRecording.Sample0Z, 1) <> Round(Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + _
             pos - Z, 1) And Cnt < MaxCnt
             Sleep (400)
             DoEvents
@@ -651,7 +616,7 @@ Public Function WaitForRecentering2010(Z As Double, Optional Success As Boolean 
             End If
         Wend
         If Cnt = MaxCnt Then
-            Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + pos - Z
+            Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + pos - Z
             GoTo FailedWaiting
         End If
     End If
@@ -683,7 +648,7 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
     ' this waits for central slice at Z
     Dim pos As Double
     Dim Sample0Z As Double
-    pos = Lsm5.Hardware.CpFocus.Position
+    pos = Lsm5.Hardware.CpFocus.position
     If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then
         While Round(pos, 1) <> Round(Z, 1) And Cnt < MaxCnt
             Sleep (400)
@@ -695,7 +660,7 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
         Wend
         
         If Cnt = MaxCnt Then
-            Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + pos - Z
+            Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + pos - Z
             If Not FailSafeMoveStageZ(Z) Then
                 Exit Function
             End If
@@ -704,7 +669,7 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
         
     Else
     
-        While Round(Lsm5.DsRecording.Sample0Z, 1) <> Round(Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + _
+        While Round(Lsm5.DsRecording.Sample0Z, 1) <> Round(Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + _
             pos - Z, 1) And Cnt < MaxCnt
             Sleep (400)
             DoEvents
@@ -716,7 +681,7 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
         
         If Cnt = MaxCnt Then
             Success = False
-            Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + pos - Z
+            Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + pos - Z
             GoTo FailedWaiting
         End If
     End If
@@ -780,7 +745,7 @@ Public Function Recenter2010(Z As Double) As Boolean
     Dim MoveStage As Boolean
     Dim pos As Double
     Dim Sample0Z As Double
-    pos = Lsm5.Hardware.CpFocus.Position
+    pos = Lsm5.Hardware.CpFocus.position
     MoveStage = True ' this is the only difference to 2011 version
     
     If Lsm5.DsRecording.SpecialScanMode = "ZScanner" Or (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Then
@@ -788,7 +753,7 @@ Public Function Recenter2010(Z As Double) As Boolean
     End If
     Dim Tmp As Integer
     
-    Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + pos - Z
+    Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + pos - Z
     Sleep (100)
     DoEvents
     If MoveStage Then
@@ -806,7 +771,7 @@ Public Function Recenter2011(Z As Double) As Boolean
     Dim MoveStage As Boolean
     Dim FramesPerStack As Integer
     Dim pos As Double
-    pos = Lsm5.Hardware.CpFocus.Position
+    pos = Lsm5.Hardware.CpFocus.position
     MoveStage = False 'only move stage when required
     
     If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then
@@ -814,7 +779,7 @@ Public Function Recenter2011(Z As Double) As Boolean
     End If
         
     'Center slide
-    Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + pos - Z
+    Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 + pos - Z
     Sleep (100)
     DoEvents
     If MoveStage Then
@@ -844,7 +809,7 @@ End Function
 ' Compute the centerofmass of image stored in RecordingDoc
 '   Use channel with name TrackingChannel
 ''''
-Public Sub MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As String, XMass As Double, YMass As Double, ZMass As Double)
+Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As String) As Vector
     Dim RegEx As VBScript_RegExp_55.RegExp
     Set RegEx = CreateObject("vbscript.regexp")
     Dim Match As MatchCollection
@@ -855,8 +820,8 @@ Public Sub MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As String,
     Dim ColMax As Long
     Dim LineMax As Long
     Dim FrameNumber As Integer
-    Dim PixelSize As Double
-    Dim FrameSpacing As Double
+    Dim pixelSize As Double
+    Dim frameSpacing As Double
     Dim Intline() As Long
     Dim IntCol() As Long
     Dim IntFrame() As Long
@@ -910,7 +875,7 @@ Public Sub MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As String,
         
     If Not FoundChannel Then
         MsgBox (" Was not able to find channel for tracking!!")
-        Exit Sub
+        Exit Function
     End If
 
 
@@ -928,9 +893,9 @@ Public Sub MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As String,
     End If
     
     'Gets the pixel size (it is in meter)
-    PixelSize = RecordingDoc.Recording.SampleSpacing * 1000000
+    pixelSize = RecordingDoc.Recording.SampleSpacing * 1000000
     'Gets the distance between frames in Z (in um)
-    FrameSpacing = RecordingDoc.Recording.FrameSpacing
+    frameSpacing = RecordingDoc.Recording.frameSpacing
     
     'Initiallize tables to store projected (integrated) pixels values in the 3 dimensions
     ReDim Intline(LineMax) As Long
@@ -994,13 +959,13 @@ Public Sub MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As String,
     For Line = 1 To LineMax
         LineValue = Intline(Line - 1) - Threshold                           'Subtracs the threshold
         PosValue = LineValue + Abs(LineValue)                               'Makes sure that the value is positive or zero. If LineValue is negative, the Posvalue = 0; if Line value is positive, then Posvalue = 2*LineValue
-        LineWeight = LineWeight + (PixelSize * (Line - MidLine)) * PosValue 'Calculates the weight of the Thresholded projected pixel values according to their position relative to the center of the image and sums them up
+        LineWeight = LineWeight + (pixelSize * (Line - MidLine)) * PosValue 'Calculates the weight of the Thresholded projected pixel values according to their position relative to the center of the image and sums them up
         LineSum = LineSum + PosValue                                        'Calculates the sum of the thresholded pixel values
     Next Line
     If LineSum = 0 Then
-        YMass = 0
+         MassCenter.Y = 0
     Else
-        YMass = Round(LineWeight / LineSum, PrecXY)                                       'Normalizes the weights to get the center of mass
+         MassCenter.Y = Round(LineWeight / LineSum, PrecXY)                                       'Normalizes the weights to get the center of mass
     End If
 
     ColSum = 0
@@ -1010,13 +975,13 @@ Public Sub MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As String,
     For Col = 1 To ColMax
         ColValue = IntCol(Col - 1) - Threshold
         PosValue = ColValue + Abs(ColValue)
-        ColWeight = ColWeight + (PixelSize * (Col - MidCol)) * PosValue
+        ColWeight = ColWeight + (pixelSize * (Col - MidCol)) * PosValue
         ColSum = ColSum + PosValue
     Next Col
     If ColSum = 0 Then
-        XMass = 0
+         MassCenter.X = 0
     Else
-        XMass = Round(ColWeight / ColSum, PrecXY)
+         MassCenter.X = Round(ColWeight / ColSum, PrecXY)
     End If
 
     FrameSum = 0
@@ -1026,17 +991,17 @@ Public Sub MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As String,
     For frame = 1 To FrameNumber
         FrameValue = IntFrame(frame - 1) - Threshold
         PosValue = FrameValue + Abs(FrameValue)
-        FrameWeight = FrameWeight + (FrameSpacing * (frame - MidFrame)) * PosValue
+        FrameWeight = FrameWeight + (frameSpacing * (frame - MidFrame)) * PosValue
         FrameSum = FrameSum + PosValue
     Next frame
     
     If FrameSum = 0 Then
-        ZMass = 0
+        MassCenter.Z = 0
     Else
-        ZMass = Round(FrameWeight / FrameSum, PrecZ)
+        MassCenter.Z = Round(FrameWeight / FrameSum, PrecZ)
     End If
         
-End Sub
+End Function
 
 
 

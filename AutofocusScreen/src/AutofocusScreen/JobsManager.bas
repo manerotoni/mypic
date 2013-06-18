@@ -13,8 +13,9 @@ Attribute VB_Name = "JobsManager"
 Public Reps As ImagingRepetitions
 Public Grids As ImagingGrids
 Public Jobs As ImagingJobs
+Public Timers As ImagingTimers
 Private Const UpdateFormAsRunning = True
-Public Type StagePosition
+Public Type Vector
   X As Double
   Y As Double
   Z As Double
@@ -27,7 +28,7 @@ End Type
 '       RecordingDoc: the dsRecording where image is stored
 '       X, Y, and Z: The position of stage and focus (central slice)
 '''
-Public Function AcquireJob(JobName As String, RecordingDoc As DsRecordingDoc, RecordingName As String, StgPos As StagePosition) As Boolean
+Public Function AcquireJob(JobName As String, RecordingDoc As DsRecordingDoc, RecordingName As String, StgPos As Vector) As Boolean
     Dim SuccessRecenter As Boolean
     'stop any running jobs
     AutofocusForm.StopScanCheck
@@ -73,7 +74,7 @@ End Function
 ' This executes part of the Job save the file compute offline tracking and set the registry
 '''''
 Public Function ExecuteJob(JobName As String, RecordingDoc As DsRecordingDoc, FilePath As String, FileName As String, _
-StgPos As StagePosition, Optional deltaZ As Integer = -1)
+StgPos As Vector, Optional deltaZ As Integer = -1)
     
     If Not AcquireJob(JobName, RecordingDoc, FileName, StgPos) Then
         Exit Function
@@ -94,12 +95,25 @@ StgPos As StagePosition, Optional deltaZ As Integer = -1)
     ExecuteJob = True
 End Function
 
+'''
+' Compute new positions according to center of mass
+'''''
+Public Function TrackOffLine(JobName As String, RecordingDoc As DsRecordingDoc, currentPosition As Vector) As Vector
+    Dim TrackingChannel As String
+    TrackOffLine = currentPosition
+    If AutofocusForm.Controls(JobName & "OfflineTrack") Then
+        TrackingChannel = AutofocusForm.Controls(JobName & "OfflineTrackChannel").List(AutofocusForm.Controls(JobName & "OfflineTrackChannel").ListIndex)
+        TrackOffLine = computeShiftedCoordinates(currentPosition, MassCenter(RecordingDoc, TrackingChannel))
+    End If
+    TrackOffLine = TrackJob(JobName, currentPosition, TrackOffLine)
+End Function
+
 
 
 ''''
-'   Update StgPos to StgPosNew according the weather Coordinates are tracked or not
+'   Update positions according to track command
 ''''
-Public Function TrackJob(JobName As String, StgPos As StagePosition, StgPosNew As StagePosition) As StgPos
+Public Function TrackJob(JobName As String, StgPos As Vector, StgPosNew As Vector) As Vector
     TrackJob = StgPos
     If AutofocusForm.Controls(JobName & "TrackZ") Then
         TrackJob.Z = StgPosNew.Z
@@ -111,19 +125,29 @@ Public Function TrackJob(JobName As String, StgPos As StagePosition, StgPosNew A
 End Function
 
 
+
+
 ''''''
 '   StartAcquisition(BleachingActivated)
 '   Perform many things (TODO: write more). Pretty much the whole macro runs through here
 ''''''
-Public Sub StartJobOnGrid(GridName As String, JobName As String, ParentPath As String)
+Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As String)
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
-    Dim StgPos As StagePosition
+    Dim StgPos As Vector, newStgPos As Vector
+    
+    '''The name of jobs run for the global mode
+    Dim JobNamesGlobal(2) As String
+    Dim iJobGlobal As Integer
+    JobNamesGlobal(0) = "Autofocus"
+    JobNamesGlobal(1) = "Acquisition"
+    JobNamesGlobal(2) = "AlterAcquisition"
+    
     Dim FileName As String
     Dim deltaZ As Integer
     deltaZ = -1
     Dim SuccessRecenter As Boolean
-      
+
     'Stop all running acquisitions (maybe to strong)
     AutofocusForm.StopScanCheck
     
@@ -180,49 +204,48 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, ParentPath As S
                     
                 ' Recenter and move where it should be
                 If JobName = "Global" Then
-                    'recenter only after activation of new track
-                    If AutofocusActive Then
-                        FileName = FileNameFromGrid(GridName, "Autofocus")
-                        FilePath = ParentPath & FilePathSuffix(GridName, "Autofocus") & "\"
-                        If Not ExecuteJob("Autofocus", GlobalRecordingDoc, FilePath, FileName, StgPos) Then
-                            GoTo StopAcquisition
+                
+                    For iJobGlobal = 0 To UBound(JobNamesGlobal)
+                        ' run subJobs for global setting
+                        On Error GoTo ErrorHandle:
+                        
+                        If AutofocusForm.Controls(JobNamesGlobal(iJobGlobal) + "Active") Then
+                            FileName = FileNameFromGrid(GridName, JobNamesGlobal(iJobGlobal))
+                            FilePath = parentPath & FilePathSuffix(GridName, JobNamesGlobal(iJobGlobal)) & "\"
+                            If JobNamesGlobal(iJobGlobal) <> "Autofocus" Then
+                                StgPos.Z = StgPos.Z + AutofocusForm.Controls(JobNamesGlobal(iJobGlobal) + "ZOffset").Value
+                            End If
+                            If Not ExecuteJob(JobNamesGlobal(iJobGlobal), GlobalRecordingDoc, FilePath, FileName, StgPos) Then
+                                GoTo StopAcquisition
+                            End If
+                            'do any recquired computation
+                            StgPos = TrackOffLine(JobNamesGlobal(iJobGlobal), GlobalRecordingDoc, StgPos)
+                            newStgPos = ComputeJobSequential(JobNamesGlobal(iJobGlobal), JobName, StgPos, GlobalRecordingDoc, FilePath, FileName)
+                            StgPos = TrackJob(JobNamesGlobal(iJobGlobal), StgPos, newStgPos)
+                            If JobNamesGlobal(iJobGlobal) <> "Autofocus" Then
+                                StgPos.Z = StgPos.Z - AutofocusForm.Controls(JobNamesGlobal(iJobGlobal) + "ZOffset").Value
+                            End If
                         End If
-                        newStgPos = ComputeJobSequential("Autofocus", GlobalRecordingDoc, FilePath, FileName, StgPos)
-                        StgPos = TrackJob("Autofocus", StgPos, newStgPos)
-                    End If
+                    Next iJobGlobal
                     
-                    If AcquisitionActive Then
-                        FileName = FileNameFromGrid(GridName, "Acquisition")
-                        FilePath = ParentPath & FilePathSuffix(GridName, "Acquisition") & "\"
-                        StgPos.Z = StgPos.Z + AcquisitionZOffset.Value
-                        If Not ExecuteJob("Acquisition", GlobalRecordingDoc, FilePath, FileName, StgPos) Then
-                            GoTo StopAcquisition
-                        End If
-                        StgPos.Z = StgPos.Z - AcquisitionZOffset.Value
-                    End If
-                    
-                    If AlterAcquisitionActive Then
-                        FileName = FileNameFromGrid(GridName, "AlterAcquisition")
-                        FilePath = ParentPath & FilePathSuffix(GridName, "AlterAcquisition") & "\"
-                        StgPos.Z = StgPos.Z + AlterAcquisitionZOffset.Value
-                        If Not ExecuteJob("AlterAcquisition", GlobalRecordingDoc, FilePath, FileName, StgPos) Then
-                            GoTo StopAcquisition
-                        End If
-                        StgPos.Z = StgPos.Z - AlterAcquisitionZOffset.Value
-                    End If
                 Else
+
                     FileName = FileNameFromGrid(GridName, JobName)
-                    FilePath = ParentPath & FilePathSuffix(GridName, JobName) & "\"
+                    FilePath = parentPath & FilePathSuffix(GridName, JobName) & "\"
                     StgPos.Z = StgPos.Z + AutofocusForm.Controls(JobName + "ZOffset").Value
                     If Not ExecuteJob(JobName, GlobalRecordingDoc, FilePath, FileName, StgPos) Then
                         GoTo StopAcquisition
                     End If
+                    StgPos = TrackOffLine(JobName, GlobalRecordingDoc, StgPos)
+                    newStgPos = ComputeJobSequential(JobNameLoc, JobName, StgPos, GlobalRecordingDoc, FilePath, FileName)
+                    StgPos = TrackJob(JobName, StgPos, newStgPos)
                     StgPos.Z = StgPos.Z - AutofocusForm.Controls(JobName + "ZOffset").Value
                     
                 End If
-                Grids.setThisX = StgPos.X
-                Grids.setThisY = StgPos.Y
-                Grids.setThisZ = StgPos.Z
+                
+                Grids.setThisX JobName, StgPos.X
+                Grids.setThisY JobName, StgPos.Y
+                Grids.setThisZ JobName, StgPos.Z
                 previousZ = Grids.getThisZ(JobName)
                 
             End If
@@ -346,91 +369,225 @@ Public Sub UpdateJobFromForm(Jobs As ImagingJobs, JobName As String)
 End Sub
 
 
-Public Function TrackOffLine(JobName As String, RecordingDoc As DsRecordingDoc, StgPos As StagePosition) As StagePosition
-    Dim X As Double
-    Dim Y As Double
-    Dim Z As Double
-    TrackOffLine = StgPos
-    If AutofocusForm.Controls(JobName & "OfflineTrack") Then
-        TrackingChannel = AutofocusForm.Controls(JobName & "OfflineTrackChannel").List(AutofocusForm.Controls(JobName & "OfflineTrackChannel").ListIndex)
-        MassCenter RecordingDoc, TrackingChannel, XMass, YMass, ZMass
-        ComputeShiftedCoordinates XMass, YMass, ZMass, X, Y, Z
+
+
+
+'''''''
+'   computeShiftedCoordinates(offsetPosition As Vector, currentPosition As Vector) As Vector
+'   given offsetPosition with (0,0,0) center of image central slice (in um)
+'   the function compute absolute stage/focus coordinates from currentPosition
+''''''
+Public Function computeShiftedCoordinates(offsetPosition As Vector, currentPosition As Vector) As Vector
+    Dim Xpre As Integer
+    Dim Ypre As Integer
+    
+    If MirrorX Then
+        Xpre = -1
     Else
-        X = StgPos.X
-        Y = StgPos.Y
-        Z = StgPos.Z
+        Xpre = 1
     End If
-    If AutofocusForm.Controls(JobName & "TrackZ") Then
-        TrackOffLine.Z = Z
+    
+    If MirrorY Then
+        Ypre = -1
+    Else
+        Ypre = 1
     End If
-    If AutofocusForm.Controls(JobName & "TrackXY") Then
-        TrackOffLine.X = X
-        TrackOffLine.Y = Y
+    
+    If ExchangeXY Then ' not sure about this and needs to be properly tested
+        computeShiftedCoordinates.X = currentPosition.X + Xpre * offsetPosition.Y
+        computeShiftedCoordinates.Y = currentPosition.Y + Ypre * offsetPosition.X
+    Else
+        computeShiftedCoordinates.X = currentPosition.X + Xpre * offsetPosition.X
+        computeShiftedCoordinates.Y = currentPosition.Y + Ypre * offsetPosition.Y
+    End If
+      
+    computeShiftedCoordinates.Z = currentPosition.Z + offsetPosition.Z
+    
+    computeShiftedCoordinates.X = Round(computeShiftedCoordinates.X, PrecXY)
+    computeShiftedCoordinates.Y = Round(computeShiftedCoordinates.Y, PrecXY)
+    computeShiftedCoordinates.Z = Round(computeShiftedCoordinates.Z, PrecZ)
+End Function
+
+
+''''
+' compute stage coordinates for imaging from pixel coordinates
+' newPosition() As Vector
+' the values are returned in um!!
+''''
+Public Function computeCoordinatesImaging(JobName As String, currentPosition As Vector, newPosition() As Vector) As Vector()
+    Dim pixelSize As Double
+    Dim frameSpacing As Double
+    Dim imageSize As Integer
+    Dim i As Integer
+    Dim position() As Vector
+    position = newPosition
+    'convert in um
+    pixelSize = Jobs.GetSampleSpacing(JobName) * 1000000
+    'compute difference with respect to center
+    imageSize = Jobs.GetFrameSize(JobName)
+    frameSpacing = Jobs.GetFrameSpacing(JobName)
+    For i = 0 To UBound(newPosition)
+        position(i).X = (position(i).X - (imageSize - 1) / 2) * pixelSize
+        position(i).Y = (position(i).Y - (imageSize - 1) / 2) * pixelSize
+        position(i).Z = position(i).Z * frameSpacing
+        position(i) = computeShiftedCoordinates(position(i), currentPosition)
+    Next i
+    computeCoordinatesImaging = position
+End Function
+
+
+''''
+'   compute coordinates for fcs from pixel coordinates
+'   newPosition() assumes origin is (0,0), central slice is 0
+'   the value are returned in meter!!
+''''
+Public Function computeCoordinatesFcs(JobName As String, newPosition() As Vector) As Vector()
+    Dim pixelSize As Double
+    Dim frameSpacing As Double
+    Dim imageSize As Integer
+    Dim i As Integer
+    Dim position() As Vector
+    position = newPosition
+    'convert in um
+    pixelSize = Jobs.GetSampleSpacing(JobName)
+    'compute difference with respect to center
+    imageSize = Jobs.GetFrameSize(JobName)
+    frameSpacing = Jobs.GetFrameSpacing(JobName)
+    For i = 0 To UBound(newPosition)
+        position(i).X = position(i).X * pixelSize
+        position(i).Y = position(i).Y * pixelSize
+        position(i).Z = position(i).Z * frameSpacing
+    Next i
+    computeCoordinatesFcs = position
+End Function
+
+Private Function MinInt(Value1 As Integer, Value2 As Integer) As Integer
+    If Value1 <= Value2 Then
+        MinLong = Value1
+    Else
+        MinLong = Value2
     End If
 End Function
 
-''''
-'   Perform computation for tracking and wait for Onlineimageanalysis if sequential Oia is on
-''''
-Public Function ComputeJobSequential(JobName As String, RecordingDoc As DsRecordingDoc, FilePath As String, FileName As String, X As Double, _
-Y As Double, Z As Double, Optional deltaZ As Integer = -1) As Double()
-    
-    If AutofocusForm.Controls(JobName & "OiaActive") And AutofocusForm.Controls(JobName & "OiaSequential") Then
-        SaveSetting "OnlineImageAnalysis", "macro", "code", "wait"
-        SaveSetting "OnlineImageAnalysis", "macro", "filePath", FilePath & FileName
-    Else
-    
-    Dim OiaSettings As OnlineIASettings
-    Set OiaSettings = New OnlineIASettings
-    Dim NewCoord() As Double
-    ReDim NewCoord(3)
-    'Defaults we dont change anything
-    deltaZ = -1
-    NewCoord(0) = X
-    NewCoord(1) = Y
-    NewCoord(2) = Z
-    NewCoord(3) = deltaZ
-    Dim XMass As Double
-    Dim YMass As Double
-    Dim ZMass As Double
-    Dim TrackingChannel As String
-    
-    OiaSettings.readFromRegistry
 
-    If AutofocusForm.Controls(JobName & "OiaActive") And AutofocusForm.Controls(JobName & "OiaSequential") Then
-        'getValues from registry
+''''
+' create and update a subgrid and eventually run the job
+''''
+Public Function runSubImagingJob(GridName As String, JobName As String, newPositions() As Vector) As Boolean
+    Dim i As Integer
+    Dim ptNumber As Integer ' number of pts for the grid
+    Dim maxWait As Double   ' maximal time to wait for the grid
+    
+       
+    If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value <> "" Then
+        ptNumber = CInt(AutofocusForm.Controls(JobName + "OptimalPtNumber").Value)
+    Else
+        ptNumber = 0
+    End If
+    
+    If AutofocusForm.Controls(JobName + "maxWait").Value <> "" Then
+        maxWait = CDbl(AutofocusForm.Controls(JobName + "maxWait").Value)
+    Else
+        maxWait = 0
+    End If
+    
+    ''createnew grid if recquired
+    If Not Grids.checkGridName(GridName) Then
+        Grids.AddGrid (GridName)
+    End If
+    
+
+    
+    '' change size of grid
+    If Grids.isGridEmpty Then
+        ''start counter for gridcreation!!!
+        Grids.updateGridSize GridName, 1, 1, 1, UBound(newPositions) + 1
+        GridLowBound = 1
+        Timers.addTimer GridName
+        Timers.updateTimeStart GridName
+    Else
+        GridLowBound = Grids.numColSub(GridName) + 1
+        Grids.updateGridSizePreserve GridName, 1, 1, 1, UBound(newPositions) + Grids.numColSub(GridName) + 1
+    End If
+    
+    ''' input grid positions
+    For i = 0 To UBound(newPositions)
+            Grids.setPt GridName, newPositions(i), True, 1, 1, 1, i + GridLowBound
+    Next i
+    
+    If ptNumber = 0 Or maxWait = 0 Then
+        runSubJob = True
+        Exit Function
+    End If
         
-        'NewCoord = ListenToRegistry
-        ComputeJobSequential = NewCoord
+    If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value = "" And AutofocusForm.Controls(JobName + "maxWait").Value = "" Then
+        ' if the value is empty we image whatever has been found
+        runSubJob = True
+        Exit Function
     End If
+    
+    If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value = "" Then
+        If Timers.wait(CDbl(AutofocusForm.Controls(JobName + "OptimalPtNumber").Value)) < 0 Then
+            runSubJob = True
+            Exit Function
+        End If
+    End If
+    
+        
+    If AutofocusForm.Controls(JobName + "maxWait").Value = "" Then
+        If Timers.wait < 0 Then
+            runSubJob = True
+            Exit Function
+        End If
+    End If
+    If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value <> "" Then
+        If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value >= Grids.getNrPts(GridName) Then
+            'trim grid
+            Grids.updateGridSizePreserve GridName, 1, 1, 1, MinInt(AutofocusForm.Controls(JobName + "OptimalPtNumber").Value, UBound(newPositions) + 1)
+            runSubJob = True
+            Exit Function
+        End If
+    End If
+    
+    If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value <> "" And AutofocusForm.Controls(JobName + "OptimalPtNumber").Value = "" Then
+        If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value >= Grids.getNrPts(GridName) Then
+            'trim grid
+            Grids.updateGridSizePreserve GridName, 1, 1, 1, AutofocusForm.Controls(JobName + "OptimalPtNumber").Value
+            runSubJob = True
+            Exit Function
+        End If
+    End If
+    
 End Function
 
-Public Function ComputeJobSequential(CurrentJob As String, CurrentPath As String, RecordingDoc As DsRecordingDoc, Coord() As Double) As Double()
-    Dim NewCoord() As Double
-    ReDim NewCoord(3)
-    NewCoord(0) = Coord(0)
-    NewCoord(1) = Coord(1)
-    NewCoord(2) = Coord(2)
-    NewCoord(3) = Coord(3)
+'''
+'   Perform computation for tracking and wait for Onlineimageanalysis if sequential Oia is on
+'   Create/update grid for OiaJobs
+''''
+Public Function ComputeJobSequential(parentJob As String, parentGrid As String, parentPosition As Vector, parentPath As String, RecordingDoc As DsRecordingDoc, _
+ Optional deltaZ As Integer = -1) As Vector
 
-    Dim code As String
+    Dim newPositions() As Vector
+    Dim codeIn As String
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
-    Dim StgPos As StagePosition
-    code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", key:="code")
-    Dim TimeWait, timeStart, MaxTimeWait As Double
+    codeIn = GetSetting(appname:="OnlineImageAnalysis", section:="macro", key:="codeIn")
+    Dim TimeWait, TimeStart, MaxTimeWait As Double
     MaxTimeWait = 100
-
-    Select Case code
-        Case "1", "wait":
+    
+    'default return value is currentPosition
+    ComputeJobSequential = currentPosition
+    
+    Select Case codeIn
+        Case "wait", "Wait":
             'Wait for image analysis to finish
             DisplayProgress "Waiting for image analysis...", RGB(0, &HC0, 0)
-            timeStart = CDbl(GetTickCount) * 0.001
-            Do While ((TimeWait < MaxTimeWait) And (code = "1" Or code = "wait" Or code = "Wait" Or code = "0"))
+            TimeStart = CDbl(GetTickCount) * 0.001
+            Do While ((TimeWait < MaxTimeWait) And (codeIn = "wait" Or codeIn = "Wait"))
                 Sleep (50)
-                TimeWait = CDbl(GetTickCount) * 0.001 - timeStart
-                code = GetSetting(appname:="OnlineImageAnalysis", section:="macro", _
-                          key:="Code")
+                TimeWait = CDbl(GetTickCount) * 0.001 - TimeStart
+                codeIn = GetSetting(appname:="OnlineImageAnalysis", section:="macro", _
+                          key:="codeIn")
                 DoEvents
                 If ScanStop Then
                     Exit Function
@@ -438,8 +595,9 @@ Public Function ComputeJobSequential(CurrentJob As String, CurrentPath As String
             Loop
 
             If TimeWait > MaxTimeWait Then
-                code = "nothing"
-                SaveSetting "OnlineImageAnalysis", "macro", "code", code
+                codeIn = "TimeExpired"
+                SaveSetting "OnlineImageAnalysis", "macro", "codeIn", codeIn
+                SaveSetting "OnlineImageAnalysis", "macro", "codeOut", ""
             End If
     End Select
 
@@ -449,39 +607,52 @@ Public Function ComputeJobSequential(CurrentJob As String, CurrentPath As String
     'read coordinates
     
     
-    If OiaSettings.Settings.Item("X") <> "" And OiaSettings.Settings.Item("Y") <> "" Then
-        OiaSettings.getPositions (StgPos)
-    End If
-    
-    Select Case OiaSettings.Settings.Item("code")
-        Case "2", "nothing", "Nothing", "DoNothing", "doNothing", "donothing":  'Nothing to do
-            ListenToRegistry = NewCoord
-        Case "3", "Trigger1Position", "trigger1Position": 'store positions for later processing
-            SaveSetting "OnlineImageAnalysis", "macro", "code", "nothing"
-            DisplayProgress "Registry Code 3 (Trigger1Position): store positions and do nothing ...", RGB(0, &HC0, 0)
-            If OiaSettings.getPositions(StgPos) Then
-                computeCoordinatesImaging StgPos, NewCoord
+    Select Case OiaSettings.Settings.Item("codeIn")
+        Case "nothing", "Error", "timeExpired": 'Nothing to do
+            ComputeJobSequential = currentPosition
+        Case "trigger1", "Trigger1": 'store positions for later processing or direct imaging depending on settings
+            SaveSetting "OnlineImageAnalysis", "macro", "codeIn", "nothing"
+            DisplayProgress "Registry codeIn trigger1: store positions and eventually image job Trigger1 ...", RGB(0, &HC0, 0)
+            If OiaSettings.getPositions(newPositions) Then
+                newPositions = computeCoordinatesImaging(parentJob, parentPosition, newPositions)
+            Else
+                MsgBox "ComputeJobSequential: No position for Job Trigger1 has been specified!"
+                Exit Function
             End If
+            
+            ''' if we run a subjob the grid and counter is reset
+            If runSubJob("Trigger1", "Trigger1", newPositions) Then
+                'remove positions from parent grid to avoid revisiting the position
+                Grids.setThisValid parentGrid, False
+                'start acquisition of Job
+                StartJobOnGrid GridName, JobName, parentPath
+                'reset grid to empty grid
+                Grids.updateGridSize "Trigger1", 0, 0, 0, 0
+            End If
+              
+            
                 
-                
-        Case "5", "trigger1", "Trigger1":
-            SaveSetting "OnlineImageAnalysis", "macro", "code", "nothing"
-            DisplayProgress "Registry Code 4 (Trigger1): store positions and do imaging Trigger1...", RGB(0, &HC0, 0)
-
-            StorePositionsFromRegistry Xref, Yref, Zref, X, Y, Z, deltaZ
-            ' BatchHighresImagingRoutine
-            ' HERE THE IMAGES ARE ACQUIRED
-            Repetitions.number = CInt(AutofocusForm.Trigger1RepetitionNumber.Value)
-            Repetitions.time = CDbl(AutofocusForm.Trigger1RepetitionTime.Value)
-            Repetitions.interval = True
-            SubImagingWorkFlow RecordingDoc, GlobalTrigger1Recording, "Trigger1", AutofocusForm.Trigger1Autofocus, AutofocusForm.Trigger1ZOffset, Repetitions, _
-            X, Y, Z, deltaZ, GridPos, FileNameID
-            'create empty arrays
-            Erase X
-            Erase Y
-            Erase Z
-            Erase deltaZ
-
+        Case "trigger2", "Trigger2":
+            SaveSetting "OnlineImageAnalysis", "macro", "codeIn", "nothing"
+            DisplayProgress "Registry codeIn trigger2: store positions and eventually image job Trigger2 ...", RGB(0, &HC0, 0)
+            If OiaSettings.getPositions(newPositions) Then
+                newPositions = computeCoordinatesImaging(parentJob, parentPosition, newPositions)
+            Else
+                MsgBox "ComputeJobSequential: No position for Job Trigger2 has been specified!"
+                Exit Function
+            End If
+            
+            ''' if we run a subjob the grid and counter is reset
+            If runSubJob("Trigger2", "Trigger2", newPositions) Then
+                'remove positions from parent grid to avoid revisiting the position
+                Grids.setThisValid parentGrid, False
+                'start acquisition of Job
+                StartJobOnGrid GridName, JobName, parentPath
+                'reset grid to empty grid
+                Grids.updateGridSize "Trigger2", 0, 0, 0, 0
+            End If
+            
+            
         Case "6", "fcs":
             SaveSetting "OnlineImageAnalysis", "macro", "code", "nothing"
             DisplayProgress "Registry Code 6 (fcs): peform a fcs measurment ...", RGB(0, &HC0, 0)
@@ -491,43 +662,43 @@ Public Function ComputeJobSequential(CurrentJob As String, CurrentPath As String
             Erase locZ
             Erase locDeltaZ
             DisplayProgress "Registry Code 6 (fcs): perform FCS measurement ...", RGB(0, &HC0, 0)
-            StorePositionsFromRegistry Xref, Yref, Zref, locX, locY, locZ, locDeltaZ
+            'StorePositionsFromRegistry Xref, Yref, Zref, locX, locY, locZ, locDeltaZ
             DisplayProgress "Registry Code 6 (fcs): perform FCS measurement ...", RGB(0, &HC0, 0)
-            SubImagingWorkFlowFcs FcsData, locX, locY, locZ, GlobalDataBaseName & BackSlash, AutofocusForm.TextBoxFileName.Value & UnderScore & FileNameID, _
+            'SubImagingWorkFlowFcs FcsData, locX, locY, locZ, GlobalDataBaseName & BackSlash, AutofocusForm.TextBoxFileName.Value & UnderScore & FileNameID, _
             RecordingDoc.Recording.SampleSpacing, RecordingDoc.Recording.FrameSpacing
 
         Case "7", "Trigger2", "trigger2":
             'This only specify position of ROIs the stage is not moved
-            SaveSetting "OnlineImageAnalysis", "macro", "code", "nothing"
-            DisplayProgress "Registry Code 7 (bleach): peform a bleach measurment ...", RGB(0, &HC0, 0)
-            ' read potitions from
-            ReDim locX(0)
-            ReDim locY(0)
-            ReDim locZ(0)
-            ReDim locDeltaZ(0)
-            locX(0) = Xref
-            locY(0) = Yref
-            locZ(0) = Zref + AutofocusForm.Trigger2ZOffset.Value
-            locDeltaZ(0) = -1
-
-            Repetitions.number = 1
-            Repetitions.time = 0
-            Repetitions.interval = True
-            DisplayProgress "Registry Code 8 (bleach): perform Bleaching ...", RGB(0, &HC0, 0)
-            'Delete All ROI's
-            Dim AcquisitionController As AimAcquisitionController40.AimScanController
-            Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
-            Dim vo As AimImageVectorOverlay
-            Set vo = AcquisitionController.AcquisitionRegions
-            vo.Cleanup
-            CreateRoisFromRegistry
-
-            'StorePositionsFromRegistry Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ, HighResArrayDeltaZ
-            DisplayProgress "Registry Code 8 (bleach): perform Bleaching ...", RGB(0, &HC0, 0)
-            SubImagingWorkFlow RecordingDoc, GlobalBleachRecording, "Bleach", AutofocusForm.Trigger1Autofocus, AutofocusForm.Trigger1ZOffset, Repetitions, _
-            locX, locY, locZ, locDeltaZ, GridPos, FileNameID, iRepStart
-            Set Track = Lsm5.DsRecording.TrackObjectBleach(Success)
-            Track.UseBleachParameters = False  'switch off the bleaching
+'            SaveSetting "OnlineImageAnalysis", "macro", "code", "nothing"
+'            DisplayProgress "Registry Code 7 (bleach): peform a bleach measurment ...", RGB(0, &HC0, 0)
+'            ' read potitions from
+'            ReDim locX(0)
+'            ReDim locY(0)
+'            ReDim locZ(0)
+'            ReDim locDeltaZ(0)
+'            locX(0) = Xref
+'            locY(0) = Yref
+'            locZ(0) = Zref + AutofocusForm.Trigger2ZOffset.Value
+'            locDeltaZ(0) = -1
+'
+'            Repetitions.number = 1
+'            Repetitions.time = 0
+'            Repetitions.interval = True
+'            DisplayProgress "Registry Code 8 (bleach): perform Bleaching ...", RGB(0, &HC0, 0)
+'            'Delete All ROI's
+'            Dim AcquisitionController As AimAcquisitionController40.AimScanController
+'            Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
+'            Dim vo As AimImageVectorOverlay
+'            Set vo = AcquisitionController.AcquisitionRegions
+'            vo.Cleanup
+'            CreateRoisFromRegistry
+'
+'            'StorePositionsFromRegistry Xref, Yref, Zref, HighResArrayX, HighResArrayY, HighResArrayZ, HighResArrayDeltaZ
+'            DisplayProgress "Registry Code 8 (bleach): perform Bleaching ...", RGB(0, &HC0, 0)
+'            SubImagingWorkFlow RecordingDoc, GlobalBleachRecording, "Bleach", AutofocusForm.Trigger1Autofocus, AutofocusForm.Trigger1ZOffset, Repetitions, _
+'            locX, locY, locZ, locDeltaZ, GridPos, FileNameID, iRepStart
+'            Set Track = Lsm5.DsRecording.TrackObjectBleach(Success)
+'            Track.UseBleachParameters = False  'switch off the bleaching
 
         Case Else
             MsgBox ("Invalid OnlineImageAnalysis Code = " & code)
