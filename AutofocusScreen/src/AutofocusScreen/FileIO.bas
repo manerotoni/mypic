@@ -2,7 +2,7 @@ Attribute VB_Name = "FileIO"
 ''''
 ' A list of functions to open and write text files, check their existance etc
 ''''
-
+Option Explicit
 ''''''''''''''''''''''''
 'Debug and LogVariables'
 ''''''''''''''''''''''''

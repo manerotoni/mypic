@@ -237,6 +237,7 @@ End Sub
 '   SetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Pos As Long)
 '   Create a new position if Pos > FcsPositions.PositionListSize
 '   then all positions inbetween are set to 0
+'
 '''''
 Public Function SetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, pos As Long) As Boolean
     Set FcsControl = Fcs

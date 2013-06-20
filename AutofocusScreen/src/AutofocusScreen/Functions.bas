@@ -18,7 +18,7 @@ End Function
 ''''
 ' Check if key is in collection
 ''''
-Public Function InCollection(Col As Collection, key As String) As Boolean
+Public Function InCollection(Col As Collection, Key As String) As Boolean
   Dim var As Variant
   Dim errNumber As Long
 
@@ -27,7 +27,7 @@ Public Function InCollection(Col As Collection, key As String) As Boolean
 
   Err.Clear
   On Error Resume Next
-    var = Col.Item(key)
+    var = Col.Item(Key)
     errNumber = CLng(Err.number)
   On Error GoTo 0
 

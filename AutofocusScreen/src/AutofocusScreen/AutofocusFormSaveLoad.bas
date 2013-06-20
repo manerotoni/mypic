@@ -65,7 +65,7 @@ Public Sub SaveFormSettings(FileName As String)
     Close #iFileNum
     Exit Sub
 ErrorHandle:
-    MsgBox "Not able to open " & FileName & " for saving settings"
+    MsgBox "SaveFormSettings: Not able to open " & FileName & " for saving settings"
 End Sub
 
 
@@ -76,8 +76,8 @@ End Sub
 ''''
 Private Sub SaveFormPage(JobName As String, iFileNum As Integer)
     Dim i As Integer
-    
-    If JobName = "Autofocus" Or JobName = "Acquisition" Then
+    On Error GoTo ErrorHandle:
+    If JobName <> "Trigger1" And JobName <> "Trigger2" Then
         Print #iFileNum, JobName & "Active " & AutofocusForm.Controls(JobName & "Active").Value
     End If
     
@@ -94,8 +94,7 @@ Private Sub SaveFormPage(JobName As String, iFileNum As Integer)
     Print #iFileNum, JobName & "TrackZ " & AutofocusForm.Controls(JobName & "TrackZ").Value
     Print #iFileNum, JobName & "TrackXY " & AutofocusForm.Controls(JobName & "TrackXY").Value
     Print #iFileNum, JobName & "OfflineTrack " & AutofocusForm.Controls(JobName & "OfflineTrack").Value
-    Print #iFileNum, JobName & "OfflineTrackChannel " & _
-    AutofocusForm.Controls(JobName & "OfflineTrackChannel").Value
+    Print #iFileNum, JobName & "OfflineTrackChannel " & AutofocusForm.Controls(JobName & "OfflineTrackChannel").Value
     Print #iFileNum, JobName & "OiaActive " & AutofocusForm.Controls(JobName & "OiaActive").Value
     Print #iFileNum, JobName & "OiaSequential " & AutofocusForm.Controls(JobName & "OiaSequential").Value
     Print #iFileNum, JobName & "OiaParallel " & AutofocusForm.Controls(JobName & "OiaParallel").Value
@@ -106,8 +105,10 @@ Private Sub SaveFormPage(JobName As String, iFileNum As Integer)
         Print #iFileNum, JobName & "RepetitionMin " & AutofocusForm.Controls(JobName & "RepetitionMin").Value
         Print #iFileNum, JobName & "RepetitionInterval " & AutofocusForm.Controls(JobName & "RepetitionInterval").Value
         Print #iFileNum, JobName & "RepetitionNumber " & AutofocusForm.Controls(JobName & "RepetitionNumber").Value
-        Print #iFileNum, JobName & "Bleach " & AutofocusForm.Controls(JobName & "Bleach").Value
     End If
+    Exit Sub
+ErrorHandle:
+    MsgBox "Error in SaveFormPage " + JobName + " " + Err.Description
 End Sub
 
 ''''

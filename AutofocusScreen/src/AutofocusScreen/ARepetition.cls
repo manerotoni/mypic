@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 '''
 ' A Class to manage repetitions
 '''
-
+Option Explicit
 Public Name As String            ' this is should belong to the upper class but to see what is inside you need the name
 Public number As Integer        'Number of repetitions
 Public index As Integer          'currentindex of repetition

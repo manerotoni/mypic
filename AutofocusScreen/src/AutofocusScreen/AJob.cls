@@ -7,6 +7,8 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Option Explicit
+
 Public Name As String
 Public Recording As DsRecording
 Private pAcquireTrack() As Boolean 'must be private for no obvious reasons of VBA
@@ -32,12 +34,104 @@ Public Property Let AcquireTrack(Value() As Boolean)
     Next i
 End Property
 
+''''
+' setJob load settings from recording
+''''
+Public Function setJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
+    On Error GoTo ErrorHandle:
+    Dim AcquisitionController As AimAcquisitionController40.AimScanController
+    Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
+    Dim AcquisitionParameters As AimAcquisitionController40.AimAcquisitionParameters
+    Set AcquisitionParameters = AcquisitionController.AcquisitionParameters
+    Dim i As Integer
+    SetRecording RecordingLoc
+    TrackNumber = RecordingLoc.GetNormalTrackCount
+    TimeBetweenStacks = RecordingLoc.TrackObjectByMultiplexOrder(0, 1).TimeBetweenStacks
+    If ZENv > 2010 Then
+        If Recording.ScanDirection = 1 Then
+            CorrX = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value
+            CorrY = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value
+        End If
+    End If
+    pixelDwell = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
+    ReDim pAcquireTrack(TrackNumber - 1)
+    For i = 0 To TrackNumber - 1
+        pAcquireTrack(i) = Recording.TrackObjectByMultiplexOrder(i, 1).Acquire
+    Next i
+    UseRoi = AcquisitionParameters.UseROIs
+    setJob = True
+    Exit Function
+ErrorHandle:
+    MsgBox "Error in AJob.setJob " + Err.Description
+End Function
+
+
+Public Function putJob(ZEN As Object)
+    On Error GoTo ErrorHandle:
+    Dim AcquisitionController As AimAcquisitionController40.AimScanController
+    Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
+    Dim AcquisitionParameters As AimAcquisitionController40.AimAcquisitionParameters
+    Set AcquisitionParameters = AcquisitionController.AcquisitionParameters
+    Dim iTrack As Integer
+    
+    If TrackNumber <> Lsm5.DsRecording.GetNormalTrackCount Then
+        MsgBox "Nr of Tracks of  Job " + Name + " is " + CStr(TrackNumber) + ". Available tracks " + CStr(Lsm5.DsRecording.GetNormalTrackCount) + vbCrLf + "This may cause problems"
+        
+        'Exit Function
+    End If
+    
+    If Not Recording Is Nothing Then
+        Lsm5.DsRecording.Copy Recording
+    Else
+        MsgBox "No Recording initialized for Job " + Name
+        Exit Function
+    End If
+    
+    'at the moment we just set the active/inactive track and TimeBetweenStacks
+    'consistency check for TrackNumber. May be pass error only to log?
+    For iTrack = 0 To TrackNumber - 1
+        If ZENv > 2010 Then
+            ZEN.gui.Acquisition.Channels.Track.ByIndex = iTrack '(it does not display properly anyway)
+            ZEN.gui.Acquisition.Channels.Track.Acquire.Value = pAcquireTrack(iTrack)
+        Else
+            Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire = pAcquireTrack(iTrack)
+        End If
+        Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).TimeBetweenStacks = TimeBetweenStacks
+        Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).SampleObservationTime = pixelDwell
+    Next iTrack
+    
+    AcquisitionParameters.UseROIs = UseRoi
+    
+    If ZENv > 2010 Then
+        ZEN.gui.Acquisition.AcquisitionMode.ScanArea.Zoom.Value = Recording.ZoomX
+        ZEN.SetListEntrySelected "Scan.Mode.DirectionX", Recording.ScanDirection
+        If Recording.ScanDirection Then
+            ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value = CorrX
+            ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value = CorrY
+        End If
+    End If
+    
+    putJob = True
+    Exit Function
+ErrorHandle:
+    MsgBox "Error in AJob.putJob " + Name + " " + Err.Description
+End Function
 
 Public Sub SetAcquireTrack(iTrack As Integer, Value As Boolean)
     If UBound(pAcquireTrack) >= iTrack Then
         pAcquireTrack(iTrack) = Value
     End If
 End Sub
+
+Public Function isAcquiring() As Boolean
+    Dim i As Integer
+    For i = 0 To UBound(pAcquireTrack)
+        If pAcquireTrack(i) = True Then
+            isAcquiring = True
+            Exit Function
+        End If
+    Next i
+End Function
 
 Public Function GetAcquireTrack(iTrack As Integer) As Boolean
     If UBound(pAcquireTrack) >= iTrack Then
@@ -70,7 +164,7 @@ Public Sub setRoiMaxNr(roiMaxNr As Integer)
 End Sub
 
 Public Function getRoiMaxNr() As Integer
-    getRoiNr = pRoiMaxNr
+    getRoiMaxNr = pRoiMaxNr
 End Function
 
 Public Sub clearRois()
@@ -109,8 +203,84 @@ Public Function createRois() As Boolean
     createRois = True
 End Function
 
-'Public Property Get TrackNumber(Value As Integer)
-'    pTrackNumber =
-'    pRecording = Lsm5.CreateBackupRecording
-'    pRecording.Copy DsRecording
-'End Property
+Public Function isBleaching() As Boolean
+    isBleaching = Recording.TrackObjectBleach(Success).Acquire And Recording.TrackObjectBleach(Success).UseBleachParameters
+End Function
+
+''''
+' Create a string with the description of a Job
+''''
+Public Function jobDescriptor() As String
+    Dim ABoolean As Boolean
+    Dim Description As String
+    Dim iTrack As Integer
+    If (Recording.ScanMode = "ZScan") Or (Recording.ScanMode = "Line") Then
+        Description = Description & "ScanMode = Line" & vbCrLf
+        Description = Description & "       X = " & Recording.SamplesPerLine & ", Y = " & 1 & vbCrLf
+    Else
+        Description = Description & "ScanMode = Frame" & vbCrLf
+        Description = Description & "       X = " & Recording.SamplesPerLine & ", Y = " & Recording.LinesPerFrame & vbCrLf
+    End If
+    
+    Description = Description & "Bleaching = " & isBleaching & vbCrLf
+    Description = Description & "Regions = " & Me.UseRoi & vbCrLf
+    Description = Description & "PixelDwell = " & Round(Me.pixelDwell * 1000000#, 2) & " us" & vbCrLf
+    Description = Description & "Zoom = " & Recording.ZoomX & vbCrLf
+    
+    If Recording.SpecialScanMode = "ZScanner" Then
+        Description = Description & "Piezo = True" & vbCrLf
+    Else
+        Description = Description & "Piezo = False" & vbCrLf
+    End If
+    
+    If Recording.SpecialScanMode = "OnTheFly" Then
+        Description = Description & "Fast-Z-Line = True" & vbCrLf
+    Else
+        Description = Description & "Fast-Z-Line = False" & vbCrLf
+    End If
+    
+    If Recording.ScanMode = "Stack" Or Recording.ScanMode = "ZScan" Then
+        Description = Description & "Z-Stack = True" & vbCrLf
+        Description = Description & "       Z-Slices    = " & Recording.FramesPerStack & vbCrLf
+        Description = Description & "       Z-Interval  = " & Round(Recording.frameSpacing, 2) & " um" & vbCrLf
+        Description = Description & "       Z-Range   = " & Round(Recording.frameSpacing, 2) * (Recording.FramesPerStack - 1) & " um" & vbCrLf
+    Else
+        Description = Description & "Z-Stack = False" & vbCrLf
+    End If
+
+     If Recording.TimeSeries Then
+        Description = Description & "TimeSeries = " & Recording.TimeSeries & vbCrLf
+        Description = Description & "       Cycles     = " & Recording.StacksPerRecord & vbCrLf
+        Description = Description & "       Interval    = " & Me.TimeBetweenStacks & " sec"
+    Else
+        Description = Description & "TimeSeries = " & Recording.TimeSeries
+    End If
+
+        
+    jobDescriptor = Description
+End Function
+
+Public Function splittedJobDescriptor(MaxLines As Integer, jobDescription As String) As String()
+    Dim i As Integer
+    Dim Label1() As String
+    Dim Label2() As String
+    Dim Output() As String
+    ReDim Output(1)
+    Label1 = Split(jobDescription, vbCrLf)
+    If UBound(Label1) > MaxLines - 1 Then
+        ReDim Label2(0 To UBound(Label1) - MaxLines)
+        For i = 0 To UBound(Label1) - MaxLines
+            Label2(i) = Label1(MaxLines + i)
+        Next i
+        ReDim Preserve Label1(0 To MaxLines - 1)
+    Else
+        ReDim Label2(0)
+    End If
+    Output(0) = Join(Label1, vbCrLf)
+    Output(1) = Join(Label2, vbCrLf)
+    splittedJobDescriptor = Output
+End Function
+
+
+
+

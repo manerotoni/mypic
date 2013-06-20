@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 '''
 ' A Class to manage and imagingJob with different Settings and Tracks
 '''
-
+Option Explicit
 
 '''' We can use number or a dictionary to find a Job in Jobs
 Private Jobs() As AJob
@@ -29,8 +29,6 @@ End Sub
 Public Sub initialize(Names() As String, Recording As DsRecording)
     Dim i As Integer
    ' Set Jobs = New AJob
-    ReDim Jobs(0 To UBound(Names))
-    Set JobNames = New Dictionary
     For i = 0 To UBound(Names)
         AddJob CStr(Names(i)), Lsm5.DsRecording
     Next i
@@ -89,13 +87,17 @@ End Sub
 '   Add Job and increase number of Jobs
 '''
 Public Sub AddJob(Name As String, Recording As DsRecording)
-    If isArrayEmpty(Jobs) Then
-        ReDim Jobs(0)
-    Else
-        ReDim Preserve Jobs(0 To UBound(Jobs) + 1)
+    If JobNames Is Nothing Then
+        Set JobNames = New Dictionary
     End If
-    JobNames.Add Name, UBound(Jobs)
-    
+    If Not JobNames.Exists(Name) Then
+        If isArrayEmpty(Jobs) Then
+            ReDim Jobs(0)
+        Else
+            ReDim Preserve Jobs(0 To UBound(Jobs) + 1)
+        End If
+        JobNames.Add Name, UBound(Jobs)
+    End If
     Dim i As Integer
     Dim iJob As Integer
     iJob = JobNames.Item(Name)
@@ -117,41 +119,24 @@ End Sub
 '''
 '   Set the job with Name from ZEN using a given recording
 '''
-Public Sub SetJob(Name As String, Recording As DsRecording, ZEN As Object)
-    Dim AcquisitionController As AimAcquisitionController40.AimScanController
-    Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
-    Dim AcquisitionParameters As AimAcquisitionController40.AimAcquisitionParameters
-    Set AcquisitionParameters = AcquisitionController.AcquisitionParameters
+Public Function setJob(Name As String, Recording As DsRecording, ZEN As Object) As Boolean
+    On Error GoTo ErrorHandle:
     Dim iJob As Integer
-    If Not JobNames.Exists(Name) Then
-        MsgNoJob Name
-        Exit Sub
-    Else
-        iJob = JobNames.Item(Name)
+    If Not checkJobName(Name) Then
+        Exit Function
     End If
-    Jobs(iJob).SetRecording Recording
-    Jobs(iJob).TrackNumber = Jobs(Name).Recording.GetNormalTrackCount
-    Jobs(iJob).TimeBetweenStacks = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).TimeBetweenStacks
-    If ZENv > 2010 Then
-        If Jobs(iJob).Recording.ScanDirection = 1 Then
-            Jobs(iJob).CorrX = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value
-            Jobs(iJob).CorrY = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value
-        End If
+    If Jobs(JobNames.Item(Name)).setJob(Recording, ZEN) Then
+        setJob = True
     End If
-    Jobs(iJob).pixelDwell = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
-    Dim Aq() As Boolean
-    ReDim Aq(Jobs(iJob).TrackNumber - 1)
-    For i = 0 To Jobs(iJob).TrackNumber - 1
-        Aq(i) = Recording.TrackObjectByMultiplexOrder(i, 1).Acquire
-    Next i
-    Jobs(iJob).AcquireTrack = Aq
-    Jobs(iJob).UseRoi = AcquisitionParameters.UseROIs
-End Sub
+    Exit Function
+ErrorHandle:
+    MsgBox "Error in ImagingJobs.setJob " + Name + " " + Err.Description
+End Function
 
 
 Public Function GetRecording(Name As String) As DsRecording
     If JobNames.Exists(Name) Then
-        Set GetRecording = Jobs(JobNames(key)).GetRecording
+        Set GetRecording = Jobs(JobNames.Item(Name)).GetRecording
     Else
        MsgNoJob Name
     End If
@@ -168,39 +153,19 @@ End Function
 '''
 '   Put the job with Name from Macro into ZEN
 '''
-Public Sub PutJob(Name As String, ZEN As Object)
-    Dim AcquisitionController As AimAcquisitionController40.AimScanController
-    Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
-    Dim AcquisitionParameters As AimAcquisitionController40.AimAcquisitionParameters
-    Set AcquisitionParameters = AcquisitionController.AcquisitionParameters
-    Dim iTrack As Integer
-    
+Public Function putJob(Name As String, ZEN As Object) As Boolean
+    On Error GoTo ErrorHandle:
     Dim iJob As Integer
     If Not checkJobName(Name) Then
-        Exit Sub
+        Exit Function
     End If
-    iJob = JobNames.Item(Names)
-    
-    If Not Jobs(iJob).Recording Is Nothing Then
-        Lsm5.DsRecording.Copy Jobs(iJob).Recording
+    If Jobs(JobNames.Item(Name)).putJob(ZEN) Then
+        putJob = True
     End If
-    'at the moment we just set the active/inactive track and TimeBetweenStacks
-    For iTrack = 0 To Jobs(Name).TrackNumber - 1
-        Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire = Jobs(iJob).GetAcquireTrack(iTrack)
-        Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).TimeBetweenStacks = Jobs(iJob).TimeBetweenStacks
-        Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).SampleObservationTime = Jobs(iJob).pixelDwell
-    Next iTrack
-    AcquisitionParameters.UseROIs = Jobs(iJob).UseRoi
-    
-    If ZENv > 2010 Then
-        ZEN.gui.Acquisition.AcquisitionMode.ScanArea.Zoom.Value = Jobs(iJob).Recording.ZoomX
-        ZEN.SetListEntrySelected "Scan.Mode.DirectionX", Jobs(iJob).Recording.ScanDirection
-        If Jobs(iJob).Recording.ScanDirection Then
-            ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value = Jobs(iJob).CorrX
-            ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value = Jobs(iJob).CorrY
-        End If
-    End If
- End Sub
+    Exit Function
+ErrorHandle:
+    MsgBox "Error in ImagingJobs.putJob " + Name + " " + Err.Description
+ End Function
 
 
 ''''
@@ -210,7 +175,7 @@ Public Sub setRoiMaxNr(Name As String, roiMaxNr As Integer)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
-    iJob = JobNames.Item(Names)
+    Jobs(JobNames.Item(Name)).setRoiMaxNr roiMaxNr
 End Sub
 
 Public Sub setRoi(Name As String, ARoi As Roi, roiNr As Integer)
@@ -236,13 +201,19 @@ End Sub
 
 
 Public Sub clearRois(Name As String)
-    Jobs(iJob).clearRois
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).clearRois
 End Sub
 
 
 ''''''
-Public Function TrackNumber(Name As String)
-    TrackNumber = Jobs(Name).TrackNumber
+Public Function TrackNumber(Name As String) As Integer
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    TrackNumber = Jobs(JobNames.Item(Name)).TrackNumber
 End Function
 
 
@@ -338,6 +309,15 @@ Public Function GetAcquireTrack(Name As String, iTrack As Integer) As Boolean
     End If
     If iTrack < Jobs(JobNames.Item(Name)).TrackNumber Then
         GetAcquireTrack = Jobs(JobNames.Item(Name)).GetAcquireTrack(iTrack)
+    End If
+End Function
+
+Public Function isAcquiring(Name As String) As Boolean
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    If Jobs(JobNames.Item(Name)).isAcquiring Then
+        isAcquiring = True
     End If
 End Function
 
@@ -570,59 +550,22 @@ End Function
 ''''
 ' Create a string with the description of a Job
 ''''
-Public Function JobDescriptor1(Name As String) As String
-    Dim Recording As DsRecording
-    Dim Description As String
-    Dim iTrack As Integer
-    If (GetScanMode(Name) = "ZScan") Or (GetScanMode(Name) = "Line") Then
-        Description = Description & "ScanMode = Line" & vbCrLf
-        Description = Description & "       X = " & GetSamplesPerLine(Name) & ", Y = " & 1 & vbCrLf
-    Else
-        Description = Description & "ScanMode = Frame" & vbCrLf
-        Description = Description & "       X = " & GetSamplesPerLine(Name) & ", Y = " & GetLinesPerFrame(Name) & vbCrLf
+Public Function jobDescriptor(Name As String) As String
+    If Not checkJobName(Name) Then
+        Exit Function
     End If
-    
-    Description = Description & "Bleaching = " & GetBleachTrack(Name) & vbCrLf
-    Description = Description & "Regions = " & GetUseRoi(Name) & vbCrLf
-    
-    
-    Description = Description & "PixelDwell = " & Round(GetPixelDwell(Name) * 1000000#, 2) & " us" & vbCrLf
-    Description = Description & "Zoom = " & GetZoom(Name) & vbCrLf
-    
-    Description = Description & "Piezo = " & (GetSpecialScanMode(Name) = "ZScanner") & vbCrLf
-    Description = Description & "Fast-Z-Line = " & (GetSpecialScanMode(Name) = "OnTheFly") & vbCrLf
-
-    
-        
-    JobDescriptor1 = Description
+    jobDescriptor = Jobs(JobNames.Item(Name)).jobDescriptor
 End Function
+
 
 ''''
 ' Create a string with the description of a Job
 ''''
-Public Function JobDescriptor2(Name As String) As String
-    Dim Description As String
-    Dim iTrack As Integer
-    Description = "Z-Stack = " & (GetScanMode(Name) = "Stack" Or GetScanMode(Name) = "ZScan") & vbCrLf
-    If GetScanMode(Name) = "Stack" Or GetScanMode(Name) = "ZScan" Then
-        Description = Description & "       Z-Slices    = " & GetFramesPerStack(Name) & vbCrLf
-        Description = Description & "       Z-Interval  = " & Round(GetFrameSpacing(Name), 2) & " um" & vbCrLf
-        Description = Description & "       Z-Range   = " & Round(GetFrameSpacing(Name), 2) * (GetFramesPerStack(Name) - 1) & " um" & vbCrLf
+Public Function splittedJobDescriptor(Name As String, MaxLines As Integer) As String()
+    If Not checkJobName(Name) Then
+        Exit Function
     End If
-
-    Description = Description & "TimeSeries = " & GetTimeSeries(Name) & vbCrLf
-    If GetTimeSeries(Name) Then
-        Description = Description & "       Cycles     = " & GetStacksPerRecord(Name) & vbCrLf
-        Description = Description & "       Interval    = " & GetTimeBetweenStacks(Name) & " sec" & vbCrLf
-    End If
-
-
-    Description = Description & vbCrLf
-    
-'    For iTrack = 0 To Jobs(JobName).TrackNumber - 1
-'            Description = Description & Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).Name & " = " & Jobs(JobName).GetAcquireTrack(iTrack)
-'    Next iTrack
-
-    
-    JobDescriptor2 = Description
+    splittedJobDescriptor = Jobs(JobNames.Item(Name)).splittedJobDescriptor(MaxLines, jobDescriptor(Name))
 End Function
+
+

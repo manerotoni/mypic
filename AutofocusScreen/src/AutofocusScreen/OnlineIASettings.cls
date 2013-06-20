@@ -10,10 +10,13 @@ Attribute VB_Exposed = False
 '''''
 ' OiaSettings: A class for Keeping track of settings that can be read from the Registry or from files
 '''''
-
+Option Explicit
 Public Settings As Dictionary
 Private Keys() As String
-
+''keys used for codeIn
+Private codeIn As Dictionary
+''keys used for codeOut
+Private codeOut As Dictionary
 
 '''
 ' A set of functions to IN/OUT parameters for Onlineimageanalisys this should be a class!!!
@@ -37,10 +40,113 @@ Public Sub initializeDefault()
     Keys(9) = "roiAim"
     Keys(10) = "roiX"
     Keys(11) = "roiY"
+    
+    Set codeIn = New Dictionary
+    codeIn.Add "wait", "wait for image analysis"
+    codeIn.Add "", "(empty char) wait for image analysis"
+    codeIn.Add "error", "error from image analysis"
+    codeIn.Add "timeExpired", "time for image analysis has expired"
+    codeIn.Add "nothing", "Do nothing"
+    codeIn.Add "focus", "read X, Y, and Z  and change focus"
+    codeIn.Add "Trigger1", "perform job Trigger1 at position X, Y, and Z"
+    codeIn.Add "Trigger2", "perform job Trigger2 at position X, Y, and Z"
+    
+    Set codeOut = New Dictionary
+    codeOut.Add "", "(empty char) online image analysis does nothing"
+    codeOut.Add "newImage", "a new image is there"
+    
     Set Settings = New Dictionary
+    Dim Key As Variant
+    For Each Key In Keys
+        Settings.Add Key, ""
+    Next Key
 End Sub
 
+Public Function getSettings(Key As Variant) As Variant
+    Dim Log As String
+    Dim i  As Integer
+    If Settings.Exists(Key) Then
+        getSettings = Settings.Item(Key)
+        Exit Function
+    End If
+    Log = "OnlineIASettings.getSettings: Failed to get " + Key + " from OiaSettings. Possible values are:" & vbCrLf
+    Log = Log & availableKeys
+    
+    MsgBox Log
+    'ErrorLog.UpdateLog (Log)
+End Function
 
+Public Function availableKeys() As String
+    Dim i As Integer
+    Dim Log As String
+    Log = ""
+    For i = 0 To UBound(Keys)
+        Log = Log & Keys(i) & ", "
+    Next i
+    availableKeys = Log
+End Function
+
+Public Function availableCodeIn() As String
+    Dim codeKeys() As Variant
+    Dim Key As Variant
+    codeKeys = codeIn.Keys
+    Dim Log As String
+    Log = ""
+    For Each Key In codeKeys
+       Log = Log & Key & ", "
+    Next Key
+    availableCodeIn = Log
+End Function
+
+Public Function availableCodeOut() As String
+    Dim codeKeys() As Variant
+    Dim Key As Variant
+    codeKeys = codeOut.Keys
+    Dim Log As String
+    Log = ""
+    For Each Key In codeKeys
+       Log = Log & Key & ", "
+    Next Key
+    availableCodeOut = Log
+End Function
+
+Public Function checkCodeOut() As Boolean
+    Dim errorMsg As String
+    Dim Key As Variant
+    Dim codeKeys() As Variant
+    codeKeys = codeOut.Keys
+    For Each Key In codeKeys
+        If Me.getSettings("codeOut") = Key Then
+            checkCodeOut = True
+            Exit Function
+        End If
+    Next Key
+    errorMsg = "Wrong codeOut = " & Me.getSettings("codeOut") & " in Registry. Values are " & vbCrLf
+    For Each Key In codeKeys
+        errorMsg = errorMsg & Key & ": " & codeOut.Item(Key) & vbCrLf
+    Next Key
+    MsgBox errorMsg
+End Function
+
+
+
+Public Function checkCodeIn() As Boolean
+    Dim errorMsg As String
+    Dim Key As Variant
+    Dim codeInKeys() As Variant
+    codeInKeys = codeIn.Keys
+    For Each Key In codeInKeys
+        If Settings.Item("codeIn") = Key Then
+            checkCodeIn = True
+            Exit Function
+        End If
+    Next Key
+    errorMsg = "Wrong codeIn= " & Settings.Item("codeIn") & " in Registry values are " & vbCrLf
+    For Each Key In codeInKeys
+        errorMsg = errorMsg & Key & ": " & codeIn.Item(Key) & vbCrLf
+    Next Key
+    MsgBox errorMsg
+End Function
 
 ''''
 ' Set Registry to default values
@@ -61,9 +167,13 @@ Private Sub checkKeys()
     End If
 End Sub
 
+
+
+
 '''
 ' Default registry values is always empty
 '''
+
 Public Sub resetRegistry()
     checkKeys
     Dim i As Integer
@@ -78,11 +188,18 @@ End Sub
 ''''
 Public Sub readFromRegistry()
     checkKeys
-    Dim key As Variant
-    For Each key In Keys
-        Settings.Add key, GetSetting(appname:="OnlineImageAnalysis", section:="macro", key:=key)
-    Next key
+    Dim Key As Variant
+    For Each Key In Keys
+        If Settings.Exists(Key) Then
+            Settings.Item(Key) = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:=Key)
+        Else
+            Settings.Add Key, GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:=Key)
+        End If
+    Next Key
 End Sub
+
+
+
 
 ''''
 '   WriteOiaSettingsToRegistry(Settings As Dictionary, Keys() As String)
@@ -91,12 +208,29 @@ End Sub
 
 Public Sub writeToRegistry()
     checkKeys
-    Dim key As Variant
-    For Each key In Keys
-        If Settings.Exists(key) Then
-            SaveSetting "OnlineImageAnalysis", "macro", key, Settings.Item(key)
+    Dim Key As Variant
+    For Each Key In Keys
+        If Settings.Exists(Key) Then
+            SaveSetting "OnlineImageAnalysis", "macro", Key, Settings.Item(Key)
         End If
-    Next key
+    Next Key
+    
+End Sub
+
+Public Sub writeKeyToRegistry(Key As Variant, Value As Variant)
+    checkKeys
+    If Settings.Exists(Key) Then
+        If Key = "codeIn" Then
+            checkCodeIn
+        End If
+        If Key = "codeOut" Then
+            checkCodeOut
+        End If
+        SaveSetting "OnlineImageAnalysis", "macro", Key, Value
+    Else
+        MsgBox "OnlineIASettings.writeKeyToRegistry: no key " & Key & " available. Possible Keys are:" & vbCrLf & _
+        availableKeys
+    End If
 End Sub
 
 ''''
@@ -135,15 +269,15 @@ Public Sub writeToFile(FileName As String)
     checkKeys
     Dim i As Integer
     Dim iFileNum As Integer
-    Dim key As Variant
+    Dim Key As Variant
     Close
     'On Error GoTo ErrorHandle
     iFileNum = FreeFile()
     Open FileName For Output As iFileNum
     
-    For Each key In Settings.Keys
-        Print #iFileNum, key & " " & Settings.Item(key)
-    Next key
+    For Each Key In Settings.Keys
+        Print #iFileNum, Key & " " & Settings.Item(Key)
+    Next Key
     Close
 ErrorHandle:
 End Sub
@@ -189,7 +323,7 @@ Public Function getRois(Rois() As Roi) As Boolean
     XRois() = Split(Settings.Item("roiX"), ";")
     YRois() = Split(Settings.Item("roiY"), ";")
     
-    If UBound(roiType) <> UBound(roiAim) And UBound(roiType) <> UBound(XRoi) And UBound(roiType) <> UBound(YRoi) Then
+    If UBound(roiType) <> UBound(roiAim) And UBound(roiType) <> UBound(XRois) And UBound(roiType) <> UBound(YRois) Then
         MsgBox ("GetRoisFromRegistry: Number of Rois and coordinates need to correspond." + vbCrLf + "roiType1 ; roiType2; etc." & vbCrLf & _
         "roiX1_roi1, roiX2_roi1; roiX1_roi2, roiX2_roi2, roiX3_roi2; etc. Coorindates in pixels")
         Exit Function
@@ -213,7 +347,7 @@ Public Function getRois(Rois() As Roi) As Boolean
             Exit Function
         End If
     Next iRoi
-    GetRoisFromSettings = True
+    getRois = True
 End Function
 
 
@@ -232,21 +366,6 @@ Public Function getPositions(StgPos() As Vector) As Boolean
     Dim locY()  As String 'the string containinig the Y-positions
     Dim locZ() As String  'the string containinig the Z-positions
     Dim i As Integer
-'    If Settings.Exists("unit") Then
-'        If Settings.Item("unit") = "um" Or Settings.Item("unit") = Chr(181) & "m" Then      'has correct pixelSize of um
-'            pixelSizeXY = 1
-'            pixelSizeZ = 1
-'        ElseIf Settings.Item("unit") = "px" Or Settings.Item("unit") = "" Then
-'            pixelSizeXY = Jobs.GetSampleSpacing(JobName) * 1000000
-'            pixelSizeZ = Jobs.GetFrameSpacing(JobName)
-'        Else
-'            MsgBox "GetPositionsFromSettings: Do not understand unit " & Settings.Item("unit") & ". Possible value for registry entry unit are um or px!"
-'            Exit Function
-'        End If
-'     Else
-'        pixelSizeXY = Jobs.GetSampleSpacing(JobName) * 1000000
-'        pixelSizeZ = Jobs.GetFrameSpacing(JobName)
-'     End If
     
     If Settings.Exists("X") Then
         locX() = Split(Settings.Item("X"), ",")

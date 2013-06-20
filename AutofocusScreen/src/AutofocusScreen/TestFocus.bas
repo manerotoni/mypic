@@ -1,4 +1,6 @@
 Attribute VB_Name = "TestFocus"
+Option Explicit
+
 ''''''
 '' AFTest1_Click()
 '' Perform repeatealy Autofocus with FastZline and acquisition with stage only.

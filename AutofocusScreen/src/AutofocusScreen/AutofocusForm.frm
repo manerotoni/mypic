@@ -42,6 +42,8 @@ End Sub
 
 
 
+
+
 ''''''
 ' UserForm_Initialize()
 '   Function called from e.g. AutoFocusForm.Show
@@ -68,7 +70,7 @@ Public Sub UserForm_Initialize()
         'On Error GoTo ErrorMsg
         Set ZEN = Lsm5.CreateObject("Zeiss.Micro.AIM.ApplicationInterface.ApplicationInterface")
         GoTo NoError
-ErrorMsg:
+errorMsg:
         MsgBox "Version is ZEN" & ZENv & " but can't find Zeiss.Micro.AIM.ApplicationInterface." & vbCrLf _
         & "Using ZEN2010 settings instead." & vbCrLf _
         & "Check if Zeiss.Micro.AIM.ApplicationInterface.dll is registered?" _
@@ -200,7 +202,7 @@ Private Sub Re_Start()
     SwitchEnablePage AlterAcquisitionActive, "AlterAcquisition"
     
     'Set Database name
-    DatabaseTextbox.Value = GetSetting(appname:="OnlineImageAnalysis", section:="macro", key:="OutputFolder")
+    DatabaseTextbox.Value = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="OutputFolder")
     
     'Set repetition and locations
     'RepetitionNumber = 1
@@ -412,20 +414,19 @@ Private Sub SwitchEnablePage(Enable As Boolean, JobName As String)
     Me.Controls(JobName + "PutJob").Enabled = Enable
     
     'For online image analysis
-    If JobName <> "AlterAcquisition" Then
-        Me.Controls(JobName + "TrackZ").Enabled = Enable
-        Me.Controls(JobName + "TrackXY").Enabled = Enable
-        Me.Controls(JobName + "OfflineTrack").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
-        Me.Controls(JobName + "OfflineTrackChannel").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
-        Me.Controls(JobName + "OiaActive").Enabled = Enable
-        If Me.Controls(JobName + "OiaActive") Then
-            Me.Controls(JobName + "OiaParallel").Enabled = Enable
-            Me.Controls(JobName + "OiaSequential").Enabled = Enable
-            Me.Controls(JobName + "OiaOfflineTracking").Enabled = Enable
-        Else
-            Me.Controls(JobName + "OiaParallel").Enabled = False
-            Me.Controls(JobName + "OiaSequential").Enabled = False
-        End If
+
+    Me.Controls(JobName + "TrackZ").Enabled = Enable
+    Me.Controls(JobName + "TrackXY").Enabled = Enable
+    Me.Controls(JobName + "OfflineTrack").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
+    Me.Controls(JobName + "OfflineTrackChannel").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
+    Me.Controls(JobName + "OiaActive").Enabled = Enable
+    If Me.Controls(JobName + "OiaActive") Then
+        Me.Controls(JobName + "OiaParallel").Enabled = Enable
+        Me.Controls(JobName + "OiaSequential").Enabled = Enable
+        Me.Controls(JobName + "OiaOfflineTracking").Enabled = Enable
+    Else
+        Me.Controls(JobName + "OiaParallel").Enabled = False
+        Me.Controls(JobName + "OiaSequential").Enabled = False
     End If
     
     If JobName = "Autofocus" Then
@@ -447,12 +448,19 @@ Private Sub SwitchEnablePage(Enable As Boolean, JobName As String)
         Me.Controls(JobName + "RepetitionNumberLabel").Enabled = Enable
     End If
     
+    
     Me.Controls(JobName + "Label1").Enabled = Enable
     Me.Controls(JobName + "Label2").Enabled = Enable
-    Me.Controls(JobName + "Label1").Caption = Jobs.JobDescriptor1(JobName)
-    Me.Controls(JobName + "Label2").Caption = Jobs.JobDescriptor2(JobName)
-
+    
+    '' not super clean
+    Dim jobDescription() As String
+    jobDescription = Jobs.splittedJobDescriptor(JobName, 8)
+    Me.Controls(JobName + "Label1").Caption = jobDescription(0)
+    If UBound(jobDescription) > 0 Then
+        Me.Controls(JobName + "Label2").Caption = jobDescription(1)
+    End If
 End Sub
+
 
 
 
@@ -510,10 +518,7 @@ Private Sub TrackClick(JobName As String, iTrack As Integer, Optional Exclusive 
     Else
         Jobs.SetAcquireTrack JobName, iTrack - 1, Me.Controls(JobName + "Track" + CStr(iTrack)).Value
     End If
-    If JobName <> "AlterAcquisition" Then
-        FillTrackingChannelList JobName
-    End If
-    'ActiveChannels (ComboBoxTrackingChannel.ListIndex + 1)
+    FillTrackingChannelList JobName
 End Sub
 
 
@@ -603,6 +608,38 @@ Private Sub AlterAcquisitionTrack4_Change()
    TrackClick "AlterAcquisition", 4
 End Sub
 
+Private Sub Trigger1Track1_Change()
+   TrackClick "Trigger1", 1
+End Sub
+
+Private Sub Trigger1Track2_Change()
+   TrackClick "Trigger1", 2
+End Sub
+
+Private Sub Trigger1Track3_Change()
+   TrackClick "Trigger1", 3
+End Sub
+
+Private Sub Trigger1Track4_Change()
+   TrackClick "Trigger1", 4
+End Sub
+
+
+Private Sub Trigger2Track1_Change()
+   TrackClick "Trigger2", 1
+End Sub
+
+Private Sub Trigger2Track2_Change()
+   TrackClick "Trigger2", 2
+End Sub
+
+Private Sub Trigger2Track3_Change()
+   TrackClick "Trigger2", 3
+End Sub
+
+Private Sub Trigger2Track4_Change()
+   TrackClick "Trigger2", 4
+End Sub
 '''
 ' ZOffset: This is offset added to current central slice position. This position depends on previous history
 ''''
@@ -788,12 +825,15 @@ End Sub
 ' Load settings from ZEN into Form/Joblist
 '''
 Private Sub JobSetJobClick(JobName As String)
-    Jobs.SetJob JobName, Lsm5.DsRecording, ZEN
+    Dim jobDescriptor() As String
+    Jobs.setJob JobName, Lsm5.DsRecording, ZEN
     UpdateFormFromJob Jobs, JobName
-    'If JobName = "Autofocus" Then
-        Me.Controls(JobName + "Label1").Caption = Jobs.JobDescriptor1(JobName)
-        Me.Controls(JobName + "Label2").Caption = Jobs.JobDescriptor2(JobName)
-    'End If
+    jobDescriptor = Jobs.splittedJobDescriptor(JobName, 8)
+    Me.Controls(JobName + "Label1").Caption = jobDescriptor(0)
+    If UBound(jobDescriptor) > 0 Then
+        Me.Controls(JobName + "Label2").Caption = jobDescriptor(1)
+    End If
+    AutoFindTracks
 End Sub
 
 Private Sub AutofocusSetJob_Click()
@@ -820,23 +860,23 @@ End Sub
 ' Put settings from Job into ZEN
 '''
 Private Sub AutofocusPutJob_Click()
-    Jobs.PutJob "Autofocus", ZEN
+    Jobs.putJob "Autofocus", ZEN
 End Sub
 
 Private Sub AcquisitionPutJob_Click()
-    Jobs.PutJob "Acquisition", ZEN
+    Jobs.putJob "Acquisition", ZEN
 End Sub
 
 Private Sub AlterAcquisitionPutJob_Click()
-    Jobs.PutJob "AlterAcquisition", ZEN
+    Jobs.putJob "AlterAcquisition", ZEN
 End Sub
 
 Private Sub Trigger1PutJob_Click()
-    Jobs.PutJob "Trigger1", ZEN
+    Jobs.putJob "Trigger1", ZEN
 End Sub
 
 Private Sub Trigger2PutJob_Click()
-    Jobs.PutJob "Trigger2", ZEN
+    Jobs.putJob "Trigger2", ZEN
 End Sub
 
 
@@ -1179,6 +1219,7 @@ Public Sub StopAcquisition()
             LogFile.Close
         End If
     End If
+    SwitchEnableGridScanPage True
     DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
 
 End Sub
@@ -1590,9 +1631,7 @@ Private Function StartSetting() As Boolean
     Dim i As Integer
     Dim initPos As Boolean   'if False and gridsize correspond positions are taken from file positionsGrid.csv
     Dim SuccessRecenter As Boolean
-    Dim X() As Double
-    Dim Y() As Double
-    Dim Z() As Double
+    Dim pos() As Vector
     
     
     initPos = True
@@ -1667,19 +1706,22 @@ Private Function StartSetting() As Boolean
                 StopAcquisition
                 Exit Function
             End If
-            Grids.updateGridSize "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
+            ReDim pos(0)
+            Lsm5.Hardware.CpStages.MarkGetZ 0, pos(0).X, pos(0).Y, pos(0).Z
+            Grids.makeGridFromOnePt "Global", pos(0), GridScan_nRow.Value, GridScan_nColumn.Value, _
+            GridScan_nRowsub.Value, GridScan_nColumnsub.Value, GridScan_dRow.Value, GridScan_dColumn.Value, _
+            GridScan_dRowsub.Value, GridScan_dColumnsub.Value, GridScan_refRow.Value, GridScan_refColumn.Value
+            DisplayProgress "Initialize all grid positions...DONE", RGB(0, &HC0, 0)
         Else
-            Grids.updateGridSize "Global", 1, 1, 1, 1
+            ReDim pos(0)
+            Lsm5.Hardware.CpStages.GetXYPosition pos(0).X, pos(0).Y
+            pos(0).Z = Lsm5.Hardware.CpFocus.position
+            Grids.makeGridFromOnePt "Global", pos(0), 1, 1, 1, 1, 0, 0, 0, 0
         End If
-    End If
-    
-    If SingleLocationToggle And Not GridScanActive Then
-        Grids.setX "Global", Lsm5.Hardware.CpStages.PositionX, 1, 1, 1, 1
-        Grids.setY "Global", Lsm5.Hardware.CpStages.PositionY, 1, 1, 1, 1
-        Grids.setZ "Global", Lsm5.Hardware.CpFocus.position, 1, 1, 1, 1
-        Grids.setValid "Global", True, 1, 1, 1, 1
         GoTo GridReady
     End If
+    
+   
         
     
     If GridScan_nColumn.Value * GridScan_nRow.Value * GridScan_nColumnsub.Value * GridScan_nRowsub.Value > 10000 Then
@@ -1705,18 +1747,17 @@ Private Function StartSetting() As Boolean
     If initPos Then
             DisplayProgress "Initialize all positions....", RGB(0, &HC0, 0)
             If MultipleLocationToggle.Value Then
-                ReDim X(MarkCount - 1)
-                ReDim Y(MarkCount - 1)
-                ReDim Z(MarkCount - 1)
+                ReDim pos(MarkCount - 1)
                 For i = 0 To MarkCount - 1
-                    Lsm5.Hardware.CpStages.MarkGetZ i, X(i), Y(i), Z(i)
+                    Lsm5.Hardware.CpStages.MarkGetZ i, pos(i).X, pos(i).Y, pos(i).Z
                 Next i
-                Grids.makeGridFromManyPts "Global", X, Y, Z, GridScan_dColumnsub.Value, GridScan_dRowsub.Value
+                Grids.makeGridFromManyPts "Global", pos, 1, MarkCount, GridScan_nRowsub.Value, GridScan_nColumnsub.Value, GridScan_dRowsub.Value, GridScan_dColumnsub.Value
             Else
-                Lsm5.Hardware.CpStages.MarkGetZ 0, XStart, YStart, ZStart
-                Grids.updateGridSize "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
-                Grids.makeGridFromOnePt "Global", XStart, YStart, ZStart, GridScan_dColumnsub.Value, GridScan_dRowsub.Value, _
-                GridScan_refColumn.Value, GridScan_refRow.Value
+                ReDim pos(0)
+                Lsm5.Hardware.CpStages.MarkGetZ 0, pos(0).X, pos(0).Y, pos(0).Z
+                Grids.makeGridFromOnePt "Global", pos(0), GridScan_nRow.Value, GridScan_nColumn.Value, _
+                GridScan_nRowsub.Value, GridScan_nColumnsub.Value, GridScan_dRow.Value, GridScan_dColumn.Value, _
+                GridScan_dRowsub.Value, GridScan_dColumnsub.Value, GridScan_refRow.Value, GridScan_refColumn.Value
                 DisplayProgress "Initialize all grid positions...DONE", RGB(0, &HC0, 0)
             End If
     End If
@@ -1812,9 +1853,9 @@ Public Sub AutoFindTracks()
     Dim MaxTracks As Integer
     Dim iTrack As Integer
     Dim Name As Variant
-    Dim ActiveJobs As Collection
+    Dim ActiveJobTracks As Collection
     Dim Active() As Boolean
-    Set ActiveJobs = New Collection
+    Set ActiveJobTracks = New Collection
 
     
     For Each Name In JobNames
@@ -1824,7 +1865,7 @@ Public Sub AutoFindTracks()
             Me.Controls(Name + "Track" + CStr(i)).Visible = False
             Me.Controls(Name + "Track" + CStr(i)).Value = False
         Next i
-        ActiveJobs.Add Active, Name
+        ActiveJobTracks.Add Active, Name
     Next Name
 
     
@@ -1845,7 +1886,7 @@ Public Sub AutoFindTracks()
 
     iTrack = 1
     For i = 0 To MaxTracks - 1
-        If iTrack < 4 Then
+        If iTrack < 5 Then
             ChannelOK = False
             Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(i, Success)
             For j = 0 To Track.DataChannelCount - 1
@@ -1856,7 +1897,7 @@ Public Sub AutoFindTracks()
             If ChannelOK And (Not Track.IsLambdaTrack) And (Not Track.IsBleachTrack) Then
                 For Each Name In JobNames
                     Me.Controls(Name + "Track" + CStr(iTrack)).Visible = True
-                    Me.Controls(Name + "Track" + CStr(iTrack)).Value = ActiveJobs(Name)(i)
+                    Me.Controls(Name + "Track" + CStr(iTrack)).Value = ActiveJobTracks(Name)(i)
                     Me.Controls(Name + "Track" + CStr(iTrack)).Caption = Track.Name
                 Next Name
                 iTrack = iTrack + 1

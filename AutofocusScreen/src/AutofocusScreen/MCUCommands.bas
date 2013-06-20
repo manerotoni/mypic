@@ -1,5 +1,5 @@
 Attribute VB_Name = "MCUCommands"
-
+Option Explicit
 Public Abort As Boolean
 Private Interface As Object
 Private Frequency As Double
@@ -167,35 +167,35 @@ Public Function GetMinimumStageSpeed() As Double
 End Function
 
 Private Function StageMoveToPositionX(PositionMetre As Double, CANN As Boolean)
-    Dim Position As String
+    Dim position As String
     
-    Position = Hex(CLng(-PositionMetre / Resolution))
-    While Len(Position) < 6
-        Position = "0" + Position
+    position = Hex(CLng(-PositionMetre / Resolution))
+    While Len(position) < 6
+        position = "0" + position
     Wend
-    If Len(Position) > 6 Then
-        Position = Strings.Right(Position, 6)
+    If Len(position) > 6 Then
+        position = Strings.Right(position, 6)
     End If
     If CANN Then
-        SendStageCommand ("XT" + Position + Strings.Chr(13))
+        SendStageCommand ("XT" + position + Strings.Chr(13))
     Else
-         SendCommand ("NPXT" + Position + Strings.Chr(13))
+         SendCommand ("NPXT" + position + Strings.Chr(13))
     End If
 End Function
 
 Private Function StageMoveToPositionY(PositionMetre As Double, CANN As Boolean)
-    Dim Position As String
-        Position = Hex(CLng(PositionMetre / Resolution))
-    While Len(Position) < 6
-        Position = "0" + Position
+    Dim position As String
+        position = Hex(CLng(PositionMetre / Resolution))
+    While Len(position) < 6
+        position = "0" + position
     Wend
-    If Len(Position) > 6 Then
-        Position = Strings.Right(Position, 6)
+    If Len(position) > 6 Then
+        position = Strings.Right(position, 6)
     End If
     If CANN Then
-        SendStageCommand ("YT" + Position + Strings.Chr(13))
+        SendStageCommand ("YT" + position + Strings.Chr(13))
     Else
-        SendCommand ("NPYT" + Position + Strings.Chr(13))
+        SendCommand ("NPYT" + position + Strings.Chr(13))
     End If
     
 End Function

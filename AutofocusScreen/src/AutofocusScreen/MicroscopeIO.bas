@@ -810,6 +810,8 @@ End Function
 '   Use channel with name TrackingChannel
 ''''
 Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As String) As Vector
+
+    On Error GoTo ErrorHandle:
     Dim RegEx As VBScript_RegExp_55.RegExp
     Set RegEx = CreateObject("vbscript.regexp")
     Dim Match As MatchCollection
@@ -861,7 +863,7 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
     FoundChannel = False
     RegEx.Pattern = "(\w+\d+) (\w+)"
     Dim name_channel As String
-    If RegEx.Test(TrackingChannel) Then
+    If RegEx.test(TrackingChannel) Then
         Set Match = RegEx.Execute(TrackingChannel)
         name_channel = Match.Item(0).SubMatches.Item(1)
     End If
@@ -1000,7 +1002,9 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
     Else
         MassCenter.Z = Round(FrameWeight / FrameSum, PrecZ)
     End If
-        
+    Exit Function
+ErrorHandle:
+    MsgBox ("Error in MicroscopeIO.MassCenter " + TrackingChannel + " " + Err.Description)
 End Function
 
 

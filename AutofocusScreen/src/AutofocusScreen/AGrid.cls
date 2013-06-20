@@ -61,7 +61,7 @@ Public Sub initialize(Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     End If
     Exit Sub
 ErrorHandle:
-    MsgBox "Error, " + Err.Source + " in AGrid.initialize " + Err.Description + "Err.Number" + Err.number
+    MsgBox "Error, " + Err.Source + " in AGrid.initialize " + Err.Description
 End Sub
 
 
@@ -193,9 +193,7 @@ End Function
 
 
 Public Sub setThisName(Value As String)
-    If correctIndeces(Row, Col, RowSub, ColSub) Then
-        GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Name = Value
-    End If
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Name = Value
 End Sub
 
 
@@ -295,9 +293,9 @@ End Sub
 ''''
 Public Sub getPt(pos As Vector, Valid As Boolean, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If correctIndeces(Row, Col, RowSub, ColSub) Then
-        X = GridArray(Row, Col, RowSub, ColSub).X
-        Y = GridArray(Row, Col, RowSub, ColSub).Y
-        Z = GridArray(Row, Col, RowSub, ColSub).Z
+        pos.X = GridArray(Row, Col, RowSub, ColSub).X
+        pos.Y = GridArray(Row, Col, RowSub, ColSub).Y
+        pos.Z = GridArray(Row, Col, RowSub, ColSub).Z
         Valid = GridArray(Row, Col, RowSub, ColSub).Valid
     End If
 End Sub
@@ -423,8 +421,8 @@ End Function
 '       refRow:         reference row where main grid starts
 '       refCol:         reference column where main grid starts
 '''''
-Public Sub makeGridFromOnePt(pos As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, dX As Double, dY As Double, _
-dXsub As Double, dYsub As Double, Optional refCol As Integer = 1, Optional refRow As Integer = 1)
+Public Sub makeGridFromOnePt(pos As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, dRow As Double, dCol As Double, _
+dRowSub As Double, dColSub As Double, Optional refRow As Integer = 1, Optional refCol As Integer = 1)
         
         initialize Row, Col, RowSub, ColSub
         ' A row correspond to Y movement and Column to X shift
@@ -440,8 +438,8 @@ dXsub As Double, dYsub As Double, Optional refCol As Integer = 1, Optional refRo
             For iCol = 1 To Me.numCol
                 For iRowSub = 1 To Me.numRowSub
                     For iColSub = 1 To Me.numColSub
-                        GridArray(iRow, iCol, iRowSub, iColSub).X = Round(pos.X + (1 - refCol) * dX + (iCol - 1) * dX + (iColSub - 1 - (Me.numColSub - 1) / 2) * dXsub, PrecXY)
-                        GridArray(iRow, iCol, iRowSub, iColSub).Y = Round(pos.Y + (1 - refRow) * dY + (iRow - 1) * dY + (iRowSub - 1 - (Me.numRowSub - 1) / 2) * dYsub, PrecXY)
+                        GridArray(iRow, iCol, iRowSub, iColSub).X = Round(pos.X + (1 - refCol) * dCol + (iCol - 1) * dCol + (iColSub - 1 - (Me.numColSub - 1) / 2) * dColSub, PrecXY)
+                        GridArray(iRow, iCol, iRowSub, iColSub).Y = Round(pos.Y + (1 - refRow) * dRow + (iRow - 1) * dRow + (iRowSub - 1 - (Me.numRowSub - 1) / 2) * dRowSub, PrecXY)
                         GridArray(iRow, iCol, iRowSub, iColSub).Z = Round(pos.Z, PrecZ)
                     Next iColSub
                 Next iRowSub
@@ -468,7 +466,7 @@ End Sub
 '       X, Y, Z:        Array containing coordinates of main grid.
 '       dXsub, dYsub:   Gridspacing subGrid
 '''''
-Public Sub makeGridFromManyPts(pos() As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, dXsub As Double, dYsub As Double)
+Public Sub makeGridFromManyPts(pos() As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, dColSub As Double, dRowSub As Double)
         Dim iCol As Long
         Dim iRow As Long
         Dim iRowSub As Long
@@ -483,9 +481,9 @@ Public Sub makeGridFromManyPts(pos() As Vector, Row As Long, Col As Long, RowSub
         For iCol = 1 To Me.numCol
             For iRowSub = 1 To Me.numColSub
                 For iColSub = 1 To Me.numRowSub
-                    GridArray(1, iCol, iRowSub, iColSub).X = Round(pos.X(iCol - 1) + (iColSub - 1 - (Me.numColSub - 1) / 2) * dXsub, PrecXY)
-                    GridArray(1, iCol, iRowSub, iColSub).Y = Round(pos.Y(iCol - 1) + (iRowSub - 1 - (Me.numRowSub - 1) / 2) * dYsub, PrecXY)
-                    GridArray(1, iCol, iRowSub, iColSub).Z = Round(pos.Z(iCol - 1), PrecZ)
+                    GridArray(1, iCol, iRowSub, iColSub).X = Round(pos(iCol - 1).X + (iColSub - 1 - (Me.numColSub - 1) / 2) * dColSub, PrecXY)
+                    GridArray(1, iCol, iRowSub, iColSub).Y = Round(pos(iCol - 1).Y + (iRowSub - 1 - (Me.numRowSub - 1) / 2) * dRowSub, PrecXY)
+                    GridArray(1, iCol, iRowSub, iColSub).Z = Round(pos(iCol - 1).Z, PrecZ)
                 Next iColSub
             Next iRowSub
         Next iCol
@@ -679,7 +677,7 @@ Public Function isValidGridFile(ByVal sFile As String, Row As Long, Col As Long,
            Line Input #iFileNum, Fields
         Wend
         RegEx.Pattern = CellBase
-        If RegEx.Test(Fields) Then
+        If RegEx.test(Fields) Then
             format = "cellbase"
         Else
             'standard format
@@ -758,7 +756,7 @@ Public Function loadValidGridFile(ByVal sFile As String, format As String) As Bo
                 Line Input #iFileNum, Fields
                 GoodMatch = False
                 RegEx.Pattern = CellBase
-                If RegEx.Test(Fields) Then
+                If RegEx.test(Fields) Then
                     Set Match = RegEx.Execute(Fields)
                     Active = (Match.Item(0).SubMatches.Item(4) <> "none")
                     GoodMatch = True

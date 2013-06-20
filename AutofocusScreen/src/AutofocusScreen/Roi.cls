@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 'Roi Class
 'Allows to store a Roi check for its consitency and create it
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
+Option Explicit
 Public roiType As String   'circle, rectangle, polyline, ellipse
 Public roiAim As String    'acquisition, bleach, analysis
 Private roiX() As Double   'set of X coordinates in pixels
@@ -27,12 +27,12 @@ Public Sub setY(Y() As Double)
 End Sub
 
 
-Public Function getX() As Double
+Public Function getX() As Double()
     getX = roiX
 End Function
 
 
-Public Function getY() As Double
+Public Function getY() As Double()
     getY = roiY
 End Function
 
@@ -113,7 +113,7 @@ End Function
 ' Make a Vectorelement (a ROI) to be used for bleaching or imaging
 ''''
 Public Function MakeVectorElement() As Boolean
-    If Not roiConsitency Then
+    If Not roiConsistency Then
         Exit Function
     End If
     Dim vo As AimImageVectorOverlay
@@ -134,7 +134,7 @@ Public Function MakeVectorElement() As Boolean
     
     ElementNumber = vo.GetNumberElements - 1
     For i = 0 To UBound(roiX)
-        vo.AppendElementKnot ElementNumber, X(i), Y(i), 0, 0
+        vo.AppendElementKnot ElementNumber, roiX(i), roiY(i), 0, 0
     Next i
     Sleep 50 ' this pause is require to finish setting the elements
     Select Case roiAim

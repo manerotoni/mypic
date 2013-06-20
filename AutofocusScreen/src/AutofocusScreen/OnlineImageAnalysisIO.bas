@@ -1,4 +1,6 @@
 Attribute VB_Name = "OnlineImageAnalysisIO"
+Option Explicit
+
 Public Sub testOiaSettings()
     Dim Settings As OnlineIASettings
     Set Settings = New OnlineIASettings

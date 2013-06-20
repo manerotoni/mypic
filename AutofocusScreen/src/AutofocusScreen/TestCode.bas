@@ -1,4 +1,10 @@
 Attribute VB_Name = "TestCode"
+Option Explicit
+Public Sub test()
+'' use Ctrl+G to display immediate window
+Debug.Print "A Line"
+'WScript.StdOut
+End Sub
 'Sub ExportVBAFiles()
 '  Dim pVBAProject As Lsm5.L
 '  Dim vbComp As VBComponent  'VBA module, form, etc...

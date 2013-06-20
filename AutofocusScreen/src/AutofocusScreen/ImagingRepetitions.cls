@@ -7,6 +7,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Option Explicit
 Private Repetitions As New Collection
 Private pZENv As Integer
 
@@ -27,8 +28,8 @@ Public Sub initialize(Names() As String, RepetitionTimes() As Double, Repetition
     End If
     Set Repetitions = New Collection
     MaxNames = UBound(Names)
-    If UBound(RepetitionTimes) <> MaxName Or UBound(RepetitionNumbers) <> MaxName Or _
-        UBound(RepetitionInterval) <> MaxName Then
+    If UBound(RepetitionTimes) <> MaxNames Or UBound(RepetitionNumbers) <> MaxNames Or _
+        UBound(RepetitionIntervals) <> MaxNames Then
         MsgBox "initialize ImagingRepetitions class: all arrays should have the same length"
         Exit Sub
     End If
