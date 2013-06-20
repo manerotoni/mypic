@@ -35,7 +35,7 @@ Public Property Let AcquireTrack(Value() As Boolean)
 End Property
 
 ''''
-' setJob load settings from recording
+' setJob load settings from recording/ZEN into macro
 ''''
 Public Function setJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
     On Error GoTo ErrorHandle:
@@ -59,13 +59,16 @@ Public Function setJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
         pAcquireTrack(i) = Recording.TrackObjectByMultiplexOrder(i, 1).Acquire
     Next i
     UseRoi = AcquisitionParameters.UseROIs
+    setRoiFromZen
     setJob = True
     Exit Function
 ErrorHandle:
     MsgBox "Error in AJob.setJob " + Err.Description
 End Function
 
-
+''''
+' putJob put settings from Me.recording into ZEN
+''''
 Public Function putJob(ZEN As Object)
     On Error GoTo ErrorHandle:
     Dim AcquisitionController As AimAcquisitionController40.AimScanController
@@ -110,7 +113,8 @@ Public Function putJob(ZEN As Object)
             ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value = CorrY
         End If
     End If
-    
+    createRois
+    'testDescriptor
     putJob = True
     Exit Function
 ErrorHandle:
@@ -155,11 +159,15 @@ Public Sub SetRecording(Value As DsRecording)
 End Sub
 
 Public Sub setRoiMaxNr(roiMaxNr As Integer)
+    Dim i As Integer
     pRoiMaxNr = roiMaxNr
     If pRoiMaxNr = 0 Then
         Erase Rois
     Else
         ReDim Rois(0 To pRoiMaxNr - 1)
+        For i = 0 To pRoiMaxNr - 1
+            Set Rois(i) = New Roi
+        Next i
     End If
 End Sub
 
@@ -173,6 +181,9 @@ Public Sub clearRois()
     Erase Rois
 End Sub
 
+''
+' load Roi from ARoi inti class
+''
 Public Sub setRoi(ARoi As Roi, roiNr As Integer)
     If UBound(Rois) <= roiNr Then
         Rois(roiNr).setRoi ARoi.roiType, ARoi.roiAim, ARoi.getX, ARoi.getY
@@ -181,6 +192,9 @@ Public Sub setRoi(ARoi As Roi, roiNr As Integer)
     End If
 End Sub
 
+'''
+' getRoi: returns a Roi
+'''
 Public Function getRoi(roiNr As Integer) As Roi
     If UBound(Rois) <= roiNr Then
         Set getRoi = Rois(roiNr)
@@ -189,12 +203,35 @@ Public Function getRoi(roiNr As Integer) As Roi
     End If
 End Function
 
+'''
+' gets Roi directly from ZEN and save it. This is only used at the beginning
+'''
+Public Function setRoiFromZen() As Boolean
+    On Error GoTo ErrorHandle:
+    Dim i As Integer
+    Dim vo As AimImageVectorOverlay
+    Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
+    'there are Rois already defined
+    Debug.Print "nr Elements " & vo.GetNumberElements
+    setRoiMaxNr vo.GetNumberElements
+    If vo.GetNumberElements > 0 Then
+        For i = 0 To vo.GetNumberElements - 1
+            Rois(i).setRoiFomZen i
+        Next i
+    End If
+    setRoiFromZen = True
+    Exit Function
+ErrorHandle:
+    MsgBox "Error AJob.setRoiFromZen " & Err.Description
+    
+End Function
+
 
 
 Public Function createRois() As Boolean
     Dim ARoi As Roi
     Dim i As Integer
-    Rois(i).ClearVectorElements
+    ClearVectorElements
     For i = 0 To pRoiMaxNr - 1
         If Not Rois(i).MakeVectorElement Then
             Exit Function
@@ -281,6 +318,93 @@ Public Function splittedJobDescriptor(MaxLines As Integer, jobDescription As Str
     splittedJobDescriptor = Output
 End Function
 
+''
+' create a String to save of the "complete" job desriptin
+''
+Public Function jobDescriptorSettings() As String
+    Dim Descriptor As String
+    Descriptor = "JobName " & Me.Name & vbCrLf
+    Descriptor = Descriptor & "pixelDwell " & Me.pixelDwell & vbCrLf
+    Descriptor = Descriptor & "ScanMode " & Recording.ScanMode & vbCrLf
+    Descriptor = Descriptor & "FramesPerStack " & Recording.FramesPerStack & vbCrLf
+    Descriptor = Descriptor & "FrameSpacing " & Recording.frameSpacing & vbCrLf
+    Descriptor = Descriptor & "SamplesPerLine " & Recording.SamplesPerLine & vbCrLf
+    Descriptor = Descriptor & "LinesPerFrame " & Recording.LinesPerFrame & vbCrLf
+    Descriptor = Descriptor & "Bleaching " & isBleaching & vbCrLf
+    Descriptor = Descriptor & "UseRoi " & Me.UseRoi & vbCrLf
+    Descriptor = Descriptor & "Zoom " & Recording.ZoomX & vbCrLf
+    Descriptor = Descriptor & "SpecialScanMode " & Recording.SpecialScanMode & vbCrLf
+    Descriptor = Descriptor & "TimeSeries " & Recording.TimeSeries & vbCrLf
+    Descriptor = Descriptor & "StacksPerRecord " & Recording.StacksPerRecord & vbCrLf
+    Descriptor = Descriptor & "TimeBetweenStacks " & Me.TimeBetweenStacks & vbCrLf
+    jobDescriptorSettings = Descriptor
 
+End Function
 
+Public Sub testDescriptor()
+    consistencyDescriptor (jobDescriptorSettings)
+End Sub
 
+Private Function consistencyDescriptor(Descriptor As String)
+    Dim i As Integer
+    Dim DerivedDescr() As String
+    Dim KeyItem() As String
+    DerivedDescr = Split(Descriptor, vbCrLf)
+    For i = 0 To UBound(DerivedDescr)
+        Debug.Print DerivedDescr(i)
+        Sleep (100)
+        KeyItem = Split(DerivedDescr(i), " ")
+        If UBound(KeyItem) = 1 Then
+            If Not changeJobFromDescriptor(KeyItem(0), KeyItem(1)) Then
+                Exit Function
+            End If
+        End If
+    Next i
+    consistencyDescriptor = True
+End Function
+
+Public Function changeJobFromDescriptor(Descriptor As String, Value As Variant)
+    
+    If Recording Is Nothing Then
+        MsgBox "AJob.changeJobFromDescriptor Recording has not been initiated!"
+    End If
+    
+    Select Case Descriptor
+        Case "JobName":
+            Name = CStr(Value)
+        Case "pixelDwell":
+            pixelDwell = CDbl(Value)
+        Case "ScanMode":
+            Recording.ScanMode = CStr(Value)
+        Case "FramesPerStack":
+            Recording.FramesPerStack = CLng(Value)
+        Case "FrameSpacing":
+            Recording.frameSpacing = CLng(Value)
+        Case "SamplesPerLine":
+            Recording.SamplesPerLine = CLng(Value)
+        Case "LinesPerFrame":
+            Recording.LinesPerFrame = CLng(Value)
+        Case "Bleaching":
+            If CBool(Value) Then
+                Recording.TrackObjectBleach(1).Acquire = CBool(Value)
+                Recording.TrackObjectBleach(Success).UseBleachParameters = CBool(Value)
+            End If
+        Case "UseRoi":
+            Me.UseRoi = CBool(Value)
+        Case "Zoom":
+            Recording.ZoomX = CDbl(Value)
+            Recording.ZoomY = CDbl(Value)
+        Case "SpecialScanMode":
+            Recording.SpecialScanMode = CStr(Value)
+        Case "TimeSeries":
+            Recording.TimeSeries = CBool(Value)
+        Case "StacksPerRecord":
+            Recording.StacksPerRecord = CLng(Value)
+        Case "TimeBetweenStacks":
+            Me.TimeBetweenStacks = CDbl(Value)
+        Case Else:
+            MsgBox " No Item " & Descriptor
+            Exit Function
+    End Select
+    changeJobFromDescriptor = True
+End Function

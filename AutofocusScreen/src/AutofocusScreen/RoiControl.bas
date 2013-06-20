@@ -10,7 +10,7 @@ Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
 '''''
 Public Function ClearVectorElements() As Boolean
     Dim vo As AimImageVectorOverlay
-    Set vo = AcquisitionController.AcquisitionRegions
+    Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
     vo.Cleanup
 End Function
 
@@ -25,7 +25,7 @@ Public Function MakeVectorElement(ByVal TypeVectorOverlay As String, X() As Doub
 '    Set AcquisitionParameter = Lsm5.ExternalDsObject.Scancontroller
     ' Get the Acquisition/Bleach ROIs
     Dim vo As AimImageVectorOverlay
-    Set vo = AcquisitionController.AcquisitionRegions
+    Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
 
     Dim i As Integer
     Dim ElementNumber As Long

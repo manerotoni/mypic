@@ -23,7 +23,7 @@ Private Const BIF_RETURNONLYFSDIRS = &H1
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''Version Description''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '
-' AutofocusScreen_ZEN_v3.0.0
+' AutofocusScreen_ZEN_v3.0.1
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Public Version As String
@@ -50,7 +50,7 @@ End Sub
 '   Load and initialize form
 '''''
 Public Sub UserForm_Initialize()
-    Version = " v3.0.0"
+    Version = " v3.0.1"
     Dim i As Integer
     'find the version of the software
     Dim VersionNr As String
@@ -423,7 +423,6 @@ Private Sub SwitchEnablePage(Enable As Boolean, JobName As String)
     If Me.Controls(JobName + "OiaActive") Then
         Me.Controls(JobName + "OiaParallel").Enabled = Enable
         Me.Controls(JobName + "OiaSequential").Enabled = Enable
-        Me.Controls(JobName + "OiaOfflineTracking").Enabled = Enable
     Else
         Me.Controls(JobName + "OiaParallel").Enabled = False
         Me.Controls(JobName + "OiaSequential").Enabled = False
@@ -879,6 +878,36 @@ Private Sub Trigger2PutJob_Click()
     Jobs.putJob "Trigger2", ZEN
 End Sub
 
+
+'''Acquire one image for a job
+Private Sub JobAcquire(JobName As String)
+    Dim position As Vector
+    position.X = Lsm5.Hardware.CpStages.PositionX
+    position.Y = Lsm5.Hardware.CpStages.PositionY
+    position.Z = Lsm5.Hardware.CpFocus.position
+    AcquireJob JobName, GlobalRecordingDoc, JobName & "Job", position
+End Sub
+
+
+Private Sub AutofocusAcquire_Click()
+    JobAcquire "Autofocus"
+End Sub
+
+Private Sub AcquisitionAcquire_Click()
+    JobAcquire "Acquisition"
+End Sub
+
+Private Sub AlterAcquisitionAcquire_Click()
+    JobAcquire "AlterAcquisition"
+End Sub
+
+Private Sub Trigger1Acquire_Click()
+    JobAcquire "Trigger1"
+End Sub
+
+Private Sub Trigger2Acquire_Click()
+    JobAcquire "Trigger2"
+End Sub
 
 '''''
 ' Looping/RepetitionSettings

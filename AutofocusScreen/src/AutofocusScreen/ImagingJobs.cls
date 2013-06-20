@@ -557,7 +557,12 @@ Public Function jobDescriptor(Name As String) As String
     jobDescriptor = Jobs(JobNames.Item(Name)).jobDescriptor
 End Function
 
-
+Public Function jobDescriptorSettings(Name As String) As String
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    jobDescriptorSettings
+End Function
 ''''
 ' Create a string with the description of a Job
 ''''
