@@ -18,6 +18,9 @@ Public TimeBetweenStacks As Double
 Public UseRoi As Boolean
 Public CorrX  As Double ' corretion for double directional scanning
 Public CorrY As Double  ' corretion for double directional scanning
+Private LaserOnOff() As Boolean
+Const SwitchLaserLines = False ' this is not clear weather it works or not properly. Sometimes it is fast sometimes slow?
+
 
 Private Rois() As Roi
 Private pRoiMaxNr As Integer
@@ -43,21 +46,37 @@ Public Function setJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
     Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
     Dim AcquisitionParameters As AimAcquisitionController40.AimAcquisitionParameters
     Set AcquisitionParameters = AcquisitionController.AcquisitionParameters
-    Dim i As Integer
+    Dim iTrack As Integer
+    Dim iLaser As Integer
     SetRecording RecordingLoc
     TrackNumber = RecordingLoc.GetNormalTrackCount
     TimeBetweenStacks = RecordingLoc.TrackObjectByMultiplexOrder(0, 1).TimeBetweenStacks
+    
     If ZENv > 2010 Then
+        Set ZEN = Application.ApplicationInterface
         If Recording.ScanDirection = 1 Then
             CorrX = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value
             CorrY = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value
         End If
+        'Debug.Print "nr Lasers " & ZEN.gui.Acquisition.Channels.Track.LaserLine.ItemCount
+        ReDim LaserOnOff(0 To TrackNumber - 1, 0 To ZEN.gui.Acquisition.Channels.Track.LaserLine.ItemCount - 1)
     End If
+    
     pixelDwell = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
     ReDim pAcquireTrack(TrackNumber - 1)
-    For i = 0 To TrackNumber - 1
-        pAcquireTrack(i) = Recording.TrackObjectByMultiplexOrder(i, 1).Acquire
-    Next i
+    For iTrack = 0 To TrackNumber - 1
+        pAcquireTrack(iTrack) = Recording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire
+        If ZENv > 2010 Then
+            If SwitchLaserLines Then
+                ZEN.gui.Acquisition.Channels.Track.ByIndex = iTrack
+                For iLaser = 0 To UBound(LaserOnOff, 2)
+                    ZEN.gui.Acquisition.Channels.Track.LaserLine.ByIndex = iLaser
+                    LaserOnOff(iTrack, iLaser) = ZEN.gui.Acquisition.Channels.Track.LaserLine.Acquire.Value
+                    'Debug.Print " iTrack " & iTrack & " Laser " & iLaser & " status " & ZEN.gui.Acquisition.Channels.Track.LaserLine.Acquire.Value
+                Next iLaser
+            End If
+        End If
+    Next iTrack
     UseRoi = AcquisitionParameters.UseROIs
     setRoiFromZen
     setJob = True
@@ -76,43 +95,60 @@ Public Function putJob(ZEN As Object)
     Dim AcquisitionParameters As AimAcquisitionController40.AimAcquisitionParameters
     Set AcquisitionParameters = AcquisitionController.AcquisitionParameters
     Dim iTrack As Integer
-    
+    Dim iLaser As Integer
+    Dim Time As Double
     If TrackNumber <> Lsm5.DsRecording.GetNormalTrackCount Then
         MsgBox "Nr of Tracks of  Job " + Name + " is " + CStr(TrackNumber) + ". Available tracks " + CStr(Lsm5.DsRecording.GetNormalTrackCount) + vbCrLf + "This may cause problems"
         
         'Exit Function
     End If
     
+    Time = Timer
     If Not Recording Is Nothing Then
         Lsm5.DsRecording.Copy Recording
     Else
         MsgBox "No Recording initialized for Job " + Name
         Exit Function
     End If
-    
+    Debug.Print "Time put Recording " & Round(Timer - Time, 3)
     'at the moment we just set the active/inactive track and TimeBetweenStacks
     'consistency check for TrackNumber. May be pass error only to log?
+    'this seems to be not recquired in Zen 2012
+    
+     Time = Timer
     For iTrack = 0 To TrackNumber - 1
         If ZENv > 2010 Then
-            ZEN.gui.Acquisition.Channels.Track.ByIndex = iTrack '(it does not display properly anyway)
-            ZEN.gui.Acquisition.Channels.Track.Acquire.Value = pAcquireTrack(iTrack)
+            'ZEN.gui.Acquisition.Channels.Track.ByIndex = iTrack '(it does not display properly anyway)
+            'ZEN.gui.Acquisition.Channels.Track.Acquire.Value = pAcquireTrack(iTrack)
+            Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire = pAcquireTrack(iTrack)
+            If Not isArrayEmpty(LaserOnOff) And pAcquireTrack(iTrack) And SwitchLaserLines Then
+                For iLaser = 0 To UBound(LaserOnOff, 2)
+                    ZEN.gui.Acquisition.Channels.Track.LaserLine.ByIndex = iLaser
+                    If LaserOnOff(iTrack, iLaser) <> ZEN.gui.Acquisition.Channels.Track.LaserLine.Acquire.Value Then
+                        ZEN.gui.Acquisition.Channels.Track.LaserLine.Acquire.Value = LaserOnOff(iTrack, iLaser)
+                    End If
+                Next iLaser
+            End If
         Else
             Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire = pAcquireTrack(iTrack)
         End If
         Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).TimeBetweenStacks = TimeBetweenStacks
         Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).SampleObservationTime = pixelDwell
     Next iTrack
+    Debug.Print "Times set tracks " & Round(Timer - Time, 3)
     
     AcquisitionParameters.UseROIs = UseRoi
-    
-    If ZENv > 2010 Then
-        ZEN.gui.Acquisition.AcquisitionMode.ScanArea.Zoom.Value = Recording.ZoomX
-        ZEN.SetListEntrySelected "Scan.Mode.DirectionX", Recording.ScanDirection
-        If Recording.ScanDirection Then
-            ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value = CorrX
-            ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value = CorrY
-        End If
-    End If
+    Time = Timer
+    'this is slow
+'    If ZENv > 2010 Then
+'        ZEN.gui.Acquisition.AcquisitionMode.ScanArea.Zoom.Value = Recording.ZoomX
+'        ZEN.SetListEntrySelected "Scan.Mode.DirectionX", Recording.ScanDirection
+'        If Recording.ScanDirection Then
+'            ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value = CorrX
+'            ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value = CorrY
+'        End If
+'    End If
+    Debug.Print "Time update Corr.X " & Round(Timer - Time, 3)
     createRois
     'testDescriptor
     putJob = True
@@ -212,7 +248,7 @@ Public Function setRoiFromZen() As Boolean
     Dim vo As AimImageVectorOverlay
     Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
     'there are Rois already defined
-    Debug.Print "nr Elements " & vo.GetNumberElements
+    'Debug.Print "nr Elements " & vo.GetNumberElements
     setRoiMaxNr vo.GetNumberElements
     If vo.GetNumberElements > 0 Then
         For i = 0 To vo.GetNumberElements - 1
@@ -337,6 +373,7 @@ Public Function jobDescriptorSettings() As String
     Descriptor = Descriptor & "TimeSeries " & Recording.TimeSeries & vbCrLf
     Descriptor = Descriptor & "StacksPerRecord " & Recording.StacksPerRecord & vbCrLf
     Descriptor = Descriptor & "TimeBetweenStacks " & Me.TimeBetweenStacks & vbCrLf
+    Descriptor = Descriptor & "EndJobDef " & vbCrLf
     jobDescriptorSettings = Descriptor
 
 End Function
@@ -351,7 +388,7 @@ Private Function consistencyDescriptor(Descriptor As String)
     Dim KeyItem() As String
     DerivedDescr = Split(Descriptor, vbCrLf)
     For i = 0 To UBound(DerivedDescr)
-        Debug.Print DerivedDescr(i)
+        'Debug.Print DerivedDescr(i)
         Sleep (100)
         KeyItem = Split(DerivedDescr(i), " ")
         If UBound(KeyItem) = 1 Then

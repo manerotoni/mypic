@@ -104,10 +104,16 @@ NoError:
     JobShortNames.Add "TR1", JobNames(3)
     JobShortNames.Add "TR2", JobNames(4)
     
-    
-    Jobs.initialize JobNames, Lsm5.DsRecording
+    Jobs.initialize JobNames, Lsm5.DsRecording, ZEN
     Jobs.setZENv ZENv
-    
+    For i = 0 To UBound(JobNames)
+        If Jobs.GetScanMode(JobNames(i)) = "ZScan" Or Jobs.GetScanMode(JobNames(i)) = "Line" Then
+            Me.Controls(JobNames(i) + "TrackXY").Value = False
+            Me.Controls(JobNames(i) + "TrackXY").Enabled = False
+        Else
+            Me.Controls(JobNames(i) + "TrackXY").Enabled = True
+        End If
+    Next i
 
 
     
@@ -158,7 +164,6 @@ Private Sub Re_Start()
       
     'TODO: Check if GUI is available (ZEN2011 onward). How do you do this!!
     '
-    SetDefaultRecordings
     'Set default value
     SwitchEnablePage AutofocusActive, "Autofocus"
     
@@ -242,6 +247,7 @@ End Sub
 '   Initializations that need to be performed only when clicking the "Reinitialize" button
 '''''
 Public Sub Re_Initialize()
+    Dim i As Integer
     Dim Name As Variant
     Dim Delay As Single
     Dim standType As String
@@ -270,8 +276,10 @@ Public Sub Re_Initialize()
             DoEvents
         Wend
     End If
-    SetDefaultRecordings
-    Jobs.initialize JobNames, Lsm5.DsRecording
+
+    Jobs.initialize JobNames, Lsm5.DsRecording, ZEN
+    Jobs.setZENv ZENv
+ 
     posTempZ = Lsm5.Hardware.CpFocus.position
     Recenter_pre posTempZ, SuccessRecenter, ZENv
     If Not Recenter_post(posTempZ, SuccessRecenter, ZENv) Then
@@ -414,9 +422,8 @@ Private Sub SwitchEnablePage(Enable As Boolean, JobName As String)
     Me.Controls(JobName + "PutJob").Enabled = Enable
     
     'For online image analysis
-
     Me.Controls(JobName + "TrackZ").Enabled = Enable
-    Me.Controls(JobName + "TrackXY").Enabled = Enable
+    Me.Controls(JobName + "TrackXY").Enabled = Enable And Jobs.GetScanMode(JobName) <> "ZScan" And Jobs.GetScanMode(JobName) <> "Line"
     Me.Controls(JobName + "OfflineTrack").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
     Me.Controls(JobName + "OfflineTrackChannel").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
     Me.Controls(JobName + "OiaActive").Enabled = Enable
@@ -428,13 +435,7 @@ Private Sub SwitchEnablePage(Enable As Boolean, JobName As String)
         Me.Controls(JobName + "OiaSequential").Enabled = False
     End If
     
-    If JobName = "Autofocus" Then
-        AutofocusPeriod.Enabled = Enable
-        AutofocusPeriodLabel.Enabled = Enable
-        AutofocusTrackZ.Enabled = Enable
-        AutofocusTrackXY.Enabled = Enable
-        AutofocusSaveImage.Enabled = Enable
-    End If
+
 
     If JobName = "Trigger1" Or JobName = "Trigger2" Then
         Me.Controls(JobName + "Autofocus").Enabled = Enable
@@ -474,8 +475,6 @@ Private Sub FillTrackingChannelList(JobName As String)
     Dim Track As DsTrack
     Dim TrackOn As Boolean
     
-    ReDim ActiveChannels(Lsm5.Constants.MaxActiveChannels)  'ActiveChannels is a dynamic array (variable size), ReDim defines array size required next
-                                                            'Array size is (MaxActiveChannels gets) the total max number of active channels in all tracks
     Me.Controls(JobName + "OfflineTrackChannel").Clear 'Content of popup menu for chosing track for post-acquisition tracking is deleted
     ca = 0
     For iTrack = 0 To Jobs.TrackNumber(JobName) - 1
@@ -484,8 +483,7 @@ Private Sub FillTrackingChannelList(JobName As String)
             For c = 1 To Track.DetectionChannelCount 'for every detection channel of track
                 If Track.DetectionChannelObjectByIndex(c - 1, Success).Acquire Then 'if channel is activated
                     ca = ca + 1 'counter for active channels will increase by one
-                    Me.Controls(JobName + "OfflineTrackChannel").AddItem Track.Name & " " & Track.DetectionChannelObjectByIndex(c - 1, Success).Name      'entry is added to combo box to chose track for post-acquisition tracking
-                    ActiveChannels(ca) = Track.DetectionChannelObjectByIndex(c - 1, Success).Name & "-T" & Track.MultiplexOrder + 1  'adds entry to ActiveChannel Array with name of channel + name of track
+                    Me.Controls(JobName + "OfflineTrackChannel").AddItem Track.Name & " " & Track.DetectionChannelObjectByIndex(c - 1, Success).Name & "-T" & iTrack + 1   'entry is added to combo box to chose track for post-acquisition tracking
                     TrackOn = True
                 End If
             Next c
@@ -560,19 +558,19 @@ End Sub
 '   Activte Tracks for Jobs (For Autofocus need to be Click as the tracks are exclusive)
 ''''''
 Private Sub AutofocusTrack1_Click()
-   TrackClick "Autofocus", 1, True
+   TrackClick "Autofocus", 1, False
 End Sub
 
 Private Sub AutofocusTrack2_Click()
-    TrackClick "Autofocus", 2, True
+    TrackClick "Autofocus", 2, False
 End Sub
 
 Private Sub AutofocusTrack3_Click()
-    TrackClick "Autofocus", 3, True
+    TrackClick "Autofocus", 3, False
 End Sub
 
 Private Sub AutofocusTrack4_Click()
-    TrackClick "Autofocus", 4, True
+    TrackClick "Autofocus", 4, False
 End Sub
 
 Private Sub AcquisitionTrack1_Change()
@@ -643,18 +641,18 @@ End Sub
 ' ZOffset: This is offset added to current central slice position. This position depends on previous history
 ''''
 Private Sub JobZOffsetChange(JobName As String)
-    If Abs(Me.Controls(JobName + "AcquisitionZOffset").Value) > Range() * 0.9 Then
-            Me.Controls(JobName + "AcquisitionZOffset").Value = 0
+    If Me.Controls(JobName + "ZOffset").Value > Range() * 0.9 Then
+            Me.Controls(JobName + "ZOffset").Value = 0
             MsgBox "ZOffset has to be less than the working distance of the objective: " + CStr(Range) + " um"
     End If
 End Sub
 
 Private Sub AcquisitionZOffset_Change()
-    JobZOffsetChange "Acquistion"
+    JobZOffsetChange "Acquisition"
 End Sub
 
 Private Sub AlterAcquisitionZOffset_Change()
-    JobZOffsetChange "AlterAcquistion"
+    JobZOffsetChange "AlterAcquisition"
 End Sub
 
 Private Sub Trigger1ZOffset_Change()
@@ -672,6 +670,9 @@ Private Sub JobTrackXYZChange(JobName As String)
     Me.Controls(JobName + "OfflineTrackChannel").Enabled = (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")) _
     And Me.Controls(JobName + "OfflineTrack")
     Me.Controls(JobName + "OfflineTrack").Enabled = Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")
+    If Not (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")) Then
+        Me.Controls(JobName + "OfflineTrack").Value = False
+    End If
 End Sub
 
 Private Sub AutofocusTrackZ_Change()
@@ -831,6 +832,12 @@ Private Sub JobSetJobClick(JobName As String)
     Me.Controls(JobName + "Label1").Caption = jobDescriptor(0)
     If UBound(jobDescriptor) > 0 Then
         Me.Controls(JobName + "Label2").Caption = jobDescriptor(1)
+    End If
+    If Jobs.GetScanMode(JobName) = "ZScan" Or Jobs.GetScanMode(JobName) = "Line" Then
+        Me.Controls(JobName + "TrackXY").Value = False
+        Me.Controls(JobName + "TrackXY").Enabled = False
+    Else
+        Me.Controls(JobName + "TrackXY").Enabled = True
     End If
     AutoFindTracks
 End Sub
@@ -1173,16 +1180,14 @@ End Sub
 ' Stop all jobs after current repetition of current job
 ''''
 Private Sub StopAfterRepetition_Click()
-    If Not Running Then
-        StopAfterRepetition.Value = False
-        StopAfterRepetition.BackColor = &H8000000F
+
+
+    If StopAfterRepetition.Value Then
+        StopAfterRepetition.BackColor = 12648447
     Else
-        If StopAfterRepetition.Value Then
-            StopAfterRepetition.BackColor = 12648447
-        Else
-            StopAfterRepetition.BackColor = &H8000000F
-        End If
+        StopAfterRepetition.BackColor = &H8000000F
     End If
+
 End Sub
 
 '''''''''
@@ -1207,6 +1212,7 @@ Private Sub StopButton_Click()
     End If
 
 End Sub
+
 
 
 ''''''''
@@ -1373,40 +1379,40 @@ End Sub
 Public Sub RestoreAcquisitionParameters()
     Dim i As Integer
     Dim pos As Double
-    Dim time As Double
+    Dim Time As Double
     Dim LogMsg As String
     Dim SuccessRecenter As Boolean
     
-    time = Timer
-    Lsm5.DsRecording.Copy GlobalBackupRecording
-    Lsm5.DsRecording.frameSpacing = GlobalBackupRecording.frameSpacing
-    Lsm5.DsRecording.FramesPerStack = GlobalBackupRecording.FramesPerStack
-    For i = 0 To Lsm5.DsRecording.TrackCount - 1
-       Lsm5.DsRecording.TrackObjectByMultiplexOrder(i, 1).Acquire = GlobalBackupActiveTracks(i)
-    Next i
-    time = Round(Timer - time, 2)
-    LogMsg = "% Restore settings: time to return to backuprecording " & time
-    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
-    
-    Sleep (1000)
- 
-    time = Timer
-    Recenter_pre posTempZ, SuccessRecenter, ZENv
-    pos = Lsm5.Hardware.CpFocus.position
-    'move to posTempZ
-    If ZENv = "2011" Or ZENv = "2010" Then
-        If Round(pos, PrecZ) <> Round(posTempZ, PrecZ) Then
-            If Not FailSafeMoveStageZ(posTempZ) Then
-                Exit Sub
-            End If
-        End If
-        Recenter_post posTempZ, SuccessRecenter, ZENv
-    End If
-    time = Round(Timer - time, 2)
-    LogMsg = "% Restore settings: recenter Z " & posTempZ & ", Time required " & time & ", success within rep. " & SuccessRecenter & vbCrLf
-    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
-    
-    ''' close LogFile
+    Time = Timer
+'    Lsm5.DsRecording.Copy GlobalBackupRecording
+'    Lsm5.DsRecording.frameSpacing = GlobalBackupRecording.frameSpacing
+'    Lsm5.DsRecording.FramesPerStack = GlobalBackupRecording.FramesPerStack
+'    For i = 0 To Lsm5.DsRecording.TrackCount - 1
+'       Lsm5.DsRecording.TrackObjectByMultiplexOrder(i, 1).Acquire = GlobalBackupActiveTracks(i)
+'    Next i
+'    time = Round(Timer - time, 2)
+'    LogMsg = "% Restore settings: time to return to backuprecording " & time
+'    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+'
+'    Sleep (1000)
+'
+'    time = Timer
+'    Recenter_pre posTempZ, SuccessRecenter, ZENv
+'    pos = Lsm5.Hardware.CpFocus.position
+'    'move to posTempZ
+'    If ZENv = "2011" Or ZENv = "2010" Then
+'        If Round(pos, PrecZ) <> Round(posTempZ, PrecZ) Then
+'            If Not FailSafeMoveStageZ(posTempZ) Then
+'                Exit Sub
+'            End If
+'        End If
+'        Recenter_post posTempZ, SuccessRecenter, ZENv
+'    End If
+'    time = Round(Timer - time, 2)
+'    LogMsg = "% Restore settings: recenter Z " & posTempZ & ", Time required " & time & ", success within rep. " & SuccessRecenter & vbCrLf
+'    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
+'
+'    ''' close LogFile
     If Log Then
         SafeOpenTextFile LogFileName, LogFile, FileSystem
         If LogFile Is Nothing Then
@@ -1588,7 +1594,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
     Set OiaSettings = New OnlineIASettings
     Dim StgPos As Vector
     Dim FileName As String
-    Dim time As Double
+    Dim Time As Double
     Dim NewCoord() As Double
     Dim deltaZ As Double
     Dim Sample0Z As Double ' test variable
@@ -1646,7 +1652,7 @@ Private Sub StartButton_Click()
         StopAcquisition
         Exit Sub
     End If
-    
+    Running = True
     StartJobOnGrid "Global", "Global", GlobalDataBaseName 'This is the main function of the macro
 End Sub
 

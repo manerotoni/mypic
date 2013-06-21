@@ -34,35 +34,43 @@ End Type
 Public Function AcquireJob(JobName As String, RecordingDoc As DsRecordingDoc, RecordingName As String, position As Vector) As Boolean
     On Error GoTo ErrorHandle:
     Dim SuccessRecenter As Boolean
-    
+    Dim Time As Double
     'stop any running jobs
     AutofocusForm.StopScanCheck
-
     'Create a NewRecord if required
     NewRecord RecordingDoc, RecordingName, 0
-    
     'move stage if required
+    Time = Timer
     If Round(Lsm5.Hardware.CpStages.PositionX, PrecXY) <> Round(position.X, PrecXY) Or Round(Lsm5.Hardware.CpStages.PositionY, PrecXY) <> Round(position.Y, PrecXY) Then
         If Not FailSafeMoveStageXY(position.X, position.Y) Then
             AutofocusForm.StopAcquisition
             Exit Function
         End If
     End If
-    
+    'Debug.Print "Time to move stage " & Round(Timer - Time, 3)
     'Change settings for new Job
+    
+    Time = Timer
     Jobs.putJob JobName, ZEN
+    Debug.Print "Time to put Job " & Round(Timer - Time, 3)
     
     'Not sure if this is required
+    Time = Timer
     If Jobs.GetSpecialScanMode(JobName) = "ZScanner" Then
         Lsm5.Hardware.CpHrz.Leveling
     End If
+    'Debug.Print "Time to level Hrz " & Round(Timer - Time, 3)
+    
     
     ''' recenter before acquisition
+    Time = Timer
     If Not Recenter_pre(position.Z, SuccessRecenter, ZENv) Then
         Exit Function
     End If
+    'Debug.Print "Time to recentre pre " & Round(Timer - Time, 3)
 
-    'Acquire the image
+
+    Time = Timer
     If Jobs.isAcquiring(JobName) Then
         If Not ScanToImage(RecordingDoc) Then
             Exit Function
@@ -70,11 +78,14 @@ Public Function AcquireJob(JobName As String, RecordingDoc As DsRecordingDoc, Re
     Else
         GoTo ErrorTrack
     End If
+    Debug.Print "Time to scan image " & Round(Timer - Time, 3)
+    
     'wait that slice recentered after acquisition
+    Time = Timer
     If Not Recenter_post(position.Z, SuccessRecenter, ZENv) Then
        Exit Function
     End If
-    
+    'Debug.Print "Time to recenter post " & Round(Timer - Time, 3)
     AcquireJob = True
     Exit Function
 ErrorHandle:
@@ -131,7 +142,7 @@ Public Function TrackOffLine(JobName As String, RecordingDoc As DsRecordingDoc, 
     On Error GoTo ErrorHandle:
     Dim TrackingChannel As String
     TrackOffLine = currentPosition
-    If AutofocusForm.Controls(JobName & "OfflineTrack") Then
+    If AutofocusForm.Controls(JobName & "OfflineTrack") And (AutofocusForm.Controls(JobName & "TrackZ") Or AutofocusForm.Controls(JobName & "TrackXY")) Then
         TrackingChannel = AutofocusForm.Controls(JobName & "OfflineTrackChannel").List(AutofocusForm.Controls(JobName & "OfflineTrackChannel").ListIndex)
         TrackOffLine = computeShiftedCoordinates(currentPosition, MassCenter(RecordingDoc, TrackingChannel))
     End If
@@ -194,7 +205,7 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
     'block usage of grid during acquisition
     AutofocusForm.SwitchEnableGridScanPage False
     
-    
+
     'Coordinates
     Dim X As Double              ' x value where to move the stage (this is used as reference)
     Dim Y As Double              ' y value where to move the stage
@@ -245,7 +256,9 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
                     For iJobGlobal = 0 To UBound(JobNamesGlobal)
                         ' run subJobs for global setting
                         On Error GoTo ErrorHandle1:
-                        
+                        If Jobs.GetScanMode(JobNamesGlobal(iJobGlobal)) = "ZScan" Or (Jobs.GetScanMode(JobNamesGlobal(iJobGlobal)) = "Line") Then
+                            AutofocusForm.Controls(JobNamesGlobal(iJobGlobal) & "TrackXY").Value = False
+                        End If
                         If AutofocusForm.Controls(JobNamesGlobal(iJobGlobal) + "Active") Then
                             FileName = FileNameFromGrid(GridName, JobNamesGlobal(iJobGlobal))
                             FilePath = parentPath & FilePathSuffix(GridName, JobNamesGlobal(iJobGlobal)) & "\"
@@ -375,34 +388,7 @@ End Function
 
 
 
-''''
-' SetDefaultRecordings()
-' Load default recording settings from ZEN
-' Obsolete
-'''
-Public Sub SetDefaultRecordings()
-    
-    Set GlobalAutoFocusRecording = Lsm5.CreateBackupRecording
-    Set GlobalAcquisitionRecording = Lsm5.CreateBackupRecording
-    Set GlobalTrigger1Recording = Lsm5.CreateBackupRecording
-    Set GlobalBleachRecording = Lsm5.CreateBackupRecording
-    Set GlobalAltRecording = Lsm5.CreateBackupRecording
-    Set GlobalBackupRecording = Lsm5.CreateBackupRecording
-    GlobalAutoFocusRecording.Copy Lsm5.DsRecording
-    GlobalAcquisitionRecording.Copy Lsm5.DsRecording
-    GlobalTrigger1Recording.Copy Lsm5.DsRecording
-    GlobalBleachRecording.Copy Lsm5.DsRecording
-    GlobalAltRecording.Copy Lsm5.DsRecording
-    GlobalBackupRecording.Copy Lsm5.DsRecording ' this will not be changed remains always the same
-    GlobalBackupSampleObservationTime = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
-    Dim i As Long
-    Dim NrTracks As Long
-    ReDim GlobalBackupActiveTracks(Lsm5.DsRecording.TrackCount)
-    For i = 0 To Lsm5.DsRecording.TrackCount - 1
-       GlobalBackupActiveTracks(i) = Lsm5.DsRecording.TrackObjectByMultiplexOrder(i, 1).Acquire
-    Next i
 
-End Sub
 
 
 '''

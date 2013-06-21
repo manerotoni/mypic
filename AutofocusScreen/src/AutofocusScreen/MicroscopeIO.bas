@@ -353,9 +353,11 @@ End Sub
 '   scan overwrite the same image, even with several z-slices
 '''''
 Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
-
-    Dim ProgressFifo As IAimProgressFifo ' what is this?
+    On Error GoTo ErrorHandle:
+    Dim ProgressFifo As IAimProgressFifo ' this shows how far you are with the acquisition image ( the blue bar at the bottom). The usage of it makes the macro quite slow
     Dim gui As Object, treenode As Object
+    Dim Time As Double
+    Time = Timer
     'Set gui = Lsm5.ViewerGuiServer
     If Not RecordingDoc Is Nothing Then
         Set treenode = RecordingDoc.RecordingDocument.image(0, True)
@@ -367,9 +369,11 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
         Lsm5.tools.CheckLockControllers True
         AcquisitionController.StartGrab eGrabModeSingle
         'Set RecordingDoc = Lsm5.StartScan this does not overwrite
-        If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
+       If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
     End If
+    'Debug.Print "ScanToImage part1 " & Round(Timer - Time, 3)
     Sleep (200)
+    Time = Timer
     While AcquisitionController.IsGrabbing
         Sleep (200) ' this sometimes hangs if we use GetInputState. Try now without it and test if it does not hang
         DoEvents
@@ -377,6 +381,12 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
             Exit Function
         End If
     Wend
+    'Debug.Print "ScanToImage properAcq " & Round(Timer - Time, 3)
+    ScanToImage = True
+    Exit Function
+ErrorHandle:
+    ErrorLog.Show
+    ErrorLog.UpdateLog ("Error in ScanTo Image " & Err.Descrioption)
     ScanToImage = True
 End Function
 
@@ -861,22 +871,34 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
     Dim Rec As DsRecordingDoc
     Dim FoundChannel As Boolean
     FoundChannel = False
-    RegEx.Pattern = "(\w+\d+) (\w+)"
+    RegEx.Pattern = "(\w+) (\w+\d+-\w+\d+)"
     Dim name_channel As String
     If RegEx.test(TrackingChannel) Then
         Set Match = RegEx.Execute(TrackingChannel)
         name_channel = Match.Item(0).SubMatches.Item(1)
     End If
-        
+    Dim name_channelA() As String
+    name_channelA = Split(name_channel, "-")
     For channel = 0 To RecordingDoc.GetDimensionChannels - 1
-        If RecordingDoc.ChannelName(channel) = name_channel Then ' old Code: Left(TrackingChannel,4)
+        Debug.Print "Channel Names " & RecordingDoc.ChannelName(channel)
+        If RecordingDoc.ChannelName(channel) = name_channelA(0) & "-" & name_channelA(1) Then ' old Code: Left(TrackingChannel,4)
             FoundChannel = True
             Exit For
         End If
     Next channel
-        
+    
     If Not FoundChannel Then
-        MsgBox (" Was not able to find channel for tracking!!")
+        For channel = 0 To RecordingDoc.GetDimensionChannels - 1 ' this is true when only one track is acquired
+            If RecordingDoc.ChannelName(channel) = name_channelA(0) Then ' old Code: Left(TrackingChannel,4)
+                FoundChannel = True
+                Exit For
+            End If
+        Next channel
+    End If
+    
+    If Not FoundChannel Then
+        ErrorLog.Show
+        ErrorLog.UpdateLog "MassCenter Was not able to find channel: " & TrackingChannel & " for tracking"
         Exit Function
     End If
 

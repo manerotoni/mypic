@@ -26,11 +26,11 @@ End Sub
 '''
 '   Initialize a series of Jobs with given name
 '''
-Public Sub initialize(Names() As String, Recording As DsRecording)
+Public Sub initialize(Names() As String, Recording As DsRecording, ZEN As Object)
     Dim i As Integer
    ' Set Jobs = New AJob
     For i = 0 To UBound(Names)
-        AddJob CStr(Names(i)), Lsm5.DsRecording
+        AddJob CStr(Names(i)), Lsm5.DsRecording, ZEN
     Next i
     
     
@@ -86,7 +86,7 @@ End Sub
 ' AddJob
 '   Add Job and increase number of Jobs
 '''
-Public Sub AddJob(Name As String, Recording As DsRecording)
+Public Sub AddJob(Name As String, Recording As DsRecording, ZEN As Object)
     If JobNames Is Nothing Then
         Set JobNames = New Dictionary
     End If
@@ -103,16 +103,7 @@ Public Sub AddJob(Name As String, Recording As DsRecording)
     iJob = JobNames.Item(Name)
     Set Jobs(iJob) = New AJob
     Jobs(iJob).Name = Name
-    Jobs(iJob).SetRecording Lsm5.DsRecording
-
-    Dim Aq() As Boolean
-    ReDim Aq(Jobs(iJob).TrackNumber - 1)
-    For i = 0 To Jobs(iJob).TrackNumber - 1
-        Aq(i) = Recording.TrackObjectByMultiplexOrder(i, 1).Acquire
-    Next i
-    Jobs(iJob).AcquireTrack = Aq
-    Jobs(iJob).TimeBetweenStacks = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).TimeBetweenStacks
-    Jobs(iJob).pixelDwell = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
+    Jobs(iJob).setJob Lsm5.DsRecording, ZEN
 End Sub
 
 
@@ -561,7 +552,7 @@ Public Function jobDescriptorSettings(Name As String) As String
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    jobDescriptorSettings
+    jobDescriptorSettings = Jobs(JobNames.Item(Name)).jobDescriptorSettings
 End Function
 ''''
 ' Create a string with the description of a Job
