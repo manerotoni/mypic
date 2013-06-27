@@ -20,4 +20,5 @@ Public Function UpdateLog(Text As String)
     Dim Log As String
     Log = Left(ErrorLogLabel.Caption, MaxSizeLog)
     ErrorLogLabel.Caption = Text & vbCrLf & Log
+    ErrorLog.Show
 End Function

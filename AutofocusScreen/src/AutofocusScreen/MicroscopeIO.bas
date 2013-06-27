@@ -816,7 +816,7 @@ End Function
 
 
 ''''
-' Compute the centerofmass of image stored in RecordingDoc
+' Compute the centerofmass of image stored in RecordingDoc return values according
 '   Use channel with name TrackingChannel
 ''''
 Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As String) As Vector
@@ -831,15 +831,15 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
     Dim bpp As Long
     Dim ColMax As Long
     Dim LineMax As Long
-    Dim FrameNumber As Integer
+    Dim FrameMax As Integer
     Dim pixelSize As Double
     Dim frameSpacing As Double
-    Dim Intline() As Long
-    Dim IntCol() As Long
-    Dim IntFrame() As Long
+    Dim IntLine() As Variant
+    Dim IntCol() As Variant
+    Dim IntFrame() As Variant
     
     Dim channel As Integer
-    Dim frame As Long
+    Dim Frame As Long
     Dim Line As Long
     Dim Col As Long
     Dim MinColValue As Single
@@ -911,9 +911,9 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
         LineMax = 1
     End If
     If RecordingDoc.Recording.ScanMode = "ZScan" Or RecordingDoc.Recording.ScanMode = "Stack" Then
-        FrameNumber = RecordingDoc.Recording.FramesPerStack
+        FrameMax = RecordingDoc.Recording.FramesPerStack
     Else
-        FrameNumber = 1
+        FrameMax = 1
     End If
     
     'Gets the pixel size (it is in meter)
@@ -922,108 +922,38 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
     frameSpacing = RecordingDoc.Recording.frameSpacing
     
     'Initiallize tables to store projected (integrated) pixels values in the 3 dimensions
-    ReDim Intline(LineMax) As Long
-    ReDim IntCol(ColMax) As Long
-    ReDim IntFrame(FrameNumber) As Long
+    ReDim IntLine(LineMax - 1)
+    ReDim IntCol(ColMax - 1)
+    ReDim IntFrame(FrameMax - 1)
         
 
     
     'Compute center of mass
     'Reads the pixel values and fills the tables with the projected (integrated) pixels values in the three directions
-    For frame = 1 To FrameNumber
-        For Line = 1 To LineMax
-            bpp = 0
-            'channel = 0: This will allow to do the tracking on a different channel
-            scrline = RecordingDoc.ScanLine(channel, 0, frame - 1, Line - 1, spl, bpp) 'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
-            For Col = 2 To ColMax               'Now I'm scanning all the pixels in the line
-                Intline(Line - 1) = Intline(Line - 1) + scrline(Col - 1)
-                IntCol(Col - 1) = IntCol(Col - 1) + scrline(Col - 1)
-                IntFrame(frame - 1) = IntFrame(frame - 1) + scrline(Col - 1)
+    ' Intline  => Y: is the sum along X and along Z
+    ' IntCol   => X : is the sum along Y and Z
+    ' IntFrame => Z : is the sum along X and Y
+    
+    For Frame = 0 To FrameMax - 1
+        For Line = 0 To LineMax - 1
+            bpp = 0 ' bytes per pixel (this will be changed by ScanLine
+            ' spl samples per line (will be changed by scal line)
+            scrline = RecordingDoc.ScanLine(channel, 0, Frame, Line, spl, bpp)  'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
+            For Col = 0 To ColMax - 1             'Now I'm scanning all the pixels in the line
+                IntLine(Line) = IntLine(Line) + scrline(Col)
+                IntCol(Col) = IntCol(Col) + scrline(Col)
+                IntFrame(Frame) = IntFrame(Frame) + scrline(Col)
             Next Col
         Next Line
-    Next frame
-    'First it finds the minimum and maximum porjected (integrated) pixel values in the 3 dimensions
-    MinColValue = 4095 * LineMax * FrameNumber          'The maximum values are initially set to the maximum possible value
-    minLineValue = 4095 * ColMax * FrameNumber
-    minFrameValue = 4095 * LineMax * ColMax
-    MaxColValue = 0                                     'The maximun values are initialliy set to 0
-    MaxLineValue = 0
-    MaxframeValue = 0
-    For Line = 1 To LineMax
-        If Intline(Line - 1) < minLineValue Then
-            minLineValue = Intline(Line - 1)
-        End If
-        If Intline(Line - 1) > MaxLineValue Then
-            MaxLineValue = Intline(Line - 1)
-        End If
-    Next Line
-    For Col = 1 To ColMax
-        If IntCol(Col - 1) < MinColValue Then
-            MinColValue = IntCol(Col - 1)
-        End If
-        If IntCol(Col - 1) > MaxColValue Then
-            MaxColValue = IntCol(Col - 1)
-        End If
-    Next Col
-    For frame = 1 To FrameNumber
-        If IntFrame(frame - 1) < minFrameValue Then
-            minFrameValue = IntFrame(frame - 1)
-        End If
-        If IntFrame(frame - 1) > MaxframeValue Then
-            MaxframeValue = IntFrame(frame - 1)
-        End If
-    Next frame
-    ' Why do you need to threshold the image? (this is probably to remove noise
-    'Calculates the threshold values. It is set to an arbitrary value of the minimum projected value plus 20% of the difference between the minimum and the maximum projected value.
-    'Then calculates the center of mass
-    LineSum = 0
-    LineWeight = 0
-    MidLine = (LineMax + 1) / 2
-    Threshold = minLineValue + (MaxLineValue - minLineValue) * 0.8         'Threshold calculation
-    For Line = 1 To LineMax
-        LineValue = Intline(Line - 1) - Threshold                           'Subtracs the threshold
-        PosValue = LineValue + Abs(LineValue)                               'Makes sure that the value is positive or zero. If LineValue is negative, the Posvalue = 0; if Line value is positive, then Posvalue = 2*LineValue
-        LineWeight = LineWeight + (pixelSize * (Line - MidLine)) * PosValue 'Calculates the weight of the Thresholded projected pixel values according to their position relative to the center of the image and sums them up
-        LineSum = LineSum + PosValue                                        'Calculates the sum of the thresholded pixel values
-    Next Line
-    If LineSum = 0 Then
-         MassCenter.Y = 0
-    Else
-         MassCenter.Y = Round(LineWeight / LineSum, PrecXY)                                       'Normalizes the weights to get the center of mass
-    End If
-
-    ColSum = 0
-    ColWeight = 0
-    MidCol = (ColMax + 1) / 2
-    Threshold = MinColValue + (MaxColValue - MinColValue) * 0.8
-    For Col = 1 To ColMax
-        ColValue = IntCol(Col - 1) - Threshold
-        PosValue = ColValue + Abs(ColValue)
-        ColWeight = ColWeight + (pixelSize * (Col - MidCol)) * PosValue
-        ColSum = ColSum + PosValue
-    Next Col
-    If ColSum = 0 Then
-         MassCenter.X = 0
-    Else
-         MassCenter.X = Round(ColWeight / ColSum, PrecXY)
-    End If
-
-    FrameSum = 0
-    FrameWeight = 0
-    MidFrame = (FrameNumber + 1) / 2
-    Threshold = minFrameValue + (MaxframeValue - minFrameValue) * 0.8
-    For frame = 1 To FrameNumber
-        FrameValue = IntFrame(frame - 1) - Threshold
-        PosValue = FrameValue + Abs(FrameValue)
-        FrameWeight = FrameWeight + (frameSpacing * (frame - MidFrame)) * PosValue
-        FrameSum = FrameSum + PosValue
-    Next frame
+    Next Frame
     
-    If FrameSum = 0 Then
-        MassCenter.Z = 0
-    Else
-        MassCenter.Z = Round(FrameWeight / FrameSum, PrecZ)
-    End If
+    'no thresholding for the moment
+    'compute center of mass
+    
+    'First it finds the minimum and maximum projected (integrated) pixel values in the 3 dimensions
+    MassCenter.Y = weightedMean(IntLine)
+    MassCenter.X = weightedMean(IntCol)
+    MassCenter.Z = weightedMean(IntFrame) - (FrameMax - 1) / 2
     Exit Function
 ErrorHandle:
     MsgBox ("Error in MicroscopeIO.MassCenter " + TrackingChannel + " " + Err.Description)

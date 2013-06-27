@@ -5,6 +5,30 @@ Public Sub Autofocus_Setup()
         AutofocusForm.Show
 End Sub
 
+'''
+' compute a weighted mean of the positiions of an array
+'''
+Public Function weightedMean(values() As Variant) As Double
+    Dim sum As Variant
+    Dim weight As Variant
+    Dim i As Integer
+    sum = 0
+    weight = 0
+    For i = LBound(values) To UBound(values)
+        sum = sum + values(i)
+        weight = weight + i * values(i)
+    Next i
+    'if sum is 0
+    If sum > 0 Then
+        weightedMean = weight / sum
+    Else
+        ' then mean is inthe center
+        weightedMean = (UBound(values) = LBound(values)) / 2 + LBound(values)
+    End If
+End Function
+
+
+
 '''''
 '  isArrayEmpty(parArray As Variant) As Boolean
 '  Returns false if not an array or dynamic array that has not been initialised (ReDim) or has been erased (Erase)

@@ -44,13 +44,15 @@ End Sub
 
 
 
+
+
 ''''''
 ' UserForm_Initialize()
 '   Function called from e.g. AutoFocusForm.Show
 '   Load and initialize form
 '''''
 Public Sub UserForm_Initialize()
-    Version = " v3.0.2"
+    Version = " v3.0.3"
     Dim i As Integer
     'find the version of the software
     Dim VersionNr As String

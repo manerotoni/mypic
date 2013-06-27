@@ -31,7 +31,7 @@ Public Function nextRep() As Boolean
 End Function
 
 Public Sub updateTimeStart()
-    If interval Then
+    If Not interval Then
         TimeStart = CDbl(GetTickCount) * 0.001
     End If
 End Sub

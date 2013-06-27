@@ -135,7 +135,31 @@ Public Function nextGridPt(Name As String) As Boolean
     End If
 End Function
 
+Public Function thisRow(Name As String) As Integer
+    If checkGridName(Name) Then
+        thisRow = Grids(GridNames.Item(Name)).iRow
+    End If
+End Function
 
+
+Public Function thisColumn(Name As String) As Integer
+    If checkGridName(Name) Then
+        thisColumn = Grids(GridNames.Item(Name)).iCol
+    End If
+End Function
+
+Public Function thisSubRow(Name As String) As Integer
+    If checkGridName(Name) Then
+        thisSubRow = Grids(GridNames.Item(Name)).iRowSub
+    End If
+End Function
+
+
+Public Function thisSubColumn(Name As String) As Integer
+    If checkGridName(Name) Then
+        thisSubColumn = Grids(GridNames.Item(Name)).iColSub
+    End If
+End Function
 
 Public Function getThisPt(Name As String, pos As Vector, Valid As Boolean)
     If checkGridName(Name) Then

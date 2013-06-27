@@ -138,13 +138,24 @@ End Function
 '''''
 Public Function TrackOffLine(JobName As String, RecordingDoc As DsRecordingDoc, currentPosition As Vector) As Vector
     On Error GoTo ErrorHandle:
+    Dim newPosition() As Vector
+    ReDim newPosition(0)
     Dim TrackingChannel As String
+    newPosition(0) = currentPosition
     TrackOffLine = currentPosition
     If AutofocusForm.Controls(JobName & "OfflineTrack") And (AutofocusForm.Controls(JobName & "TrackZ") Or AutofocusForm.Controls(JobName & "TrackXY")) Then
         TrackingChannel = AutofocusForm.Controls(JobName & "OfflineTrackChannel").List(AutofocusForm.Controls(JobName & "OfflineTrackChannel").ListIndex)
-        TrackOffLine = computeShiftedCoordinates(currentPosition, MassCenter(RecordingDoc, TrackingChannel))
+        newPosition(0) = MassCenter(RecordingDoc, TrackingChannel)
+        newPosition = computeCoordinatesImaging(JobName, currentPosition, newPosition)
     End If
-    TrackOffLine = TrackJob(JobName, currentPosition, TrackOffLine)
+    If AutofocusForm.Controls(JobName & "TrackZ") Then
+        TrackOffLine.Z = newPosition(0).Z
+    End If
+    If AutofocusForm.Controls(JobName & "TrackXY") Then
+        TrackOffLine.X = newPosition(0).X
+        TrackOffLine.Y = newPosition(0).Y
+    End If
+    Debug.Print "X = " & currentPosition.X & ", " & newPosition(0).X & ", Y = " & currentPosition.Y & ", " & newPosition(0).Y & ", Z = " & currentPosition.Z & ", " & newPosition(0).Z
     Exit Function
 ErrorHandle:
     MsgBox "Error in TrackOffLine " + JobName + " " + Err.Description
@@ -211,6 +222,8 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
     Dim Xold As Double
     Dim Yold As Double
     Dim Zold As Double
+    Dim MaxMovementXY As Double
+    Dim MaxMovementZ As Double
     
     'test variables
     Dim Success As Integer       ' Check if something was sucessfull
@@ -241,6 +254,9 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
 
         Do ''Cycle all positions defined in grid
             If Grids.getThisValid(JobName) Then
+               DisplayProgress "Job " & JobName & ", Row " & Grids.thisRow(JobName) & ", Col " & Grids.thisColumn(JobName) & vbCrLf & _
+                ", subRow " & Grids.thisSubRow(JobName) & ", subCol " & Grids.thisSubColumn(JobName) & ", Rep " & Reps.thisIndex(JobName), RGB(&HC0, &HC0, 0)
+
                 'Do some positional Job
                 StgPos.X = Grids.getThisX(JobName)
                 StgPos.Y = Grids.getThisY(JobName)
@@ -277,7 +293,12 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
                             StgPos = TrackOffLine(JobNamesGlobal(iJobGlobal), GlobalRecordingDoc, StgPos)
                             If AutofocusForm.Controls(JobNamesGlobal(iJobGlobal) + "OiaActive") And AutofocusForm.Controls(JobNamesGlobal(iJobGlobal) + "OiaSequential") Then
                                 OiaSettings.writeKeyToRegistry "codeOut", "newImage"
-                                newStgPos = ComputeJobSequential(JobNamesGlobal(iJobGlobal), GridName, StgPos, FilePath, GlobalRecordingDoc)
+                                newStgPos = ComputeJobSequential(JobNamesGlobal(iJobGlobal), GridName, StgPos, FilePath, FileName, GlobalRecordingDoc)
+                                If Not checkForMaximalDisplacement(JobNamesGlobal(iJobGlobal), StgPos, newStgPos) Then
+                                    newStgPos = StgPos
+                                End If
+                                    
+                                Debug.Print "X =" & StgPos.X & ", " & newStgPos.X & ", " & StgPos.Y & ", " & newStgPos.Y & ", " & StgPos.Z & ", " & newStgPos.Z
                                 StgPos = TrackJob(JobNamesGlobal(iJobGlobal), StgPos, newStgPos)
                             End If
                                 
@@ -300,7 +321,11 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
                     StgPos = TrackOffLine(JobName, GlobalRecordingDoc, StgPos)
                     If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
                         OiaSettings.writeKeyToRegistry "codeOut", "newImage"
-                        newStgPos = ComputeJobSequential(JobName, GridName, StgPos, FilePath, GlobalRecordingDoc)
+                        newStgPos = ComputeJobSequential(JobName, GridName, StgPos, FilePath, FileName, GlobalRecordingDoc)
+                        If Not checkForMaximalDisplacement(JobName, StgPos, newStgPos) Then
+                            newStgPos = StgPos
+                        End If
+                        Debug.Print "X =" & StgPos.X & ", " & newStgPos.X & ", " & StgPos.Y & ", " & newStgPos.Y & StgPos.Z & ", " & newStgPos.Z
                         StgPos = TrackJob(JobName, StgPos, newStgPos)
                     End If
                     StgPos.Z = StgPos.Z - AutofocusForm.Controls(JobName + "ZOffset").Value
@@ -376,6 +401,46 @@ On Error GoTo ErrorHandle:
      Exit Function
 ErrorHandle:
     MsgBox "Error in FileNameOnGrid " + Err.Description
+End Function
+
+''''
+' check  that newPos is not further away than the size of the image. In fact it should be half the image
+''''
+Private Function checkForMaximalDisplacement(JobName As String, currentPos As Vector, newPos As Vector) As Boolean
+    Dim MaxMovementXY As Double
+    Dim MaxMovementZ As Double
+    
+    MaxMovementXY = Jobs.GetFrameSize(JobName) * Jobs.GetSampleSpacing(JobName)
+    MaxMovementZ = Jobs.GetFramesPerStack(JobName) * Jobs.GetFrameSpacing(JobName)
+                                
+    If Abs(newPos.X - currentPos.X) > MaxMovementXY Or Abs(newPos.Y - currentPos.Y) > MaxMovementXY Or Abs(newPos.Z - currentPos.Z) > MaxMovementZ Then
+        ErrorLog.UpdateLog "Job " & JobName & " online image analysis returned a too large displacement/focus " & _
+        "dX, dY, dZ = " & Abs(newPos.X - currentPos.X) & ", " & Abs(newPos.Y - currentPos.Y) & ", " & Abs(newPos.Z - currentPos.Z) & _
+        "accepted dX, dY, dZ = " & MaxMovementXY & ", " & MaxMovementXY & ", " & MaxMovementZ
+        Exit Function
+    End If
+    checkForMaximalDisplacement = True
+End Function
+
+
+''''
+' check  that newPos is not further away than the size of the image. In fact it should be half the image
+''''
+Private Function checkForMaximalDisplacementVec(JobName As String, currentPos As Vector, newPos() As Vector) As Boolean
+    Dim MaxMovementXY As Double
+    Dim MaxMovementZ As Double
+    Dim i As Integer
+    MaxMovementXY = Jobs.GetFrameSize(JobName) * Jobs.GetSampleSpacing(JobName)
+    MaxMovementZ = Jobs.GetFramesPerStack(JobName) * Jobs.GetFrameSpacing(JobName)
+    For i = 0 To UBound(newPos)
+        If Abs(newPos(i).X - currentPos.X) > MaxMovementXY Or Abs(newPos(i).Y - currentPos.Y) > MaxMovementXY Or Abs(newPos(i).Z - currentPos.Z) > MaxMovementZ Then
+            ErrorLog.UpdateLog "Job " & JobName & " online image analysis returned a too large displacement/focus " & _
+            "dX, dY, dZ = " & Abs(newPos(i).X - currentPos.X) & ", " & Abs(newPos(i).Y - currentPos.Y) & ", " & Abs(newPos(i).Z - currentPos.Z) & _
+            "accepted dX, dY, dZ = " & MaxMovementXY & ", " & MaxMovementXY & ", " & MaxMovementZ
+            Exit Function
+        End If
+    Next i
+    checkForMaximalDisplacementVec = True
 End Function
 
 '''
@@ -478,8 +543,8 @@ Public Function computeCoordinatesImaging(JobName As String, currentPosition As 
     Dim i As Integer
     Dim position() As Vector
     position = newPosition
-    'convert in um
-    pixelSize = Jobs.GetSampleSpacing(JobName) * 1000000
+    'pixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing 'This is in meter!!!
+    pixelSize = Jobs.GetSampleSpacing(JobName) ' this is in um
     'compute difference with respect to center
     imageSize = Jobs.GetFrameSize(JobName)
     frameSpacing = Jobs.GetFrameSpacing(JobName)
@@ -586,7 +651,7 @@ Public Function runSubImagingJob(GridName As String, JobName As String, newPosit
     End If
     
     If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value = "" Then
-        If TimersGridCreation.wait(GridName, CDbl(AutofocusForm.Controls(JobName + "OptimalPtNumber").Value)) < 0 Then
+        If TimersGridCreation.wait(GridName, CDbl(AutofocusForm.Controls(JobName + "maxWait").Value)) < 0 Then
             runSubImagingJob = True
             Exit Function
         End If
@@ -604,9 +669,14 @@ Public Function runSubImagingJob(GridName As String, JobName As String, newPosit
     
     'both are unequal 0. you chose which occurs first
     If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value <> "" Then
-        If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value >= Grids.getNrPts(GridName) Then
+        If Grids.getNrPts(GridName) >= AutofocusForm.Controls(JobName + "OptimalPtNumber").Value Then
             'trim grid
-            Grids.updateGridSizePreserve GridName, 1, 1, 1, MinInt(AutofocusForm.Controls(JobName + "OptimalPtNumber").Value, UBound(newPositions) + 1)
+            Grids.updateGridSizePreserve GridName, 1, 1, 1, AutofocusForm.Controls(JobName + "OptimalPtNumber").Value
+            runSubImagingJob = True
+            Exit Function
+        End If
+        
+        If TimersGridCreation.wait(GridName, CDbl(AutofocusForm.Controls(JobName + "maxWait").Value)) < 0 Then
             runSubImagingJob = True
             Exit Function
         End If
@@ -627,7 +697,7 @@ End Function
 '   Perform computation for tracking and wait for Onlineimageanalysis if sequential Oia is on
 '   Create/update grid for OiaJobs
 ''''
-Public Function ComputeJobSequential(parentJob As String, parentGrid As String, parentPosition As Vector, parentPath As String, RecordingDoc As DsRecordingDoc, _
+Public Function ComputeJobSequential(parentJob As String, parentGrid As String, parentPosition As Vector, parentPath As String, parentFile As String, RecordingDoc As DsRecordingDoc, _
  Optional deltaZ As Integer = -1) As Vector
     Dim imageSize As Integer
     Dim newPositions() As Vector
@@ -708,6 +778,13 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
             DisplayProgress "Registry codeIn trigger1: store positions and eventually image job Trigger1 ...", RGB(0, &HC0, 0)
             If OiaSettings.getPositions(newPositions) Then
                 newPositions = computeCoordinatesImaging(parentJob, parentPosition, newPositions)
+                If Not checkForMaximalDisplacementVec(parentJob, parentPosition, newPositions) Then
+                    ReDim newPositions(0)
+                    imageSize = Jobs.GetFrameSize(parentJob)
+                    newPositions(0).X = (imageSize - 1) / 2
+                    newPositions(0).Y = (imageSize - 1) / 2
+                    newPositions(0).Z = 0
+                End If
             Else
                 ErrorLog.Show
                 ErrorLog.UpdateLog "ComputeJobSequential: No position for Job Trigger1 has been specified!"
@@ -726,7 +803,7 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
                 'remove positions from parent grid to avoid revisiting the position
                 'Grids.setThisValid parentGrid, False
                 'start acquisition of Job
-                StartJobOnGrid "Trigger1", "Trigger1", parentPath
+                StartJobOnGrid "Trigger1", "Trigger1", parentPath & parentFile & "\"
                 'reset grid to empty grid
                 Grids.updateGridSize "Trigger1", 0, 0, 0, 0
             End If

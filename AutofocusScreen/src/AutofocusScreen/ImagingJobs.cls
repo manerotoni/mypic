@@ -368,12 +368,13 @@ Public Function GetFrameSpacing(Name As String) As Double
 End Function
 
 '''
-'   This is dXdY in meter
+'   This is dXdY in um
 '''
 Public Function GetSampleSpacing(Name As String) As Double
     If Not checkJobName(Name) Then
         Exit Function
     End If
+    'Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing 'this is in meter different specification depending on the variable. What a mess!!!
     GetSampleSpacing = Jobs(JobNames.Item(Name)).Recording.SampleSpacing
 End Function
 
