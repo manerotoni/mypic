@@ -50,7 +50,7 @@ End Sub
 '   Load and initialize form
 '''''
 Public Sub UserForm_Initialize()
-    Version = " v3.0.1"
+    Version = " v3.0.2"
     Dim i As Integer
     'find the version of the software
     Dim VersionNr As String
@@ -420,10 +420,10 @@ Private Sub SwitchEnablePage(Enable As Boolean, JobName As String)
     
     Me.Controls(JobName + "SetJob").Enabled = Enable
     Me.Controls(JobName + "PutJob").Enabled = Enable
-    
-    'For online image analysis
+    Me.Controls(JobName + "Acquire").Enabled = Enable
+            
     Me.Controls(JobName + "TrackZ").Enabled = Enable
-    Me.Controls(JobName + "TrackXY").Enabled = Enable And Jobs.GetScanMode(JobName) <> "ZScan" And Jobs.GetScanMode(JobName) <> "Line"
+    Me.Controls(JobName + "TrackXY").Enabled = Enable And (Jobs.GetScanMode(JobName) <> "ZScan") And (Jobs.GetScanMode(JobName) <> "Line")
     Me.Controls(JobName + "OfflineTrack").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
     Me.Controls(JobName + "OfflineTrackChannel").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
     Me.Controls(JobName + "OiaActive").Enabled = Enable
@@ -434,8 +434,8 @@ Private Sub SwitchEnablePage(Enable As Boolean, JobName As String)
         Me.Controls(JobName + "OiaParallel").Enabled = False
         Me.Controls(JobName + "OiaSequential").Enabled = False
     End If
-    
-
+        
+    Me.Controls(JobName + "SaveImage").Enabled = Enable
 
     If JobName = "Trigger1" Or JobName = "Trigger2" Then
         Me.Controls(JobName + "Autofocus").Enabled = Enable
@@ -446,6 +446,11 @@ Private Sub SwitchEnablePage(Enable As Boolean, JobName As String)
         Me.Controls(JobName + "RepetitionInterval").Enabled = Enable
         Me.Controls(JobName + "RepetitionNumber").Enabled = Enable
         Me.Controls(JobName + "RepetitionNumberLabel").Enabled = Enable
+        Me.Controls(JobName + "maxWaitLabel").Enabled = Enable
+        Me.Controls(JobName + "maxWait").Enabled = Enable
+        Me.Controls(JobName + "OptimalPtNumber").Enabled = Enable
+        Me.Controls(JobName + "OptimalPtNumberLabel").Enabled = Enable
+        
     End If
     
     
@@ -734,8 +739,9 @@ End Sub
 ' Online image analysis. If True then VBAMacro listen to external program (Fiji, Macropilot, Cellprofiler)
 ''''
 Private Sub JobOiaActiveClick(JobName As String)
-    If JobName = "Autofocus" Or JobName = "Acquisition" Then
-        If AutofocusOiaActive Or AcquisitionOiaActive Then
+    Me.Controls(JobName + "SaveImage") = True
+    If JobName = "Autofocus" Or JobName = "Acquisition" Or JobName = "AlterAcquisition" Then
+        If AutofocusOiaActive Or AcquisitionOiaActive Or AlterAcquisitionOiaActive Then
             SwitchEnablePage True, "Trigger1"
             SwitchEnablePage True, "Trigger2"
         Else
@@ -753,6 +759,10 @@ End Sub
 
 Private Sub AcquisitionOiaActive_Click()
     JobOiaActiveClick "Acquisition"
+End Sub
+
+Private Sub AlterAcquisitionOiaActive_Click()
+    JobOiaActiveClick "AlterAcquisition"
 End Sub
 
 Private Sub Trigger1OiaActive_Click()
@@ -805,20 +815,33 @@ End Sub
 '''''''
 ' Parallel online image analysis. VBA Macro reads before starting job in a text file with name of image file chopped of "_Txxx.lsm"
 '''''''
+Private Sub ButtonOiaParallel(JobName As String)
+    MsgBox "Parallel mode not implemented yet"
+    Me.Controls(JobName + "OiaSequential").Value = True
+    Me.Controls(JobName + "OiaParallel").Value = False
+    ' to be changed to
+    'Me.Controls(JobName + "OiaSequential").Value = Not Me.Controls(JobName + "OiaParallel").Value
+End Sub
+
 Private Sub AutofocusOiaParallel_Change()
-    AutofocusOiaSequential.Value = Not AutofocusOiaParallel.Value
+    ButtonOiaParallel ("Autofocus")
 End Sub
 
 Private Sub AcquisitionOiaParallel_Change()
-    AcquisitionOiaSequential.Value = Not AcquisitionOiaParallel.Value
+     ButtonOiaParallel ("Acquisition")
 End Sub
 
+Private Sub AlterAcquisitionOiaParallel_Change()
+     ButtonOiaParallel ("AlterAcquisition")
+End Sub
+
+
 Private Sub Trigger1OiaParallel_Change()
-    Trigger1OiaSequential.Value = Not Trigger1OiaParallel.Value
+     ButtonOiaParallel ("Trigger1")
 End Sub
 
 Private Sub Trigger2OiaParallel_Change()
-    Trigger2OiaSequential.Value = Not Trigger2OiaParallel.Value
+     ButtonOiaParallel ("Trigger2")
 End Sub
 
 '''
@@ -1196,21 +1219,19 @@ End Sub
 '   A second routine is called to stop the processes
 '       [ScanStop] Global/Out - Set to true
 '''''''
-Private Sub StopButton_Click()
+Private Sub StopButton_Change()
     If Not Running Then
-        StopButton.Value = False
+          ScanStop = StopButton.Value
+          StopButton.Value = False
         StopButton.BackColor = &H8000000F
-        ScanStop = False
     Else
+        ScanStop = StopButton.Value
         If StopButton.Value Then
             StopButton.BackColor = 12648447
-            ScanStop = True
         Else
-            StopButton.BackColor = &H8000000F
-            ScanStop = False
+             StopButton.BackColor = &H8000000F
         End If
     End If
-
 End Sub
 
 
@@ -1224,38 +1245,12 @@ Public Sub StopAcquisition()
     If ScanStop Then
         Lsm5.StopScan
         DisplayProgress "Stopped", RGB(&HC0, 0, 0)
-        RestoreAcquisitionParameters
         DoEvents
     Else
         DisplayProgress "Restore Settings", RGB(&HC0, &HC0, 0)
         RestoreAcquisitionParameters
         DoEvents
     End If
-    
-    ReDim BleachTable(BlockRepetitions)
-    ReDim BleachStartTable(BlockRepetitions)
-    ReDim BleachStopTable(BlockRepetitions)
-    ChangeButtonStatus True
-    Running = False
-    ScanStop = False
-    ScanPause = False
-    PauseButton.Value = False
-    PauseButton.Caption = "PAUSE"
-    PauseButton.BackColor = &H8000000F
-    StopAfterRepetition.Value = False
-    StopAfterRepetition.BackColor = &H8000000F
-    StopButton.BackColor = &H8000000F
-    StopButton.Value = False
-    LocationTextLabel.Caption = ""
-    Sleep (1000)
-    If Log Then
-        SafeOpenTextFile LogFileName, LogFile, FileSystem
-        If Not LogFile Is Nothing Then
-            LogFile.Close
-        End If
-    End If
-    SwitchEnableGridScanPage True
-    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
 
 End Sub
 
@@ -1384,34 +1379,32 @@ Public Sub RestoreAcquisitionParameters()
     Dim SuccessRecenter As Boolean
     
     Time = Timer
-'    Lsm5.DsRecording.Copy GlobalBackupRecording
-'    Lsm5.DsRecording.frameSpacing = GlobalBackupRecording.frameSpacing
-'    Lsm5.DsRecording.FramesPerStack = GlobalBackupRecording.FramesPerStack
-'    For i = 0 To Lsm5.DsRecording.TrackCount - 1
-'       Lsm5.DsRecording.TrackObjectByMultiplexOrder(i, 1).Acquire = GlobalBackupActiveTracks(i)
-'    Next i
-'    time = Round(Timer - time, 2)
-'    LogMsg = "% Restore settings: time to return to backuprecording " & time
-'    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
-'
-'    Sleep (1000)
-'
-'    time = Timer
-'    Recenter_pre posTempZ, SuccessRecenter, ZENv
-'    pos = Lsm5.Hardware.CpFocus.position
-'    'move to posTempZ
-'    If ZENv = "2011" Or ZENv = "2010" Then
-'        If Round(pos, PrecZ) <> Round(posTempZ, PrecZ) Then
-'            If Not FailSafeMoveStageZ(posTempZ) Then
-'                Exit Sub
-'            End If
-'        End If
-'        Recenter_post posTempZ, SuccessRecenter, ZENv
-'    End If
-'    time = Round(Timer - time, 2)
-'    LogMsg = "% Restore settings: recenter Z " & posTempZ & ", Time required " & time & ", success within rep. " & SuccessRecenter & vbCrLf
-'    LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
-'
+    ReDim BleachTable(BlockRepetitions)
+    ReDim BleachStartTable(BlockRepetitions)
+    ReDim BleachStopTable(BlockRepetitions)
+    ChangeButtonStatus True
+    Running = False
+    ScanStop = False
+    ScanPause = False
+    ChangeButtonStatus True
+    PauseButton.Value = False
+    PauseButton.Caption = "PAUSE"
+    PauseButton.BackColor = &H8000000F
+    StopAfterRepetition.Value = False
+    StopAfterRepetition.BackColor = &H8000000F
+    StopButton.BackColor = &H8000000F
+    StopButton.Value = False
+    LocationTextLabel.Caption = ""
+    Sleep (1000)
+    If Log Then
+        SafeOpenTextFile LogFileName, LogFile, FileSystem
+        If Not LogFile Is Nothing Then
+            LogFile.Close
+        End If
+    End If
+    SwitchEnableGridScanPage True
+    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
+
 '    ''' close LogFile
     If Log Then
         SafeOpenTextFile LogFileName, LogFile, FileSystem
@@ -1653,7 +1646,10 @@ Private Sub StartButton_Click()
         Exit Sub
     End If
     Running = True
+    ChangeButtonStatus False
     StartJobOnGrid "Global", "Global", GlobalDataBaseName 'This is the main function of the macro
+    AutofocusForm.StopAcquisition
+    AutofocusForm.RestoreAcquisitionParameters
 End Sub
 
 
@@ -1971,42 +1967,6 @@ End Sub
 
 
 
-''fills popup menu for chosing a track for post-acquisition tracking
-'' TODO: move in form
-'Private Sub FillTrackingChannelList()
-'    Dim T As Integer
-'    Dim c As Integer
-'    Dim ca As Integer
-'    Dim channel As DsDetectionChannel
-'    Dim Track As DsTrack
-'
-'    ReDim ActiveChannels(Lsm5.Constants.MaxActiveChannels)  'ActiveChannels is a dynamic array (variable size), ReDim defines array size required next
-'                                                            'Array size is (MaxActiveChannels gets) the total max number of active channels in all tracks
-'    ComboBoxTrackingChannel.Clear 'Content of popup menu for chosing track for post-acquisition tracking is deleted
-'    ca = 0
-'
-'    If ActivateTrack(GlobalAcquisitionRecording, "Acquisition") Then
-'        For T = 1 To TrackNumber 'This loop goes through all tracks and will collect all activated channels to display them in popup menu
-'            Set Track = GlobalAcquisitionRecording.TrackObjectByMultiplexOrder(T - 1, Success)
-'            If Track.Acquire Then 'if track is activated for acquisition
-'                For c = 1 To Track.DetectionChannelCount 'for every detection channel of track
-'                    Set channel = Track.DetectionChannelObjectByIndex(c - 1, Success)
-'                    If channel.Acquire Then 'if channel is activated
-'                        ca = ca + 1 'counter for active channels will increase by one
-'                        ComboBoxTrackingChannel.AddItem Track.Name & " " & channel.Name 'entry is added to combo box to chose track for post-acquisition tracking
-'                        ActiveChannels(ca) = channel.Name & "-T" & Track.MultiplexOrder + 1  'adds entry to ActiveChannel Array with name of channel + name of track
-'                    End If
-'                Next c
-'            End If
-'        Next T
-'        ComboBoxTrackingChannel.Value = ComboBoxTrackingChannel.List(0) 'initially displayed text in popup menu is a blank line (first channel is 1).
-'    End If
-'End Sub
-
-
-
-
-
 Private Sub TextBoxFileName_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = 13 Then 'this is the enter key
         SetFileName
@@ -2149,6 +2109,9 @@ End Sub
 '''''
 Private Sub ChangeButtonStatus(Enable As Boolean)
     StartButton.Enabled = Enable
+    AutofocusButton.Enabled = Enable
+    FocusMap.Enabled = Enable
+    GetCurrentPositionOffsetButton.Enabled = Enable
     CloseButton.Enabled = Enable
     ReinitializeButton.Enabled = Enable
 End Sub

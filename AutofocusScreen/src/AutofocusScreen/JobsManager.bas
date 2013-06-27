@@ -126,9 +126,7 @@ StgPos As Vector, Optional deltaZ As Integer = -1)
     End If
     ExecuteJob = True
     Exit Function
-    
 ErrorHandle:
-
     ErrorLog.Show
     ErrorLog.UpdateLog "Error in AcquireJob for Job " + JobName + " " + Err.Description
     MsgBox "Error in AcquireJob for Job " + JobName + " " + Err.Description
@@ -238,6 +236,9 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
     Reps.resetIndex (JobName)
     While Reps.nextRep(JobName) ' cycle all repetitions
         Grids.setIndeces JobName, 1, 1, 1, 1
+        DisplayProgress "Job " & JobName & ", Row " & Grids.thisRow(JobName) & ", Col " & Grids.thisColumn(JobName) & vbCrLf & _
+        ", subRow " & Grids.thisSubRow(JobName) & ", subCol " & Grids.thisSubColumn(JobName) & ", Rep " & Reps.thisIndex(JobName), RGB(&HC0, &HC0, 0)
+
         Do ''Cycle all positions defined in grid
             If Grids.getThisValid(JobName) Then
                 'Do some positional Job
@@ -252,7 +253,6 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
                     
                 ' Recenter and move where it should be
                 If JobName = "Global" Then
-                
                     For iJobGlobal = 0 To UBound(JobNamesGlobal)
                         ' run subJobs for global setting
                         On Error GoTo ErrorHandle1:
@@ -311,23 +311,22 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
                 Grids.setThisY JobName, StgPos.Y
                 Grids.setThisZ JobName, StgPos.Z
                 previousZ = Grids.getThisZ(JobName)
-                
             End If
+            
         Loop While Grids.nextGridPt(JobName)
         ''Wait till next repetition
         Reps.updateTimeStart (JobName)
+        
         If Reps.wait(JobName) > 0 Then
             DisplayProgress "Waiting " & CStr(CInt(Reps.wait(JobName))) & " s before scanning repetition  " & Reps.getIndex(JobName) + 1, RGB(&HC0, &HC0, 0)
             DoEvents
-        Else
-            DisplayProgress "Waiting " & "0 s before scanning repetition  " & Reps.getIndex(JobName) + 1, RGB(&HC0, &HC0, 0)
         End If
         
         While Reps.wait(JobName) > 0
             Sleep (100)
             DoEvents
             If ScanPause = True Then
-                If Not Pause Then ' Pause is true is Resume
+                If Not AutofocusForm.Pause Then ' Pause is true if Resume
                     ScanStop = True
                     AutofocusForm.StopAcquisition
                     Exit Sub
@@ -338,8 +337,20 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
             End If
             DisplayProgress "Waiting " & CStr(CInt(Reps.wait(JobName))) & " s before scanning repetition  " & Reps.getIndex(JobName) + 1, RGB(&HC0, &HC0, 0)
         Wend
+        Sleep (100)
+        DoEvents
+        If ScanPause = True Then
+            If Not AutofocusForm.Pause Then ' Pause is true is Resume
+                ScanStop = True
+                AutofocusForm.StopAcquisition
+                Exit Sub
+            End If
+        End If
+        If ScanStop Then
+                GoTo StopAcquisition
+        End If
     Wend
-    
+    Exit Sub
 StopAcquisition:
     AutofocusForm.StopAcquisition
     AutofocusForm.SwitchEnableGridScanPage True
@@ -383,12 +394,6 @@ Private Function FilePathSuffix(GridName As String, JobName As String) As String
         FilePathSuffix = FilePathSuffix & "_" & Grids.thisSuffixWell(GridName) & "\" & FilePathSuffix & "_" & Grids.thisSuffix(GridName)
     End If
 End Function
-
-
-
-
-
-
 
 
 '''
@@ -624,7 +629,7 @@ End Function
 ''''
 Public Function ComputeJobSequential(parentJob As String, parentGrid As String, parentPosition As Vector, parentPath As String, RecordingDoc As DsRecordingDoc, _
  Optional deltaZ As Integer = -1) As Vector
-
+    Dim imageSize As Integer
     Dim newPositions() As Vector
     Dim codeIn As String
     Dim OiaSettings As OnlineIASettings
@@ -704,14 +709,14 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
             If OiaSettings.getPositions(newPositions) Then
                 newPositions = computeCoordinatesImaging(parentJob, parentPosition, newPositions)
             Else
-                
                 ErrorLog.Show
                 ErrorLog.UpdateLog "ComputeJobSequential: No position for Job Trigger1 has been specified!"
                 'Exit Function
                 'Test
                 ReDim newPositions(0)
-                newPositions(0).X = 0
-                newPositions(0).Y = 0
+                imageSize = Jobs.GetFrameSize(parentJob)
+                newPositions(0).X = (imageSize - 1) / 2
+                newPositions(0).Y = (imageSize - 1) / 2
                 newPositions(0).Z = 0
                 newPositions = computeCoordinatesImaging(parentJob, parentPosition, newPositions)
             End If
@@ -719,7 +724,7 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
             ''' if we run a subjob the grid and counter is reset
             If runSubImagingJob("Trigger1", "Trigger1", newPositions) Then
                 'remove positions from parent grid to avoid revisiting the position
-                Grids.setThisValid parentGrid, False
+                'Grids.setThisValid parentGrid, False
                 'start acquisition of Job
                 StartJobOnGrid "Trigger1", "Trigger1", parentPath
                 'reset grid to empty grid

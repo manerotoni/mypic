@@ -8,9 +8,22 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Option Explicit
-Private Repetitions As New Collection
+Private Repetitions As New Collection 'ARepetition to be changed
 Private pZENv As Integer
+Private RepetitionNames As Dictionary
 
+
+Private Sub MsgNoRepetition(Name As String)
+    MsgBox "ImagingRepetitions: Repetition " & Name & " has not been defined"
+End Sub
+
+Public Function checkRepetitionNames(Name As String) As Boolean
+    If RepetitionNames.Exists(Name) Then
+        checkRepetitionNames = True
+    Else
+        MsgNoRepetition Name
+    End If
+End Function
 
 
 '''
@@ -109,11 +122,16 @@ Public Sub setInterval(Name As String, Value As Boolean)
     Repetitions(Name).interval = Value
 End Sub
 
+Public Function thisIndex(Name As String) As Integer
+    thisIndex = Repetitions(Name).index
+End Function
+
+
 '''
 '
 '''
 Public Sub setRepetitionTime(Name As String, Value As Double)
-    Repetitions(Name).time = Value
+    Repetitions(Name).Time = Value
 End Sub
 
 '''

@@ -14,7 +14,7 @@ Option Explicit
 Public Name As String            ' this is should belong to the upper class but to see what is inside you need the name
 Public number As Integer        'Number of repetitions
 Public index As Integer          'currentindex of repetition
-Public time As Double         ' Time between repetition
+Public Time As Double         ' Time between repetition
 Private TimeStart As Double     'Time start of current repetition this will be updated if Interval is used
 Public interval As Boolean
 Const maxZeros = 4
@@ -23,7 +23,7 @@ Const maxZeros = 4
 ' Update index of Repetition and store timeStart
 '''
 Public Function nextRep() As Boolean
-    If index <= number Then
+    If index < number Then
         index = index + 1
         TimeStart = CDbl(GetTickCount) * 0.001
         nextRep = True
@@ -54,7 +54,7 @@ End Function
 '   Calculate that remains to wait
 '''
 Public Function wait() As Double
-    wait = time + TimeStart - CDbl(GetTickCount) * 0.001
+    wait = Time + TimeStart - CDbl(GetTickCount) * 0.001
 End Function
 
 '''
@@ -64,7 +64,7 @@ Public Function initialize(repetitionName As String, RepetitionTime As Double, R
     index = 0
     number = RepetitionNumber
     Name = repetitionName
-    time = RepetitionTime
+    Time = RepetitionTime
     interval = RepetitionInterval
 End Function
 

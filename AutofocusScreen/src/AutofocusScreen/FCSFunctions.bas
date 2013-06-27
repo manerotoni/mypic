@@ -25,11 +25,40 @@ Private Sub Initialize_Controller()
     viewerGuiServer.FcsSelectLsmImagePositions = True
 End Sub
 
+Public Sub NewRecord(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0)
+    If ZENv > 2010 Then
+        NewRecord2011 RecordingDoc, Name, Container
+    Else
+        NewRecord2010 RecordingDoc, Name, Container
+    End If
+    
+End Sub
+'''
+' Creates New DsRecordingDoc or use available one if present
+''''
+Public Sub NewRecord2010(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0)
+    Dim node As AimExperimentTreeNode
+    Set viewerGuiServer = Lsm5.viewerGuiServer
+    If RecordingDoc Is Nothing Then
+        Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
+        node.type = eExperimentTeeeNodeTypeLsm
+        viewerGuiServer.InsertExperimentTreeNode node, True
+        Set node = viewerGuiServer.ExperimentTreeNodeSelected
+        
+        Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
+        While RecordingDoc.IsBusy
+            Sleep (Pause)
+            DoEvents
+        Wend
+    End If
+    RecordingDoc.SetTitle Name
+End Sub
+
 
 '''
 ' Creates New DsRecordingDoc or use available one if present
 ''''
-Public Sub NewRecord(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0)
+Public Sub NewRecord2011(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0)
     Dim node As AimExperimentTreeNode
     Set viewerGuiServer = Lsm5.viewerGuiServer
     If RecordingDoc Is Nothing Then

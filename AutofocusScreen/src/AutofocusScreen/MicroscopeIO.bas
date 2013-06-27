@@ -372,10 +372,10 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
        If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
     End If
     'Debug.Print "ScanToImage part1 " & Round(Timer - Time, 3)
-    Sleep (200)
+    Sleep (20)
     Time = Timer
     While AcquisitionController.IsGrabbing
-        Sleep (200) ' this sometimes hangs if we use GetInputState. Try now without it and test if it does not hang
+        Sleep (20) ' the timing makes the different weather we release the system or not often enough
         DoEvents
         If ScanStop Then
             Exit Function
@@ -386,7 +386,7 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
     Exit Function
 ErrorHandle:
     ErrorLog.Show
-    ErrorLog.UpdateLog ("Error in ScanTo Image " & Err.Descrioption)
+    ErrorLog.UpdateLog ("Error in ScanToImage " & Err.Description)
     ScanToImage = True
 End Function
 
