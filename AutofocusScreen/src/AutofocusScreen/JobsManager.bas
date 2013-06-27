@@ -90,11 +90,11 @@ Public Function AcquireJob(JobName As String, RecordingDoc As DsRecordingDoc, Re
     Exit Function
 ErrorHandle:
     MsgBox "Error in AcquireJob for Job " + JobName + " " + Err.Description
-    AutofocusForm.StopAcquisition
+    'AutofocusForm.StopAcquisition
     Exit Function
 ErrorTrack:
     MsgBox "No track selected for " + JobName + "Exit now"
-    AutofocusForm.StopAcquisition
+    'AutofocusForm.StopAcquisition
     Exit Function
 End Function
 
@@ -352,8 +352,7 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
             DoEvents
             If ScanPause = True Then
                 If Not AutofocusForm.Pause Then ' Pause is true if Resume
-                    ScanStop = True
-                    AutofocusForm.StopAcquisition
+                    GoTo StopAcquisition
                     Exit Sub
                 End If
             End If
@@ -366,29 +365,27 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
         DoEvents
         If ScanPause = True Then
             If Not AutofocusForm.Pause Then ' Pause is true is Resume
-                ScanStop = True
-                AutofocusForm.StopAcquisition
-                Exit Sub
+                GoTo StopAcquisition
             End If
         End If
         If ScanStop Then
-                GoTo StopAcquisition
+            GoTo StopAcquisition
         End If
     Wend
     Exit Sub
 StopAcquisition:
+    ScanStop = True
     AutofocusForm.StopAcquisition
-    AutofocusForm.SwitchEnableGridScanPage True
     Exit Sub
 ErrorHandle1:
+    ScanStop = True
     MsgBox "Error StartJobOnGrid for Job " + JobNamesGlobal(iJobGlobal) + " on Grid " + GridName + " " + Err.Description
     AutofocusForm.StopAcquisition
-    AutofocusForm.SwitchEnableGridScanPage True
     Exit Sub
 ErrorHandle2:
+    ScanStop = True
     MsgBox "Error StartJobOnGrid for Job " + JobName + " on Grid " + GridName + " " + Err.Description
     AutofocusForm.StopAcquisition
-    AutofocusForm.SwitchEnableGridScanPage True
     Exit Sub
 End Sub
 
