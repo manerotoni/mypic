@@ -549,12 +549,16 @@ Public Function jobDescriptor(Name As String) As String
     jobDescriptor = Jobs(JobNames.Item(Name)).jobDescriptor
 End Function
 
+''''
+' Create a string with the description of a Job to be used as settings
+''''
 Public Function jobDescriptorSettings(Name As String) As String
     If Not checkJobName(Name) Then
         Exit Function
     End If
     jobDescriptorSettings = Jobs(JobNames.Item(Name)).jobDescriptorSettings
 End Function
+
 ''''
 ' Create a string with the description of a Job
 ''''
@@ -563,6 +567,14 @@ Public Function splittedJobDescriptor(Name As String, MaxLines As Integer) As St
         Exit Function
     End If
     splittedJobDescriptor = Jobs(JobNames.Item(Name)).splittedJobDescriptor(MaxLines, jobDescriptor(Name))
+End Function
+
+
+Public Function changeJobFromDescriptor(Name As String, Descriptor As String, Value As Variant)
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    changeJobFromDescriptor = Jobs(JobNames.Item(Name)).changeJobFromDescriptor(Descriptor, Value)
 End Function
 
 

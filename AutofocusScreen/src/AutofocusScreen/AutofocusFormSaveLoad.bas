@@ -30,8 +30,9 @@ Public Sub SaveFormSettings(FileName As String)
     
     
     'Looping
-    Print #iFileNum, "% Looping "
-    Print #iFileNum, "LoopingTimerUnit " & LoopingTimerUnit
+    Print #iFileNum, "% GlobalRepetition "
+    Print #iFileNum, "GlobalRepetitionSec " & AutofocusForm.GlobalRepetitionSec
+    Print #iFileNum, "GlobalRepetitionMin " & AutofocusForm.GlobalRepetitionMin
     Print #iFileNum, "GlobalRepetitionTime " & AutofocusForm.GlobalRepetitionTime.Value
     Print #iFileNum, "GlobalRepetitionInterval " & AutofocusForm.GlobalRepetitionInterval.Value
     Print #iFileNum, "GlobalRepetitionNumber " & AutofocusForm.GlobalRepetitionNumber.Value
@@ -77,6 +78,9 @@ End Sub
 Private Sub SaveFormPage(JobName As String, iFileNum As Integer)
     Dim i As Integer
     On Error GoTo ErrorHandle:
+    Print #iFileNum, ""
+    Print #iFileNum, "% " & JobName
+    Print #iFileNum, JobName & "Period " & AutofocusForm.Controls(JobName & "Period").Value
     If JobName <> "Trigger1" And JobName <> "Trigger2" Then
         Print #iFileNum, JobName & "Active " & AutofocusForm.Controls(JobName & "Active").Value
     End If
@@ -93,8 +97,8 @@ Private Sub SaveFormPage(JobName As String, iFileNum As Integer)
     Print #iFileNum, JobName & "Period " & AutofocusForm.Controls(JobName & "Period").Value
     Print #iFileNum, JobName & "TrackZ " & AutofocusForm.Controls(JobName & "TrackZ").Value
     Print #iFileNum, JobName & "TrackXY " & AutofocusForm.Controls(JobName & "TrackXY").Value
-    Print #iFileNum, JobName & "OfflineTrack " & AutofocusForm.Controls(JobName & "OfflineTrack").Value
-    Print #iFileNum, JobName & "OfflineTrackChannel " & AutofocusForm.Controls(JobName & "OfflineTrackChannel").Value
+    Print #iFileNum, JobName & "CenterOfMass " & AutofocusForm.Controls(JobName & "CenterOfMass").Value
+    Print #iFileNum, JobName & "CenterOfMassChannel " & AutofocusForm.Controls(JobName & "CenterOfMassChannel").Value
     Print #iFileNum, JobName & "OiaActive " & AutofocusForm.Controls(JobName & "OiaActive").Value
     Print #iFileNum, JobName & "OiaSequential " & AutofocusForm.Controls(JobName & "OiaSequential").Value
     Print #iFileNum, JobName & "OiaParallel " & AutofocusForm.Controls(JobName & "OiaParallel").Value
@@ -105,7 +109,13 @@ Private Sub SaveFormPage(JobName As String, iFileNum As Integer)
         Print #iFileNum, JobName & "RepetitionMin " & AutofocusForm.Controls(JobName & "RepetitionMin").Value
         Print #iFileNum, JobName & "RepetitionInterval " & AutofocusForm.Controls(JobName & "RepetitionInterval").Value
         Print #iFileNum, JobName & "RepetitionNumber " & AutofocusForm.Controls(JobName & "RepetitionNumber").Value
+        Print #iFileNum, JobName & "maxWait " & AutofocusForm.Controls(JobName & "maxWait").Value
+        Print #iFileNum, JobName & "OptimalPtNumber " & AutofocusForm.Controls(JobName & "OptimalPtNumber").Value
+        Print #iFileNum, JobName & "Autofocus " & AutofocusForm.Controls(JobName & "Autofocus").Value
     End If
+    
+    Print #iFileNum, ""
+    Print #iFileNum, Jobs.jobDescriptorSettings(JobName)
     Exit Sub
 ErrorHandle:
     MsgBox "Error in SaveFormPage " + JobName + " " + Err.Description
@@ -118,6 +128,7 @@ End Sub
 Public Sub LoadFormSettings(FileName As String)
     Dim iFileNum As Integer
     Dim Fields As String
+    Dim JobName As String
     Dim FieldEntries() As String
     Dim Entries() As String
     Close
@@ -129,19 +140,24 @@ Public Sub LoadFormSettings(FileName As String)
             While Left(Fields, 1) = "%"
                 Line Input #iFileNum, Fields
             Wend
-            FieldEntries = Split(Fields, " ", 2)
-            If FieldEntries(0) = "LoopingTimerUnit" Then
-                LoopingTimerUnit = CDbl(FieldEntries(1))
-                If LoopingTimerUnit = 60 Then
-                    AutofocusForm.GlobalRepetitionMin_Click
-                Else
-                    AutofocusForm.GlobalRepetitionSec_Click
+            
+            If Fields <> "" Then
+                FieldEntries = Split(Fields, " ", 2)
+                If FieldEntries(0) = "JobName" Then
+                    JobName = FieldEntries(1)
+                    Line Input #iFileNum, Fields
+                    FieldEntries = Split(Fields, " ", 2)
+                    While FieldEntries(0) <> "EndJobDef"
+                        Jobs.changeJobFromDescriptor JobName, FieldEntries(0), FieldEntries(1)
+                        Line Input #iFileNum, Fields
+                        FieldEntries = Split(Fields, " ", 2)
+                    Wend
+                    UpdateFormFromJob Jobs, JobName
                 End If
-            Else
-                On Error GoTo NextLine
+                On Error Resume Next
                 AutofocusForm.Controls(FieldEntries(0)).Value = FieldEntries(1)
-NextLine:
             End If
+NextLine:
     Loop
     Close #iFileNum
     Exit Sub

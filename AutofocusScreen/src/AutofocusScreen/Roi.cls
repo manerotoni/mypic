@@ -107,7 +107,7 @@ Public Sub setRoiFomZen(roiNr As Integer)
     Dim X() As Double
     Dim Y() As Double
     Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
-    Debug.Print "nr Elements "; vo.GetNumberElements
+    'Debug.Print "nr Elements "; vo.GetNumberElements
     If roiNr <= vo.GetNumberElements Then
         If createRoiTxt(vo.ElementType(roiNr), vo.ElementAcquisitionFlags(roiNr)) Then
             ReDim X(0 To vo.GetElementNumberKnots(roiNr) - 1)

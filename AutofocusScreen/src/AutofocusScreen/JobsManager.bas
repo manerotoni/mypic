@@ -143,8 +143,8 @@ Public Function TrackOffLine(JobName As String, RecordingDoc As DsRecordingDoc, 
     Dim TrackingChannel As String
     newPosition(0) = currentPosition
     TrackOffLine = currentPosition
-    If AutofocusForm.Controls(JobName & "OfflineTrack") And (AutofocusForm.Controls(JobName & "TrackZ") Or AutofocusForm.Controls(JobName & "TrackXY")) Then
-        TrackingChannel = AutofocusForm.Controls(JobName & "OfflineTrackChannel").List(AutofocusForm.Controls(JobName & "OfflineTrackChannel").ListIndex)
+    If AutofocusForm.Controls(JobName & "CenterOfMass") And (AutofocusForm.Controls(JobName & "TrackZ") Or AutofocusForm.Controls(JobName & "TrackXY")) Then
+        TrackingChannel = AutofocusForm.Controls(JobName & "CenterOfMassChannel").List(AutofocusForm.Controls(JobName & "CenterOfMassChannel").ListIndex)
         newPosition(0) = MassCenter(RecordingDoc, TrackingChannel)
         newPosition = computeCoordinatesImaging(JobName, currentPosition, newPosition)
     End If
@@ -337,7 +337,12 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
                 Grids.setThisZ JobName, StgPos.Z
                 previousZ = Grids.getThisZ(JobName)
             End If
-            
+            If ScanPause = True Then
+                If Not AutofocusForm.Pause Then ' Pause is true if Resume
+                    GoTo StopAcquisition
+                    Exit Sub
+                End If
+            End If
         Loop While Grids.nextGridPt(JobName)
         ''Wait till next repetition
         Reps.updateTimeStart (JobName)
@@ -467,12 +472,25 @@ Public Sub UpdateFormFromJob(Jobs As ImagingJobs, JobName As String)
     'AutofocusForm.AutoFindTracks
     Dim i As Integer
     Dim Record As DsRecording
+    Dim jobDescriptor() As String
     Set Record = Jobs.GetRecording(JobName)
     
     For i = 0 To TrackNumber - 1
        AutofocusForm.Controls(JobName + "Track" + CStr(i + 1)).Value = Jobs.GetAcquireTrack(JobName, i)
     Next i
-
+         
+    jobDescriptor = Jobs.splittedJobDescriptor(JobName, 8)
+    AutofocusForm.Controls(JobName + "Label1").Caption = jobDescriptor(0)
+    If UBound(jobDescriptor) > 0 Then
+        AutofocusForm.Controls(JobName + "Label2").Caption = jobDescriptor(1)
+    End If
+    If Jobs.GetScanMode(JobName) = "ZScan" Or Jobs.GetScanMode(JobName) = "Line" Then
+        AutofocusForm.Controls(JobName + "TrackXY").Value = False
+        AutofocusForm.Controls(JobName + "TrackXY").Enabled = False
+    Else
+        AutofocusForm.Controls(JobName + "TrackXY").Enabled = True
+    End If
+ 
 End Sub
 
 '''

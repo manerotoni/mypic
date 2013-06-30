@@ -36,23 +36,13 @@ Private Const LogCode = True                'sets key to run tests visible or no
 
 
 
-Private Sub Label22_Click()
-
-End Sub
-
-
-
-
-
-
-
 ''''''
 ' UserForm_Initialize()
 '   Function called from e.g. AutoFocusForm.Show
 '   Load and initialize form
 '''''
 Public Sub UserForm_Initialize()
-    Version = " v3.0.3"
+    Version = " v3.0.4"
     Dim i As Integer
     'find the version of the software
     Dim VersionNr As String
@@ -365,7 +355,15 @@ Private Sub MultipleLocationToggle_Change()
         End If
     End If
     SingleLocationToggle.Value = Not MultipleLocationToggle.Value
-    
+    If GridScanActive Then
+        
+        If MultipleLocationToggle.Value Then
+            GridScan_nRow = 1
+            GridScan_nColumn = Lsm5.Hardware.CpStages.MarkCount
+            Grids.updateGridSize "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
+        End If
+        SwitchEnableGridScanPage (GridScanActive)
+    End If
     
 End Sub
 
@@ -426,8 +424,8 @@ Private Sub SwitchEnablePage(Enable As Boolean, JobName As String)
             
     Me.Controls(JobName + "TrackZ").Enabled = Enable
     Me.Controls(JobName + "TrackXY").Enabled = Enable And (Jobs.GetScanMode(JobName) <> "ZScan") And (Jobs.GetScanMode(JobName) <> "Line")
-    Me.Controls(JobName + "OfflineTrack").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
-    Me.Controls(JobName + "OfflineTrackChannel").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
+    Me.Controls(JobName + "CenterOfMass").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
+    Me.Controls(JobName + "CenterOfMassChannel").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
     Me.Controls(JobName + "OiaActive").Enabled = Enable
     If Me.Controls(JobName + "OiaActive") Then
         Me.Controls(JobName + "OiaParallel").Enabled = Enable
@@ -482,7 +480,7 @@ Private Sub FillTrackingChannelList(JobName As String)
     Dim Track As DsTrack
     Dim TrackOn As Boolean
     
-    Me.Controls(JobName + "OfflineTrackChannel").Clear 'Content of popup menu for chosing track for post-acquisition tracking is deleted
+    Me.Controls(JobName + "CenterOfMassChannel").Clear 'Content of popup menu for chosing track for post-acquisition tracking is deleted
     ca = 0
     For iTrack = 0 To Jobs.TrackNumber(JobName) - 1
         Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, Success)
@@ -490,7 +488,7 @@ Private Sub FillTrackingChannelList(JobName As String)
             For c = 1 To Track.DetectionChannelCount 'for every detection channel of track
                 If Track.DetectionChannelObjectByIndex(c - 1, Success).Acquire Then 'if channel is activated
                     ca = ca + 1 'counter for active channels will increase by one
-                    Me.Controls(JobName + "OfflineTrackChannel").AddItem Track.Name & " " & Track.DetectionChannelObjectByIndex(c - 1, Success).Name & "-T" & iTrack + 1   'entry is added to combo box to chose track for post-acquisition tracking
+                    Me.Controls(JobName + "CenterOfMassChannel").AddItem Track.Name & " " & Track.DetectionChannelObjectByIndex(c - 1, Success).Name & "-T" & iTrack + 1   'entry is added to combo box to chose track for post-acquisition tracking
                     TrackOn = True
                 End If
             Next c
@@ -498,7 +496,7 @@ Private Sub FillTrackingChannelList(JobName As String)
     Next iTrack
     
     If TrackOn Then
-        Me.Controls(JobName + "OfflineTrackChannel").Value = Me.Controls(JobName + "OfflineTrackChannel").List(0) 'initially displayed text in popup menu is a blank line (first channel is 1)
+        Me.Controls(JobName + "CenterOfMassChannel").Value = Me.Controls(JobName + "CenterOfMassChannel").List(0) 'initially displayed text in popup menu is a blank line (first channel is 1)
     End If
 End Sub
 
@@ -674,11 +672,11 @@ End Sub
 ' TrackZ: If on the Z position will be updated to the latest Z position
 ''''
 Private Sub JobTrackXYZChange(JobName As String)
-    Me.Controls(JobName + "OfflineTrackChannel").Enabled = (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")) _
-    And Me.Controls(JobName + "OfflineTrack")
-    Me.Controls(JobName + "OfflineTrack").Enabled = Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")
+    Me.Controls(JobName + "CenterOfMassChannel").Enabled = (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")) _
+    And Me.Controls(JobName + "CenterOfMass")
+    Me.Controls(JobName + "CenterOfMass").Enabled = Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")
     If Not (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")) Then
-        Me.Controls(JobName + "OfflineTrack").Value = False
+        Me.Controls(JobName + "CenterOfMass").Value = False
     End If
 End Sub
 
@@ -718,22 +716,22 @@ Private Sub Trigger2TrackXY_Change()
 End Sub
 
 '''
-' If OfflineTrack = True an internal analysis of center of mass is done
+' If CenterOfMass = True an internal analysis of center of mass is done
 '''
-Private Sub AutofocusOfflineTrack_Change()
-    AutofocusOfflineTrackChannel.Enabled = AutofocusOfflineTrack
+Private Sub AutofocusCenterOfMass_Change()
+    AutofocusCenterOfMassChannel.Enabled = AutofocusCenterOfMass
 End Sub
 
-Private Sub AcquisitionOfflineTrack_Change()
-    AcquisitionOfflineTrackChannel.Enabled = AcquisitionOfflineTrack
+Private Sub AcquisitionCenterOfMass_Change()
+    AcquisitionCenterOfMassChannel.Enabled = AcquisitionCenterOfMass
 End Sub
 
-Private Sub Trigger1OfflineTrack_Change()
-    Trigger1OfflineTrackChannel.Enabled = Trigger1OfflineTrack
+Private Sub Trigger1CenterOfMass_Change()
+    Trigger1CenterOfMassChannel.Enabled = Trigger1CenterOfMass
 End Sub
 
-Private Sub Trigger2OfflineTrack_Change()
-    Trigger2OfflineTrackChannel.Enabled = Trigger2OfflineTrack
+Private Sub Trigger2CenterOfMass_Change()
+    Trigger2CenterOfMassChannel.Enabled = Trigger2CenterOfMass
 End Sub
 
 
@@ -850,20 +848,8 @@ End Sub
 ' Load settings from ZEN into Form/Joblist
 '''
 Private Sub JobSetJobClick(JobName As String)
-    Dim jobDescriptor() As String
     Jobs.setJob JobName, Lsm5.DsRecording, ZEN
     UpdateFormFromJob Jobs, JobName
-    jobDescriptor = Jobs.splittedJobDescriptor(JobName, 8)
-    Me.Controls(JobName + "Label1").Caption = jobDescriptor(0)
-    If UBound(jobDescriptor) > 0 Then
-        Me.Controls(JobName + "Label2").Caption = jobDescriptor(1)
-    End If
-    If Jobs.GetScanMode(JobName) = "ZScan" Or Jobs.GetScanMode(JobName) = "Line" Then
-        Me.Controls(JobName + "TrackXY").Value = False
-        Me.Controls(JobName + "TrackXY").Enabled = False
-    Else
-        Me.Controls(JobName + "TrackXY").Enabled = True
-    End If
     AutoFindTracks
 End Sub
 
@@ -1223,8 +1209,8 @@ End Sub
 '''''''
 Private Sub StopButton_Change()
     If Not Running Then
-          ScanStop = StopButton.Value
-          StopButton.Value = False
+        ScanStop = StopButton.Value
+        StopButton.Value = False
         StopButton.BackColor = &H8000000F
     Else
         ScanStop = StopButton.Value
@@ -1434,7 +1420,7 @@ Private Sub GetCurrentPositionOffsetButton_Click()
 End Sub
 
 Private Function GetCurrentPositionOffsetButtonRun() As Boolean
-    Dim X As Double
+ '   Dim X As Double
 '    Dim Y As Double
 '    Dim Z As Double
 '    Dim deltaZ As Double

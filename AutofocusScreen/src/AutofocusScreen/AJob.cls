@@ -400,8 +400,10 @@ Private Function consistencyDescriptor(Descriptor As String)
     consistencyDescriptor = True
 End Function
 
+''''
+' change a job from a descriptor
+'''
 Public Function changeJobFromDescriptor(Descriptor As String, Value As Variant)
-    
     If Recording Is Nothing Then
         MsgBox "AJob.changeJobFromDescriptor Recording has not been initiated!"
     End If

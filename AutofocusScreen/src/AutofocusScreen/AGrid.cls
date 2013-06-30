@@ -376,12 +376,12 @@ Public Function nextGridPt() As Boolean
     End If
     
     If Me.iColSub > numColSub Then
-        Me.iColSub = 1
+        Me.iColSub = Me.numColSub
         Me.iRowSub = Me.iRowSub + 1
     End If
     
     If Me.iColSub < 1 Then
-        Me.iColSub = Me.numColSub
+        Me.iColSub = 1
         Me.iRowSub = Me.iRowSub + 1
     End If
         
@@ -479,8 +479,8 @@ Public Sub makeGridFromManyPts(pos() As Vector, Row As Long, Col As Long, RowSub
         End If
         'Make grid and subgri
         For iCol = 1 To Me.numCol
-            For iRowSub = 1 To Me.numColSub
-                For iColSub = 1 To Me.numRowSub
+            For iRowSub = 1 To Me.numRowSub
+                For iColSub = 1 To Me.numColSub
                     GridArray(1, iCol, iRowSub, iColSub).X = Round(pos(iCol - 1).X + (iColSub - 1 - (Me.numColSub - 1) / 2) * dColSub, PrecXY)
                     GridArray(1, iCol, iRowSub, iColSub).Y = Round(pos(iCol - 1).Y + (iRowSub - 1 - (Me.numRowSub - 1) / 2) * dRowSub, PrecXY)
                     GridArray(1, iCol, iRowSub, iColSub).Z = Round(pos(iCol - 1).Z, PrecZ)
