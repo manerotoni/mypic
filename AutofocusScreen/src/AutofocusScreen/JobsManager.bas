@@ -255,7 +255,7 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
         Do ''Cycle all positions defined in grid
             If Grids.getThisValid(JobName) Then
                DisplayProgress "Job " & JobName & ", Row " & Grids.thisRow(JobName) & ", Col " & Grids.thisColumn(JobName) & vbCrLf & _
-                ", subRow " & Grids.thisSubRow(JobName) & ", subCol " & Grids.thisSubColumn(JobName) & ", Rep " & Reps.thisIndex(JobName), RGB(&HC0, &HC0, 0)
+                "subRow " & Grids.thisSubRow(JobName) & ", subCol " & Grids.thisSubColumn(JobName) & ", Rep " & Reps.thisIndex(JobName), RGB(&HC0, &HC0, 0)
 
                 'Do some positional Job
                 StgPos.X = Grids.getThisX(JobName)
@@ -271,6 +271,9 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
                 If JobName = "Global" Then
                     For iJobGlobal = 0 To UBound(JobNamesGlobal)
                         ' run subJobs for global setting
+                        DisplayProgress "Job " & JobNamesGlobal(iJobGlobal) & ", Row " & Grids.thisRow(JobName) & ", Col " & Grids.thisColumn(JobName) & vbCrLf & _
+                        "subRow " & Grids.thisSubRow(JobName) & ", subCol " & Grids.thisSubColumn(JobName) & ", Rep " & Reps.thisIndex(JobName), RGB(&HC0, &HC0, 0)
+
                         On Error GoTo ErrorHandle1:
                         If Jobs.GetScanMode(JobNamesGlobal(iJobGlobal)) = "ZScan" Or (Jobs.GetScanMode(JobNamesGlobal(iJobGlobal)) = "Line") Then
                             AutofocusForm.Controls(JobNamesGlobal(iJobGlobal) & "TrackXY").Value = False
@@ -308,6 +311,8 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
                         End If
                     Next iJobGlobal
                 Else
+                    DisplayProgress "Job " & JobName & ", Row " & Grids.thisRow(JobName) & ", Col " & Grids.thisColumn(JobName) & vbCrLf & _
+                    "subRow " & Grids.thisSubRow(JobName) & ", subCol " & Grids.thisSubColumn(JobName) & ", Rep " & Reps.thisIndex(JobName), RGB(&HC0, &HC0, 0)
                     On Error GoTo ErrorHandle2:
                     FileName = FileNameFromGrid(GridName, JobName)
                     FilePath = parentPath & FilePathSuffix(GridName, JobName) & "\"
@@ -352,7 +357,7 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
             DoEvents
         End If
         
-        While Reps.wait(JobName) > 0
+        While ((Reps.wait(JobName) > 0) And (Reps.getIndex(JobName) < Reps.getRepetitionNumber(JobName)))
             Sleep (100)
             DoEvents
             If ScanPause = True Then

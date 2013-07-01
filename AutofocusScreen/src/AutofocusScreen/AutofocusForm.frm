@@ -42,7 +42,7 @@ Private Const LogCode = True                'sets key to run tests visible or no
 '   Load and initialize form
 '''''
 Public Sub UserForm_Initialize()
-    Version = " v3.0.4"
+    Version = " v3.0.5"
     Dim i As Integer
     'find the version of the software
     Dim VersionNr As String
@@ -1029,7 +1029,7 @@ End Sub
 ' Set weather Interval or delay
 '''
 Private Sub RepetitionInterval(Name As String)
-    Reps.setInterval "Global", Me.Controls(Name + "RepetitionInterval").Value
+    Reps.setInterval Name, Me.Controls(Name + "RepetitionInterval").Value
 End Sub
 
 Private Sub GlobalRepetitionInterval_Click()
@@ -1688,7 +1688,7 @@ Private Function StartSetting() As Boolean
             Log = False
         End If
     End If
-
+    SetFileName
     If Not AcquisitionTracksOn And Not AutofocusActive And Not AlterAcquisitionActive Then
         MsgBox ("Nothing to do! Check at least one imaging option!")
         Exit Function
@@ -1962,9 +1962,9 @@ Private Sub TextBoxFileName_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVa
 End Sub
 
 Private Sub SetFileName()
-    If TextBoxFileName <> "" Then
-        If Right(TextBoxFileName, 1) <> "_" Then
-            TextBoxFileName = TextBoxFileName & "_"
+    If TextBoxFileName.Value <> "" Then
+        If Right(TextBoxFileName.Value, 1) <> "_" Then
+            TextBoxFileName.Value = TextBoxFileName.Value & "_"
         End If
     End If
 End Sub

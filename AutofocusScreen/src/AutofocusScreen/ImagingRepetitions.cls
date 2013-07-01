@@ -135,11 +135,18 @@ Public Sub setRepetitionTime(Name As String, Value As Double)
 End Sub
 
 '''
-'
+'set the number of repetitions
 '''
 Public Sub setRepetitionNumber(Name As String, Value As Integer)
     Repetitions(Name).number = Value
 End Sub
+
+'''
+'get the number of repetitions
+'''
+Public Function getRepetitionNumber(Name As String) As Integer
+    getRepetitionNumber = Repetitions(Name).number
+End Function
 
 
 Public Function thisSuffix(Name As String) As String
