@@ -11,20 +11,73 @@ End Sub
 Public Function weightedMean(values() As Variant) As Double
     Dim sum As Variant
     Dim weight As Variant
+    Dim MIN As Variant
     Dim i As Integer
     sum = 0
     weight = 0
+    MIN = MINA(values)
     For i = LBound(values) To UBound(values)
-        sum = sum + values(i)
-        weight = weight + i * values(i)
+        sum = sum + (values(i) - MIN)
+        weight = weight + i * (values(i) - MIN)
     Next i
     'if sum is 0
     If sum > 0 Then
         weightedMean = weight / sum
     Else
-        ' then mean is inthe center
+        ' then mean is in the center
         weightedMean = (UBound(values) = LBound(values)) / 2 + LBound(values)
     End If
+End Function
+
+
+''
+' Calculate MIN of two values
+'''
+Public Function MIN(value1 As Variant, value2 As Variant) As Variant
+    If value1 > value2 Then
+        MIN = value2
+    Else
+        MIN = value1
+    End If
+End Function
+
+
+''
+' Calculate MIN of two values
+'''
+Public Function Max(value1 As Variant, value2 As Variant) As Variant
+    If value1 < value2 Then
+        Max = value2
+    Else
+        Max = value1
+    End If
+End Function
+
+
+''
+' Calculate MIN of Array
+'''
+Public Function MINA(values() As Variant) As Variant
+    Dim minLocal As Variant
+    Dim i As Integer
+    minLocal = 2 ^ 10
+    For i = LBound(values) To UBound(values)
+        minLocal = MIN(values(i), minLocal)
+    Next i
+    MINA = minLocal
+End Function
+
+''
+' Calculate MIN of Array
+'''
+Public Function MAXA(values() As Variant) As Variant
+    Dim maxLocal As Variant
+    Dim i As Integer
+    maxLocal = 0
+    For i = LBound(values) To UBound(values)
+        maxLocal = Max(values(i), maxLocal)
+    Next i
+    MAXA = maxLocal
 End Function
 
 

@@ -10,6 +10,8 @@ Public Grids As ImagingGrids
 ''' Timers initiated when gread is created, reinitialized
 Public TimersGridCreation As Timers
 
+Public CurrentJob As String
+
 ''' The single imaging job each defining a recording setting
 Public Jobs As ImagingJobs
 
@@ -49,11 +51,12 @@ Public Function AcquireJob(JobName As String, RecordingDoc As DsRecordingDoc, Re
     End If
     'Debug.Print "Time to move stage " & Round(Timer - Time, 3)
     'Change settings for new Job
-    
     Time = Timer
-    Jobs.putJob JobName, ZEN
+    If JobName <> CurrentJob Then
+        Jobs.putJob JobName, ZEN
+    End If
     Debug.Print "Time to put Job " & Round(Timer - Time, 3)
-    
+    CurrentJob = JobName
     'Not sure if this is required
     Time = Timer
     If Jobs.GetSpecialScanMode(JobName) = "ZScanner" Then
@@ -145,7 +148,9 @@ Public Function TrackOffLine(JobName As String, RecordingDoc As DsRecordingDoc, 
     TrackOffLine = currentPosition
     If AutofocusForm.Controls(JobName & "CenterOfMass") And (AutofocusForm.Controls(JobName & "TrackZ") Or AutofocusForm.Controls(JobName & "TrackXY")) Then
         TrackingChannel = AutofocusForm.Controls(JobName & "CenterOfMassChannel").List(AutofocusForm.Controls(JobName & "CenterOfMassChannel").ListIndex)
+        ''compute center of mass in pixel
         newPosition(0) = MassCenter(RecordingDoc, TrackingChannel)
+        'transform it in um
         newPosition = computeCoordinatesImaging(JobName, currentPosition, newPosition)
     End If
     If AutofocusForm.Controls(JobName & "TrackZ") Then
@@ -154,6 +159,9 @@ Public Function TrackOffLine(JobName As String, RecordingDoc As DsRecordingDoc, 
     If AutofocusForm.Controls(JobName & "TrackXY") Then
         TrackOffLine.X = newPosition(0).X
         TrackOffLine.Y = newPosition(0).Y
+    End If
+    If Not checkForMaximalDisplacement(JobName, TrackOffLine, currentPosition) Then
+        TrackOffLine = currentPosition
     End If
     Debug.Print "X = " & currentPosition.X & ", " & newPosition(0).X & ", Y = " & currentPosition.Y & ", " & newPosition(0).Y & ", Z = " & currentPosition.Z & ", " & newPosition(0).Z
     Exit Function
@@ -192,10 +200,11 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
     Dim StgPos As Vector, newStgPos As Vector
-    
+    Dim Time As Double
     '''The name of jobs run for the global mode
     Dim JobNamesGlobal(2) As String
     Dim iJobGlobal As Integer
+    Dim iGuiDocument As Integer
     JobNamesGlobal(0) = "Autofocus"
     JobNamesGlobal(1) = "Acquisition"
     JobNamesGlobal(2) = "AlterAcquisition"
@@ -214,7 +223,7 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
     'block usage of grid during acquisition
     AutofocusForm.SwitchEnableGridScanPage False
     
-
+    
     'Coordinates
     Dim X As Double              ' x value where to move the stage (this is used as reference)
     Dim Y As Double              ' y value where to move the stage
@@ -236,8 +245,13 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
     OiaSettings.resetRegistry
     OiaSettings.readFromRegistry
     
-    NewRecord GlobalRecordingDoc, AutofocusForm.TextBoxFileName.Value & Grids.getName(JobName, 1, 1, 1, 1) & Grids.suffix(JobName, 1, 1, 1, 1) & Reps.suffix(JobName, 1), 0
-        
+    FileName = AutofocusForm.TextBoxFileName.Value & Grids.getName(JobName, 1, 1, 1, 1) & Grids.suffix(JobName, 1, 1, 1, 1) & Reps.suffix(JobName, 1)
+    NewRecord GlobalRecordingDoc, FileName, 0, False
+    Sleep (1000)
+    'create a new Gui document if recquired
+    CheckForGuiDocument FileName
+    
+    CurrentJob = ""
     
     InitializeStageProperties
     SetStageSpeed 9, True    'What do ou do here
@@ -267,7 +281,8 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
                 End If
 
                     
-                ' Recenter and move where it should be
+                ' Recenter and move where it should be. Job global is a series of jobs
+                ' TODO move into one single function per task
                 If JobName = "Global" Then
                     For iJobGlobal = 0 To UBound(JobNamesGlobal)
                         ' run subJobs for global setting
@@ -293,7 +308,9 @@ Public Sub StartJobOnGrid(GridName As String, JobName As String, parentPath As S
                                 GoTo StopAcquisition
                             End If
                             'do any recquired computation
+                            Time = Timer
                             StgPos = TrackOffLine(JobNamesGlobal(iJobGlobal), GlobalRecordingDoc, StgPos)
+                            Debug.Print "Time to TrackOffLine " & Timer - Time
                             If AutofocusForm.Controls(JobNamesGlobal(iJobGlobal) + "OiaActive") And AutofocusForm.Controls(JobNamesGlobal(iJobGlobal) + "OiaSequential") Then
                                 OiaSettings.writeKeyToRegistry "codeOut", "newImage"
                                 newStgPos = ComputeJobSequential(JobNamesGlobal(iJobGlobal), GridName, StgPos, FilePath, FileName, GlobalRecordingDoc)
@@ -413,7 +430,7 @@ End Function
 ''''
 ' check  that newPos is not further away than the size of the image. In fact it should be half the image
 ''''
-Private Function checkForMaximalDisplacement(JobName As String, currentPos As Vector, newPos As Vector) As Boolean
+Public Function checkForMaximalDisplacement(JobName As String, currentPos As Vector, newPos As Vector) As Boolean
     Dim MaxMovementXY As Double
     Dim MaxMovementZ As Double
     
@@ -495,7 +512,7 @@ Public Sub UpdateFormFromJob(Jobs As ImagingJobs, JobName As String)
     Else
         AutofocusForm.Controls(JobName + "TrackXY").Enabled = True
     End If
- 
+    AutofocusForm.FillTrackingChannelList JobName
 End Sub
 
 '''
@@ -507,7 +524,7 @@ Public Sub UpdateJobFromForm(Jobs As ImagingJobs, JobName As String)
     For i = 0 To TrackNumber - 1
        Jobs.SetAcquireTrack JobName, i, AutofocusForm.Controls(JobName + "Track" + CStr(i + 1)).Value
     Next i
-
+    AutofocusForm.UpdateRepetitionTimes
 End Sub
 
 
@@ -552,7 +569,7 @@ End Function
 
 
 ''''
-' compute stage coordinates for imaging from pixel coordinates
+' compute offset coordinates for imaging from pixel coordinates
 ' newPosition() As Vector
 ' the values are returned in um!!
 ''''
@@ -560,6 +577,7 @@ Public Function computeCoordinatesImaging(JobName As String, currentPosition As 
     Dim pixelSize As Double
     Dim frameSpacing As Double
     Dim imageSize As Integer
+    Dim framesPerStack As Integer
     Dim i As Integer
     Dim position() As Vector
     position = newPosition
@@ -567,11 +585,12 @@ Public Function computeCoordinatesImaging(JobName As String, currentPosition As 
     pixelSize = Jobs.GetSampleSpacing(JobName) ' this is in um
     'compute difference with respect to center
     imageSize = Jobs.GetFrameSize(JobName)
+    framesPerStack = Jobs.GetFramesPerStack(JobName)
     frameSpacing = Jobs.GetFrameSpacing(JobName)
     For i = 0 To UBound(newPosition)
         position(i).X = (position(i).X - (imageSize - 1) / 2) * pixelSize
         position(i).Y = (position(i).Y - (imageSize - 1) / 2) * pixelSize
-        position(i).Z = position(i).Z * frameSpacing
+        position(i).Z = (position(i).Z - (framesPerStack - 1) / 2) * frameSpacing
         position(i) = computeShiftedCoordinates(position(i), currentPosition)
     Next i
     computeCoordinatesImaging = position
@@ -603,11 +622,11 @@ Public Function computeCoordinatesFcs(JobName As String, newPosition() As Vector
     computeCoordinatesFcs = position
 End Function
 
-Private Function MinInt(Value1 As Integer, Value2 As Integer) As Integer
-    If Value1 <= Value2 Then
-        MinInt = Value1
+Private Function MinInt(value1 As Integer, value2 As Integer) As Integer
+    If value1 <= value2 Then
+        MinInt = value1
     Else
-        MinInt = Value2
+        MinInt = value2
     End If
 End Function
 

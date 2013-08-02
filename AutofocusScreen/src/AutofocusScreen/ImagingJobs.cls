@@ -340,14 +340,14 @@ Public Sub SetFramesPerStack(Name As String, Value As Integer)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
-    Jobs(JobNames.Item(Name)).Recording.FramesPerStack = Value
+    Jobs(JobNames.Item(Name)).Recording.framesPerStack = Value
 End Sub
 
 Public Function GetFramesPerStack(Name As String) As Integer
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetFramesPerStack = Jobs(JobNames.Item(Name)).Recording.FramesPerStack
+    GetFramesPerStack = Jobs(JobNames.Item(Name)).Recording.framesPerStack
 End Function
 
 ''''

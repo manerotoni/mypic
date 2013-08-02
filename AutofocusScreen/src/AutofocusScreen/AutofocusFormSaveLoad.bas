@@ -152,7 +152,12 @@ Public Sub LoadFormSettings(FileName As String)
                         Line Input #iFileNum, Fields
                         FieldEntries = Split(Fields, " ", 2)
                     Wend
+                    
+                    'put once the job and reload it to get all the proper pixelSize according to the zoom etc
+                    Jobs.putJob JobName, ZEN
+                    Jobs.setJob JobName, Lsm5.DsRecording, ZEN
                     UpdateFormFromJob Jobs, JobName
+                    UpdateJobFromForm Jobs, JobName
                 End If
                 On Error Resume Next
                 AutofocusForm.Controls(FieldEntries(0)).Value = FieldEntries(1)

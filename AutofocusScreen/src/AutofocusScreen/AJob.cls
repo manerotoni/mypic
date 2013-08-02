@@ -139,15 +139,20 @@ Public Function putJob(ZEN As Object)
     
     AcquisitionParameters.UseROIs = UseRoi
     Time = Timer
-    'this is slow
-'    If ZENv > 2010 Then
-'        ZEN.gui.Acquisition.AcquisitionMode.ScanArea.Zoom.Value = Recording.ZoomX
-'        ZEN.SetListEntrySelected "Scan.Mode.DirectionX", Recording.ScanDirection
-'        If Recording.ScanDirection Then
-'            ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value = CorrX
-'            ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value = CorrY
-'        End If
-'    End If
+  
+   If ZENv > 2010 Then
+      'this is slow ~1 sec (and can be only used for acquisition only
+       'ZEN.gui.Acquisition.AcquisitionMode.ScanArea.Zoom.Value = Recording.ZoomX
+       'ZEN.SetListEntrySelected "Scan.Mode.DirectionX", Recording.ScanDirection
+        If Recording.ScanDirection Then
+            If ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value <> CorrX Then
+               ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value = CorrX
+            End If
+            If ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value <> CorrY Then
+            ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value = CorrY
+            End If
+        End If
+    End If
     Debug.Print "Time update Corr.X " & Round(Timer - Time, 3)
     createRois
     'testDescriptor
@@ -299,7 +304,7 @@ Public Function jobDescriptor() As String
     Description = Description & "Regions = " & Me.UseRoi & vbCrLf
     Description = Description & "PixelDwell = " & Round(Me.pixelDwell * 1000000#, 2) & " us" & vbCrLf
     Description = Description & "Zoom = " & Recording.ZoomX & vbCrLf
-    
+    Description = Description & "pixelSize = " & Round(Recording.SampleSpacing, 3) & " um" & vbCrLf
     If Recording.SpecialScanMode = "ZScanner" Then
         Description = Description & "Piezo = True" & vbCrLf
     Else
@@ -314,9 +319,9 @@ Public Function jobDescriptor() As String
     
     If Recording.ScanMode = "Stack" Or Recording.ScanMode = "ZScan" Then
         Description = Description & "Z-Stack = True" & vbCrLf
-        Description = Description & "       Z-Slices    = " & Recording.FramesPerStack & vbCrLf
+        Description = Description & "       Z-Slices    = " & Recording.framesPerStack & vbCrLf
         Description = Description & "       Z-Interval  = " & Round(Recording.frameSpacing, 2) & " um" & vbCrLf
-        Description = Description & "       Z-Range   = " & Round(Recording.frameSpacing, 2) * (Recording.FramesPerStack - 1) & " um" & vbCrLf
+        Description = Description & "       Z-Range   = " & Round(Recording.frameSpacing, 2) * (Recording.framesPerStack - 1) & " um" & vbCrLf
     Else
         Description = Description & "Z-Stack = False" & vbCrLf
     End If
@@ -362,7 +367,7 @@ Public Function jobDescriptorSettings() As String
     Descriptor = "JobName " & Me.Name & vbCrLf
     Descriptor = Descriptor & "pixelDwell " & Me.pixelDwell & vbCrLf
     Descriptor = Descriptor & "ScanMode " & Recording.ScanMode & vbCrLf
-    Descriptor = Descriptor & "FramesPerStack " & Recording.FramesPerStack & vbCrLf
+    Descriptor = Descriptor & "FramesPerStack " & Recording.framesPerStack & vbCrLf
     Descriptor = Descriptor & "FrameSpacing " & Recording.frameSpacing & vbCrLf
     Descriptor = Descriptor & "SamplesPerLine " & Recording.SamplesPerLine & vbCrLf
     Descriptor = Descriptor & "LinesPerFrame " & Recording.LinesPerFrame & vbCrLf
@@ -416,9 +421,9 @@ Public Function changeJobFromDescriptor(Descriptor As String, Value As Variant)
         Case "ScanMode":
             Recording.ScanMode = CStr(Value)
         Case "FramesPerStack":
-            Recording.FramesPerStack = CLng(Value)
+            Recording.framesPerStack = CLng(Value)
         Case "FrameSpacing":
-            Recording.frameSpacing = CLng(Value)
+            Recording.frameSpacing = CDbl(Value)
         Case "SamplesPerLine":
             Recording.SamplesPerLine = CLng(Value)
         Case "LinesPerFrame":

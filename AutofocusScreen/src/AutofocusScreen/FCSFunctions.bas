@@ -25,21 +25,62 @@ Private Sub Initialize_Controller()
     viewerGuiServer.FcsSelectLsmImagePositions = True
 End Sub
 
-Public Sub NewRecord(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0)
+Public Sub NewRecord(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0, Optional ForceCreation As Boolean = False)
     If ZENv > 2010 Then
-        NewRecord2011 RecordingDoc, Name, Container
+        NewRecord2011 RecordingDoc, Name, Container, ForceCreation
     Else
-        NewRecord2010 RecordingDoc, Name, Container
+        NewRecord2010 RecordingDoc, Name, Container, ForceCreation
     End If
-    
 End Sub
+
+''
+' Check if document is loaded in the Gui otherwise create a new Gui entry
+''
+Public Sub CheckForGuiDocument(DocName As String)
+    If ZENv > 2010 Then
+        CheckForGuiDocument2011 DocName
+    Else
+        CheckForGuiDocument2010 DocName
+    End If
+End Sub
+
+Public Sub CheckForGuiDocument2010(DocName As String)
+    ' No idea how it should work
+End Sub
+
+Public Sub CheckForGuiDocument2011(DocName As String)
+    Dim iGuiDocument As Integer
+    If ZENv > 2010 Then
+        'If there are any documents
+        If ZEN.gui.Document.ItemCount > 0 Then
+        ' look for a document with this name
+            If ZEN.gui.Document.Name.Value <> DocName Then 'current document is not the one with DocName
+                For iGuiDocument = 0 To ZEN.gui.Document.ItemCount
+                    ZEN.gui.Document.ByIndex = iGuiDocument
+                    If ZEN.gui.Document.ByName = DocName Then
+                        Exit For
+                    End If
+                Next iGuiDocument
+                'create a new GuiEntry if document has not been found
+                If iGuiDocument >= ZEN.gui.Document.ItemCount Then
+                    NewRecord GlobalRecordingDoc, DocName, 0, True
+                    ZEN.gui.Document.ByIndex = ZEN.gui.Document.ItemCount - 1
+                End If
+            End If
+        Else
+           'create a new Guientry if there are no documents at all
+           NewRecord GlobalRecordingDoc, DocName, 0, True
+        End If
+    End If
+End Sub
+
 '''
 ' Creates New DsRecordingDoc or use available one if present
 ''''
-Public Sub NewRecord2010(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0)
+Public Sub NewRecord2010(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0, Optional ForceCreation As Boolean = False)
     Dim node As AimExperimentTreeNode
     Set viewerGuiServer = Lsm5.viewerGuiServer
-    If RecordingDoc Is Nothing Then
+    If RecordingDoc Is Nothing Or ForceCreation Then
         Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
         node.type = eExperimentTeeeNodeTypeLsm
         viewerGuiServer.InsertExperimentTreeNode node, True
@@ -50,6 +91,7 @@ Public Sub NewRecord2010(RecordingDoc As DsRecordingDoc, Optional Name As String
             Sleep (Pause)
             DoEvents
         Wend
+        
     End If
     RecordingDoc.SetTitle Name
 End Sub
@@ -58,10 +100,11 @@ End Sub
 '''
 ' Creates New DsRecordingDoc or use available one if present
 ''''
-Public Sub NewRecord2011(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0)
+Public Sub NewRecord2011(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0, Optional ForceCreation As Boolean = False)
     Dim node As AimExperimentTreeNode
     Set viewerGuiServer = Lsm5.viewerGuiServer
-    If RecordingDoc Is Nothing Then
+    Dim doc As Object
+    If RecordingDoc Is Nothing Or ForceCreation Then
         Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
         node.type = eExperimentTeeeNodeTypeLsm
         viewerGuiServer.InsertExperimentTreeNode node, True, Container

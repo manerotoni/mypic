@@ -23,14 +23,17 @@ Private Const BIF_RETURNONLYFSDIRS = &H1
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''Version Description''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '
-' AutofocusScreen_ZEN_v3.0.1
+' AutofocusScreen_ZEN_v3.0.6
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Public Version As String
-Public posTempZ  As Double                  'This is position at start after pushing AutofocusButton
 Private Const DebugCode = False             'sets key to run tests visible or not
 Private Const ReleaseName = True            'this adds the ZEN version
 Private Const LogCode = True                'sets key to run tests visible or not
+
+
+
+
 
 
 
@@ -42,7 +45,7 @@ Private Const LogCode = True                'sets key to run tests visible or no
 '   Load and initialize form
 '''''
 Public Sub UserForm_Initialize()
-    Version = " v3.0.5"
+    Version = " v3.0.6"
     Dim i As Integer
     'find the version of the software
     Dim VersionNr As String
@@ -145,7 +148,7 @@ Private Sub Re_Start()
     BlockRepetitions = 1
     ReDim Preserve GlobalImageIndex(BlockRepetitions)
      LocationTextLabel.Caption = ""
-    GlobalProject = "AutofocusScreen2.1"
+    GlobalProject = "AutofocusScreen3.0"
     GlobalProjectName = GlobalProject + ".lvb"
     HelpNamePDF = "AutofocusScreen_help.pdf"
     UsedDevices40 bLSM, bLIVE, bCamera
@@ -245,6 +248,7 @@ Public Sub Re_Initialize()
     Dim standType As String
     Dim count As Long
     Dim SuccessRecenter As Boolean
+    Dim posTempZ As Double
     AutoFindTracks
     SwitchEnablePage AutofocusActive, "Autofocus"
     SwitchEnablePage AcquisitionActive, "Acquisition"
@@ -271,7 +275,6 @@ Public Sub Re_Initialize()
 
     Jobs.initialize JobNames, Lsm5.DsRecording, ZEN
     Jobs.setZENv ZENv
- 
     posTempZ = Lsm5.Hardware.CpFocus.position
     Recenter_pre posTempZ, SuccessRecenter, ZENv
     If Not Recenter_post(posTempZ, SuccessRecenter, ZENv) Then
@@ -289,7 +292,7 @@ Public Sub Re_Initialize()
     End If
     '''UpdateJobs from current form
     For Each Name In JobNames
-        UpdateJobFromForm Jobs, CStr(Name)
+        UpdateFormFromJob Jobs, CStr(Name)
     Next Name
 End Sub
 
@@ -334,10 +337,12 @@ Private Sub ButtonLoadSettings_Click()
     'Filter = "ini file (*.ini) |*.ini"
     
     FileName = CommonDialogAPI.ShowOpen(Filter, Flags, "", DatabaseTextbox.Value, "Load AutofocusScreen settings")
-    
+    DisplayProgress "Load Settings", RGB(&HC0, &HC0, 0)
     If FileName <> "" Then
         LoadFormSettings FileName
     End If
+    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
+    
 End Sub
 
 
@@ -471,7 +476,7 @@ End Sub
 
 'fills popup menu for chosing a track for post-acquisition tracking
 ' TODO: move in form
-Private Sub FillTrackingChannelList(JobName As String)
+Public Sub FillTrackingChannelList(JobName As String)
 
     Dim iTrack As Integer
     Dim c As Integer
@@ -483,7 +488,7 @@ Private Sub FillTrackingChannelList(JobName As String)
     Me.Controls(JobName + "CenterOfMassChannel").Clear 'Content of popup menu for chosing track for post-acquisition tracking is deleted
     ca = 0
     For iTrack = 0 To Jobs.TrackNumber(JobName) - 1
-        Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, Success)
+        Set Track = Jobs.GetRecording(JobName).TrackObjectByMultiplexOrder(iTrack, Success)
         If Jobs.GetAcquireTrack(JobName, iTrack) Then
             For c = 1 To Track.DetectionChannelCount 'for every detection channel of track
                 If Track.DetectionChannelObjectByIndex(c - 1, Success).Acquire Then 'if channel is activated
@@ -877,23 +882,31 @@ End Sub
 ' Put settings from Job into ZEN
 '''
 Private Sub AutofocusPutJob_Click()
-    Jobs.putJob "Autofocus", ZEN
+    putJob "Autofocus"
 End Sub
 
 Private Sub AcquisitionPutJob_Click()
-    Jobs.putJob "Acquisition", ZEN
+    putJob "Acquisition"
 End Sub
 
 Private Sub AlterAcquisitionPutJob_Click()
-    Jobs.putJob "AlterAcquisition", ZEN
+   putJob "AlterAcquisition"
 End Sub
 
 Private Sub Trigger1PutJob_Click()
-    Jobs.putJob "Trigger1", ZEN
+    putJob "Trigger1"
 End Sub
 
 Private Sub Trigger2PutJob_Click()
-    Jobs.putJob "Trigger2", ZEN
+    putJob "Trigger2"
+End Sub
+
+Private Sub putJob(JobName As String)
+    Jobs.putJob JobName, ZEN
+    If ZENv > 2010 Then
+       ZEN.gui.Acquisition.AcquisitionMode.ScanArea.Zoom.Value = Jobs.GetRecording(JobName).ZoomX
+       ZEN.SetListEntrySelected "Scan.Mode.DirectionX", Jobs.GetRecording(JobName).ScanDirection
+    End If
 End Sub
 
 
@@ -904,6 +917,12 @@ Private Sub JobAcquire(JobName As String)
     position.Y = Lsm5.Hardware.CpStages.PositionY
     position.Z = Lsm5.Hardware.CpFocus.position
     AcquireJob JobName, GlobalRecordingDoc, JobName & "Job", position
+    'this is just for visualizing the zoom value in the gui
+    If ZENv > 2010 Then
+       ZEN.gui.Acquisition.AcquisitionMode.ScanArea.Zoom.Value = Jobs.GetRecording(JobName).ZoomX
+       ZEN.SetListEntrySelected "Scan.Mode.DirectionX", Jobs.GetRecording(JobName).ScanDirection
+    End If
+ 
 End Sub
 
 
@@ -1014,15 +1033,15 @@ Private Sub RepetitionNumber(Name As String)
 End Sub
 
 Private Sub GlobalRepetitionNumber_Change()
-    RepetitionNumber ("Global")
+    RepetitionNumber "Global"
 End Sub
 
 Private Sub Trigger1RepetitionNumber_Change()
-    RepetitionNumber ("Trigger1")
+    RepetitionNumber "Trigger1"
 End Sub
 
 Private Sub Trigger2RepetitionNumber_Change()
-    RepetitionNumber ("Trigger2")
+    RepetitionNumber "Trigger2"
 End Sub
 
 ''''
@@ -1043,6 +1062,18 @@ End Sub
 
 Private Sub Trigger2RepetitionInterval_Click()
     RepetitionInterval "Trigger2"
+End Sub
+
+
+Public Sub UpdateRepetitionTimes()
+    
+    Dim i As Integer
+    For i = LBound(RepNames) To UBound(RepNames)
+        RepetitionNumber RepNames(i)
+        RepetitionTime RepNames(i)
+        RepetitionInterval RepNames(i)
+    Next i
+
 End Sub
 
 
@@ -1511,6 +1542,7 @@ End Function
 '   calls AutofocusButtonRun
 ''''''''
 Public Sub AutofocusButton_Click()
+    Dim posTempZ As Double
     Dim node As AimExperimentTreeNode
     Set viewerGuiServer = Lsm5.viewerGuiServer
     Dim RecordingDoc As DsRecordingDoc
@@ -1561,7 +1593,6 @@ End Sub
 '   Runs a Z-stacks, compute center of mass, if selected acquire an image at computed position + ZOffset
 '   If AutofocusTrackZ : position is updated to computed position from autofocus (without ZOffset!)
 '   If AutofocusTrackXY and FrameToggle: position of X and Y are changed
-'   Function uses a posTempZ to remember starting position
 '       [AutofocusDoc] - A recording Doc. If = Nothing then it will create a new recording
 '
 '   Additional comments: The function works best with piezo. With Fast-Zline (Onthefly) acquisition is less precise
@@ -1574,6 +1605,8 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
     Dim StgPos As Vector
+    Dim newStgPos As Vector
+    Dim posTempZ  As Double
     Dim FileName As String
     Dim Time As Double
     Dim NewCoord() As Double
@@ -1583,9 +1616,10 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
     Dim LogMsg  As String
     Dim SuccessRecenter As Boolean
     DisplayProgress "Autofocus move initial position", RGB(0, &HC0, 0)
-    
+    Dim JobName As String
     StopScanCheck
     ' Recenter and move where it should be
+    posTempZ = Lsm5.Hardware.CpFocus.position
     
     StgPos.Z = posTempZ
     StgPos.X = Lsm5.Hardware.CpStages.PositionX
@@ -1598,24 +1632,66 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
 
     'recenter only after activation of new track
     If AutofocusActive Then
-        ExecuteJob "Autofocus", AutofocusDoc, FilePath, FileName, StgPos, CInt(deltaZ)
+        JobName = "Autofocus"
+        ExecuteJob JobName, AutofocusDoc, FilePath, FileName, StgPos, CInt(deltaZ)
+        StgPos = TrackOffLine(JobName, AutofocusDoc, StgPos)
+        If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
+            OiaSettings.writeKeyToRegistry "codeOut", "newImage"
+            newStgPos = ComputeJobSequential(JobName, "Global", StgPos, FilePath, FileName, AutofocusDoc)
+            If Not checkForMaximalDisplacement(JobName, StgPos, newStgPos) Then
+                newStgPos = StgPos
+            End If
+                
+            Debug.Print "X =" & StgPos.X & ", " & newStgPos.X & ", " & StgPos.Y & ", " & newStgPos.Y & ", " & StgPos.Z & ", " & newStgPos.Z
+            StgPos = TrackJob(JobName, StgPos, newStgPos)
+        End If
     End If
+    
     If AcquisitionActive Then
         FileName = "AQ_T000.lsm"
+        JobName = "Acquisition"
         StgPos.Z = StgPos.Z + AcquisitionZOffset.Value
-        ExecuteJob "Acquisition", AutofocusDoc, FilePath, FileName, StgPos, CInt(deltaZ)
+        ExecuteJob JobName, AutofocusDoc, FilePath, FileName, StgPos, CInt(deltaZ)
+        StgPos = TrackOffLine(JobName, AutofocusDoc, StgPos)
+        If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
+            OiaSettings.writeKeyToRegistry "codeOut", "newImage"
+            newStgPos = ComputeJobSequential(JobName, "Global", StgPos, FilePath, FileName, AutofocusDoc)
+            If Not checkForMaximalDisplacement(JobName, StgPos, newStgPos) Then
+                newStgPos = StgPos
+            End If
+                
+            Debug.Print "X =" & StgPos.X & ", " & newStgPos.X & ", " & StgPos.Y & ", " & newStgPos.Y & ", " & StgPos.Z & ", " & newStgPos.Z
+            StgPos = TrackJob(JobName, StgPos, newStgPos)
+        End If
         StgPos.Z = StgPos.Z - AcquisitionZOffset.Value
         
     End If
     
     If AlterAcquisitionActive Then
         FileName = "AL_T000.lsm"
+        JobName = "AlterAcquisition"
         StgPos.Z = StgPos.Z + AlterAcquisitionZOffset.Value
-        ExecuteJob "AlterAcquisition", AutofocusDoc, FilePath, FileName, StgPos, CInt(deltaZ)
+        ExecuteJob JobName, AutofocusDoc, FilePath, FileName, StgPos, CInt(deltaZ)
+         StgPos = TrackOffLine(JobName, AutofocusDoc, StgPos)
+        If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
+            OiaSettings.writeKeyToRegistry "codeOut", "newImage"
+            newStgPos = ComputeJobSequential(JobName, "Global", StgPos, FilePath, FileName, AutofocusDoc)
+            If Not checkForMaximalDisplacement(JobName, StgPos, newStgPos) Then
+                newStgPos = StgPos
+            End If
+                
+            Debug.Print "X =" & StgPos.X & ", " & newStgPos.X & ", " & StgPos.Y & ", " & newStgPos.Y & ", " & StgPos.Z & ", " & newStgPos.Z
+            StgPos = TrackJob(JobName, StgPos, newStgPos)
+        End If
         StgPos.Z = StgPos.Z - AlterAcquisitionZOffset.Value
     End If
-    
-    posTempZ = StgPos.Z
+
+    Recenter_post posTempZ, True, ZENv
+    FailSafeMoveStageZ StgPos.Z
+    Recenter_post StgPos.Z, True, ZENv
+    If ZENv > 2010 Then
+        ZEN.gui.Acquisition.ZStack.CenterPositionZ.Value = StgPos.Z
+    End If
     AutofocusButtonRun = True
 
 End Function
@@ -1988,20 +2064,20 @@ End Sub
 
 
 Private Function TimeDisplay(Value As Double) As String         'Calculates the String to display in a "user frindly format". Value is in seconds
-    Dim Hour, Min As Integer
+    Dim Hour, MIN As Integer
     Dim Sec As Double
 
     Hour = Int(Value / 3600)                                        'calculates number of full hours                           '
-    Min = Int(Value / 60) - (60 * Hour)                             'calculates number of left minutes
-    Sec = (Fix((Value - (60 * Min) - (3600 * Hour)) * 100)) / 100   'calculates the number of left seconds
-    If (Hour = 0) And (Min = 0) Then                                'Defines a "user friendly" string to display the time
+    MIN = Int(Value / 60) - (60 * Hour)                             'calculates number of left minutes
+    Sec = (Fix((Value - (60 * MIN) - (3600 * Hour)) * 100)) / 100   'calculates the number of left seconds
+    If (Hour = 0) And (MIN = 0) Then                                'Defines a "user friendly" string to display the time
         TimeDisplay = Sec & " sec"
     ElseIf (Hour = 0) And (Sec = 0) Then
-        TimeDisplay = Min & " min"
+        TimeDisplay = MIN & " min"
     ElseIf (Hour = 0) Then
-        TimeDisplay = Min & " min " & Sec
+        TimeDisplay = MIN & " min " & Sec
     Else
-        TimeDisplay = Hour & " h " & Min
+        TimeDisplay = Hour & " h " & MIN
     End If
 End Function
 
@@ -2034,7 +2110,7 @@ Public Function AcquisitionTime() As Double
         Track4Speed = Track.SampleObservationTime
     End If
     Pixels = Lsm5.DsRecording.LinesPerFrame * Lsm5.DsRecording.SamplesPerLine
-    FrameNumber = Lsm5.DsRecording.FramesPerStack
+    FrameNumber = Lsm5.DsRecording.framesPerStack
     If Lsm5.DsRecording.ScanDirection = 0 Then
         ScanDirection = 1
     Else
