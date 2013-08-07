@@ -32,41 +32,6 @@ Public Sub initialize(Names() As String, Recording As DsRecording, ZEN As Object
     For i = 0 To UBound(Names)
         AddJob CStr(Names(i)), Lsm5.DsRecording, ZEN
     Next i
-    
-    
-    ' This may be different depending on the setting and microscope
-    ' define here the Zoom pixelSize slice relation specificed for 256x1 line. pixeldWell rescales with 256/FrameSize
-    ZoomPixelSlice(1, 1) = 5
-    ZoomPixelSlice(2, 1) = 3.1
-    ZoomPixelSlice(3, 1) = 2
-    ZoomPixelSlice(4, 1) = 1.2
-    ZoomPixelSlice(5, 1) = 0.8
-    ZoomPixelSlice(6, 1) = 0
-    ZoomPixelSlice(7, 1) = 0
-    ZoomPixelSlice(8, 1) = 0
-    ZoomPixelSlice(9, 1) = 0
-    
-    'pixel dwell
-    ZoomPixelSlice(1, 1) = 0.00000128 '1.28 us
-    ZoomPixelSlice(2, 2) = 0.0000016  '1.6
-    ZoomPixelSlice(3, 2) = 0.00000192 '1.92
-    ZoomPixelSlice(4, 2) = 0.00000256 '2.56
-    ZoomPixelSlice(5, 2) = 0.0000032  '3.2
-    ZoomPixelSlice(6, 2) = 0.00000512 '5.12
-    ZoomPixelSlice(7, 2) = 0.0000064  '6.4
-    ZoomPixelSlice(8, 2) = 0.0000128  '12.8
-    ZoomPixelSlice(9, 2) = 0.0000256  '25.6
-    
-    'slice size
-    ZoomPixelSlice(1, 3) = 0.08
-    ZoomPixelSlice(2, 3) = 0.1
-    ZoomPixelSlice(3, 3) = 0.12
-    ZoomPixelSlice(4, 3) = 0.15
-    ZoomPixelSlice(5, 3) = 0.19
-    ZoomPixelSlice(6, 3) = 0.31
-    ZoomPixelSlice(7, 3) = 0.38
-    ZoomPixelSlice(8, 3) = 0.77
-    ZoomPixelSlice(9, 3) = 1.54
 End Sub
 
 Public Function getZENv() As Integer
@@ -225,20 +190,6 @@ Public Function GetTimeSeries(Name As String) As Boolean
     GetTimeSeries = Jobs(JobNames.Item(Name)).Recording.TimeSeries
 End Function
 
-Public Sub SetFrameSize(Name As String, Value As Integer)
-    If Not checkJobName(Name) Then
-        Exit Sub
-    End If
-    Jobs(JobNames.Item(Name)).Recording.LinesPerFrame = CLng(Value)  'This is Y (check)
-    Jobs(JobNames.Item(Name)).Recording.SamplesPerLine = CLng(Value) 'This is X (check)
-End Sub
-
-Public Function GetFrameSize(Name As String) As Long
-    If Not checkJobName(Name) Then
-        Exit Function
-    End If
-    GetFrameSize = Jobs(JobNames.Item(Name)).Recording.SamplesPerLine
-End Function
 
 '''
 ' X-Lines
@@ -446,9 +397,9 @@ End Function
 '''''
 ' Sets usage of piezo or no
 '   ZScan: X-Z Scan
-'   Stack: Frame mode
+'   Stack: Frame mode with Zstacks
 '   Plane: just one plane
-'   Line: A Line
+'   Line: Just a Line
 '''''
 Public Sub SetScanMode(Name As String, Value As String)
     If Not checkJobName(Name) Then
@@ -464,6 +415,13 @@ Public Function GetScanMode(Name As String) As String
     GetScanMode = Jobs(JobNames.Item(Name)).Recording.ScanMode
 End Function
 
+'true if record is a ZStack
+Public Function isZStack(Name As String) As Boolean
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    isZStack = Jobs(JobNames.Item(Name)).isZStack
+End Function
 
 '''''
 ' Sets usage of piezo or no
@@ -484,6 +442,7 @@ Public Function GetSpecialScanMode(Name As String) As String
     End If
     GetSpecialScanMode = Jobs(JobNames.Item(Name)).Recording.SpecialScanMode
 End Function
+
 '''''
 ' Sets Unidirectional or bidirectional scan
 '    0: Unidirectional

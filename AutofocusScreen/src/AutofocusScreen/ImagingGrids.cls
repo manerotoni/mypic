@@ -27,6 +27,8 @@ Public Sub initialize(Names() As String)
     Next i
 End Sub
 
+
+
 '''
 '   Add a new grid to array
 '''
@@ -180,6 +182,13 @@ Public Function getNrPts(Name As String) As Long
     End If
 End Function
 
+
+Public Function getNrValidPts(Name As String) As Long
+    If checkGridName(Name) Then
+        getNrValidPts = Grids(GridNames.Item(Name)).getNrValidPts
+    End If
+End Function
+
 Public Function getPt(Name As String, pos As Vector, Valid As Boolean, _
 Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If checkGridName(Name) Then
@@ -242,6 +251,13 @@ Public Sub setThisValid(Name As String, Value As Boolean)
         Grids(GridNames.Item(Name)).setThisValid Value
     End If
 End Sub
+
+Public Sub setAllValid(Name As String, Value As Boolean)
+    If checkGridName(Name) Then
+        Grids(GridNames.Item(Name)).setAllValid Value
+    End If
+End Sub
+
 
 
 Public Function getX(Name As String, Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Double

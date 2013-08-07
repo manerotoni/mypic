@@ -7,8 +7,11 @@ Option Explicit
 'Debug and LogVariables'
 ''''''''''''''''''''''''
 Public LogFile As TextStream 'This is the file where a log of the procedure is saved
+Public ErrFile As TextStream 'This is the file where a log of the procedure is saved
 Public LogFileName As String
+Public ErrFileName As String
 Public LogFileNameBase As String
+Public ErrFileNameBase As String
 Public FileSystem As FileSystemObject
 Public Log     As Boolean          'If true we log data during the macro
 

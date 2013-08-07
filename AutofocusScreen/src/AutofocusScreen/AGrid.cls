@@ -35,7 +35,7 @@ Public numCol As Long
 Public numRowSub As Long
 Public numColSub As Long
 
-''''Current Row, Col, RowSub, ColSub
+''''Current Row, Col, RowSub, ColSub when 0 it is empty array. Proper array starts from 1!
 Public iRow As Long
 Public iCol As Long
 Public iRowSub As Long
@@ -84,14 +84,39 @@ End Sub
 '   Redimension the array and preserve size
 '''
 Public Sub updateGridSizePreserve(Row As Long, Col As Long, RowSub As Long, ColSub As Long)
-    Me.numRow = Row
-    Me.numCol = Col
-    Me.numRowSub = RowSub
-    Me.numColSub = ColSub
+    Dim iRow As Long
+    Dim iCol As Long
+    Dim iRowSub As Long
+    Dim iColSub As Long
+    Dim TmpGridArray() As GridPoint
+    TmpGridArray = GridArray
     Me.iRow = 1
     Me.iCol = 1
     Me.iRowSub = 1
     Me.iColSub = 1
+    
+    If Me.numRow = Row And Me.numCol = Col And Me.numRowSub = RowSub Then
+        ReDim Preserve GridArray(1 To Me.numRow, 1 To Me.numCol, 1 To Me.numRowSub, 1 To ColSub)
+    Else
+        'can only update last dimension
+        ReDim GridArray(1 To Row, 1 To Col, 1 To RowSub, 1 To ColSub)
+        
+        For iRow = 1 To Me.numRow
+            For iCol = 1 To Me.numCol
+                For iRowSub = 1 To numRowSub
+                    For iColSub = 1 To Me.numColSub
+                        GridArray(iRow, iCol, iRowSub, iColSub) = TmpGridArray(iRow, iCol, iRowSub, iColSub)
+                    Next iColSub
+                Next iRowSub
+            Next iCol
+        Next iRow
+    End If
+    
+    Me.numRow = Row
+    Me.numCol = Col
+    Me.numRowSub = RowSub
+    Me.numColSub = ColSub
+
     ReDim Preserve GridArray(1 To Me.numRow, 1 To Me.numCol, 1 To Me.numRowSub, 1 To Me.numColSub)
 End Sub
 
@@ -300,9 +325,40 @@ Public Sub getPt(pos As Vector, Valid As Boolean, Row As Long, Col As Long, RowS
     End If
 End Sub
 
+'''
+' get nr of points in grid
+'''
 Public Function getNrPts() As Long
     getNrPts = Me.numCol * Me.numRow * Me.numRowSub * Me.numColSub
 End Function
+
+
+'''
+'   get nr of valid points in grid
+'''
+Public Function getNrValidPts() As Long
+    Dim iRow As Long
+    Dim iCol As Long
+    Dim iRowSub As Long
+    Dim iColSub As Long
+    Dim nrValid As Long
+    nrValid = 0
+    ' All points are true as default
+    For iRow = 1 To Me.numRow
+        For iCol = 1 To Me.numCol
+            For iRowSub = 1 To numRowSub
+                For iColSub = 1 To Me.numColSub
+                    If GridArray(iRow, iCol, iRowSub, iColSub).Valid Then
+                        nrValid = nrValid + 1
+                    End If
+                Next iColSub
+            Next iRowSub
+        Next iCol
+    Next iRow
+    getNrValidPts = nrValid
+End Function
+
+
 
 Public Function getX(Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Double
     If correctIndeces(Row, Col, RowSub, ColSub) Then
@@ -337,30 +393,43 @@ Public Sub setPt(pos As Vector, Valid As Boolean, Row As Long, Col As Long, RowS
     End If
 End Sub
 
-Public Function setX(X As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
+Public Sub setX(X As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If correctIndeces(Row, Col, RowSub, ColSub) Then
         GridArray(Row, Col, RowSub, ColSub).X = X
     End If
-End Function
+End Sub
 
-Public Function setY(Y As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Double
+Public Sub setY(Y As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If correctIndeces(Row, Col, RowSub, ColSub) Then
         GridArray(Row, Col, RowSub, ColSub).Y = Y
     End If
-End Function
+End Sub
 
-Public Function setZ(Z As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Double
+Public Sub setZ(Z As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If correctIndeces(Row, Col, RowSub, ColSub) Then
         GridArray(Row, Col, RowSub, ColSub).Z = Z
     End If
-End Function
+End Sub
 
 
-Public Function setValid(Valid As Boolean, Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Boolean
+Public Sub setValid(Valid As Boolean, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If correctIndeces(Row, Col, RowSub, ColSub) Then
         GridArray(Row, Col, RowSub, ColSub).Valid = Valid
     End If
-End Function
+End Sub
+
+Public Sub setAllValid(Valid As Boolean)
+    ' All points are true as default
+    For iRow = 1 To Me.numRow
+        For iCol = 1 To Me.numCol
+            For iRowSub = 1 To numRowSub
+                For iColSub = 1 To Me.numColSub
+                    GridArray(iRow, iCol, iRowSub, iColSub).Valid = Valid
+                Next iColSub
+            Next iRowSub
+        Next iCol
+    Next iRow
+End Sub
 
 
 
@@ -677,7 +746,7 @@ Public Function isValidGridFile(ByVal sFile As String, Row As Long, Col As Long,
            Line Input #iFileNum, Fields
         Wend
         RegEx.Pattern = CellBase
-        If RegEx.test(Fields) Then
+        If RegEx.Test(Fields) Then
             format = "cellbase"
         Else
             'standard format
@@ -756,7 +825,7 @@ Public Function loadValidGridFile(ByVal sFile As String, format As String) As Bo
                 Line Input #iFileNum, Fields
                 GoodMatch = False
                 RegEx.Pattern = CellBase
-                If RegEx.test(Fields) Then
+                If RegEx.Test(Fields) Then
                     Set Match = RegEx.Execute(Fields)
                     Active = (Match.Item(0).SubMatches.Item(4) <> "none")
                     GoodMatch = True

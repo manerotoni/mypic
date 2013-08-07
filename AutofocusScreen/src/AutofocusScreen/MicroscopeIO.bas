@@ -22,11 +22,6 @@ Public Declare Function RegQueryValueEx _
     ByVal lpReserved As Long, lpType As Long, _
     lpData As Any, lpcbData As Long) As Long         ' Note that if you declare the lpData parameter as String, you must pass it By Value.
 
-'These are the name of the jobs
-Public JobNames() As String
-Public JobShortNames As Collection
-'These are the name of the repetitions
-Public RepNames() As String
 
 'contains a list of keys that will be used for image analysis
 Public OiaKeyNames() As String
@@ -297,6 +292,25 @@ lpNumberOfFreeClusters As Long, lpTotalNumberOfClusters As Long) As Long
 Public Declare Function GetTickCount Lib "kernel32" () As Long
 
 
+'''
+' Returns version number (ZEN2010, etc.)
+'''
+Public Function getVersionNr() As Integer
+    Dim VersionNr As Long
+    VersionNr = CLng(Left(Lsm5.Info.VersionIs, 1))
+    Select Case VersionNr
+        Case 6:
+            getVersionNr = 2010
+        Case 7:
+            getVersionNr = 2011
+        Case 8:
+            getVersionNr = 2012
+    End Select
+    
+    If VersionNr > 8 Then
+        MsgBox "Don't understand the version of ZEN used. Set to ZEN2012"
+    End If
+End Function
 
 
 
@@ -375,7 +389,7 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
     Sleep (20)
     Time = Timer
     While AcquisitionController.IsGrabbing
-        Sleep (20) ' the timing makes the different weather we release the system or not often enough
+        Sleep (20) ' the timing makes the different whether we release the system or not often enough
         DoEvents
         If ScanStop Then
             Exit Function
@@ -388,6 +402,167 @@ ErrorHandle:
     ErrorLog.Show
     ErrorLog.UpdateLog ("Error in ScanToImage " & Err.Description)
     ScanToImage = True
+End Function
+
+
+
+'''''
+'   Set the FCS controller and data stuff
+'''''
+Private Sub Initialize_Controller()
+    Set FcsControl = Fcs 'member of Lsm5VBAProject
+    Set viewerGuiServer = Lsm5.viewerGuiServer
+    Set FcsPositions = FcsControl.SamplePositionParameters
+    viewerGuiServer.FcsSelectLsmImagePositions = True
+End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''
+''''''''' Creates NewRecords'''''''''''''''
+'''''''''''''''''''''''''''''''''''''''''''
+
+'''
+' NewRecord(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0, Optional ForceCreation As Boolean = False)
+'   Creates a RecordingDoc and an entry in the GUI for imaging
+'''
+Public Function NewRecord(RecordingDoc As DsRecordingDoc, Name As String, ZENv As Integer, Optional Container As Long = 0, Optional ForceCreation As Boolean = False) As Boolean
+    If ZENv > 2010 Then
+        NewRecord = NewRecordAi(RecordingDoc, Name, Container, ForceCreation)
+    Else
+        NewRecord = NewRecordNoAi(RecordingDoc, Name, ForceCreation)
+    End If
+End Function
+
+'''
+' Creates New DsRecordingDoc and a entry in the experiment Tree (works for ZENv < 2011)
+'   RecordingDoc [In/Out] - A document. If it exists and ForceCreation = False then only the name will be changed
+'   Name                  - Name of the document (Tab-name)
+'   ForceCreation         - force creation of a new document and entry in the experimentTree
+''''
+Public Function NewRecordNoAi(RecordingDoc As DsRecordingDoc, Name As String, Optional ForceCreation As Boolean = False) As Boolean
+    
+    On Error GoTo ErrorHandle:
+    Dim node As AimExperimentTreeNode
+    Set viewerGuiServer = Lsm5.viewerGuiServer
+    
+    If RecordingDoc Is Nothing Or ForceCreation Then
+        Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
+        node.type = eExperimentTeeeNodeTypeLsm
+        'this is different in versions > 2010 for compiling comments it out
+        'viewerGuiServer.InsertExperimentTreeNode node, True
+        Set node = viewerGuiServer.ExperimentTreeNodeSelected
+        
+        Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
+        While RecordingDoc.IsBusy
+            Sleep (Pause)
+            DoEvents
+        Wend
+    End If
+    RecordingDoc.SetTitle Name
+    NewRecordNoAi = True
+    Exit Function
+    
+ErrorHandle:
+    ErrorLog.UpdateLog "Error  in NewRecordNoAi" + Err.Description
+End Function
+
+'''
+' Creates New DsRecordingDoc and a entry in the experiment Tree (works only with ZENv > 2010)
+'   RecordingDoc [In/Out] - A document. If it exists and ForceCreation = False then only the name will be changed
+'   Name                  - Name of the document (Tab-name)
+'   Container             - create document in a specific container (minipages of ZEN GUI)
+'   ForceCreation         - force creation of a new document and entry in the experiment tree
+''''
+Public Function NewRecordAi(RecordingDoc As DsRecordingDoc, Name As String, Optional Container As Long = 0, Optional ForceCreation As Boolean = False) As Boolean
+    
+    On Error GoTo ErrorHandle:
+    Dim node As AimExperimentTreeNode
+    Set viewerGuiServer = Lsm5.viewerGuiServer
+    Dim doc As Object
+    If RecordingDoc Is Nothing Or ForceCreation Then
+        'this is different in versions < 2011
+        If Container > 0 Then
+            Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
+            node.type = eExperimentTeeeNodeTypeLsm
+            viewerGuiServer.InsertExperimentTreeNode node, True, Container
+        Else
+            Set node = Lsm5.NewDocument
+            node.type = eExperimentTeeeNodeTypeLsm
+        End If
+        Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
+        While RecordingDoc.IsBusy
+            Sleep (Pause)
+            DoEvents
+        Wend
+    End If
+    RecordingDoc.SetTitle Name
+    NewRecordAi = True
+    Exit Function
+    
+ErrorHandle:
+    ErrorLog.UpdateLog "Error in NewRecordAi" + Err.Description
+End Function
+
+
+
+''
+' Check if document exists and if it is loaded in the GUI. Otherwise creates a new one.
+''
+Public Function NewRecordGui(RecordingDoc As DsRecordingDoc, Name As String, ZEN As Object, ZENv As Integer, Optional Container As Long = 0) As Boolean
+
+    If ZENv > 2010 Then
+        NewRecordGui = NewRecordGuiAi(RecordingDoc, Name, ZEN, Container)
+    Else
+        NewRecordGui = NewRecord(RecordingDoc, Name, False) ' no idea how to check the name of documents in ZENv < 2011
+    End If
+    
+End Function
+
+
+''''
+'  Check if Name exists in GUI
+'  recquires ZEN_Micro_AIM_ApplicationInterface
+''''
+Public Function NewRecordGuiAi(RecordingDoc As DsRecordingDoc, Name As String, ZEN As Object, Optional Container As Long = 0) As Boolean
+    
+    On Error GoTo ErrorHandle
+    Dim iGuiDocument As Integer
+    
+    If Not ZEN Is Nothing Then
+        If Not NewRecordAi(RecordingDoc, Name, 0, False) Then
+            Exit Function
+        End If
+        'If GUI entries exist
+        If ZEN.gui.Document.ItemCount > 0 Then
+        ' look for a document with this name
+            If ZEN.gui.Document.Name.Value <> Name Then 'current document is not the one with DocName
+                For iGuiDocument = 0 To ZEN.gui.Document.ItemCount
+                    ZEN.gui.Document.ByIndex = iGuiDocument
+                    If ZEN.gui.Document.ByName = Name Then
+                        Exit For
+                    End If
+                Next iGuiDocument
+                'create a new GuiEntry if document has not been found
+                If iGuiDocument >= ZEN.gui.Document.ItemCount Then
+                    If Not NewRecordAi(RecordingDoc, Name, 0, True) Then
+                        Exit Function
+                    End If
+                    ZEN.gui.Document.ByIndex = ZEN.gui.Document.ItemCount - 1
+                End If
+            End If
+        Else
+           'create a new Guientry if there are no documents at all
+            If Not NewRecordAi(RecordingDoc, Name, 0, True) Then
+                Exit Function
+            End If
+        End If
+        NewRecordGuiAi = True
+    Else
+        MsgBox "Error: CheckForGuiDocumentAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
+        ErrorLog.UpdateLog "Error: CheckForGuiDocumentAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
+    End If
+    Exit Function
+ErrorHandle:
+    ErrorLog.UpdateLog "Error in CheckForGuiDocumentAi " + Err.Description
 End Function
 
 
@@ -590,6 +765,7 @@ Public Function WaitForRecentering2010(Z As Double, Optional Success As Boolean 
     Dim pos As Double
     Dim Sample0Z As Double
     pos = Lsm5.Hardware.CpFocus.position
+    'in this case stage has bene moved
     If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then
         While Round(pos, 1) <> Round(Z, 1) And Cnt < MaxCnt
             Sleep (400)
@@ -871,7 +1047,7 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
     FoundChannel = False
     RegEx.Pattern = "(\w+) (\w+\d+-\w+\d+)"
     Dim name_channel As String
-    If RegEx.test(TrackingChannel) Then
+    If RegEx.Test(TrackingChannel) Then
         Set Match = RegEx.Execute(TrackingChannel)
         name_channel = Match.Item(0).SubMatches.Item(1)
     End If

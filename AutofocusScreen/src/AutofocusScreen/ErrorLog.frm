@@ -17,8 +17,25 @@ Attribute VB_Exposed = False
 Const MaxSizeLog = 10000
 
 Public Function UpdateLog(Text As String)
-    Dim Log As String
-    Log = Left(ErrorLogLabel.Caption, MaxSizeLog)
-    ErrorLogLabel.Caption = Text & vbCrLf & Log
-    ErrorLog.Show
+    Dim iFileNum
+    Dim ErrText As String
+    ErrText = Left(ErrorLogLabel.Caption, MaxSizeLog)
+    ErrorLogLabel.Caption = Text & vbCrLf & ErrText
+    'ErrorLog.Show
+    'write to ErrorFile
+    If Log Then
+        If SafeOpenTextFile(ErrFileName, ErrFile, FileSystem) Then
+            ErrFile.WriteLine Text
+            ErrFile.Close
+        Else
+            Log = False
+        End If
+    End If
 End Function
+
+Public Function ResetLog()
+    ErrorLogLabel.Caption = ""
+    ErrorLog.Hide
+End Function
+
+

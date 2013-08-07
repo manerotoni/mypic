@@ -19,7 +19,7 @@ Public UseRoi As Boolean
 Public CorrX  As Double ' corretion for double directional scanning
 Public CorrY As Double  ' corretion for double directional scanning
 Private LaserOnOff() As Boolean
-Const SwitchLaserLines = False ' this is not clear weather it works or not properly. Sometimes it is fast sometimes slow?
+Const SwitchLaserLines = False ' this is not clear whether it works or not properly. Sometimes it is fast sometimes slow?
 
 
 Private Rois() As Roi
@@ -67,7 +67,7 @@ Public Function setJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
     For iTrack = 0 To TrackNumber - 1
         pAcquireTrack(iTrack) = Recording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire
         If ZENv > 2010 Then
-            If SwitchLaserLines Then
+            If SwitchLaserLines Then 'this is experimental it should only switch laserLines and keep the same Track
                 ZEN.gui.Acquisition.Channels.Track.ByIndex = iTrack
                 For iLaser = 0 To UBound(LaserOnOff, 2)
                     ZEN.gui.Acquisition.Channels.Track.LaserLine.ByIndex = iLaser
@@ -115,7 +115,7 @@ Public Function putJob(ZEN As Object)
     'consistency check for TrackNumber. May be pass error only to log?
     'this seems to be not recquired in Zen 2012
     
-     Time = Timer
+    Time = Timer
     For iTrack = 0 To TrackNumber - 1
         If ZENv > 2010 Then
             'ZEN.gui.Acquisition.Channels.Track.ByIndex = iTrack '(it does not display properly anyway)
@@ -149,7 +149,7 @@ Public Function putJob(ZEN As Object)
                ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value = CorrX
             End If
             If ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value <> CorrY Then
-            ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value = CorrY
+                ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value = CorrY
             End If
         End If
     End If
@@ -198,6 +198,21 @@ Public Sub SetRecording(Value As DsRecording)
    Recording.Copy Value
    TrackNumber = Recording.GetNormalTrackCount
 End Sub
+
+Public Function isBleaching() As Boolean
+    isBleaching = Recording.TrackObjectBleach(Success).Acquire And Recording.TrackObjectBleach(Success).UseBleachParameters
+End Function
+
+Public Function isZStack() As Boolean
+    Dim ScanMode As String
+    ScanMode = Recording.ScanMode
+    If ScanMode = "ZScan" Or ScanMode = "Stack" Then
+        isZStack = True
+    Else
+        isZStack = False
+    End If
+End Function
+
 
 Public Sub setRoiMaxNr(roiMaxNr As Integer)
     Dim i As Integer
@@ -281,9 +296,7 @@ Public Function createRois() As Boolean
     createRois = True
 End Function
 
-Public Function isBleaching() As Boolean
-    isBleaching = Recording.TrackObjectBleach(Success).Acquire And Recording.TrackObjectBleach(Success).UseBleachParameters
-End Function
+
 
 ''''
 ' Create a string with the description of a Job
@@ -292,14 +305,23 @@ Public Function jobDescriptor() As String
     Dim ABoolean As Boolean
     Dim Description As String
     Dim iTrack As Integer
-    If (Recording.ScanMode = "ZScan") Or (Recording.ScanMode = "Line") Then
+    Dim ScanMode As String
+    ScanMode = Recording.ScanMode
+    If ScanMode = "Line" Or ScanMode = "ZScan" Then
         Description = Description & "ScanMode = Line" & vbCrLf
-        Description = Description & "       X = " & Recording.SamplesPerLine & ", Y = " & 1 & vbCrLf
-    Else
+        Description = Description & "       X = " & Recording.SamplesPerLine & ", Y = 1" & vbCrLf
+    End If
+    If ScanMode = "Frame" Or ScanMode = "Stack" Then
         Description = Description & "ScanMode = Frame" & vbCrLf
         Description = Description & "       X = " & Recording.SamplesPerLine & ", Y = " & Recording.LinesPerFrame & vbCrLf
+        Description = Description & "LineStep = " & Recording.LineStepNumber & vbCrLf
     End If
     
+    If ScanMode = "Point" Then
+        Description = Description & "ScanMode = Spot" & vbCrLf
+        Description = Description & "       X =  1, Y = 1 " & vbCrLf
+    End If
+   
     Description = Description & "Bleaching = " & isBleaching & vbCrLf
     Description = Description & "Regions = " & Me.UseRoi & vbCrLf
     Description = Description & "PixelDwell = " & Round(Me.pixelDwell * 1000000#, 2) & " us" & vbCrLf
@@ -317,7 +339,7 @@ Public Function jobDescriptor() As String
         Description = Description & "Fast-Z-Line = False" & vbCrLf
     End If
     
-    If Recording.ScanMode = "Stack" Or Recording.ScanMode = "ZScan" Then
+    If isZStack Then
         Description = Description & "Z-Stack = True" & vbCrLf
         Description = Description & "       Z-Slices    = " & Recording.framesPerStack & vbCrLf
         Description = Description & "       Z-Interval  = " & Round(Recording.frameSpacing, 2) & " um" & vbCrLf
@@ -334,10 +356,12 @@ Public Function jobDescriptor() As String
         Description = Description & "TimeSeries = " & Recording.TimeSeries
     End If
 
-        
     jobDescriptor = Description
 End Function
 
+'''
+' split a String into two different Strigs depending on their maximal length
+''''
 Public Function splittedJobDescriptor(MaxLines As Integer, jobDescription As String) As String()
     Dim i As Integer
     Dim Label1() As String
@@ -367,10 +391,11 @@ Public Function jobDescriptorSettings() As String
     Descriptor = "JobName " & Me.Name & vbCrLf
     Descriptor = Descriptor & "pixelDwell " & Me.pixelDwell & vbCrLf
     Descriptor = Descriptor & "ScanMode " & Recording.ScanMode & vbCrLf
-    Descriptor = Descriptor & "FramesPerStack " & Recording.framesPerStack & vbCrLf
-    Descriptor = Descriptor & "FrameSpacing " & Recording.frameSpacing & vbCrLf
     Descriptor = Descriptor & "SamplesPerLine " & Recording.SamplesPerLine & vbCrLf
     Descriptor = Descriptor & "LinesPerFrame " & Recording.LinesPerFrame & vbCrLf
+    Descriptor = Descriptor & "LineStepNumber " & Recording.LineStepNumber & vbCrLf
+    Descriptor = Descriptor & "FramesPerStack " & Recording.framesPerStack & vbCrLf
+    Descriptor = Descriptor & "FrameSpacing " & Recording.frameSpacing & vbCrLf
     Descriptor = Descriptor & "Bleaching " & isBleaching & vbCrLf
     Descriptor = Descriptor & "UseRoi " & Me.UseRoi & vbCrLf
     Descriptor = Descriptor & "Zoom " & Recording.ZoomX & vbCrLf
@@ -380,7 +405,6 @@ Public Function jobDescriptorSettings() As String
     Descriptor = Descriptor & "TimeBetweenStacks " & Me.TimeBetweenStacks & vbCrLf
     Descriptor = Descriptor & "EndJobDef " & vbCrLf
     jobDescriptorSettings = Descriptor
-
 End Function
 
 Public Sub testDescriptor()
@@ -420,14 +444,16 @@ Public Function changeJobFromDescriptor(Descriptor As String, Value As Variant)
             pixelDwell = CDbl(Value)
         Case "ScanMode":
             Recording.ScanMode = CStr(Value)
-        Case "FramesPerStack":
-            Recording.framesPerStack = CLng(Value)
-        Case "FrameSpacing":
-            Recording.frameSpacing = CDbl(Value)
         Case "SamplesPerLine":
             Recording.SamplesPerLine = CLng(Value)
         Case "LinesPerFrame":
             Recording.LinesPerFrame = CLng(Value)
+        Case "LineStepNumber":
+            Recording.LineStepNumber = CLng(Value)
+        Case "FramesPerStack":
+            Recording.framesPerStack = CLng(Value)
+        Case "FrameSpacing":
+            Recording.frameSpacing = CDbl(Value)
         Case "Bleaching":
             If CBool(Value) Then
                 Recording.TrackObjectBleach(1).Acquire = CBool(Value)

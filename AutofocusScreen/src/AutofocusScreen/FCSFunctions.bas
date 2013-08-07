@@ -15,127 +15,30 @@ Public FcsData As AimFcsData
 Public Const Pause = 100 'pause in ms
 
 
-'''''
-'   Set the FCS controller and data stuff
-'''''
-Private Sub Initialize_Controller()
-    Set FcsControl = Fcs 'member of Lsm5VBAProject
-    Set viewerGuiServer = Lsm5.viewerGuiServer
-    Set FcsPositions = FcsControl.SamplePositionParameters
-    viewerGuiServer.FcsSelectLsmImagePositions = True
-End Sub
-
-Public Sub NewRecord(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0, Optional ForceCreation As Boolean = False)
-    If ZENv > 2010 Then
-        NewRecord2011 RecordingDoc, Name, Container, ForceCreation
-    Else
-        NewRecord2010 RecordingDoc, Name, Container, ForceCreation
-    End If
-End Sub
-
-''
-' Check if document is loaded in the Gui otherwise create a new Gui entry
-''
-Public Sub CheckForGuiDocument(DocName As String)
-    If ZENv > 2010 Then
-        CheckForGuiDocument2011 DocName
-    Else
-        CheckForGuiDocument2010 DocName
-    End If
-End Sub
-
-Public Sub CheckForGuiDocument2010(DocName As String)
-    ' No idea how it should work
-End Sub
-
-Public Sub CheckForGuiDocument2011(DocName As String)
-    Dim iGuiDocument As Integer
-    If ZENv > 2010 Then
-        'If there are any documents
-        If ZEN.gui.Document.ItemCount > 0 Then
-        ' look for a document with this name
-            If ZEN.gui.Document.Name.Value <> DocName Then 'current document is not the one with DocName
-                For iGuiDocument = 0 To ZEN.gui.Document.ItemCount
-                    ZEN.gui.Document.ByIndex = iGuiDocument
-                    If ZEN.gui.Document.ByName = DocName Then
-                        Exit For
-                    End If
-                Next iGuiDocument
-                'create a new GuiEntry if document has not been found
-                If iGuiDocument >= ZEN.gui.Document.ItemCount Then
-                    NewRecord GlobalRecordingDoc, DocName, 0, True
-                    ZEN.gui.Document.ByIndex = ZEN.gui.Document.ItemCount - 1
-                End If
-            End If
-        Else
-           'create a new Guientry if there are no documents at all
-           NewRecord GlobalRecordingDoc, DocName, 0, True
-        End If
-    End If
-End Sub
-
-'''
-' Creates New DsRecordingDoc or use available one if present
-''''
-Public Sub NewRecord2010(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0, Optional ForceCreation As Boolean = False)
-    Dim node As AimExperimentTreeNode
-    Set viewerGuiServer = Lsm5.viewerGuiServer
-    If RecordingDoc Is Nothing Or ForceCreation Then
-        Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
-        node.type = eExperimentTeeeNodeTypeLsm
-        viewerGuiServer.InsertExperimentTreeNode node, True
-        Set node = viewerGuiServer.ExperimentTreeNodeSelected
-        
-        Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
-        While RecordingDoc.IsBusy
-            Sleep (Pause)
-            DoEvents
-        Wend
-        
-    End If
-    RecordingDoc.SetTitle Name
-End Sub
-
-
-'''
-' Creates New DsRecordingDoc or use available one if present
-''''
-Public Sub NewRecord2011(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0, Optional ForceCreation As Boolean = False)
-    Dim node As AimExperimentTreeNode
-    Set viewerGuiServer = Lsm5.viewerGuiServer
-    Dim doc As Object
-    If RecordingDoc Is Nothing Or ForceCreation Then
-        Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
-        node.type = eExperimentTeeeNodeTypeLsm
-        viewerGuiServer.InsertExperimentTreeNode node, True, Container
-        Set node = viewerGuiServer.ExperimentTreeNodeSelected
-        
-        Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
-        While RecordingDoc.IsBusy
-            Sleep (Pause)
-            DoEvents
-        Wend
-    End If
-    RecordingDoc.SetTitle Name
-End Sub
-
 
 Public Sub NewFcsRecord(FcsData As AimFcsData, Optional Name As String, Optional Container As Long = 0)
     Dim node As AimExperimentTreeNode
     Set viewerGuiServer = Lsm5.viewerGuiServer
     Dim Recording As DsRecordingDoc
+    'ZEN.GUI.Fcs.New_UiApiElement.Execute to get new Record
+    ' how to get the FcsData Document
+    ' Set FcsData = Lsm5.ActiveDocument ??
     If FcsData Is Nothing Then
-        Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
-        node.type = eExperimentTeeeNodeTypeConfoCor
-        viewerGuiServer.InsertExperimentTreeNode node, True, Container
-        ' Insert an FCS document into ZEN
+        If Container > 0 Then
+            Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
+            node.type = eExperimentTeeeNodeTypeConfoCor
+            viewerGuiServer.InsertExperimentTreeNode node, True, Container
+        Else ' to be tested
+            Set node = Lsm5.NewDocument
+            node.type = eExperimentTeeeNodeTypeConfoCor
+        End If
         Set FcsData = node.FcsData
         FcsData.Name = Name
         Set Recording = Lsm5.DsRecordingActiveDocObject
         Recording.SetTitle Name
     End If
-
 End Sub
+
 ''''
 ' Start Fcs Measurment
 ''''

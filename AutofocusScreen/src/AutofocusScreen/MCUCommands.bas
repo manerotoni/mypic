@@ -287,8 +287,8 @@ End Sub
 
 ''''''
 '   AreStageCoordinateExchanged() As Boolean
-'       Check weather X and Y axis are exchanged and return True if yes.
-'       Todo: Could also return weather axis are mirrored. Intrestingly althouh axes are not mirrored we use -X??
+'       Check whether X and Y axis are exchanged and return True if yes.
+'       Todo: Could also return whether axis are mirrored. Intrestingly althouh axes are not mirrored we use -X??
 ''''''
 Public Sub StageSettings(MirrorX As Boolean, MirrorY As Boolean, ExchangeXY As Boolean)
     Dim bLSM As Boolean

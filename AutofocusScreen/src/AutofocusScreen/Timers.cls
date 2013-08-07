@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 '''
 ' Timer class
-' A very simple timer that just keeps track of its creation, updateTime and when wait called it display weather a certain time is elapsed or not
+' A very simple timer that just keeps track of its creation, updateTime and when wait called it display whether a certain time is elapsed or not
 '''
 Option Explicit
 Private Type singleTimer

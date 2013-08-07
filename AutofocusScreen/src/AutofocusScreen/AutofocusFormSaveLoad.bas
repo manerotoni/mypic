@@ -81,9 +81,7 @@ Private Sub SaveFormPage(JobName As String, iFileNum As Integer)
     Print #iFileNum, ""
     Print #iFileNum, "% " & JobName
     Print #iFileNum, JobName & "Period " & AutofocusForm.Controls(JobName & "Period").Value
-    If JobName <> "Trigger1" And JobName <> "Trigger2" Then
-        Print #iFileNum, JobName & "Active " & AutofocusForm.Controls(JobName & "Active").Value
-    End If
+    Print #iFileNum, JobName & "Active " & AutofocusForm.Controls(JobName & "Active").Value
     
     For i = 1 To 4
         Print #iFileNum, JobName & "Track" & CInt(i) & " " & _
