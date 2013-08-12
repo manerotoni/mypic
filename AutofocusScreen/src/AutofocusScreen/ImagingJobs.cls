@@ -141,6 +141,13 @@ Public Sub setRoi(Name As String, ARoi As Roi, roiNr As Integer)
     Jobs(JobNames.Item(Name)).setRoi ARoi, roiNr
 End Sub
 
+Public Sub setRois(Name As String, Rois() As Roi)
+    If Not checkJobName(Name) Then
+        Exit Sub
+    End If
+    Jobs(JobNames.Item(Name)).setRois Rois
+End Sub
+
 Public Function getRoi(Name As String, roiNr As Integer) As Roi
     If Not checkJobName(Name) Then
         Exit Function
@@ -148,6 +155,10 @@ Public Function getRoi(Name As String, roiNr As Integer) As Roi
     Set getRoi = Jobs(JobNames.Item(Name)).getRoi(roiNr)
 End Function
 
+
+'''
+' create ROIs in ZEN
+'''
 Public Sub createRois(Name As String)
     If Not checkJobName(Name) Then
         Exit Sub
@@ -176,60 +187,60 @@ End Function
 ''''''
 '    UpdateJobTimeSeries: if True the Job also has time Series
 ''''''
-Public Sub SetTimeSeries(Name As String, Value As Boolean)
+Public Sub setTimeSeries(Name As String, Value As Boolean)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
     Jobs(JobNames.Item(Name)).Recording.TimeSeries = Value
 End Sub
 
-Public Function GetTimeSeries(Name As String) As Boolean
+Public Function getTimeSeries(Name As String) As Boolean
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetTimeSeries = Jobs(JobNames.Item(Name)).Recording.TimeSeries
+    getTimeSeries = Jobs(JobNames.Item(Name)).Recording.TimeSeries
 End Function
 
 
 '''
 ' X-Lines
 '''
-Public Function GetSamplesPerLine(Name As String) As Long
+Public Function getSamplesPerLine(Name As String) As Long
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetSamplesPerLine = Jobs(JobNames.Item(Name)).Recording.SamplesPerLine
+    getSamplesPerLine = Jobs(JobNames.Item(Name)).Recording.SamplesPerLine
 End Function
 
 '''
 ' Y-Lines
 ''''
-Public Function GetLinesPerFrame(Name As String) As Long
+Public Function getLinesPerFrame(Name As String) As Long
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetLinesPerFrame = Jobs(JobNames.Item(Name)).Recording.LinesPerFrame
+    getLinesPerFrame = Jobs(JobNames.Item(Name)).Recording.LinesPerFrame
 End Function
 
 
 '''
 ' Interval for time series
 '''
-Public Sub SetTimeBetweenStacks(Name As String, Value As Double)
+Public Sub setTimeBetweenStacks(Name As String, Value As Double)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
     Jobs(JobNames.Item(Name)).TimeBetweenStacks = Value
 End Sub
 
-Public Function GetTimeBetweenStacks(Name As String) As Double
+Public Function getTimeBetweenStacks(Name As String) As Double
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetTimeBetweenStacks = Jobs(JobNames.Item(Name)).TimeBetweenStacks
+    getTimeBetweenStacks = Jobs(JobNames.Item(Name)).TimeBetweenStacks
 End Function
 
-Public Sub SetTrackNumber(Name As String, Value As Integer)
+Public Sub setTrackNumber(Name As String, Value As Integer)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
@@ -237,20 +248,20 @@ Public Sub SetTrackNumber(Name As String, Value As Integer)
 End Sub
 
 
-Public Sub SetAcquireTrack(Name As String, iTrack As Integer, Value As Boolean)
+Public Sub setAcquireTrack(Name As String, iTrack As Integer, Value As Boolean)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
     Jobs(JobNames.Item(Name)).ReDimAcquireTrack (Jobs(JobNames.Item(Name)).TrackNumber - 1)
-    Jobs(JobNames.Item(Name)).SetAcquireTrack iTrack, Value
+    Jobs(JobNames.Item(Name)).setAcquireTrack iTrack, Value
 End Sub
 
-Public Function GetAcquireTrack(Name As String, iTrack As Integer) As Boolean
+Public Function getAcquireTrack(Name As String, iTrack As Integer) As Boolean
     If Not checkJobName(Name) Then
         Exit Function
     End If
     If iTrack < Jobs(JobNames.Item(Name)).TrackNumber Then
-        GetAcquireTrack = Jobs(JobNames.Item(Name)).GetAcquireTrack(iTrack)
+        getAcquireTrack = Jobs(JobNames.Item(Name)).getAcquireTrack(iTrack)
     End If
 End Function
 
@@ -263,7 +274,7 @@ Public Function isAcquiring(Name As String) As Boolean
     End If
 End Function
 
-Public Sub SetBleachTrack(Name As String, Value As Boolean)
+Public Sub setBleachTrack(Name As String, Value As Boolean)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
@@ -275,62 +286,62 @@ End Sub
 ''''
 '   True if track is bleaching
 ''''
-Public Function GetBleachTrack(Name As String) As Boolean
+Public Function getBleachTrack(Name As String) As Boolean
     Dim Success As Integer
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetBleachTrack = Jobs(JobNames.Item(Name)).Recording.TrackObjectBleach(Success).Acquire And Jobs(JobNames.Item(Name)).Recording.TrackObjectBleach(Success).UseBleachParameters
+    getBleachTrack = Jobs(JobNames.Item(Name)).Recording.TrackObjectBleach(Success).Acquire And Jobs(JobNames.Item(Name)).Recording.TrackObjectBleach(Success).UseBleachParameters
 End Function
 
 
 ''''
 '   This is the number of Z-stacks
 ''''
-Public Sub SetFramesPerStack(Name As String, Value As Integer)
+Public Sub setFramesPerStack(Name As String, Value As Integer)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
     Jobs(JobNames.Item(Name)).Recording.framesPerStack = Value
 End Sub
 
-Public Function GetFramesPerStack(Name As String) As Integer
+Public Function getFramesPerStack(Name As String) As Integer
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetFramesPerStack = Jobs(JobNames.Item(Name)).Recording.framesPerStack
+    getFramesPerStack = Jobs(JobNames.Item(Name)).Recording.framesPerStack
 End Function
 
 ''''
 '   This is dZ (in um)
 ''''
-Public Sub SetFrameSpacing(Name As String, Value As Double)
+Public Sub setFrameSpacing(Name As String, Value As Double)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
     Jobs(JobNames.Item(Name)).Recording.frameSpacing = Value
 End Sub
 
-Public Function GetFrameSpacing(Name As String) As Double
+Public Function getFrameSpacing(Name As String) As Double
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetFrameSpacing = Jobs(JobNames.Item(Name)).Recording.frameSpacing
+    getFrameSpacing = Jobs(JobNames.Item(Name)).Recording.frameSpacing
 End Function
 
 '''
 '   This is dXdY in um
 '''
-Public Function GetSampleSpacing(Name As String) As Double
+Public Function getSampleSpacing(Name As String) As Double
     If Not checkJobName(Name) Then
         Exit Function
     End If
     'Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing 'this is in meter different specification depending on the variable. What a mess!!!
-    GetSampleSpacing = Jobs(JobNames.Item(Name)).Recording.SampleSpacing
+    getSampleSpacing = Jobs(JobNames.Item(Name)).Recording.SampleSpacing
 End Function
 
 
-Public Sub SetZoom(Name As String, Value As Double)
+Public Sub setZoom(Name As String, Value As Double)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
@@ -338,29 +349,29 @@ Public Sub SetZoom(Name As String, Value As Double)
     Jobs(JobNames.Item(Name)).Recording.ZoomY = Value
 End Sub
 
-Public Function GetZoom(Name As String) As Double
+Public Function getZoom(Name As String) As Double
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetZoom = Jobs(JobNames.Item(Name)).Recording.ZoomX
+    getZoom = Jobs(JobNames.Item(Name)).Recording.ZoomX
 End Function
 
-Public Function GetCorrX(Name As String) As Double
+Public Function getCorrX(Name As String) As Double
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetCorrX = Jobs(JobNames.Item(Name)).CorrX
+    getCorrX = Jobs(JobNames.Item(Name)).CorrX
 End Function
 
 
-Public Function GetCorrY(Name As String) As Double
+Public Function getCorrY(Name As String) As Double
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetCorrY = Jobs(JobNames.Item(Name)).CorrY
+    getCorrY = Jobs(JobNames.Item(Name)).CorrY
 End Function
 
-Public Sub SetCorrX(Name As String, Value As Double)
+Public Sub setCorrX(Name As String, Value As Double)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
@@ -368,17 +379,31 @@ Public Sub SetCorrX(Name As String, Value As Double)
 End Sub
 
 
-Public Sub SetCorrY(Name As String, Value As Double)
+Public Sub setCorrY(Name As String, Value As Double)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
     Jobs(JobNames.Item(Name)).CorrY = Value
 End Sub
 
+Public Function getCentralPtPx(Name As String) As Vector
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    getCentralPtPx.X = (Jobs(JobNames.Item(Name)).Recording.SamplesPerLine - 1) / 2
+    getCentralPtPx.Y = (Jobs(JobNames.Item(Name)).Recording.LinesPerFrame - 1) / 2
+    If Jobs(JobNames.Item(Name)).isZStack Then
+        getCentralPtPx.Z = (Jobs(JobNames.Item(Name)).Recording.framesPerStack - 1) / 2
+    Else
+        getCentralPtPx.Z = 0
+    End If
+End Function
+
+
 ''''
 '   Number of time points
 '''
-Public Sub SetStacksPerRecord(Name As String, Value As Integer)
+Public Sub setStacksPerRecord(Name As String, Value As Integer)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
@@ -386,11 +411,11 @@ Public Sub SetStacksPerRecord(Name As String, Value As Integer)
 End Sub
 
 
-Public Function GetStacksPerRecord(Name As String) As Integer
+Public Function getStacksPerRecord(Name As String) As Integer
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetStacksPerRecord = Jobs(JobNames.Item(Name)).Recording.StacksPerRecord
+    getStacksPerRecord = Jobs(JobNames.Item(Name)).Recording.StacksPerRecord
 End Function
 
 
@@ -448,52 +473,52 @@ End Function
 '    0: Unidirectional
 '    1: bidirectional scan
 '''''
-Public Sub SetScanDirection(Name As String, Value As Integer)
+Public Sub setScanDirection(Name As String, Value As Integer)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
     Jobs(JobNames.Item(Name)).Recording.ScanDirection = Value
 End Sub
 
-Public Function GetScanDirection(Name As String) As Integer
+Public Function getScanDirection(Name As String) As Integer
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetScanDirection = Jobs(JobNames.Item(Name)).Recording.ScanDirection
+    getScanDirection = Jobs(JobNames.Item(Name)).Recording.ScanDirection
 End Function
 
 '''
 ' Set and Get the usage of ROIs
 '''
-Public Function SetUseRoi(Name As String, Value As Boolean)
+Public Function setUseRoi(Name As String, Value As Boolean)
     If Not checkJobName(Name) Then
         Exit Function
     End If
     Jobs(JobNames.Item(Name)).UseRoi = Value
 End Function
 
-Public Function GetUseRoi(Name As String) As Boolean
+Public Function getUseRoi(Name As String) As Boolean
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetUseRoi = Jobs(JobNames.Item(Name)).UseRoi
+    getUseRoi = Jobs(JobNames.Item(Name)).UseRoi
 End Function
 
 '''
 ' Set and Get the pixelDwellTime of Job
 '''
-Public Sub SetPixelDwell(Name As String, pixelDwell As Double)
+Public Sub setPixelDwell(Name As String, pixelDwell As Double)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
     Jobs(JobNames.Item(Name)).pixelDwell = pixelDwell
 End Sub
 
-Public Function GetPixelDwell(Name As String) As Double
+Public Function getPixelDwell(Name As String) As Double
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetPixelDwell = Jobs(JobNames.Item(Name)).pixelDwell
+    getPixelDwell = Jobs(JobNames.Item(Name)).pixelDwell
 End Function
 
 

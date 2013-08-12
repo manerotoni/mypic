@@ -21,7 +21,7 @@ Public Function UpdateLog(Text As String)
     Dim ErrText As String
     ErrText = Left(ErrorLogLabel.Caption, MaxSizeLog)
     ErrorLogLabel.Caption = Text & vbCrLf & ErrText
-    'ErrorLog.Show
+    ErrorLog.Show
     'write to ErrorFile
     If Log Then
         If SafeOpenTextFile(ErrFileName, ErrFile, FileSystem) Then

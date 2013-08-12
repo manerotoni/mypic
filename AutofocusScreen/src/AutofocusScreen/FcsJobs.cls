@@ -67,7 +67,7 @@ Public Sub AddJob(Name As String, ZEN As Object)
     'Jobs(iJob).setJob ZEN, ZENv
     Exit Sub
 ErrorHandle:
-    ErrorLog.UpdateLog "Error in FcsJobs.AddJob " + Name + " " + Err.Description
+    ErrorLog.UpdateLog Now & " Error in FcsJobs.AddJob " + Name + " " + Err.Description
 End Sub
 
 
@@ -77,7 +77,6 @@ End Sub
 '''
 Public Function setJob(Name As String, ZEN As Object) As Boolean
     On Error GoTo ErrorHandle:
-    Dim iJob As Integer
     If Not checkJobName(Name) Then
         Exit Function
     End If
@@ -86,9 +85,24 @@ Public Function setJob(Name As String, ZEN As Object) As Boolean
     End If
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog "Error in FcsJobs.setJob " + Name + " " + Err.Description
+    ErrorLog.UpdateLog Now & " Error in FcsJobs.setJob " + Name + " " + Err.Description
 End Function
 
+'''
+'   Set the job with Name from ZEN
+'''
+Public Function setJobNoAi(Name As String, ConfigName As String) As Boolean
+    On Error GoTo ErrorHandle:
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    If Jobs(JobNames.Item(Name)).setJobNoAi(ConfigName) Then
+        setJobNoAi = True
+    End If
+    Exit Function
+ErrorHandle:
+    ErrorLog.UpdateLog Now & " Error in FcsJobs.setJobNoAi " + Name + " " + Err.Description
+End Function
 
 '''
 '   Put the job with Name from Macro into ZEN
@@ -128,4 +142,27 @@ Public Function splittedJobDescriptor(Name As String, MaxLines As Integer) As St
     splittedJobDescriptor = Jobs(JobNames.Item(Name)).splittedJobDescriptor(MaxLines, jobDescriptor(Name))
 End Function
 
+Public Function getLightPathConfig(Name As String) As String
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    getLightPathConfig = Jobs(JobNames.Item(Name)).LightPathConfig
+End Function
+
+''''
+' Create a string with the description of a Job to be used as settings
+''''
+Public Function jobDescriptorSettings(Name As String) As String
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    jobDescriptorSettings = Jobs(JobNames.Item(Name)).jobDescriptorSettings
+End Function
+
+Public Function changeJobFromDescriptor(Name As String, Descriptor As String, Value As Variant)
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    changeJobFromDescriptor = Jobs(JobNames.Item(Name)).changeJobFromDescriptor(Descriptor, Value)
+End Function
 

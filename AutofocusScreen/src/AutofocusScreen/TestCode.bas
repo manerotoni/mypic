@@ -2,29 +2,14 @@ Attribute VB_Name = "TestCode"
 Option Explicit
 
 Public Sub test1()
-
+    Debug.Print Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing
+    Debug.Print Lsm5.DsRecording.SampleSpacing
     'ScanToImage Lsm5.DsRecordingActiveDocObject
     'Set Lsm5.DsRecordingActiveDocObject = Lsm5.StartScan
 '    Set viewerGuiServer = Lsm5.viewerGuiServer
-'    Dim ProgressFifo As IAimProgressFifo ' what is this?
-    Dim Time As Double
-    Time = Timer
-'    'Set gui = Lsm5.ViewerGuiServer
-'
-
-'
-    'Dim AcquisitionController As AimAcquisitionController40.AimScanController
-    Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller ' public variable
-    Time = Timer
-    Lsm5.StartAcquisition
-    While AcquisitionController.IsGrabbing
-        Sleep (200) ' this sometimes hangs if we use GetInputState. Try now without it and test if it does not hang
-        DoEvents
-    Wend
-    Debug.Print "Acquistion " & Round(Timer - Time, 3)
 End Sub
 
-Public Sub test()
+Public Sub Test()
   
     Dim vo As AimImageVectorOverlay
     Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions

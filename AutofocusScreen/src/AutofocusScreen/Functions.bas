@@ -5,6 +5,8 @@ Public Sub Autofocus_Setup()
         AutofocusForm.Show
 End Sub
 
+
+
 '''
 ' compute a weighted mean of the positiions of an array
 '''

@@ -61,8 +61,11 @@ Public Sub SaveFormSettings(FileName As String)
     For i = 0 To UBound(JobNames)
         SaveFormPage JobNames(i), iFileNum
     Next i
-
-
+    
+    'Save settings of all pages
+    For i = 0 To UBound(JobFcsNames)
+        SaveFormFcsPage JobFcsNames(i), iFileNum
+    Next i
     Close #iFileNum
     Exit Sub
 ErrorHandle:
@@ -80,7 +83,6 @@ Private Sub SaveFormPage(JobName As String, iFileNum As Integer)
     On Error GoTo ErrorHandle:
     Print #iFileNum, ""
     Print #iFileNum, "% " & JobName
-    Print #iFileNum, JobName & "Period " & AutofocusForm.Controls(JobName & "Period").Value
     Print #iFileNum, JobName & "Active " & AutofocusForm.Controls(JobName & "Active").Value
     
     For i = 1 To 4
@@ -114,6 +116,66 @@ Private Sub SaveFormPage(JobName As String, iFileNum As Integer)
     
     Print #iFileNum, ""
     Print #iFileNum, Jobs.jobDescriptorSettings(JobName)
+    Exit Sub
+ErrorHandle:
+    MsgBox "Error in SaveFormPage " + JobName + " " + Err.Description
+End Sub
+
+Public Sub ControlTipText()
+    Dim i As Integer
+    For i = 0 To UBound(JobNames)
+        JobControlTipText JobNames(i)
+    Next i
+End Sub
+
+'''
+' Sets tip text for all pages
+'''
+Private Sub JobControlTipText(JobName As String)
+    Dim i As Integer
+    On Error GoTo ErrorHandle:
+
+    AutofocusForm.Controls(JobName + "Period").ControlTipText = "Perform job " & JobName & " every xx repetitions"
+
+    If JobName <> "Autofocus" Then
+        AutofocusForm.Controls(JobName + "ZOffset").ControlTipText = "Add xx to Z from previous imaging Job"
+    End If
+    
+    AutofocusForm.Controls(JobName + "TrackZ").ControlTipText = "Update Z of current point with computed position"
+    AutofocusForm.Controls(JobName + "TrackXY").ControlTipText = "Update XY of current point with computed position"
+    AutofocusForm.Controls(JobName + "CenterOfMass").ControlTipText = "Compute new position from center of mass (done within Macro)"
+    AutofocusForm.Controls(JobName + "OiaActive").ControlTipText = "If active macro listens to online image analysis"
+    AutofocusForm.Controls(JobName + "OiaSequential").ControlTipText = "Macro waits for image analysis to finish. Acquire image -> OnlineImage analysis -> perform task"
+    AutofocusForm.Controls(JobName + "OiaParallel").ControlTipText = "Imaging and analysis run in parallel."
+    
+    If JobName = "Trigger1" Or JobName = "Trigger2" Then
+        AutofocusForm.Controls(JobName + "Active").ControlTipText = "Job " & JobName & " is performed only after online image analysis command"
+        AutofocusForm.Controls(JobName + "OptimalPtNumber").ControlTipText = "Wait to find up to xxx positions before starting job " & JobName
+        AutofocusForm.Controls(JobName + "maxWait").ControlTipText = "Wait up to xxx seconds before starting job " & JobName
+        AutofocusForm.Controls(JobName + "Autofocus").ControlTipText = "Before acquiring " & JobName & " perform Job Autofocus"
+    End If
+    Exit Sub
+    AutofocusForm.Controls(JobName + "PutJob").ControlTipText = "Put Macro acquisition settings into ZEN. Not all settings are shown in the  ZEN GUI!"
+    AutofocusForm.Controls(JobName + "SetJob").ControlTipText = "Load settings from ZEN into Macro. Not all settings are shown in the  Macro GUI!"
+    AutofocusForm.Controls(JobName + "AcquireJob").ControlTipText = "Acquire one image with settings of Job " & JobName
+    
+ErrorHandle:
+    MsgBox "Error in JobControlTipText " + JobName + " " + Err.Description
+End Sub
+
+''''
+'   Save page of specific JobFcs using a file specified by iFuleNum
+'   TODO: Control that indeed iFileNum is a file
+''''
+Private Sub SaveFormFcsPage(JobName As String, iFileNum As Integer)
+    Dim i As Integer
+    On Error GoTo ErrorHandle:
+    Print #iFileNum, ""
+    Print #iFileNum, "% " & JobName
+    Print #iFileNum, JobName & "Active " & AutofocusForm.Controls(JobName & "Active").Value
+    
+    Print #iFileNum, ""
+    Print #iFileNum, JobsFcs.jobDescriptorSettings(JobName)
     Exit Sub
 ErrorHandle:
     MsgBox "Error in SaveFormPage " + JobName + " " + Err.Description
@@ -156,6 +218,24 @@ Public Sub LoadFormSettings(FileName As String)
                     Jobs.setJob JobName, Lsm5.DsRecording, ZEN
                     UpdateFormFromJob Jobs, JobName
                     UpdateJobFromForm Jobs, JobName
+                End If
+                If FieldEntries(0) = "JobFcsName" Then
+                    JobName = FieldEntries(1)
+                    Line Input #iFileNum, Fields
+                    FieldEntries = Split(Fields, " ", 2)
+                    While FieldEntries(0) <> "EndJobFcsDef"
+                        JobsFcs.changeJobFromDescriptor JobName, FieldEntries(0), FieldEntries(1)
+                        Line Input #iFileNum, Fields
+                        FieldEntries = Split(Fields, " ", 2)
+                    Wend
+                    If JobsFcs.getLightPathConfig(JobName) <> "" Then
+                        'put once the job and reload it to get all the proper pixelSize according to the zoom etc
+                        JobsFcs.putJob JobName, ZEN
+                        JobsFcs.setJobNoAi JobName, JobsFcs.getLightPathConfig(JobName)
+                        'JobsFcs.setJob JobName, ZEN
+                    End If
+                        UpdateFormFromJobFcs JobsFcs, JobName
+                        'UpdateJobFromForm Jobs, JobName
                 End If
                 On Error Resume Next
                 AutofocusForm.Controls(FieldEntries(0)).Value = FieldEntries(1)

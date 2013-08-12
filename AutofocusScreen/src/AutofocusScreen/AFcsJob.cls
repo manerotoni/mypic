@@ -41,23 +41,44 @@ Private TimeSeriesEnabled As Boolean
 '''
 Public Function setJob(ZEN As Object, ZENv As Integer) As Boolean
     If ZENv > 2010 Then
-        setJobAi ZEN
+       setJobAi ZEN
     Else
-        setJobNoAi
+       setJobNoAi "current"
     End If
 End Function
 
+''''
+'   reads FCS settings from ZEN into Macro. This command is used for ZENv < 2011
+'   In the absence of ZEN_Micro_AIM_ApplicationInterface
+'   Only stores which laser is active, its transmission and the measurement time and repetitions
 '''
-' putJob(ZEN As Object, ZENv As Integer)
-'   put stored settings from Macro back into ZEN. Calls respective function depending on ZEN version
-'''
-Public Function putJob(ZEN As Object, ZENv As Integer) As Boolean
-    If ZENv > 2010 Then
-        putJob = putJobAi(ZEN)
-    Else
-        putJob = putJobNoAi
-    End If
+Public Function setJobNoAi(ConfigName As String) As Boolean
+    Dim FcsControl As AimFcsController
+    Set FcsControl = Fcs
+    Dim i As Integer
+    Dim NrLasers As Long
+    
+    LightPathConfig = ConfigName
+    NrLasers = FcsControl.HardwareInformation.GetNumberAttenuators
+   
+    ReDim BleachActive(0 To NrLasers - 1)
+    ReDim BleachTransmission(0 To NrLasers - 1)
+    ReDim LaserActive(0 To NrLasers - 1)
+    ReDim LaserTransmission(0 To NrLasers - 1)
+    ReDim LaserName(0 To NrLasers - 1)
+    For i = 0 To NrLasers - 1
+          LaserName(i) = CStr(1000000000 * FcsControl.HardwareInformation.GetAttenuatorWavelength(i))
+          LaserActive(i) = FcsControl.BeamPathParameters.AttenuatorOn(i)
+          BleachActive(i) = FcsControl.BeamPathParameters.BleachAttenuatorOn(i)
+          BleachTransmission(i) = FcsControl.BeamPathParameters.BleachAttenuatorPower(i)
+          LaserTransmission(i) = FcsControl.BeamPathParameters.AttenuatorPower(i)
+    Next i
+    MeasurementTime = FcsControl.AcquisitionParameters.MeasurementTime
+    Repetitions = FcsControl.AcquisitionParameters.MeasurementRepeat
+    BleachTime = FcsControl.AcquisitionParameters.BleachTime
+
 End Function
+
 
 ''''
 '   loads FCSJob from ZEN into Macro. Uses the GUI (only works for ZENv > 2010)
@@ -84,7 +105,7 @@ Public Function setJobAi(ZEN As Object) As Boolean
         For i = 0 To NrLasers - 1
             ZEN.gui.Fcs.LightPath.Lasers.ByIndex = i
             LaserActive(i) = ZEN.gui.Fcs.LightPath.Lasers.On.Value
-            LaserTransmission(i) = ZEN.gui.Fcs.LightPath.Lasers.Transmission.Value
+            LaserTransmission(i) = ZEN.gui.Fcs.LightPath.Lasers.Transmission.Value / 100
             LaserName(i) = ZEN.gui.Fcs.LightPath.Lasers.ByName
         Next i
         
@@ -94,7 +115,7 @@ Public Function setJobAi(ZEN As Object) As Boolean
         For i = 0 To NrLasers - 1
             ZEN.gui.Fcs.LightPath.BleachLasers.ByIndex = i
             BleachActive(i) = ZEN.gui.Fcs.LightPath.BleachLasers.On.Value
-            BleachTransmission(i) = ZEN.gui.Fcs.LightPath.BleachLasers.Transmission.Value
+            BleachTransmission(i) = ZEN.gui.Fcs.LightPath.BleachLasers.Transmission.Value / 100
         Next i
         MeasurementTime = FcsControl.AcquisitionParameters.MeasurementTime
         Repetitions = FcsControl.AcquisitionParameters.MeasurementRepeat
@@ -109,7 +130,20 @@ Public Function setJobAi(ZEN As Object) As Boolean
     Exit Function
 ErrorHandle:
     MsgBox "Error in AFcsJob.setJobAi " + Err.Description
-    ErrorLog.UpdateLog "Error in AFcsJob.setJobGui " + Err.Description
+    ErrorLog.UpdateLog Now & " Error in AFcsJob.setJobGui " + Err.Description
+End Function
+
+
+'''
+' putJob(ZEN As Object, ZENv As Integer)
+'   put stored settings from Macro back into ZEN. Calls respective function depending on ZEN version
+'''
+Public Function putJob(ZEN As Object, ZENv As Integer) As Boolean
+    If ZENv > 2010 Then
+        putJob = putJobAi(ZEN)
+    Else
+        putJob = putJobNoAi
+    End If
 End Function
 
 
@@ -127,7 +161,11 @@ Public Function putJobAi(ZEN As Object) As Boolean
         If ZEN.gui.Fcs.LightPathConfig.isValidItem(LightPathConfig) Then
             ZEN.gui.Fcs.LightPathConfig.Load LightPathConfig
         Else
-            ErrorLog.UpdateLog "Error in AFcsJob.putJobGui. No LightPathconfig with the name " & LightPathConfig
+            If LightPathConfig <> "" Then
+                MsgBox "AFcsJob.putJobGui. For Fcs Job " & Name & ". No LightPathconfig with the name " & LightPathConfig
+            Else
+                MsgBox "AFcsJob.putJobGui. Fcs Job " & Name & " has not been initiated use ZEN->Macro button"
+            End If
             Exit Function
         End If
         ZEN.gui.Fcs.EnablePositions.Value = PositionsEnabled
@@ -136,47 +174,17 @@ Public Function putJobAi(ZEN As Object) As Boolean
         ZEN.SetDouble "Fcs.Acquisition.Repetitions", Repetitions
         ZEN.SetDouble "Fcs.Acquisition.BleachTime", BleachTime
         putJobAi = True
-    Else
+    
+    
         Exit Function
     End If
     
     Exit Function
 ErrorHandle:
     MsgBox "Error in AFcsJob.setJobGui " + Err.Description
-    ErrorLog.UpdateLog "Error in AFcsJob.setJobGui " + Err.Description
+    ErrorLog.UpdateLog Now & " Error in AFcsJob.setJobGui " + Err.Description
 End Function
 
-''''
-'   reads FCS settings from ZEN into Macro. This command is used for ZENv < 2011
-'   In the absence of ZEN_Micro_AIM_ApplicationInterface
-'   Only stores which laser is active, its transmission and the measurement time and repetitions
-'''
-Public Function setJobNoAi() As Boolean
-    Dim FcsControl As AimFcsController
-    Set FcsControl = Fcs
-    Dim i As Integer
-    Dim NrLasers As Long
-    
-    LightPathConfig = "current"
-    NrLasers = FcsControl.HardwareInformation.GetNumberAttenuators
-   
-    ReDim BleachActive(0 To NrLasers - 1)
-    ReDim BleachTransmission(0 To NrLasers - 1)
-    ReDim LaserActive(0 To NrLasers - 1)
-    ReDim LaserTransmission(0 To NrLasers - 1)
-    ReDim LaserName(0 To NrLasers - 1)
-    For i = 0 To NrLasers - 1
-          LaserName(i) = CStr(1000000000 * FcsControl.HardwareInformation.GetAttenuatorWavelength(i)) & " nm"
-          LaserActive(i) = FcsControl.BeamPathParameters.AttenuatorOn(i)
-          BleachActive(i) = FcsControl.BeamPathParameters.BleachAttenuatorOn(i)
-          BleachTransmission(i) = FcsControl.BeamPathParameters.BleachAttenuatorPower(i)
-          LaserTransmission(i) = FcsControl.BeamPathParameters.AttenuatorPower(i)
-    Next i
-    MeasurementTime = FcsControl.AcquisitionParameters.MeasurementTime
-    Repetitions = FcsControl.AcquisitionParameters.MeasurementRepeat
-    BleachTime = FcsControl.AcquisitionParameters.BleachTime
-
-End Function
      
      
 '''
@@ -215,15 +223,19 @@ Public Function jobDescriptor() As String
         Description = Description & "FcsLasers: " & vbCrLf
         For i = 0 To UBound(LaserName)
             If LaserActive(i) Then
-                Description = Description & "  " & LaserName(i) & " at " & CStr(Round(LaserTransmission(i), 3)) & "%" & vbCrLf
+                Description = Description & "  " & LaserName(i) & " at " & CStr(Round(LaserTransmission(i) * 100, 3)) & "%" & vbCrLf
             End If
         Next i
         Description = Description & "BleachLasers: " & vbCrLf
         For i = 0 To UBound(LaserName)
             If BleachActive(i) Then
-                Description = Description & "  " & LaserName(i) & " at  " & CStr(Round(BleachTransmission(i), 3)) & "%" & vbCrLf
+                Description = Description & "  " & LaserName(i) & " at  " & CStr(Round(BleachTransmission(i) * 100, 3)) & "%" & vbCrLf
             End If
         Next i
+        Description = Description & "MeasurementTime = " & MeasurementTime & " s" & vbCrLf
+        Description = Description & "Repetitions = " & Repetitions & vbCrLf
+        Description = Description & "Bleach Time = " & BleachTime & " s" & vbCrLf
+ 
     Else
         Description = Description & "Job has not been set"
     End If
@@ -253,6 +265,76 @@ Public Function splittedJobDescriptor(MaxLines As Integer, jobDescription As Str
     Output(1) = Join(Label2, vbCrLf)
     splittedJobDescriptor = Output
 End Function
+
+''
+' create a String to save of the "complete" job desriptin
+''
+Public Function jobDescriptorSettings() As String
+    Dim Descriptor As String
+    Descriptor = "JobFcsName " & Me.Name & vbCrLf
+    Descriptor = Descriptor & "LightPathConfig " & LightPathConfig & vbCrLf
+    Descriptor = Descriptor & "PositionsEnabled " & PositionsEnabled & vbCrLf
+    Descriptor = Descriptor & "TimeSeriesEnabled " & TimeSeriesEnabled & vbCrLf
+    Descriptor = Descriptor & "MeasurementTime " & MeasurementTime & vbCrLf
+    Descriptor = Descriptor & "Repetitions " & MeasurementTime & vbCrLf
+    Descriptor = Descriptor & "BleachTime " & BleachTime & vbCrLf
+    Descriptor = Descriptor & "EndJobFcsDef " & vbCrLf
+    jobDescriptorSettings = Descriptor
+End Function
+
+Public Sub testDescriptor()
+    consistencyDescriptor (jobDescriptorSettings)
+End Sub
+
+Private Function consistencyDescriptor(Descriptor As String)
+    Dim i As Integer
+    Dim DerivedDescr() As String
+    Dim KeyItem() As String
+    DerivedDescr = Split(Descriptor, vbCrLf)
+    For i = 0 To UBound(DerivedDescr)
+        'Debug.Print DerivedDescr(i)
+        Sleep (100)
+        KeyItem = Split(DerivedDescr(i), " ")
+        If UBound(KeyItem) = 1 Then
+            If Not changeJobFromDescriptor(KeyItem(0), KeyItem(1)) Then
+                Exit Function
+            End If
+        End If
+    Next i
+    consistencyDescriptor = True
+End Function
+
+
+''''
+' change a job from a descriptor
+'''
+Public Function changeJobFromDescriptor(Descriptor As String, Value As Variant)
+    
+    Select Case Descriptor
+        Case "JobFcsName":
+            Name = CStr(Value)
+        Case "LightPathConfig":
+            LightPathConfig = CStr(Value)
+        Case "PositionsEnabled":
+            PositionsEnabled = CBool(Value)
+        Case "TimeSeriesEnabled":
+            TimeSeriesEnabled = CBool(Value)
+        Case "MeasurementTime":
+            MeasurementTime = CDbl(Value)
+        Case "Repetitions":
+            Repetitions = CInt(Value)
+        Case "BleachTime":
+            BleachTime = CDbl(Value)
+        Case "EndJobFcsDef":
+            
+        Case Else:
+            MsgBox " No Item " & Descriptor
+            Exit Function
+    End Select
+    changeJobFromDescriptor = True
+End Function
+
+
 
 ' some commands one can use
 '    Dim Power As Double

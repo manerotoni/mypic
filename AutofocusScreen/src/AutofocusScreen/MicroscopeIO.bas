@@ -26,7 +26,8 @@ Public Declare Function RegQueryValueEx _
 'contains a list of keys that will be used for image analysis
 Public OiaKeyNames() As String
 
-
+Public imgFileFormat As enumAimExportFormat
+Public imgFileExtension As String
 ''''''''''''''''''''
 '''''CONSTANTS''''''
 ''''''''''''''''''''
@@ -193,19 +194,9 @@ Public FocusChanged As Boolean
 Public Try As Long
 Public SystemName As String
           
-Public BackupRecording As DsRecording             ' To remove
-          
-Public GlobalBackupRecording As DsRecording       ' A backupRecording from initial setup (this will not be changed after Re_initialize)
-Public GlobalAutoFocusRecording As DsRecording    ' A global variable for AutofocusRecording
-Public GlobalAcquisitionRecording As DsRecording  ' A global variable for AcquisitionRecording
-Public GlobalTrigger1Recording As DsRecording   ' A global variable for Trigger1
-Public GlobalBleachRecording As DsRecording       ' A global variable for Bleaching
-
-Public GlobalAltRecording As DsRecording          ' A global variable for AlternativeTrack
-Public GlobalBackupActiveTracks() As Boolean
 
 
-Public GlobalBackupSampleObservationTime As Double  ' Stores pixelDwell time
+
 
 Public ImageNumber As Long
 Public Const OFS_MAXPATHNAME = 128
@@ -230,6 +221,13 @@ Public GlobalRecordingDoc As DsRecordingDoc
 'FcsData used globally
 '''
 Public GlobalFcsData As AimFcsData
+'''
+'FcsData used globally
+'''
+Public GlobalFcsRecordingDoc As DsRecordingDoc
+
+
+Const PauseGrabbing = 50 'pause for polling the whether scan/fcscontroller are acquiring. A high value makes more errors!
 
 'Grid positions
 Public posGridX() As Double ' they are initiated during acquisition
@@ -340,26 +338,17 @@ Public Function Range() As Double
     End If
 End Function
 
-
-
 ''''
-' TODO: Why not use Lsm5.StartScan?
+' Stop all running FCS jobs and imaging jobs
 ''''
-Public Sub ScanToImageOld(RecordingDoc As DsRecordingDoc) ' new routine to scan overwrite the same image, even with several z-slices
-   ' Dim AcquisitionController As AimAcquisitionController40.AimScanController 'now public
-    Dim image As AimImage
-    
-    If Not RecordingDoc Is Nothing Then
-        Set image = RecordingDoc.RecordingDocument.image(0, True)
-
-        If Not image Is Nothing Then
-            Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
-            AcquisitionController.DestinationImage(0) = image
-            AcquisitionController.DestinationImage(1) = Nothing
-            AcquisitionController.StartGrab eGrabModeSingle
-        End If
+Public Sub StopAcquisition()
+    Lsm5.StopScan
+    If Lsm5.Info.IsFCS Then
+        Dim FcsControl As AimFcsController
+        Set FcsControl = Fcs
+        FcsControl.StopAcquisitionAndWait
     End If
-    
+    DoEvents
 End Sub
 
 '''''
@@ -369,27 +358,31 @@ End Sub
 Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
     On Error GoTo ErrorHandle:
     Dim ProgressFifo As IAimProgressFifo ' this shows how far you are with the acquisition image ( the blue bar at the bottom). The usage of it makes the macro quite slow
-    Dim gui As Object, treenode As Object
+    Dim AcquisitionController As AimScanController
+    Dim treenode As Object
     Dim Time As Double
+    'Dim gui As Object
+    'Set gui = Lsm5.ViewerGuiServer not recquired anymore
+    
     Time = Timer
-    'Set gui = Lsm5.ViewerGuiServer
-    If Not RecordingDoc Is Nothing Then
-        Set treenode = RecordingDoc.RecordingDocument.image(0, True)
-        'Set treenode = Lsm5.NewDocument why not this?
-        Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller ' public variable
-        AcquisitionController.DestinationImage(0) = treenode 'EngelImageToHechtImage(GlobalSingleImage).Image(0, True)
-        AcquisitionController.DestinationImage(1) = Nothing
-        Set ProgressFifo = AcquisitionController.DestinationImage(0)
-        Lsm5.tools.CheckLockControllers True
-        AcquisitionController.StartGrab eGrabModeSingle
-        'Set RecordingDoc = Lsm5.StartScan this does not overwrite
-       If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
+    If RecordingDoc Is Nothing Then
+        Exit Function
     End If
+    Set treenode = RecordingDoc.RecordingDocument.image(0, True)
+    'Set treenode = Lsm5.NewDocument this will create a new document we want to use the same document
+    Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
+    AcquisitionController.DestinationImage(0) = treenode 'EngelImageToHechtImage(GlobalSingleImage).Image(0, True)
+    AcquisitionController.DestinationImage(1) = Nothing
+    Set ProgressFifo = AcquisitionController.DestinationImage(0)
+    Lsm5.tools.CheckLockControllers True
+    AcquisitionController.StartGrab eGrabModeSingle
+    'Set RecordingDoc = Lsm5.StartScan this does not overwrite
+    If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
     'Debug.Print "ScanToImage part1 " & Round(Timer - Time, 3)
-    Sleep (20)
+    Sleep (PauseGrabbing)
     Time = Timer
     While AcquisitionController.IsGrabbing
-        Sleep (20) ' the timing makes the different whether we release the system or not often enough
+        Sleep (PauseGrabbing) ' the timing makes the different whether we release the system or not often enough. funny enough a small value is better
         DoEvents
         If ScanStop Then
             Exit Function
@@ -399,12 +392,33 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
     ScanToImage = True
     Exit Function
 ErrorHandle:
-    ErrorLog.Show
     ErrorLog.UpdateLog ("Error in ScanToImage " & Err.Description)
-    ScanToImage = True
 End Function
 
-
+''''
+' Start Fcs Measurment
+''''
+Public Function ScanToFcs(FcsData As AimFcsData) As Boolean
+    On Error GoTo ErrorHandle
+    Dim FcsControl As AimFcsController
+    Set FcsControl = Fcs
+    If FcsData Is Nothing Then
+      Exit Function
+    End If
+    FcsControl.StartMeasurement FcsData
+    Sleep (PauseGrabbing)
+    While FcsControl.IsAcquisitionRunning(1)
+        Sleep (PauseGrabbing)
+        If ScanStop Then
+            Exit Function
+        End If
+        DoEvents
+    Wend
+    ScanToFcs = True
+    Exit Function
+ErrorHandle:
+    ErrorLog.UpdateLog ("Error in ScanToFcs " & Err.Description)
+End Function
 
 '''''
 '   Set the FCS controller and data stuff
@@ -420,74 +434,26 @@ End Sub
 ''''''''' Creates NewRecords'''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''
 
-'''
-' NewRecord(RecordingDoc As DsRecordingDoc, Optional Name As String, Optional Container As Long = 0, Optional ForceCreation As Boolean = False)
-'   Creates a RecordingDoc and an entry in the GUI for imaging
-'''
-Public Function NewRecord(RecordingDoc As DsRecordingDoc, Name As String, ZENv As Integer, Optional Container As Long = 0, Optional ForceCreation As Boolean = False) As Boolean
-    If ZENv > 2010 Then
-        NewRecord = NewRecordAi(RecordingDoc, Name, Container, ForceCreation)
-    Else
-        NewRecord = NewRecordNoAi(RecordingDoc, Name, ForceCreation)
-    End If
-End Function
 
-'''
-' Creates New DsRecordingDoc and a entry in the experiment Tree (works for ZENv < 2011)
-'   RecordingDoc [In/Out] - A document. If it exists and ForceCreation = False then only the name will be changed
-'   Name                  - Name of the document (Tab-name)
-'   ForceCreation         - force creation of a new document and entry in the experimentTree
-''''
-Public Function NewRecordNoAi(RecordingDoc As DsRecordingDoc, Name As String, Optional ForceCreation As Boolean = False) As Boolean
-    
-    On Error GoTo ErrorHandle:
-    Dim node As AimExperimentTreeNode
-    Set viewerGuiServer = Lsm5.viewerGuiServer
-    
-    If RecordingDoc Is Nothing Or ForceCreation Then
-        Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
-        node.type = eExperimentTeeeNodeTypeLsm
-        'this is different in versions > 2010 for compiling comments it out
-        'viewerGuiServer.InsertExperimentTreeNode node, True
-        Set node = viewerGuiServer.ExperimentTreeNodeSelected
-        
-        Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
-        While RecordingDoc.IsBusy
-            Sleep (Pause)
-            DoEvents
-        Wend
-    End If
-    RecordingDoc.SetTitle Name
-    NewRecordNoAi = True
-    Exit Function
-    
-ErrorHandle:
-    ErrorLog.UpdateLog "Error  in NewRecordNoAi" + Err.Description
-End Function
+
 
 '''
 ' Creates New DsRecordingDoc and a entry in the experiment Tree (works only with ZENv > 2010)
 '   RecordingDoc [In/Out] - A document. If it exists and ForceCreation = False then only the name will be changed
 '   Name                  - Name of the document (Tab-name)
-'   Container             - create document in a specific container (minipages of ZEN GUI)
 '   ForceCreation         - force creation of a new document and entry in the experiment tree
 ''''
-Public Function NewRecordAi(RecordingDoc As DsRecordingDoc, Name As String, Optional Container As Long = 0, Optional ForceCreation As Boolean = False) As Boolean
+Public Function NewRecord(RecordingDoc As DsRecordingDoc, Name As String, Optional ForceCreation As Boolean = False) As Boolean
     
     On Error GoTo ErrorHandle:
     Dim node As AimExperimentTreeNode
-    Set viewerGuiServer = Lsm5.viewerGuiServer
-    Dim doc As Object
     If RecordingDoc Is Nothing Or ForceCreation Then
-        'this is different in versions < 2011
-        If Container > 0 Then
-            Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
-            node.type = eExperimentTeeeNodeTypeLsm
-            viewerGuiServer.InsertExperimentTreeNode node, True, Container
-        Else
-            Set node = Lsm5.NewDocument
-            node.type = eExperimentTeeeNodeTypeLsm
-        End If
+        'for version > 2011 you could also specify containers this is not used here
+        'Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
+        'node.type = eExperimentTeeeNodeTypeLsm
+        'viewerGuiServer.InsertExperimentTreeNode node, True, Container (this last option does not exist for ZEN<2011)
+        Set node = Lsm5.NewDocument
+        node.type = eExperimentTeeeNodeTypeLsm
         Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
         While RecordingDoc.IsBusy
             Sleep (Pause)
@@ -495,11 +461,12 @@ Public Function NewRecordAi(RecordingDoc As DsRecordingDoc, Name As String, Opti
         Wend
     End If
     RecordingDoc.SetTitle Name
-    NewRecordAi = True
+    NewRecord = True
     Exit Function
     
 ErrorHandle:
-    ErrorLog.UpdateLog "Error in NewRecordAi" + Err.Description
+    ErrorLog.UpdateLog Now & " Error in NewRecord" + Err.Description
+    
 End Function
 
 
@@ -507,10 +474,10 @@ End Function
 ''
 ' Check if document exists and if it is loaded in the GUI. Otherwise creates a new one.
 ''
-Public Function NewRecordGui(RecordingDoc As DsRecordingDoc, Name As String, ZEN As Object, ZENv As Integer, Optional Container As Long = 0) As Boolean
+Public Function NewRecordGui(RecordingDoc As DsRecordingDoc, Name As String, ZEN As Object, ZENv As Integer) As Boolean
 
     If ZENv > 2010 Then
-        NewRecordGui = NewRecordGuiAi(RecordingDoc, Name, ZEN, Container)
+        NewRecordGui = NewRecordGuiAi(RecordingDoc, Name, ZEN)
     Else
         NewRecordGui = NewRecord(RecordingDoc, Name, False) ' no idea how to check the name of documents in ZENv < 2011
     End If
@@ -522,50 +489,208 @@ End Function
 '  Check if Name exists in GUI
 '  recquires ZEN_Micro_AIM_ApplicationInterface
 ''''
-Public Function NewRecordGuiAi(RecordingDoc As DsRecordingDoc, Name As String, ZEN As Object, Optional Container As Long = 0) As Boolean
-    
+Public Function NewRecordGuiAi(RecordingDoc As DsRecordingDoc, Name As String, ZEN As Object) As Boolean
+
     On Error GoTo ErrorHandle
-    Dim iGuiDocument As Integer
     
     If Not ZEN Is Nothing Then
-        If Not NewRecordAi(RecordingDoc, Name, 0, False) Then
+        If Not NewRecord(RecordingDoc, Name, False) Then
             Exit Function
         End If
-        'If GUI entries exist
+        'leave some time to set the name
+        Sleep (1000)
         If ZEN.gui.Document.ItemCount > 0 Then
-        ' look for a document with this name
-            If ZEN.gui.Document.Name.Value <> Name Then 'current document is not the one with DocName
-                For iGuiDocument = 0 To ZEN.gui.Document.ItemCount
-                    ZEN.gui.Document.ByIndex = iGuiDocument
-                    If ZEN.gui.Document.ByName = Name Then
-                        Exit For
-                    End If
-                Next iGuiDocument
-                'create a new GuiEntry if document has not been found
-                If iGuiDocument >= ZEN.gui.Document.ItemCount Then
-                    If Not NewRecordAi(RecordingDoc, Name, 0, True) Then
-                        Exit Function
-                    End If
-                    ZEN.gui.Document.ByIndex = ZEN.gui.Document.ItemCount - 1
+            ZEN.gui.Document.ByName = Name
+            If ZEN.gui.Document.Name.Value <> Name Then
+                If Not NewRecord(RecordingDoc, Name, True) Then
+                    Exit Function
                 End If
+                ZEN.gui.Document.ByName = Name
             End If
         Else
-           'create a new Guientry if there are no documents at all
-            If Not NewRecordAi(RecordingDoc, Name, 0, True) Then
+            If Not NewRecord(RecordingDoc, Name, True) Then
                 Exit Function
             End If
         End If
         NewRecordGuiAi = True
     Else
-        MsgBox "Error: CheckForGuiDocumentAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
-        ErrorLog.UpdateLog "Error: CheckForGuiDocumentAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
+        MsgBox "Error: NewRecordGuiAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
+        ErrorLog.UpdateLog Now & " Error: NewRecordGuiAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
     End If
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog "Error in CheckForGuiDocumentAi " + Err.Description
+    ErrorLog.UpdateLog Now & " Error in NewRecordGuiAi " + Err.Description
 End Function
 
 
+
+''''
+'   Create a new FCSData record
+''''
+Public Function NewFcsRecord(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, Name As String, Optional ForceCreation As Boolean = False) As Boolean
+    Dim MaxDataSets As Integer
+    Dim i As Integer
+    On Error GoTo ErrorHandle:
+    Dim node As AimExperimentTreeNode
+    If FcsData Is Nothing Or RecordingDoc Is Nothing Or ForceCreation Then
+        'for version > 2011 you could also specify containers this is not used here
+        'Set viewerGuiServer = Lsm5.viewerGuiServer
+        'Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
+        'node.type = eExperimentTeeeNodeTypeConfoCor
+        'viewerGuiServer.InsertExperimentTreeNode node, True, Container (this last option does not exist for ZEN<2011)
+        Set node = Lsm5.NewDocument
+        node.type = eExperimentTeeeNodeTypeConfoCor
+        Set FcsData = node.FcsData
+        FcsData.Name = Name
+        Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
+        While RecordingDoc.IsBusy
+            Sleep (Pause)
+            DoEvents
+        Wend
+    End If
+
+    RecordingDoc.SetTitle Name
+    NewFcsRecord = True
+    Exit Function
+
+ErrorHandle:
+    ErrorLog.UpdateLog Now & " Error in NewFcsRecord " + Err.Description
+End Function
+
+'''
+' Remove all existing Data from FcsData. This is recquired if you want only to save new data
+'''
+Public Function CleanFcsData(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData) As Boolean
+    Dim MaxDataSets As Integer
+    Dim i As Integer
+    If FcsData Is Nothing Or RecordingDoc Is Nothing Then
+        GoTo NoRecord
+    End If
+    MaxDataSets = FcsData.DataSets - 1
+    If MaxDataSets >= 0 Then
+        For i = MaxDataSets To 0 Step -1
+            FcsData.Remove (i)
+        Next i
+    End If
+    CleanFcsData = True
+    Exit Function
+NoRecord:
+    ErrorLog.UpdateLog Now & " CleanFcsRecord: Found no active record for FCS!"
+End Function
+
+
+''
+' Check if document exists and if it is loaded in the GUI. Otherwise creates a new one.
+''
+Public Function NewFcsRecordGui(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, Name As String, ZEN As Object, ZENv As Integer) As Boolean
+
+    If ZENv > 2010 Then
+        NewFcsRecordGui = NewFcsRecordGuiAi(RecordingDoc, FcsData, Name, ZEN)
+    Else
+        NewFcsRecordGui = NewFcsRecord(RecordingDoc, FcsData, Name, False)  ' no idea how to check the name of documents in ZENv < 2011
+    End If
+    
+End Function
+
+
+''''
+'  Check if Name exists in GUI
+'  recquires ZEN_Micro_AIM_ApplicationInterface
+''''
+Public Function NewFcsRecordGuiAi(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, Name As String, ZEN As Object) As Boolean
+    
+    On Error GoTo ErrorHandle
+    
+    If Not ZEN Is Nothing Then
+        If Not NewFcsRecord(RecordingDoc, FcsData, Name, False) Then
+            Exit Function
+        End If
+        'leave some time to set the name
+        Sleep (1000)
+        If ZEN.gui.Document.ItemCount > 0 Then
+            ZEN.gui.Document.ByName = Name
+            If ZEN.gui.Document.Name.Value <> Name Then
+                If Not NewFcsRecord(RecordingDoc, FcsData, Name, True) Then
+                    Exit Function
+                End If
+                ZEN.gui.Document.ByName = Name
+            End If
+        Else
+            If Not NewFcsRecord(RecordingDoc, FcsData, Name, True) Then
+                Exit Function
+            End If
+        End If
+        NewFcsRecordGuiAi = True
+    Else
+        MsgBox "Error: NewFcsRecordGuiAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
+        ErrorLog.UpdateLog Now & " Error: NewFcsRecordGuiAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
+    End If
+    Exit Function
+ErrorHandle:
+    ErrorLog.UpdateLog Now & " Error in NewFcsRecordGuiAi " + Err.Description
+End Function
+
+''''
+' SaveFcsMeasurment to File
+''''
+Public Function SaveFcsMeasurement(FcsData As AimFcsData, FileName As String) As Boolean
+    
+    If FcsData Is Nothing Then
+        MsgBox "No Fcs Recording to Save"
+        Exit Function
+    End If
+    ' Write to file
+    Dim writer As AimFcsFileWrite
+    Set writer = Lsm5.CreateObject("AimFcsFile.Write")
+    writer.FileName = FileName
+    writer.FileWriteType = eFcsFileWriteTypeAll
+    writer.format = eFcsFileFormatConfoCor3WithRawData
+
+    writer.Source = FcsData
+    writer.Run
+    'write twice to be sure
+    If Not writer.DestinationFilesExist(FileName) Then
+        writer.FileName = FileName
+        writer.FileWriteType = eFcsFileWriteTypeAll
+        writer.format = eFcsFileFormatConfoCor3WithRawData
+        writer.Source = FcsData
+        writer.Run
+    Else
+        
+    End If
+    SaveFcsMeasurement = True
+End Function
+
+Public Sub SaveFcsPositionList(sFile As String, positionsPx() As Vector)
+    On Error GoTo ErrorHandle
+    Close
+    Dim iFileNum As Integer
+    Dim i As Long
+    Dim PosX As Double
+    Dim PosY As Double
+    Dim PosZ As Double
+    iFileNum = FreeFile()
+    Open sFile For Output As iFileNum
+    Print #iFileNum, "%X Y Z (um): ZEN Fcs position convention 0, 0  is center of image, Z is absolute coordinate"
+    For i = 0 To GetFcsPositionListLength - 1
+        GetFcsPosition PosX, PosY, PosZ, i
+        Print #iFileNum, Round(PosX * 1000000, PrecXY) & " " & Round(PosY * 1000000, PrecXY) & " " & Round(PosZ * 1000000, PrecXY)
+    Next i
+    On Error GoTo ErrorHandle2:
+    Print #iFileNum, "%X Y Z (px). Imaging convention 0,0,0 is upper left corner bottom slice"
+    For i = 0 To UBound(positionsPx)
+        Print #iFileNum, positionsPx(i).X & " " & positionsPx(i).Y & " " & positionsPx(i).Z
+    Next i
+
+    Close
+    Exit Sub
+ErrorHandle:
+    ErrorLog.UpdateLog Now & "SaveFcsPositionList Can't write " & sFile & " for the FcsPositions"
+    Exit Sub
+ErrorHandle2:
+    Close
+    ErrorLog.UpdateLog Now & "positionsPx not assigned"
+End Sub
 
 '''''
 '   SystemVersionOffset()
@@ -679,7 +804,7 @@ End Function
 '   Default will cycle through all positions sequentially starting from actual position
 '       [Mark] In - Number of position where to move.
 '''''
-Public Sub MoveToNextLocation(Optional Mark As Integer = 0)
+Public Function MoveToNextLocation(Optional Mark As Integer = 0) As Boolean
         Dim MarkCount As Long
         Dim count As Long
         Dim idx As Long
@@ -696,12 +821,12 @@ Public Sub MoveToNextLocation(Optional Mark As Integer = 0)
             If GetInputState() <> 0 Then
                 DoEvents
                 If ScanStop Then
-                    AutofocusForm.StopAcquisition
-                    Exit Sub
+                    Exit Function
                 End If
             End If
         Loop
-End Sub
+        MoveToNextLocation = True
+End Function
 
 
 Private Sub MovetoCorrectZPosition(ZOffset As Double)
@@ -1072,7 +1197,7 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
     
     If Not FoundChannel Then
         ErrorLog.Show
-        ErrorLog.UpdateLog "MassCenter Was not able to find channel: " & TrackingChannel & " for tracking"
+        ErrorLog.UpdateLog Now & " MassCenter Was not able to find channel: " & TrackingChannel & " for tracking"
         Exit Function
     End If
 
@@ -1144,7 +1269,7 @@ End Function
 ' SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As String) As Boolean
 ' Copied and adapted from MultiTimeSeries macro
 ''''''
-Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As String) As Boolean
+Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As String, FileFormat As enumAimExportFormat) As Boolean
     Dim Export As AimImageExport
     Dim image As AimImageMemory
     Dim Error As AimError
@@ -1163,7 +1288,7 @@ Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As Strin
     Set Export = Lsm5.CreateObject("AimImageImportExport.Export.4.5")
     'Set Export = New AimImageExport
     Export.FileName = FileName
-    Export.format = eAimExportFormatLsm5
+    Export.format = FileFormat
     Export.StartExport image, image
     Set Error = Export
     Error.LastErrorMessage
@@ -1196,9 +1321,8 @@ Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As Strin
 Done:
     MsgBox "Check Temporary Files Folder! Cannot Save Temporary File(s)!"
     ScanStop = True
-    SaveDsRecordingDoc = False
     Export.FinishExport
-    AutofocusForm.StopAcquisition
+    StopAcquisition
 End Function
 
 
@@ -1260,40 +1384,60 @@ End Sub
 
 
 
-'''''
+''''''
+''
+''''''
+'Public Function SubImagingWorkFlowFcs(FcsData As AimFcsData, HighResArrayX() As Double, _
+' HighResArrayY() As Double, HighResArrayZ() As Double, fileDir As String, FileName As String, Optional pixelSizeXY As Double = 0, Optional pixelSizeZ As Double = 0) As Boolean
 '
+'
+'    Dim i As Long
+'    ClearFcsPositionList
+'    Dim Recording As DsRecordingDoc
+'    For i = 1 To UBound(HighResArrayX)
+'        SetFcsPosition HighResArrayX(i), HighResArrayY(i), HighResArrayZ(i), i - 1
+'    Next i
+'
+'    If Not CheckDir(fileDir) Then
+'        Exit Function
+'    End If
+'
+'    NewFcsRecord FcsData, "fcs_" & FileName, 1
+'
+'    If Not FcsMeasurement(FcsData) Then
+'        Exit Function
+'    End If
+'
+'    Set Recording = Lsm5.DsRecordingActiveDocObject
+'    Recording.SetTitle "fcs_" & FileName
+'
+'    SaveFcsPositionList fileDir & FileName & "_fcsPos.txt", pixelSizeXY, pixelSizeZ
+'    'save measurement
+'    SaveFcsMeasurement FcsData, fileDir & FileName & ".fcs"
+'
+'End Function
+
+
+
 '''''
-Public Function SubImagingWorkFlowFcs(FcsData As AimFcsData, HighResArrayX() As Double, _
- HighResArrayY() As Double, HighResArrayZ() As Double, fileDir As String, FileName As String, Optional pixelSizeXY As Double = 0, Optional pixelSizeZ As Double = 0) As Boolean
-
-
-    Dim i As Long
-    ClearFcsPositionList
-    Dim Recording As DsRecordingDoc
-    For i = 1 To UBound(HighResArrayX)
-        SetFcsPosition HighResArrayX(i), HighResArrayY(i), HighResArrayZ(i), i - 1
-    Next i
-    
-    If Not CheckDir(fileDir) Then
-        Exit Function
-    End If
-    
-    NewFcsRecord FcsData, "fcs_" & FileName, 1
-    
-    If Not FcsMeasurement(FcsData) Then
-        Exit Function
-    End If
-        
-    Set Recording = Lsm5.DsRecordingActiveDocObject
-    Recording.SetTitle "fcs_" & FileName
-    
-    SaveFcsPositionList fileDir & FileName & "_fcsPos.txt", pixelSizeXY, pixelSizeZ
-    'save measurement
-    SaveFcsMeasurement FcsData, fileDir & FileName & ".fcs"
-    
-End Function
-
-
+'' TODO: Why not use Lsm5.StartScan?
+'''''
+'Public Sub ScanToImageOld(RecordingDoc As DsRecordingDoc) ' new routine to scan overwrite the same image, even with several z-slices
+'   ' Dim AcquisitionController As AimAcquisitionController40.AimScanController 'now public
+'    Dim image As AimImage
+'
+'    If Not RecordingDoc Is Nothing Then
+'        Set image = RecordingDoc.RecordingDocument.image(0, True)
+'
+'        If Not image Is Nothing Then
+'            Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
+'            AcquisitionController.DestinationImage(0) = image
+'            AcquisitionController.DestinationImage(1) = Nothing
+'            AcquisitionController.StartGrab eGrabModeSingle
+'        End If
+'    End If
+'
+'End Sub
 
 
 

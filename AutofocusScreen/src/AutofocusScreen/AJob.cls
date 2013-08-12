@@ -18,12 +18,19 @@ Public TimeBetweenStacks As Double
 Public UseRoi As Boolean
 Public CorrX  As Double ' corretion for double directional scanning
 Public CorrY As Double  ' corretion for double directional scanning
-Private LaserOnOff() As Boolean
-Const SwitchLaserLines = False ' this is not clear whether it works or not properly. Sometimes it is fast sometimes slow?
-
-
+'''a Job can also have Rois associated to it
 Private Rois() As Roi
+''Number of Rois associated to the Job
 Private pRoiMaxNr As Integer
+
+
+
+''''DON'T USE YET''''
+'''If True swicth lasers instead of Tracks
+Const SwitchLaserLines = False ' this is not clear whether it works or not properly. Sometimes it is fast sometimes slow?
+'''record which lasers are on or off
+Private LaserOnOff() As Boolean
+
 
 Public Property Get AcquireTrack() As Boolean()
     AcquireTrack = pAcquireTrack
@@ -162,7 +169,7 @@ ErrorHandle:
     MsgBox "Error in AJob.putJob " + Name + " " + Err.Description
 End Function
 
-Public Sub SetAcquireTrack(iTrack As Integer, Value As Boolean)
+Public Sub setAcquireTrack(iTrack As Integer, Value As Boolean)
     If UBound(pAcquireTrack) >= iTrack Then
         pAcquireTrack(iTrack) = Value
     End If
@@ -178,9 +185,9 @@ Public Function isAcquiring() As Boolean
     Next i
 End Function
 
-Public Function GetAcquireTrack(iTrack As Integer) As Boolean
+Public Function getAcquireTrack(iTrack As Integer) As Boolean
     If UBound(pAcquireTrack) >= iTrack Then
-        GetAcquireTrack = pAcquireTrack(iTrack)
+        getAcquireTrack = pAcquireTrack(iTrack)
     End If
 End Function
 
@@ -248,6 +255,18 @@ Public Sub setRoi(ARoi As Roi, roiNr As Integer)
     End If
 End Sub
 
+''
+' load Rois into class
+''
+Public Sub setRois(RoisIn() As Roi)
+    If isArrayEmpty(RoisIn) Then
+         ErrorLog.UpdateLog Now & " AJob.setRois tried to initialize Rois with empty vector"
+    Else
+        Rois = RoisIn
+        pRoiMaxNr = UBound(Rois) + 1
+    End If
+End Sub
+
 '''
 ' getRoi: returns a Roi
 '''
@@ -311,12 +330,11 @@ Public Function jobDescriptor() As String
         Description = Description & "ScanMode = Line" & vbCrLf
         Description = Description & "       X = " & Recording.SamplesPerLine & ", Y = 1" & vbCrLf
     End If
-    If ScanMode = "Frame" Or ScanMode = "Stack" Then
+    If ScanMode = "Frame" Or ScanMode = "Stack" Or ScanMode = "Plane" Then
         Description = Description & "ScanMode = Frame" & vbCrLf
         Description = Description & "       X = " & Recording.SamplesPerLine & ", Y = " & Recording.LinesPerFrame & vbCrLf
         Description = Description & "LineStep = " & Recording.LineStepNumber & vbCrLf
     End If
-    
     If ScanMode = "Point" Then
         Description = Description & "ScanMode = Spot" & vbCrLf
         Description = Description & "       X =  1, Y = 1 " & vbCrLf
@@ -472,6 +490,8 @@ Public Function changeJobFromDescriptor(Descriptor As String, Value As Variant)
             Recording.StacksPerRecord = CLng(Value)
         Case "TimeBetweenStacks":
             Me.TimeBetweenStacks = CDbl(Value)
+        Case "EndJobDef":
+            
         Case Else:
             MsgBox " No Item " & Descriptor
             Exit Function
