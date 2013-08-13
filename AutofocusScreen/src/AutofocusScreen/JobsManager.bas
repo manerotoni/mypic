@@ -359,6 +359,7 @@ Public Function ExecuteJobAndTrack(GridName As String, JobName As String, Record
         End If
     
     End If
+    ExecuteJobAndTrack = StgPos
     Success = True
     Exit Function
 ErrorHandle:
@@ -1085,7 +1086,7 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
             ''' if we run a subjob the grid and counter is reset
             If runSubImagingJob(JobName, JobName, newPositions) Then
                 'remove positions from parent grid to avoid revisiting the position
-                'Grids.setThisValid parentGrid, False
+                Grids.setThisValid parentGrid, False
                 'start acquisition of Job on grid named JobName
                 If Not StartJobOnGrid(JobName, JobName, RecordingDoc, parentPath & parentFile & "\") Then
                     GoTo Abort

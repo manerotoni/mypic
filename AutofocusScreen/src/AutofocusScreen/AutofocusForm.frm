@@ -251,8 +251,8 @@ Private Sub Re_Start()
     SwitchEnablePage "AlterAcquisition", AlterAcquisitionActive
     
     'Set Database name
-    DatabaseTextbox.Value = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="OutputFolder")
-    
+    'DatabaseTextbox.Value = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="OutputFolder")
+    DatabaseTextbox.Value = ""
     'Set repetition and locations
     'RepetitionNumber = 1
     'locationNumber = 1
