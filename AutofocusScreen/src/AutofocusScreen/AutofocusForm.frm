@@ -1036,7 +1036,9 @@ Private Sub JobAcquire(JobName As String)
     Running = True
     'for imaging the position to image can be passed directly to AcquireJob. ZEN uses the absolute position in um
     NewRecordGui GlobalRecordingDoc, JobName & "Job", ZEN, ZENv
-    DisplayProgress "Acquiring Job " & "Fcs1", RGB(&HC0, &HC0, 0)
+    DisplayProgress "Acquiring Job " & JobName, RGB(&HC0, &HC0, 0)
+    Jobs.putJob JobName, ZEN
+    
     If Not AcquireJob(JobName, GlobalRecordingDoc, JobName & "Job", position) Then
         DisplayProgress "Stopped", RGB(&HC0, 0, 0)
         StopAcquisition
@@ -1090,6 +1092,7 @@ Private Sub JobFcsAcquire(JobName As String)
     End If
     Running = True
     DisplayProgress "Acquiring Job " & JobName, RGB(&HC0, &HC0, 0)
+    JobsFcs.putJob JobName, ZEN
     If Not AcquireFcsJob(JobName, GlobalFcsRecordingDoc, GlobalFcsData, JobName & "Job", newPosition) Then
         DisplayProgress "Stopped", RGB(&HC0, 0, 0)
         StopAcquisition
