@@ -34,7 +34,7 @@ Private subKey_roiType_HowTo As Dictionary
 Public Sub initializeDefault()
     On Error GoTo errMsg
 'This variable contains the keys for the OnlineImageanalysis
-    ReDim Keys(0 To 15)
+    ReDim Keys(0 To 16)
     Keys(0) = "codeMic"
     Keys(1) = "codeOia"
     Keys(2) = "fileAnalyzed"
@@ -51,6 +51,7 @@ Public Sub initializeDefault()
     Keys(13) = "roiX"
     Keys(14) = "roiY"
     Keys(15) = "OutputFolder"
+    Keys(16) = "errorMsg"
   
     Set subKey_roiAim_HowTo = New Dictionary
     subKey_roiAim_HowTo.Add "", "(empty char) do nothing with roi"
@@ -84,6 +85,7 @@ Public Sub initializeDefault()
     Keys_HowTo.Add Keys(13), "X positions for roi. Multiple rois: X1roi1, X2roi1; X1roi1, X2roi2 ..."
     Keys_HowTo.Add Keys(14), "Y positions for roi. Multiple rois: X1roi1, X2roi1; X1roi1, X2roi2 ..."
     Keys_HowTo.Add Keys(15), "main directory where images are stored"
+    Keys_HowTo.Add Keys(16), "error message coming from Oia"
     
     Set subKey_codeMic_HowTo = New Dictionary
     subKey_codeMic_HowTo.Add "", "(empty char) wait for image analysis"
@@ -255,7 +257,19 @@ Public Sub readFromRegistry()
     Next Key
 End Sub
 
-
+''''
+'   ReadOiaSettingsFromRegistry(Settings As Collection, Keys() As String)
+'       Read Registry using the keys stored in Keys and create a new dictionary
+''''
+Public Sub readKeyFromRegistry(Key As Variant)
+    checkExistKeys
+    If Settings.Exists(Key) Then
+        Settings.Item(Key) = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:=Key)
+    Else
+        Settings.Add Key, GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:=Key)
+    End If
+    checkKeyItem Key, Settings.Item(Key)
+End Sub
 
 
 ''''
@@ -286,6 +300,8 @@ Public Sub writeKeyToRegistry(Key As Variant, Value As Variant)
         SaveSetting "OnlineImageAnalysis", "macro", Key, Value
     End If
 End Sub
+
+
 
 ''''
 '   ReadOiaSettingsFromFile(Settings As Dictionary, FileName As String)

@@ -1030,7 +1030,10 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
         
         Case "error":
             OiaSettings.writeKeyToRegistry "codeMic", "nothing"
-            ErrorLog.UpdateLog "codeMic error. Online image analysis for job " + parentJob + " file " + OiaSettings.getSettings("filePath") + " failed"
+            OiaSettings.readKeyFromRegistry "errorMsg"
+            OiaSettings.getSettings ("errorMsg")
+            ErrorLog.UpdateLog "codeMic error. Online image analysis for job " & parentJob & " file " & OiaSettings.getSettings("filePath") & " failed . " _
+            & " Error from Oia: " & OiaSettings.getSettings("errorMsg")
             
         Case "timeExpired":
             OiaSettings.writeKeyToRegistry "codeMic", "nothing"
