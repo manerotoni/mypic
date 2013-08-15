@@ -1,10 +1,27 @@
 Attribute VB_Name = "Functions"
+'''
+' Some utility functions
+''''
+
 Option Explicit
 
 Public Sub Autofocus_Setup()
         AutofocusForm.Show
 End Sub
 
+'''
+'   Display progress in bottom labal of AutofocusForm
+'''
+Public Sub DisplayProgress(State As String, Color As Long)       'Used to display in the progress bar what the macro is doing
+    If (Color & &HFF) > 128 Or ((Color / 256) & &HFF) > 128 Or ((Color / 256) & &HFF) > 128 Then
+        AutofocusForm.ProgressLabel.ForeColor = 0
+    Else
+        AutofocusForm.ProgressLabel.ForeColor = &HFFFFFF
+    End If
+    AutofocusForm.ProgressLabel.BackColor = Color
+    AutofocusForm.ProgressLabel.Caption = State
+    DoEvents
+End Sub
 
 
 '''
@@ -121,7 +138,7 @@ End Function
 
 '''''
 '   FServerFromDescription(strName As String, StrPath As String, ExecName As String) As Boolean
-'   TODO: What is this
+'   TODO: What is this?
 '''''
 Function FServerFromDescription(strName As String, StrPath As String, ExecName As String) As Boolean
     Dim lngResult As Long

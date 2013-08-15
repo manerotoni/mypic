@@ -1,6 +1,6 @@
 Attribute VB_Name = "AutofocusFormSaveLoad"
 ''''
-' Module contains functions to save and load Form settings
+' Module contains functions to save and load Form settings from file
 '''
 
 Option Explicit

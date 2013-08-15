@@ -8,8 +8,9 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 '''
-' Class for creating a grid
+' Class for creating and administrating a grid
 ' The positions and subpositions are numbered starting from 1
+' A grid defines positions travelled with the stage for imaging
 '''
 Option Explicit
 
@@ -495,8 +496,6 @@ dRowSub As Double, dColSub As Double, Optional refRow As Integer = 1, Optional r
         
         initialize Row, Col, RowSub, ColSub
         ' A row correspond to Y movement and Column to X shift
-        ' entries are posGridX(row, column)!! this what is
-        'counters
         'Make main grid
         Dim iRow As Long
         Dim iCol As Long
@@ -613,6 +612,7 @@ End Function
 '   Function loads a file and write entries in Double arrays. First entry of file is structure of grid
 '   Format is Me.numRow numCol numRowSub numColSub
 '   X Y Z X Y Z X Y Z etc
+'   This is not working!!!
 ''''''''
 Public Function loadPositionGridFile(ByVal sFile As String) As Boolean
     Dim iRow As Integer
@@ -642,10 +642,11 @@ Public Function loadPositionGridFile(ByVal sFile As String) As Boolean
           Wend
           FieldEntries = Split(Fields, " ")
           For iRowSub = 1 To Me.numRowSub
+            'needs to check this
               For iColSub = 1 To Me.numColSub
-                  GridArray(iRow, iCol, iRowSub, iColSub).X = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * UBound(posGridX, 3) * 3))
-                  GridArray(iRow, iCol, iRowSub, iColSub).Y = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * UBound(posGridX, 3) * 3 + 1))
-                  GridArray(iRow, iCol, iRowSub, iColSub).Z = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * UBound(posGridX, 3) * 3 + 2))
+'                  GridArray(iRow, iCol, iRowSub, iColSub).X = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * UBound(posGridX, 3) * 3))
+'                  GridArray(iRow, iCol, iRowSub, iColSub).Y = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * UBound(posGridX, 3) * 3 + 1))
+'                  GridArray(iRow, iCol, iRowSub, iColSub).Z = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * UBound(posGridX, 3) * 3 + 2))
               Next iColSub
           Next iRowSub
       Next iCol
@@ -778,7 +779,7 @@ End Function
 
 
 '''''''
-'
+'   need to be updated
 ''''''''
 Public Function loadValidGridFile(ByVal sFile As String, format As String) As Boolean
     
@@ -830,16 +831,17 @@ Public Function loadValidGridFile(ByVal sFile As String, format As String) As Bo
                     Active = (Match.Item(0).SubMatches.Item(4) <> "none")
                     GoodMatch = True
                 End If
+                'check it
                 'if this gridposition exists then update activity
-                If GoodMatch And CInt(Match.Item(0).SubMatches.Item(1)) <= UBound(posGridXY_Valid, 1) And CInt(Match.Item(0).SubMatches.Item(1)) >= LBound(posGridXY_Valid, 1) _
-                And CInt(Match.Item(0).SubMatches.Item(2)) <= UBound(posGridXY_Valid, 2) And CInt(Match.Item(0).SubMatches.Item(2)) >= LBound(posGridXY_Valid, 2) Then
-                    For iRowSub = 1 To UBound(posGridXY_Valid, 3)
-                        For iColSub = 1 To UBound(posGridXY_Valid, 4)
-                            GridArray(CInt(Match.Item(0).SubMatches.Item(1)), CInt(Match.Item(0).SubMatches.Item(2)), iRowSub, iColSub).Valid = Active
-                            setName Match.Item(0).SubMatches.Item(3) & "_" & Match.Item(0).SubMatches.Item(4), CInt(Match.Item(0).SubMatches.Item(1)), CInt(Match.Item(0).SubMatches.Item(2)), iRowSub, iColSub
-                        Next iColSub
-                    Next iRowSub
-                End If
+'                If GoodMatch And CInt(Match.Item(0).SubMatches.Item(1)) <= UBound(posGridXY_Valid, 1) And CInt(Match.Item(0).SubMatches.Item(1)) >= LBound(posGridXY_Valid, 1) _
+'                And CInt(Match.Item(0).SubMatches.Item(2)) <= UBound(posGridXY_Valid, 2) And CInt(Match.Item(0).SubMatches.Item(2)) >= LBound(posGridXY_Valid, 2) Then
+'                    For iRowSub = 1 To UBound(posGridXY_Valid, 3)
+'                        For iColSub = 1 To UBound(posGridXY_Valid, 4)
+'                            GridArray(CInt(Match.Item(0).SubMatches.Item(1)), CInt(Match.Item(0).SubMatches.Item(2)), iRowSub, iColSub).Valid = Active
+'                            setName Match.Item(0).SubMatches.Item(3) & "_" & Match.Item(0).SubMatches.Item(4), CInt(Match.Item(0).SubMatches.Item(1)), CInt(Match.Item(0).SubMatches.Item(2)), iRowSub, iColSub
+'                        Next iColSub
+'                    Next iRowSub
+'                End If
             Loop
         End If
     Else

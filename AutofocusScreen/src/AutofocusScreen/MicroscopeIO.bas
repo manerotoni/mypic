@@ -1,4 +1,8 @@
 Attribute VB_Name = "MicroscopeIO"
+''''
+' Module with functions for controlling stage, starts and stop scan
+'''''
+
 Option Explicit
 Option Base 0
 Public SystemVersion As String
@@ -23,271 +27,50 @@ Public Declare Function RegQueryValueEx _
     lpData As Any, lpcbData As Long) As Long         ' Note that if you declare the lpData parameter as String, you must pass it By Value.
 
 
-'contains a list of keys that will be used for image analysis
-Public OiaKeyNames() As String
 
 Public imgFileFormat As enumAimExportFormat
 Public imgFileExtension As String
-''''''''''''''''''''
-'''''CONSTANTS''''''
-''''''''''''''''''''
-Public Const VK_SPACE = &H20
-Public Const VK_RETURN = &HD
-Public Const VK_CANCEL = &H3
-Public Const VK_UP = &H26
-Public Const VK_DOWN = &H28
-Public Const VK_ESCAPE = &H1B
-Public Const VK_PAUSE = &H13
-Public Const VK_ADD = &H6B
-Public Const VK_SUBTRACT = &H6D
-Public Const HKEY_CLASSES_ROOT = &H80000000
-Public Const SYNCHRONIZE = &H100000
-Public Const READ_CONTROL = &H20000
-Public Const STANDARD_RIGHTS_READ = (READ_CONTROL)
-Public Const KEY_QUERY_VALUE = &H1
-Public Const KEY_ENUMERATE_SUB_KEYS = &H8
-Public Const KEY_NOTIFY = &H10
-Public Const KEY_READ = ((STANDARD_RIGHTS_READ Or KEY_QUERY_VALUE Or KEY_ENUMERATE_SUB_KEYS Or KEY_NOTIFY) And (Not SYNCHRONIZE))
 
-Public Const REG_SZ = 1                         ' Unicode nul terminated string
-Public Const ERROR_SUCCESS = 0&
-
-Public Const vbOKOnly = 0   '  Display OK button only.
-Public Const VbOKCancel = 1 '  Display OK and Cancel buttons.
-Public Const VbAbortRetryIgnore = 2  ' Display Abort, Retry, and Ignore buttons.
-Public Const VbYesNoCancel = 3  '  Display Yes, No, and Cancel buttons.
-Public Const VbYesNo = 4 '  Display Yes and No buttons.
-Public Const VbRetryCancel = 5   ' Display Retry and Cancel buttons.
-Public Const VbCritical = 16 ' Display Critical Message icon.
-Public Const VbQuestion = 32 ' Display Warning Query icon.
-Public Const VbExclamation = 48  ' Display Warning Message icon.
-Public Const VbInformation = 64  ' Display Information Message icon.
-Public Const VbDefaultButton1 = 0    ' First button is default.
-Public Const VbDefaultButton2 = 256  ' Second button is default.
-Public Const VbDefaultButton3 = 512  ' Third button is default.
-Public Const VbDefaultButton4 = 768   'Fourth button is default.
-Public Const VbApplicationModal = 0  ' Application modal; the user must respond to the message box before continuing work in the current application.
-Public Const VbSystemModal = 4096   '  System modal; all applications are suspended until the user responds to the message box.
-'The first group of values (0–5) describes the number and type of buttons displayed in the dialog box; the second group (16, 32, 48, 64) describes the icon style; the third group (0, 256, 512) determines which button is the default; and the fourth group (0, 4096) determines the modality of the message box. When adding numbers to create a final value for the buttons argument, use only one number from each group.
-
-'Note   These constants are specified by Visual Basic for Applications. As a result, the names can be used anywhere in your code in place of the actual values.
-'Return Values
-Public Const vbOK = 1   '  OK
-Public Const vbCancel = 2    ' Cancel
-Public Const vbAbort = 3 ' Abort
-Public Const vbRetry = 4 '  Retry
-Public Const vbIgnore = 5   '  Ignore
-Public Const vbYes = 6  '  Yes
-Public Const vbNo = 7    ' No
 
 Public Const PrecZ = 2                     'precision of Z passed for stage movements i.e. Z = Round(Z, PrecZ)
 Public Const PrecXY = 2                    'precision of X and Y passed for stage movements
 
 Public ZBacklash  As Double           'ToDo: is it still recquired?.
                                            'Has to do with the movements of the focus wheel that are "better"
-                                           'if they are long enough. For amoment a test did not gave significant differences This is required for ZEN2010
+                                            'if they are long enough. For amoment a test did not gave significant differences This is required for ZEN2010
 Public ZENv As Integer            'String variable indicating the version of ZEN used 2010 ir 2011 (2012)
 Public ZEN As Object             'Object containing Zeiss.Micro.AIM.ApplicationInterface.ApplicationInterface (for ZEN > 2011)
 
-'''''''''''''''''''''
-'''GLOBAL VARIABLE'''
-'''''''''''''''''''''
-Public RowG As Integer
-Public ColG As Integer
-Public RowSubG As Integer
-Public ColSubG As Integer
-Public X11 As Double
-Public X12 As Double
-Public X21 As Double
-Public X22 As Double
+''''''''''''''''''''''
+'''GLOBAL VARIABLES'''
+''''''''''''''''''''''
 
-Public ScanStop As Boolean
-Public ScanPause As Boolean
-Public Running As Boolean
-Public ExtraBleach As Boolean
-Public AutomaticBleaching As Boolean
-Public BleachTable() As Boolean
-Public BleachStartTable() As Double
-Public BleachStopTable() As Double
+Public ScanStop As Boolean      'if TRUE current recording is stopped
+Public ScanPause As Boolean     'if TRUE current recording is paused
+Public Running As Boolean       'TRUE when system is running (e.g. after start)
+Public GlobalDataBaseName As String   'Name of output folder
+Public TrackNumber As Integer    'number of available tracks
 
-Public ZOffset As Double
-'Public PositionData As Workbook
-'position variables
-Public ZShift As Double
-Public XShift As Double
-Public YShift As Double
-Public XStart As Double ' Stores starting X position of Acquisition
-Public YStart As Double ' Stores starting Y position of Acquisition
-Public ZStart As Double
-
-
-'Filehandling variables
-Public OverwriteFiles As Boolean
-Public NoReflectionSignal As Boolean
-Public PubSentStageGrid As Boolean
-Public BleachingActivated As Boolean
-Public FocusMapPresent As Boolean
-
-Public flgEvent As Integer
-Public flg As Integer
-Public toContinue As Integer
-
-
-Public GlobalProjectName As String
-Public GlobalProject As String
-Public GlobalHelpName As String
-
-Public GlobalPrvTime As Double
-Public GlobalMacroKey As String
-Public GlobalCorrectionOffset As Double
-
-'newPublic29.06.2010
-Public NoFrames As Long
-
-' Public BlockAutoConfiguration As String
-Public BlockTimeIndex As Long
-' Public BlockAutoConfigurationUse As Boolean
-
-Public TimerName As String
-Public BlockTimeDelay As Double
-Public SelectedTimeButton As Integer
-Public TimerButton1 As Double
-Public TimerButton2 As Double
-Public TimerButton3 As Double
-Public TimerButton4 As Double
-Public TimerButton5 As Double
-Public TimerButton6 As Double
-Public LoopingTimerUnit As Integer
-Public BlockRepetitions As Long
-
-Public TimerKey As String
-
-Public GlobalHighRes As Boolean
-Public GlobalDataBaseName As String
-Public GlobalFileName As String
-Public GlobalImageIndex() As Long
-Public GlobalStripeIndex() As Long
-Public PubSearchScan As Boolean
-
-Public BlockIsSingle As Boolean
-Public BlockSingleTrack As String
-Public BlockSingleTrackIndex As Long
-Public BlockMultiTrack As String
-Public BlockMultiTrackIndex As Long
-
-
-     
-Public Track As DsTrack
-Public TrackNumber As Integer
-Public TrackName As String
-Public Success As Integer
-Public IsAutofocusTrackSelected As Boolean
-Public AutofocusTrack As Integer ' number of AutofocusTrack
-Public IsAcquisitionTrackSelected As Boolean
-Public ActiveChannels() As String
-
-Public LocationName As String
-
-Public DoNotGoOn As Boolean
-Public ChangeFocus As Boolean
-Public FocusChanged As Boolean
-Public Try As Long
-Public SystemName As String
-          
-
-
-
-
-Public ImageNumber As Long
-Public Const OFS_MAXPATHNAME = 128
-Public Const OF_EXIST = &H4000
-Public flgBreak As Boolean
-Public Const WM_COMMAND = &H111
-
-Public tools As Lsm5Tools
-Public Stage As CpStages
-
-Public TileX As Integer
-Public TileY As Integer
-Public Overlap As Double
-
-Public AcquisitionController As AimAcquisitionController40.AimScanController  'Debugging 20110131
+Public OverwriteFiles As Boolean  'if TRUE we do not overwrite files (not active anymore)
+Public FocusMapPresent As Boolean 'if TRUE we have a focus map (not active anymore)
+Public GlobalCorrectionOffset As Double 'not anymore used
 
 '''
-'RecordingDoc used globally
+'RecordingDoc used globally for imaging
 '''
 Public GlobalRecordingDoc As DsRecordingDoc
+
 '''
 'FcsData used globally
 '''
 Public GlobalFcsData As AimFcsData
 '''
-'FcsData used globally
+'RecordingDoc used globally for Fcs
 '''
 Public GlobalFcsRecordingDoc As DsRecordingDoc
 
 
 Const PauseGrabbing = 50 'pause for polling the whether scan/fcscontroller are acquiring. A high value makes more errors!
-
-'Grid positions
-Public posGridX() As Double ' they are initiated during acquisition
-Public posGridY() As Double ' they are initiated during acquisition
-Public posGridZ() As Double ' initiated during acquistion
-Public posGridXY_Valid() As Boolean ' they are initiated during acquisition
-
-Public posGridXsub() As Double ' they are initiated during acquisition
-Public posGridYsub() As Double ' they are initiated during acquisition
-Public posGridZsub() As Double ' initiated during acquistion
-Public posGridXYsub_valid() As Boolean ' they are initiated during acquisition
-
-' Counters for HighresImaging 'TODO remove global variables
-Public HighResExperimentCounter As Integer
-Public HighResCounter As Integer
-Public HighResArrayX() As Double ' this is an array of values why do you need to store values?
-Public HighResArrayY() As Double
-Public HighResArrayZ() As Double
-Public HighResArrayDeltaX() As Double ' width of acquisition in um. Default is as set from the main window 'not implemented yet (better to define ROIs)
-Public HighResArrayDeltaY() As Double ' width of acquisition in um. Default is as set from the main window 'not implemented yet (better to define ROIs)
-Public HighResArrayDeltaZ() As Double ' size of acquisition in um. Default is a set from the main window
-
-Public HelpNamePDF As String
-
-Public GlobalStageControlZValues As Boolean
-
-Public Type OFSTRUCT
-        cBytes As Byte
-        fFixedDisk As Byte
-        nErrCode As Integer
-        Reserved1 As Integer
-        Reserved2 As Integer
-        szPathName(OFS_MAXPATHNAME) As Byte
-End Type
-Public Type OVERLAPPED
-        Internal As Long
-        InternalHigh As Long
-        Offset As Long
-        OffsetHigh As Long
-        hEvent As Long
-End Type
-Public Type SECURITY_ATTRIBUTES
-        nLength As Long
-        lpSecurityDescriptor As Long
-        bInheritHandle As Long
-End Type
-
-
-Public Declare Function OpenFile Lib "kernel32" (ByVal lpFileName As String, lpReOpenBuff As OFSTRUCT, _
-ByVal wStyle As Long) As Long
-
-Public Declare Function CloseHandle Lib "kernel32" (ByVal hObject As Long) As Long
-
-Public Declare Function DeleteFile Lib "kernel32" Alias "DeleteFileA" (ByVal lpFileName As String) As Long
-
-Public Declare Function GetDiskFreeSpace Lib "kernel32" Alias "GetDiskFreeSpaceA" _
-(ByVal lpRootPathName As String, lpSectorsPerCluster As Long, lpBytesPerSector As Long, _
-lpNumberOfFreeClusters As Long, lpTotalNumberOfClusters As Long) As Long
-
-Public Declare Function GetTickCount Lib "kernel32" () As Long
 
 
 '''
@@ -311,17 +94,6 @@ Public Function getVersionNr() As Integer
 End Function
 
 
-
-Public Sub DisplayProgress(State As String, Color As Long)       'Used to display in the progress bar what the macro is doing
-    If (Color & &HFF) > 128 Or ((Color / 256) & &HFF) > 128 Or ((Color / 256) & &HFF) > 128 Then
-        AutofocusForm.ProgressLabel.ForeColor = 0
-    Else
-        AutofocusForm.ProgressLabel.ForeColor = &HFFFFFF
-    End If
-    AutofocusForm.ProgressLabel.BackColor = Color
-    AutofocusForm.ProgressLabel.Caption = State
-    DoEvents
-End Sub
 
 
 '''''
@@ -434,9 +206,6 @@ End Sub
 ''''''''' Creates NewRecords'''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''
 
-
-
-
 '''
 ' Creates New DsRecordingDoc and a entry in the experiment Tree (works only with ZENv > 2010)
 '   RecordingDoc [In/Out] - A document. If it exists and ForceCreation = False then only the name will be changed
@@ -465,7 +234,7 @@ Public Function NewRecord(RecordingDoc As DsRecordingDoc, Name As String, Option
     Exit Function
     
 ErrorHandle:
-    ErrorLog.UpdateLog Now & " Error in NewRecord" + Err.Description
+    ErrorLog.UpdateLog " Error in NewRecord" + Err.Description
     
 End Function
 
@@ -515,11 +284,11 @@ Public Function NewRecordGuiAi(RecordingDoc As DsRecordingDoc, Name As String, Z
         NewRecordGuiAi = True
     Else
         MsgBox "Error: NewRecordGuiAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
-        ErrorLog.UpdateLog Now & " Error: NewRecordGuiAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
+        ErrorLog.UpdateLog "Error: NewRecordGuiAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
     End If
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog Now & " Error in NewRecordGuiAi " + Err.Description
+    ErrorLog.UpdateLog "Error in NewRecordGuiAi " + Err.Description
 End Function
 
 
@@ -554,7 +323,7 @@ Public Function NewFcsRecord(RecordingDoc As DsRecordingDoc, FcsData As AimFcsDa
     Exit Function
 
 ErrorHandle:
-    ErrorLog.UpdateLog Now & " Error in NewFcsRecord " + Err.Description
+    ErrorLog.UpdateLog "Error in NewFcsRecord " + Err.Description
 End Function
 
 '''
@@ -575,7 +344,7 @@ Public Function CleanFcsData(RecordingDoc As DsRecordingDoc, FcsData As AimFcsDa
     CleanFcsData = True
     Exit Function
 NoRecord:
-    ErrorLog.UpdateLog Now & " CleanFcsRecord: Found no active record for FCS!"
+    ErrorLog.UpdateLog "CleanFcsRecord: Found no active record for FCS!"
 End Function
 
 
@@ -623,11 +392,11 @@ Public Function NewFcsRecordGuiAi(RecordingDoc As DsRecordingDoc, FcsData As Aim
         NewFcsRecordGuiAi = True
     Else
         MsgBox "Error: NewFcsRecordGuiAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
-        ErrorLog.UpdateLog Now & " Error: NewFcsRecordGuiAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
+        ErrorLog.UpdateLog "Error: NewFcsRecordGuiAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
     End If
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog Now & " Error in NewFcsRecordGuiAi " + Err.Description
+    ErrorLog.UpdateLog "Error in NewFcsRecordGuiAi " + Err.Description
 End Function
 
 ''''
@@ -685,11 +454,11 @@ Public Sub SaveFcsPositionList(sFile As String, positionsPx() As Vector)
     Close
     Exit Sub
 ErrorHandle:
-    ErrorLog.UpdateLog Now & "SaveFcsPositionList Can't write " & sFile & " for the FcsPositions"
+    ErrorLog.UpdateLog "SaveFcsPositionList Can't write " & sFile & " for the FcsPositions"
     Exit Sub
 ErrorHandle2:
     Close
-    ErrorLog.UpdateLog Now & "positionsPx not assigned"
+    ErrorLog.UpdateLog "positionsPx not assigned"
 End Sub
 
 '''''
@@ -829,27 +598,6 @@ Public Function MoveToNextLocation(Optional Mark As Integer = 0) As Boolean
 End Function
 
 
-Private Sub MovetoCorrectZPosition(ZOffset As Double)
-Const ZBacklash = -50
-Dim ZFocus As Double
-Dim Zbefore As Double
-Dim X As Double
-Dim Y As Double
-     ZFocus = Lsm5.Hardware.CpFocus.position + ZOffset + ZShift
-       Lsm5.Hardware.CpFocus.position = ZFocus + ZBacklash    'Moves down -50uM (ZBacklash) with the focus wheel
-        Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
-            Sleep (20)
-            DoEvents
-        Loop
-        Lsm5.Hardware.CpFocus.position = ZFocus                     'Moves up to the focus position with the focus wheel
-        Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
-            Sleep (20)
-            DoEvents
-        Loop
-''''' If I want to do it properly, I should add a lot of controls here, to wait to be sure the AutofocusForm.AutofocusHRZ.Value can acces the position, and also to wait it is done...
-        Sleep (100)
-        DoEvents
-End Sub
 
 
 ''''
@@ -1197,7 +945,7 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
     
     If Not FoundChannel Then
         ErrorLog.Show
-        ErrorLog.UpdateLog Now & " MassCenter Was not able to find channel: " & TrackingChannel & " for tracking"
+        ErrorLog.UpdateLog " MassCenter Was not able to find channel: " & TrackingChannel & " for tracking"
         Exit Function
     End If
 

@@ -7,8 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+''''
+' Class for storing FCS job parameters
+''''
+
 Option Explicit
-'Some commands
 Public Name As String
 Public LightPathConfig As String
 Private LaserActive() As Boolean
@@ -21,6 +24,7 @@ Private Repetitions As Integer
 Private BleachTime As Double
 Private PositionsEnabled As Boolean
 Private TimeSeriesEnabled As Boolean
+
 'Private Filters() As Long
 'Private Channels() As Long
 '
@@ -130,7 +134,7 @@ Public Function setJobAi(ZEN As Object) As Boolean
     Exit Function
 ErrorHandle:
     MsgBox "Error in AFcsJob.setJobAi " + Err.Description
-    ErrorLog.UpdateLog Now & " Error in AFcsJob.setJobGui " + Err.Description
+    ErrorLog.UpdateLog "Error in AFcsJob.setJobGui " + Err.Description
 End Function
 
 
@@ -182,7 +186,7 @@ Public Function putJobAi(ZEN As Object) As Boolean
     Exit Function
 ErrorHandle:
     MsgBox "Error in AFcsJob.setJobGui " + Err.Description
-    ErrorLog.UpdateLog Now & " Error in AFcsJob.setJobGui " + Err.Description
+    ErrorLog.UpdateLog "Error in AFcsJob.setJobGui " + Err.Description
 End Function
 
      

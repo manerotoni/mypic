@@ -7,6 +7,10 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+''''
+'   AJob stores the parameters for a imaging job
+'''''
+
 Option Explicit
 
 Public Name As String
@@ -207,6 +211,7 @@ Public Sub SetRecording(Value As DsRecording)
 End Sub
 
 Public Function isBleaching() As Boolean
+    Dim Success As Integer
     isBleaching = Recording.TrackObjectBleach(Success).Acquire And Recording.TrackObjectBleach(Success).UseBleachParameters
 End Function
 
@@ -260,7 +265,7 @@ End Sub
 ''
 Public Sub setRois(RoisIn() As Roi)
     If isArrayEmpty(RoisIn) Then
-         ErrorLog.UpdateLog Now & " AJob.setRois tried to initialize Rois with empty vector"
+         ErrorLog.UpdateLog "AJob.setRois tried to initialize Rois with empty vector"
     Else
         Rois = RoisIn
         pRoiMaxNr = UBound(Rois) + 1
@@ -451,6 +456,7 @@ End Function
 ' change a job from a descriptor
 '''
 Public Function changeJobFromDescriptor(Descriptor As String, Value As Variant)
+    Dim Success As Integer
     If Recording Is Nothing Then
         MsgBox "AJob.changeJobFromDescriptor Recording has not been initiated!"
     End If
@@ -474,7 +480,7 @@ Public Function changeJobFromDescriptor(Descriptor As String, Value As Variant)
             Recording.frameSpacing = CDbl(Value)
         Case "Bleaching":
             If CBool(Value) Then
-                Recording.TrackObjectBleach(1).Acquire = CBool(Value)
+                Recording.TrackObjectBleach(Success).Acquire = CBool(Value)
                 Recording.TrackObjectBleach(Success).UseBleachParameters = CBool(Value)
             End If
         Case "UseRoi":

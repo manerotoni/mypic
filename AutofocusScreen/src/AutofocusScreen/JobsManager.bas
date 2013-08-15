@@ -1,6 +1,6 @@
 Attribute VB_Name = "JobsManager"
 ''''
-'' A Class to manage and imagingJob with different Settings and Tracks
+' Functions to perform imaging and fcs using the Imging, Fcs, Grid, repetitions classes
 ''''
 Option Explicit
 ''' The repetition for tasks
@@ -160,7 +160,7 @@ Public Function AcquireFcsJob(JobName As String, RecordingDoc As DsRecordingDoc,
     AcquireFcsJob = True
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog Now & " Error: AcquireFcsJob for Job " + JobName + " " + Err.Description
+    ErrorLog.UpdateLog "Error: AcquireFcsJob for Job " + JobName + " " + Err.Description
     Exit Function
 WarningHandle:
     MsgBox "AcquireFcsJob for job " + JobName + ". Not able to create document!"
@@ -202,7 +202,7 @@ positions() As Vector, positionsPx() As Vector) As Boolean
     ExecuteFcsJob = True
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog Now & " Error in ExecuteFcsJob for Job " + JobName + " " + Err.Description
+    ErrorLog.UpdateLog "Error in ExecuteFcsJob for Job " + JobName + " " + Err.Description
     MsgBox "Error in ExecuteFcsJob for Job " + JobName + " " + Err.Description
 End Function
 
@@ -235,7 +235,7 @@ StgPos As Vector, Optional deltaZ As Integer = -1) As Boolean
     ExecuteJob = True
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog Now & " Error in ExecuteJob for Job " + JobName + " " + Err.Description
+    ErrorLog.UpdateLog "Error in ExecuteJob for Job " + JobName + " " + Err.Description
     MsgBox "Error in ExecuteJob for Job " + JobName + " " + Err.Description
 End Function
 
@@ -276,7 +276,7 @@ Abort:
     Exit Function
 ErrorHandle:
     MsgBox "Error in TrackOffLine " + JobName + " " + Err.Description
-    ErrorLog.UpdateLog Now & " Error in TrackOffLine " + JobName + " " + Err.Description
+    ErrorLog.UpdateLog "Error in TrackOffLine " + JobName + " " + Err.Description
     Exit Function
 End Function
 
@@ -298,7 +298,7 @@ Public Function TrackJob(JobName As String, StgPos As Vector, StgPosNew As Vecto
     Exit Function
 ErrorHandle:
     MsgBox "Error in TrackJob " + JobName + " " + Err.Description
-    ErrorLog.UpdateLog Now & " Error in TrackJob " + JobName + " " + Err.Description
+    ErrorLog.UpdateLog "Error in TrackJob " + JobName + " " + Err.Description
 End Function
 
 '''
@@ -363,14 +363,13 @@ Public Function ExecuteJobAndTrack(GridName As String, JobName As String, Record
     Success = True
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog Now & " Error in ExecuteJobAndTrack " + GridName + " " + JobName + " " + parentPath + " " + Err.Description
+    ErrorLog.UpdateLog "Error in ExecuteJobAndTrack " + GridName + " " + JobName + " " + parentPath + " " + Err.Description
 End Function
 
 
 
 ''''''
-'   StartAcquisition(BleachingActivated)
-'   Perform many things (TODO: write more). Pretty much the whole macro runs through here
+'   Performs many things (TODO: write more). Pretty much the whole macro runs through here
 ''''''
 Public Function StartJobOnGrid(GridName As String, JobName As String, RecordingDoc As DsRecordingDoc, parentPath As String) As Boolean
     Dim OiaSettings As OnlineIASettings
@@ -413,8 +412,6 @@ Public Function StartJobOnGrid(GridName As String, JobName As String, RecordingD
     
     'Recording stuff
     Dim FilePath As String   ' full path of file to save (changes through function)
-    Dim Scancontroller As AimScanController ' the controller
-    Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
     
     OiaSettings.resetRegistry
     OiaSettings.readFromRegistry
@@ -559,7 +556,7 @@ Public Function checkForMaximalDisplacement(JobName As String, currentPos As Vec
     MaxMovementZ = Jobs.getFramesPerStack(JobName) * Jobs.getFrameSpacing(JobName)
                                 
     If Abs(newPos.X - currentPos.X) > MaxMovementXY Or Abs(newPos.Y - currentPos.Y) > MaxMovementXY Or Abs(newPos.Z - currentPos.Z) > MaxMovementZ Then
-        ErrorLog.UpdateLog Now & " Job " & JobName & " online image analysis returned a too large displacement/focus " & _
+        ErrorLog.UpdateLog "Job " & JobName & " online image analysis returned a too large displacement/focus " & _
         "dX, dY, dZ = " & Abs(newPos.X - currentPos.X) & ", " & Abs(newPos.Y - currentPos.Y) & ", " & Abs(newPos.Z - currentPos.Z) & vbCrLf & _
         "accepted dX, dY, dZ = " & MaxMovementXY & ", " & MaxMovementXY & ", " & MaxMovementZ
         Exit Function
@@ -579,7 +576,7 @@ Private Function checkForMaximalDisplacementVec(JobName As String, currentPos As
     MaxMovementZ = Jobs.getFramesPerStack(JobName) * Jobs.getFrameSpacing(JobName)
     For i = 0 To UBound(newPos)
         If Abs(newPos(i).X - currentPos.X) > MaxMovementXY Or Abs(newPos(i).Y - currentPos.Y) > MaxMovementXY Or Abs(newPos(i).Z - currentPos.Z) > MaxMovementZ Then
-            ErrorLog.UpdateLog Now & " Job " & JobName & " online image analysis returned a too large displacement/focus " & _
+            ErrorLog.UpdateLog "Job " & JobName & " online image analysis returned a too large displacement/focus " & _
             "dX, dY, dZ = " & Abs(newPos(i).X - currentPos.X) & ", " & Abs(newPos(i).Y - currentPos.Y) & ", " & Abs(newPos(i).Z - currentPos.Z) & vbCrLf & _
             "accepted dX, dY, dZ = " & MaxMovementXY & ", " & MaxMovementXY & ", " & MaxMovementZ
             Exit Function
@@ -610,12 +607,12 @@ Private Function checkForMaximalDisplacementVecPixels(JobName As String, newPos(
     End If
     For i = 0 To UBound(newPos)
         If newPos(i).X < 0 Or newPos(i).Y < 0 Or newPos(i).Z < 0 Then
-            ErrorLog.UpdateLog Now & " Job " & JobName & " online image analysis returned negative pixel values " & _
+            ErrorLog.UpdateLog "Job " & JobName & " online image analysis returned negative pixel values " & _
             "X, Y, Z = " & newPos(i).X & ", " & newPos(i).Y & ", " & newPos(i).Z & vbCrLf
             Exit Function
         End If
         If newPos(i).X > MaxX Or newPos(i).Y > MaxY Or newPos(i).Z > MaxZ Then
-            ErrorLog.UpdateLog Now & " Job " & JobName & " online image analysis returned a too large displacement/focus " & _
+            ErrorLog.UpdateLog "Job " & JobName & " online image analysis returned a too large displacement/focus " & _
             "X, Y, Z = " & newPos(i).X & ", " & newPos(i).Y & ", " & newPos(i).Z & vbCrLf & _
             "accepted range is X = " & 0 & "-" & MaxX & ", Y = " & 0 & "-" & MaxY & ", Z = " & 0 & "-" & MaxZ
             Exit Function
@@ -1023,7 +1020,7 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
     
     ComputeJobSequential = parentPosition
     'read if it is the correct code
-    If Not OiaSettings.checkCodeMic(OiaSettings.getSettings("codeMic")) Then
+    If Not OiaSettings.checkKeyItem("codeMic", OiaSettings.getSettings("codeMic")) Then
         GoTo Abort
     End If
     
@@ -1033,11 +1030,11 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
         
         Case "error":
             OiaSettings.writeKeyToRegistry "codeMic", "nothing"
-            ErrorLog.UpdateLog ("cedeMic error. Online image analysis for job " + parentJob + " file " + OiaSettings.getSettings("filePath") + " failed")
+            ErrorLog.UpdateLog "codeMic error. Online image analysis for job " + parentJob + " file " + OiaSettings.getSettings("filePath") + " failed"
             
         Case "timeExpired":
             OiaSettings.writeKeyToRegistry "codeMic", "nothing"
-            ErrorLog.UpdateLog ("codeMic timeExpired. Online image analysis for job " + parentJob + " file " + OiaSettings.getSettings("filePath") + " took more then " & MaxTimeWait & " sec")
+            ErrorLog.UpdateLog "codeMic timeExpired. Online image analysis for job " + parentJob + " file " + OiaSettings.getSettings("filePath") + " took more then " & MaxTimeWait & " sec"
             
         Case "focus":
             OiaSettings.writeKeyToRegistry "codeMic", "nothing"
@@ -1047,12 +1044,12 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
                 End If
                 newPositions = computeCoordinatesImaging(parentJob, parentPosition, newPositionsPx)
                 If UBound(newPositions) > 0 Then
-                    ErrorLog.UpdateLog Now & " ComputeJobSequential: for Job focus pass only one point to X, Y, and Z of regisrty instead of " & UBound(newPositions) + 1 & ". Using the first point!"
+                    ErrorLog.UpdateLog " ComputeJobSequential: for Job focus pass only one point to X, Y, and Z of regisrty instead of " & UBound(newPositions) + 1 & ". Using the first point!"
                 End If
                 ComputeJobSequential = newPositions(0)
             Else
-                ErrorLog.UpdateLog ("ComputeJobSequential: No position/wrong position for Job focus. " & vbCrLf & _
-                "Specify one position in X, Y, Z of registry (in pixels, (X,Y) = (0,0) upper left corner image, Z = 0 -> central slice of current stack)!")
+                ErrorLog.UpdateLog "ComputeJobSequential: No position/wrong position for Job focus. " & vbCrLf & _
+                "Specify one position in X, Y, Z of registry (in pixels, (X,Y) = (0,0) upper left corner image, Z = 0 -> central slice of current stack)!"
                 Exit Function
             End If
             
@@ -1061,7 +1058,7 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
             JobName = codeMicToJobName.Item(codeMic)
             DisplayProgress "Registry codeMic " & codeMic & ": store positions and eventually image job" & JobName & "...", RGB(0, &HC0, 0)
             If Not AutofocusForm.Controls(JobName + "Active") Then
-                ErrorLog.UpdateLog Now & " ComputeJobSequential: job " & JobName & " is not active"
+                ErrorLog.UpdateLog "ComputeJobSequential: job " & JobName & " is not active"
                 Exit Function
             End If
             If OiaSettings.getPositions(newPositionsPx, parentPosition) Then
@@ -1074,7 +1071,7 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
                     GoTo Abort
                 End If
             Else
-                ErrorLog.UpdateLog Now & " ComputeJobSequential: No position for Job " & JobName & " (key = " & codeMic & ") has been specified! Imaging current position"
+                ErrorLog.UpdateLog "ComputeJobSequential: No position for Job " & JobName & " (key = " & codeMic & ") has been specified! Imaging current position"
                 ReDim newPositions(0)
                 newPositions(0) = parentPosition
             End If
@@ -1100,7 +1097,7 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
             JobName = codeMicToJobName.Item(codeMic)
             DisplayProgress "Registry codeMic " & codeMic & " executing " & JobName & "...", RGB(0, &HC0, 0)
             If Not AutofocusForm.Controls(JobName + "Active") Then
-                ErrorLog.UpdateLog Now & " ComputeJobSequential: job " & JobName & " is not active"
+                ErrorLog.UpdateLog "ComputeJobSequential: job " & JobName & " is not active"
                 Exit Function
             End If
             If OiaSettings.getFcsPositions(newPositionsPx, parentPosition) Then
@@ -1113,7 +1110,7 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
                 ReDim newPositionsPx(0)
                 newPositionsPx(0) = Jobs.getCentralPtPx(parentJob)
                 newPositions = computeCoordinatesFcs(parentJob, parentPosition, newPositionsPx)
-                ErrorLog.UpdateLog Now & " ComputeJobSequential: No position for Job " & JobName & " (key = " & codeMic & ") has been specified!"
+                ErrorLog.UpdateLog "ComputeJobSequential: No position for Job " & JobName & " (key = " & codeMic & ") has been specified!"
             End If
             ReDim newPositionsPx(0)
             DisplayProgress "Job " & JobName, RGB(&HC0, &HC0, 0)

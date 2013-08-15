@@ -23,13 +23,11 @@ Private roiTypeDic As Dictionary ' map name to number
 Private Sub populateDic()
     Set roiAimDic = New Dictionary
     Set roiTypeDic = New Dictionary
+    roiAimDic.Add "", 0
     roiAimDic.Add "nothing", 0
-    roiAimDic.Add "bleach", AimVectorOverlay40.eVectorOverlayAcquisitionFlagsBleach
+    roiAimDic.Add "bleach", AimVectorOverlay40.eVectorOverlayAcquisitionFlagsBleach Or AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAnalysis
     roiAimDic.Add "acquisition", AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAcquisition
-    roiAimDic.Add "bleachAnalysis", AimVectorOverlay40.eVectorOverlayAcquisitionFlagsBleach Or AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAnalysis
-    roiAimDic.Add "acquisitionBleach", AimVectorOverlay40.eVectorOverlayAcquisitionFlagsBleach Or AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAcquisition
-    roiAimDic.Add "acquisitionAnalysis", AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAcquisition Or AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAnalysis
-    roiAimDic.Add "acquisitionBleachAnalysis", AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAcquisition Or AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAnalysis _
+    roiAimDic.Add "acquisitionBleach", AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAcquisition Or AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAnalysis _
             Or AimVectorOverlay40.eVectorOverlayAcquisitionFlagsBleach
             
     roiTypeDic.Add "circle", eImageVectorOverlayElementCircle

@@ -1,4 +1,8 @@
 Attribute VB_Name = "FCSFunctions"
+''''
+' Module contains Functions used during Fcs
+''''
+
 Option Explicit 'force to declare all variables
 
 Public Declare Function GetInputState Lib "user32" () As Long ' Check if mouse or keyboard has been pushed
@@ -9,9 +13,6 @@ Public viewerGuiServer As AimViewerGuiServer
 Public FcsPositions As AimFcsSamplePositionParameters
 Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
 Public FcsData As AimFcsData
-'Public ScanStop As Boolean
-'Public AcquisitionController  As AimScanController
-'Public Const PrecXY = 3
 Public Const Pause = 100 'pause in ms
 
 

@@ -111,41 +111,41 @@ Public Function LogMessage(ByVal Msg As String, ByVal Log As Boolean, ByVal Path
 End Function
 
 
-'''''
-'   FileName(iPosition As Integer, iSubposition As Integer, iRepetition As Integer ) As String
-'   Returns string by concatanating well, and sublocation and timepoint. A negative point will omit the string
-'       [Row] In - Row
-'       [Col] In - Col
-'       [RowSub]  In - subrow
-'       [ColSub]  In - subcol
-'       [iRepetition] In - time point
-'''''
-Public Function FileName(Row As Long, Col As Long, RowSub As Long, ColSub As Long, iRepetition As Integer) As String
-    'convert numbers into a string
-    Dim iWell As Long
-    Dim iPosition As Long
-
-    Dim Name As String
-    Dim nrZero As Integer
-    Dim maxZeros As Integer
-    maxZeros = 3
-    Name = ""
-    iWell = (Row - 1) * UBound(posGridX, 2) + Col
-    iPosition = (RowSub - 1) * UBound(posGridX, 4) + ColSub
-    If iWell >= 0 Then
-        nrZero = maxZeros - Len(CStr(iWell))
-        Name = Name + "W" + ZeroString(nrZero) + CStr(iWell)
-    End If
-    If iPosition >= 0 Then
-        nrZero = maxZeros - Len(CStr(iPosition))
-        Name = Name + "_P" + ZeroString(nrZero) + CStr(iPosition)
-    End If
-    If iRepetition >= 0 Then
-        nrZero = maxZeros - Len(CStr(iRepetition))
-        Name = Name + "_T" + ZeroString(nrZero) + CStr(iRepetition)
-    End If
-    FileName = Name
-End Function
+''''''
+''   FileName(iPosition As Integer, iSubposition As Integer, iRepetition As Integer ) As String
+''   Returns string by concatanating well, and sublocation and timepoint. A negative point will omit the string
+''       [Row] In - Row
+''       [Col] In - Col
+''       [RowSub]  In - subrow
+''       [ColSub]  In - subcol
+''       [iRepetition] In - time point
+''''''
+'Public Function FileName(Row As Long, Col As Long, RowSub As Long, ColSub As Long, iRepetition As Integer) As String
+'    'convert numbers into a string
+'    Dim iWell As Long
+'    Dim iPosition As Long
+'
+'    Dim Name As String
+'    Dim nrZero As Integer
+'    Dim maxZeros As Integer
+'    maxZeros = 3
+'    Name = ""
+'    iWell = (Row - 1) * UBound(posGridX, 2) + Col
+'    iPosition = (RowSub - 1) * UBound(posGridX, 4) + ColSub
+'    If iWell >= 0 Then
+'        nrZero = maxZeros - Len(CStr(iWell))
+'        Name = Name + "W" + ZeroString(nrZero) + CStr(iWell)
+'    End If
+'    If iPosition >= 0 Then
+'        nrZero = maxZeros - Len(CStr(iPosition))
+'        Name = Name + "_P" + ZeroString(nrZero) + CStr(iPosition)
+'    End If
+'    If iRepetition >= 0 Then
+'        nrZero = maxZeros - Len(CStr(iRepetition))
+'        Name = Name + "_T" + ZeroString(nrZero) + CStr(iRepetition)
+'    End If
+'    FileName = Name
+'End Function
 
 
 

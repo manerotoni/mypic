@@ -1,4 +1,8 @@
 Attribute VB_Name = "MCUCommands"
+'''
+' Module with functions to control the stage
+''''
+
 Option Explicit
 Public Abort As Boolean
 Private Interface As Object

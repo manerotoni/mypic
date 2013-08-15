@@ -9,26 +9,32 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 '''''
 ' OiaSettings: A class for Keeping track of settings that can be read from the Registry or from files
+' the seetings are use for the interaction with an external online image analysis program
 '''''
+
 Option Explicit
 Public Settings As Dictionary
 Private Keys() As String
+Private Keys_HowTo As Dictionary
 ''keys used for codeMic
-Private codeMic As Dictionary
+Private subKey_codeMic_HowTo As Dictionary
 ''keys used for codeOia
-Private codeOia As Dictionary
+Private subKey_codeOia_HowTo As Dictionary
+
+Private subKey_roiAim_HowTo As Dictionary
+Private subKey_roiType_HowTo As Dictionary
 
 '''
 ' A set of functions to IN/OUT parameters for Onlineimageanalisys this should be a class!!!
 ''''
 
 ''''
-' Set Registry to default values
+' Set Registry to default values and initiate correct dictionary for standard key values
 '''
 Public Sub initializeDefault()
     On Error GoTo errMsg
 'This variable contains the keys for the OnlineImageanalysis
-    ReDim Keys(0 To 14)
+    ReDim Keys(0 To 15)
     Keys(0) = "codeMic"
     Keys(1) = "codeOia"
     Keys(2) = "fileAnalyzed"
@@ -44,22 +50,56 @@ Public Sub initializeDefault()
     Keys(12) = "roiAim"
     Keys(13) = "roiX"
     Keys(14) = "roiY"
+    Keys(15) = "OutputFolder"
+  
+    Set subKey_roiAim_HowTo = New Dictionary
+    subKey_roiAim_HowTo.Add "", "(empty char) do nothing with roi"
+    subKey_roiAim_HowTo.Add "nothing", "do nothing with roi"
+    subKey_roiAim_HowTo.Add "bleach", "bleach and analyse roi"
+    subKey_roiAim_HowTo.Add "acquisition", "acquire roi"
+    subKey_roiAim_HowTo.Add "acquisitionBleach", "acquire, bleach, and analyse roi"
     
-    Set codeMic = New Dictionary
-    codeMic.Add "wait", "wait for image analysis"
-    codeMic.Add "", "(empty char) wait for image analysis"
-    codeMic.Add "error", "error from image analysis"
-    codeMic.Add "timeExpired", "time for image analysis has expired"
-    codeMic.Add "nothing", "Do nothing"
-    codeMic.Add "focus", "read X, Y, and Z  and change focus"
-    codeMic.Add "trigger1", "perform job Trigger1 at position X, Y, and Z"
-    codeMic.Add "trigger2", "perform job Trigger2 at position X, Y, and Z"
-    codeMic.Add "fcs1", "perform job Fcs1 at position fcsX, fcsY, and fcsZ"
     
-    Set codeOia = New Dictionary
-    codeOia.Add "nothing", "online image analysis does nothing"
-    codeOia.Add "", "(empty char) online image analysis does nothing"
-    codeOia.Add "newImage", "a new image is there"
+    Set subKey_roiType_HowTo = New Dictionary
+    subKey_roiType_HowTo.Add "", "(empty char) no type"
+    subKey_roiType_HowTo.Add "circle", "Define 2 points (in px) roiX=center_X, point_on_circle_X roiY=center_Y, point_on_circle_Y"
+    subKey_roiType_HowTo.Add "rectangle", "Define 2 points (in px) roiX=upper_left_X, lower_right_X roiY=upper_left_Y, lower_right_Y"
+    subKey_roiType_HowTo.Add "polyline", "Define at least 3 points (in px) roiX=point1_X, point2_X ... roiY=point1_Y, point2_Y..."
+    subKey_roiType_HowTo.Add "ellipse", "Define 3 points (in px) roiX=center_X, axis1_X, axis2_X roiY= center_Y, axis1_Y, axis2_Y"
+    
+    Set Keys_HowTo = New Dictionary
+    Keys_HowTo.Add Keys(0), "task to be executed by the microscope"
+    Keys_HowTo.Add Keys(1), "message for the online image analysis (Oia)"
+    Keys_HowTo.Add Keys(2), "file that has been analyzed by Oia (optional)"
+    Keys_HowTo.Add Keys(3), "filepath of current image"
+    Keys_HowTo.Add Keys(4), "X position stage. Multiple positions: X1; X2; X3; ..."
+    Keys_HowTo.Add Keys(5), "Y position stage. Multiple positions: X1; X2; X3; ..."
+    Keys_HowTo.Add Keys(6), "Z position stage. Empty char: keep current Z-position. Multiple positions: Z1; Z2; Z3; ..."
+    Keys_HowTo.Add Keys(7), "X position for fcs. Multiple positions: X1; X2; X3; ..."
+    Keys_HowTo.Add Keys(8), "Y position for fcs. Multiple positions: Y1; Y2; Y3; ..."
+    Keys_HowTo.Add Keys(9), "Z position for fcs. Empty char: keep current Z-position. Multiple positions: Z1; Y2; Y3; ..."
+    Keys_HowTo.Add Keys(10), "number of Z-slices for current job (not in use)"
+    Keys_HowTo.Add Keys(11), "type of roi. Multiple rois: roiType1; roiTyp2"
+    Keys_HowTo.Add Keys(12), "aim of roi. Multiple rois: roiAim1; roiAim2"
+    Keys_HowTo.Add Keys(13), "X positions for roi. Multiple rois: X1roi1, X2roi1; X1roi1, X2roi2 ..."
+    Keys_HowTo.Add Keys(14), "Y positions for roi. Multiple rois: X1roi1, X2roi1; X1roi1, X2roi2 ..."
+    Keys_HowTo.Add Keys(15), "main directory where images are stored"
+    
+    Set subKey_codeMic_HowTo = New Dictionary
+    subKey_codeMic_HowTo.Add "", "(empty char) wait for image analysis"
+    subKey_codeMic_HowTo.Add "wait", "wait for image analysis"
+    subKey_codeMic_HowTo.Add "error", "error from image analysis"
+    subKey_codeMic_HowTo.Add "timeExpired", "time for image analysis has expired"
+    subKey_codeMic_HowTo.Add "nothing", "Do nothing"
+    subKey_codeMic_HowTo.Add "focus", "read X, Y, and Z  and change focus"
+    subKey_codeMic_HowTo.Add "trigger1", "perform job Trigger1 at position X, Y, and Z"
+    subKey_codeMic_HowTo.Add "trigger2", "perform job Trigger2 at position X, Y, and Z"
+    subKey_codeMic_HowTo.Add "fcs1", "perform job Fcs1 at position fcsX, fcsY, and fcsZ"
+    
+    Set subKey_codeOia_HowTo = New Dictionary
+    subKey_codeOia_HowTo.Add "", "(empty char) online image analysis does nothing"
+    subKey_codeOia_HowTo.Add "nothing", "online image analysis does nothing"
+    subKey_codeOia_HowTo.Add "newImage", "a new image is there"
     
     Set Settings = New Dictionary
     Dim Key As Variant
@@ -68,7 +108,7 @@ Public Sub initializeDefault()
     Next Key
     Exit Sub
 errMsg:
-    ErrorLog.UpdateLog Now & " OnlineIASettings.initializeDefault error " + Err.Description
+    ErrorLog.UpdateLog "OnlineIASettings.initializeDefault error " + Err.Description
 End Sub
 
 Public Function getSettings(Key As Variant) As Variant
@@ -79,46 +119,54 @@ Public Function getSettings(Key As Variant) As Variant
         Exit Function
     End If
     LogTxt = "OnlineIASettings.getSettings: Failed to get " + Key + " from OiaSettings. Possible values are:" & vbCrLf
-    LogTxt = LogTxt & availableKeys
+    LogTxt = LogTxt & available_subKey(Keys_HowTo)
     
     MsgBox LogTxt
     ErrorLog.UpdateLog (LogTxt)
+End Function
+
+
+Public Function available_subKey(subKey_HowTo As Dictionary) As String
+    Dim TabSp  As String
+    Dim codeKeys() As Variant
+    Dim Key As Variant
+    codeKeys = subKey_HowTo.Keys
+    Dim LogTxt As String
+    For Each Key In codeKeys
+        If Len(CStr(Key)) > 6 Then
+            TabSp = "" & vbTab
+        Else
+            TabSp = "" & vbTab & vbTab
+        End If
+        LogTxt = LogTxt & "   " & Key & " " & TabSp & subKey_HowTo.Item(Key) & vbCrLf
+    Next Key
+    available_subKey = LogTxt
+End Function
+
+Public Function createKeyReport() As String
+    Dim report As String
+    report = "Windows registry keys to interact with Online image analysis" & vbCrLf
+    report = report & "location is: HKCU\SOFTWARE\VB and VBA Program Settings\OnlineImageAnalysis\macro" & vbCrLf
+    report = report & "All coordinates must be in pixels. (X, Y, Z) = (0,0,0) is the upper left corner, first slice." & vbCrLf
+    report = report & "------------------------" & vbCrLf
+    report = report & "Principal Keys and meaning:" & vbCrLf
+    report = report & available_subKey(Keys_HowTo)
+    report = report & "------------------------" & vbCrLf
+    report = report & "codeMic values:" & vbCrLf
+    report = report & available_subKey(subKey_codeMic_HowTo)
+    report = report & "------------------------" & vbCrLf
+    report = report & "codeOia values:" & vbCrLf
+    report = report & available_subKey(subKey_codeOia_HowTo)
+    report = report & "------------------------" & vbCrLf
+    report = report & "roiType values:" & vbCrLf
+    report = report & available_subKey(subKey_roiType_HowTo)
+    report = report & "------------------------" & vbCrLf
+    report = report & "roiAim values:" & vbCrLf
+    report = report & available_subKey(subKey_roiAim_HowTo)
     
+    createKeyReport = report
 End Function
 
-Public Function availableKeys() As String
-    Dim i As Integer
-    Dim LogTxt As String
-    LogTxt = ""
-    For i = 0 To UBound(Keys)
-        LogTxt = LogTxt & Keys(i) & ", "
-    Next i
-    availableKeys = LogTxt
-End Function
-
-Public Function availableCodeMic() As String
-    Dim codeKeys() As Variant
-    Dim Key As Variant
-    codeKeys = codeMic.Keys
-    Dim LogTxt As String
-    LogTxt = ""
-    For Each Key In codeKeys
-       LogTxt = LogTxt & Key & ", "
-    Next Key
-    availableCodeMic = LogTxt
-End Function
-
-Public Function availableCodeOia() As String
-    Dim codeKeys() As Variant
-    Dim Key As Variant
-    codeKeys = codeOia.Keys
-    Dim LogTxt As String
-    LogTxt = ""
-    For Each Key In codeKeys
-       LogTxt = LogTxt & Key & ", "
-    Next Key
-    availableCodeOia = LogTxt
-End Function
 
 '''
 ' Check existence of Key and whether Item is consistent with it
@@ -129,74 +177,48 @@ Public Function checkKeyItem(Key As Variant, Value As Variant)
         Settings.Item(Key) = Value
         Select Case Key
             Case "codeOia"
-                checkKeyItem = checkCodeOia(Value)
+                checkKeyItem = checkSubkey(CStr(Key), Value, subKey_codeOia_HowTo)
                 Exit Function
             Case "codeMic"
-                checkKeyItem = checkCodeMic(Value)
+                checkKeyItem = checkSubkey(CStr(Key), Value, subKey_codeMic_HowTo)
+                Exit Function
+            Case "roiAim"
+                checkKeyItem = checkSubkey(CStr(Key), Value, subKey_roiAim_HowTo)
+            Case "roiType"
+                checkKeyItem = checkSubkey(CStr(Key), Value, subKey_roiType_HowTo)
                 Exit Function
             Case Else
                 checkKeyItem = True
         End Select
     Else
         errorMsg = "OnlineIASettings error: key " & CStr(Key) & " is not a correct key for registry. Values are " & vbCrLf
-        errorMsg = errorMsg & availableKeys
+        errorMsg = errorMsg & available_subKey(Keys_HowTo)
         MsgBox errorMsg
         ErrorLog.UpdateLog errorMsg
     End If
 End Function
 
-Public Function checkCodeOia(Value As Variant) As Boolean
+Public Function checkSubkey(KeyName As String, Value As Variant, subKey_HowTo As Dictionary) As Boolean
     Dim errorMsg As String
     Dim Key As Variant
     Dim codeKeys() As Variant
-    codeKeys = codeOia.Keys
+    codeKeys = subKey_HowTo.Keys
     For Each Key In codeKeys
         If Value = Key Then
-            checkCodeOia = True
+            checkSubkey = True
             Exit Function
         End If
     Next Key
-    errorMsg = "OnlineIASettings error: Wrong codeOia " & Me.getSettings("codeOia") & " in Registry. Values are " & vbCrLf
-    errorMsg = errorMsg & availableCodeOia
+    errorMsg = "OnlineIASettings error: Wrong " & KeyName & " = " & Me.getSettings(KeyName) & " in Registry. Values are " & vbCrLf
+    errorMsg = errorMsg & available_subKey(subKey_HowTo)
     MsgBox errorMsg
     ErrorLog.UpdateLog errorMsg
 End Function
 
 
 
-Public Function checkCodeMic(Value As Variant) As Boolean
-    Dim errorMsg As String
-    Dim Key As Variant
-    Dim codeKeys() As Variant
-    codeKeys = codeMic.Keys
-    For Each Key In codeKeys
-        If Settings.Item("codeMic") = Key Then
-            checkCodeMic = True
-            Exit Function
-        End If
-    Next Key
-    errorMsg = "OnlineIASettings error: Wrong codeMic = " & Settings.Item("codeMic") & " in Registry values are " & vbCrLf
-    errorMsg = errorMsg & availableCodeMic
-    MsgBox errorMsg
-    ErrorLog.UpdateLog errorMsg
-End Function
-
-
-''''
-' Set Registry to default values
 '''
-Public Sub initialize(KeysIn() As String)
-'This variable contains the keys for the OnlineImageanalysis
-    Dim i As Integer
-    ReDim Keys(UBound(KeysIn))
-    For i = 0 To UBound(KeysIn)
-        Keys(i) = KeysIn(i)
-    Next i
-    Set Settings = New Dictionary
-End Sub
-
-'''
-'   Initialize Keys as default when it is empty
+'   check if Keys has been initialized
 '''
 Private Sub checkExistKeys()
     If isArrayEmpty(Keys) Then
@@ -229,6 +251,7 @@ Public Sub readFromRegistry()
         Else
             Settings.Add Key, GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:=Key)
         End If
+        checkKeyItem Key, Settings.Item(Key)
     Next Key
 End Sub
 
@@ -261,11 +284,6 @@ Public Sub writeKeyToRegistry(Key As Variant, Value As Variant)
     If checkKeyItem(Key, Value) Then
         Settings.Item(Key) = Value
         SaveSetting "OnlineImageAnalysis", "macro", Key, Value
-    Else
-        MsgBox "OnlineIASettings.writeKeyToRegistry: no key " & Key & " available. Possible Keys are:" & vbCrLf & _
-        availableKeys
-        ErrorLog.UpdateLog Now & " OnlineIASettings.writeKeyToRegistry: no key " & Key & " available. Possible Keys are:" & vbCrLf & _
-        availableKeys
     End If
 End Sub
 
@@ -349,7 +367,7 @@ Public Function getRois(Rois() As Roi) As Boolean
     End If
     roiType = Split(Settings.Item("roiType"), ";")
     If Settings.Item("roiAim") = "" Or Settings.Item("roiX") = "" Or Settings.Item("roiY") = "" Then
-        ErrorLog.UpdateLog Now & " OnlineIASettings.getRois: For each roi you need to define roiType, roiAim, roiX, and roiY! Different rois are separated by semicolumns. " + vbCrLf + "roiType1 ; roiType2; etc." & vbCrLf & _
+        ErrorLog.UpdateLog "OnlineIASettings.getRois: For each roi you need to define roiType, roiAim, roiX, and roiY! Different rois are separated by semicolumns. " + vbCrLf + "roiType1 ; roiType2; etc." & vbCrLf & _
         "roiX1_roi1, roiX2_roi1; roiX1_roi2, roiX2_roi2, roiX3_roi2; etc. Coordinates in pixels"
         Exit Function
     End If
@@ -359,7 +377,7 @@ Public Function getRois(Rois() As Roi) As Boolean
     YRois() = Split(Settings.Item("roiY"), ";")
     
     If UBound(roiType) <> UBound(roiAim) And UBound(roiType) <> UBound(XRois) And UBound(roiType) <> UBound(YRois) Then
-       ErrorLog.UpdateLog Now & " OnlineIASettings.getRois: Number of Rois and coordinates need to correspond. Different rois are separated by semicolumns. " + vbCrLf + "roiType1 ; roiType2; etc." & vbCrLf & _
+       ErrorLog.UpdateLog "OnlineIASettings.getRois: Number of Rois and coordinates need to correspond. Different rois are separated by semicolumns. " + vbCrLf + "roiType1 ; roiType2; etc." & vbCrLf & _
         "roiX1_roi1, roiX2_roi1; roiX1_roi2, roiX2_roi2, roiX3_roi2; etc. Coorindates in pixels"
         Exit Function
     End If
@@ -420,7 +438,7 @@ Public Function getPositions(StgPos() As Vector, currentPosition As Vector) As B
     End If
     
     If UBound(locX) <> UBound(locY) Then
-        ErrorLog.UpdateLog Now & " OnlineIASettings.getPositions: nr of values in registry for X, Y are not the same, separate the values with semicolumn " _
+        ErrorLog.UpdateLog "OnlineIASettings.getPositions: nr of values in registry for X, Y are not the same, separate the values with semicolumn " _
         & vbCrLf & "X=X1; X2; ..." & vbCrLf & "Y = Y1; Y2; Y3...."
         Exit Function
     End If
@@ -437,7 +455,7 @@ Public Function getPositions(StgPos() As Vector, currentPosition As Vector) As B
     End If
         
     If UBound(locZ) <> UBound(locX) Then 'Z has not been set for all positions
-        ErrorLog.UpdateLog Now & " OnlineIASettings.getPositions: nr of values in registry for X, Y, Z are not the same, separate the values with semicolumn " _
+        ErrorLog.UpdateLog "OnlineIASettings.getPositions: nr of values in registry for X, Y, Z are not the same, separate the values with semicolumn " _
         & vbCrLf & "X=X1; X2; ... " & vbCrLf & "Y = Y1; Y2; Y3.... " & vbCrLf & "Z = Z1; Z2; Z3.... "
         Exit Function
     End If
@@ -501,7 +519,7 @@ Public Function getFcsPositions(StgPos() As Vector, currentPosition As Vector) A
     End If
     
     If UBound(locX) <> UBound(locY) Then
-        ErrorLog.UpdateLog Now & " OnlineIASettings.getFcsPositions: nr of values in registry for fcsX, fcsY are not the same, separate the values with semicolumn " _
+        ErrorLog.UpdateLog "OnlineIASettings.getFcsPositions: nr of values in registry for fcsX, fcsY are not the same, separate the values with semicolumn " _
         & vbCrLf & "fcsX=X1; X2; ..." & vbCrLf & "Y = Y1; Y2; Y3...."
         Exit Function
     End If
@@ -518,7 +536,7 @@ Public Function getFcsPositions(StgPos() As Vector, currentPosition As Vector) A
     End If
         
     If UBound(locZ) <> UBound(locX) Then 'Z has not been set for all positions
-        ErrorLog.UpdateLog Now & " OnlineIASettings.getFcsPositions: nr of values in registry for fcsX, fcsY, fcsZ are not the same, separate the values with semicolumn " _
+        ErrorLog.UpdateLog "OnlineIASettings.getFcsPositions: nr of values in registry for fcsX, fcsY, fcsZ are not the same, separate the values with semicolumn " _
         & vbCrLf & "fcsX=X1; X2; ... " & vbCrLf & "fcsY = Y1; Y2; Y3.... " & vbCrLf & "fcsZ = Z1; Z2; Z3.... "
         Exit Function
     End If

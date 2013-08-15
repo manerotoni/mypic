@@ -9,7 +9,7 @@ Public Type FcsJobType
 End Type
 
 
-Public Sub TestFcsClass()
+Private Sub TestFcsClass()
     Set ZEN = Lsm5.CreateObject("Zeiss.Micro.AIM.ApplicationInterface.ApplicationInterface")
     Dim FcsControl As AimFcsController
     Set FcsControl = Fcs
@@ -28,7 +28,7 @@ Public Sub TestFcsClass()
     'FcsJob.setLightPath
     
 End Sub
-Public Sub loadAFcsJob()
+Private Sub loadAFcsJob()
 
 'ZEN2011 or up
     Dim FcsData As AimFcsData

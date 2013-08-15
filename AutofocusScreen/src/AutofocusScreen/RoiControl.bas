@@ -1,4 +1,8 @@
 Attribute VB_Name = "RoiControl"
+'''
+' Module for Roi control. Due to roi class this module is close to become obsolete
+''''
+
 Option Explicit
 Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
 
@@ -80,7 +84,7 @@ Public Function MakeVectorElement(ByVal TypeVectorOverlay As String, X() As Doub
     
 End Function
 
-Sub TestMakeVectorElement()
+Private Sub TestMakeVectorElement()
     Dim AcquisitionController As AimAcquisitionController40.AimScanController
     Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
     Dim X() As Double
@@ -116,52 +120,4 @@ Sub TestMakeVectorElement()
     MakeVectorElement "polyline", X, Y, "acquisition"
 End Sub
 
-''''
-'   ComputeCenter of mass of vector element. Not used
-'''''
-Sub GetCenterVectorElements(Rois As AimImageVectorOverlay, Element As Long, XCenter As Double, YCenter As Double)
-    Dim Knot As Long
-    Dim T As Double
-    Dim Z As Double
-    Dim X As Double
-    Dim Y As Double
-    XCenter = 0
-    YCenter = 0
-    If Element < Rois.GetNumberElements And Element > -1 Then
-        Select Case Rois.ElementType(Element)
-            Case eImageVectorOverlayElementRectangle
-                For Knot = 0 To Rois.ElementKnotSize(Element) - 2
-                   Rois.GetElementKnot Element, Knot, X, Y, Z, T
-                   XCenter = XCenter + X
-                   YCenter = YCenter + Y
-                Next Knot
-                XCenter = XCenter / (Rois.ElementKnotSize(Element) - 1)
-                YCenter = YCenter / (Rois.ElementKnotSize(Element) - 1)
-            Case eImageVectorOverlayElementCircle
-                Rois.GetElementKnot Element, 0, XCenter, YCenter, Z, T
-            Case eImageVectorOverlayElementClosedPolyLine
-                For Knot = 0 To Rois.ElementKnotSize(Element) - 2
-                   Rois.GetElementKnot Element, Knot, X, Y, Z, T
-                   XCenter = XCenter + X
-                   YCenter = YCenter + Y
-                Next Knot
-                XCenter = XCenter / (Rois.ElementKnotSize(Element) - 1)
-                YCenter = YCenter / (Rois.ElementKnotSize(Element) - 1)
-        End Select
-    End If
-End Sub
 
-
-'Sub TranslateVectorElements(Rois As AimImageVectorOverlay, X As Double, Y As Double, Z As Double)
-'    Dim i As Long
-'    Rois.Copy Rois, 1, 0, 0, 0, X, 0, 1, 0, 0, Y, 0, 0, 1, 0, Z, 0, 0, 0, 0, 0
-'End Sub
-
-
-
-
-'Sub GetVectorElements(Rois As AimImageVectorOverlay)
-'    Dim AcquisitionController As AimAcquisitionController40.AimScanController
-'    Set AcquisitionController = Lsm5.ExternalDsObject.ScanController
-'    Set Rois = AcquisitionController.AcquisitionRegions
-'End Sub

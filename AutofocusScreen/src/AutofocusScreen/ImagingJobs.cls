@@ -8,7 +8,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 '''
-' A Class to manage and imagingJob with different Settings and Tracks
+' A Class to manage several AJob: imagingJob with different Settings and Tracks
 '''
 Option Explicit
 

@@ -1,7 +1,7 @@
 Attribute VB_Name = "TestCode"
 Option Explicit
 
-Public Sub test1()
+Private Sub test1()
     Debug.Print Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing
     Debug.Print Lsm5.DsRecording.SampleSpacing
     'ScanToImage Lsm5.DsRecordingActiveDocObject
@@ -9,7 +9,7 @@ Public Sub test1()
 '    Set viewerGuiServer = Lsm5.viewerGuiServer
 End Sub
 
-Public Sub Test()
+Private Sub Test()
   
     Dim vo As AimImageVectorOverlay
     Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
@@ -70,7 +70,8 @@ End Sub
 '   DisplayAmplifierDescriptions()
 '''''
 Private Sub DisplayAmplifierDescriptions()
-    
+    Dim Track As DsTrack
+    Dim Success As Integer
   '  Dim amp As CpAmplifiers
  '   Set amp = Lsm5.Hardware.CpAmplifiers
     

@@ -8,7 +8,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 '''
-' A Class to manage and imagingJob with different Settings and Tracks
+' A Class to manage several AFcsJob instances(commodity class in absence of inheritance in VBA)
 '''
 Option Explicit
 
@@ -67,7 +67,7 @@ Public Sub AddJob(Name As String, ZEN As Object)
     'Jobs(iJob).setJob ZEN, ZENv
     Exit Sub
 ErrorHandle:
-    ErrorLog.UpdateLog Now & " Error in FcsJobs.AddJob " + Name + " " + Err.Description
+    ErrorLog.UpdateLog "Error in FcsJobs.AddJob " + Name + " " + Err.Description
 End Sub
 
 
@@ -85,7 +85,7 @@ Public Function setJob(Name As String, ZEN As Object) As Boolean
     End If
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog Now & " Error in FcsJobs.setJob " + Name + " " + Err.Description
+    ErrorLog.UpdateLog "Error in FcsJobs.setJob " + Name + " " + Err.Description
 End Function
 
 '''
@@ -101,7 +101,7 @@ Public Function setJobNoAi(Name As String, ConfigName As String) As Boolean
     End If
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog Now & " Error in FcsJobs.setJobNoAi " + Name + " " + Err.Description
+    ErrorLog.UpdateLog "Error in FcsJobs.setJobNoAi " + Name + " " + Err.Description
 End Function
 
 '''

@@ -23,7 +23,7 @@ Private Const BIF_RETURNONLYFSDIRS = &H1
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''Version Description''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '
-' AutofocusScreen_ZEN_v3.0.8
+' AutofocusScreen_ZEN_v3.0.9
 '''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Public Version As String
@@ -32,7 +32,13 @@ Private Const ReleaseName = True            'this adds the ZEN version
 Private Const LogCode = True                'sets key to run tests visible or not
 
 
-
+Private Sub ShowOiaKeys_Click()
+    Dim OiaSettings As OnlineIASettings
+    Set OiaSettings = New OnlineIASettings
+    OiaSettings.initializeDefault
+    KeyReport.Show
+    KeyReport.KeyReportLabel.Caption = OiaSettings.createKeyReport
+End Sub
 
 ''commodity function to recognize which job is ob top
 Private Sub MultiPage1_Change()
@@ -72,7 +78,7 @@ End Sub
 '''''
 Public Sub UserForm_Initialize()
     DisplayProgress "Initializing Macro ...", RGB(&HC0, &HC0, 0)
-    Version = " v3.0.8"
+    Version = " v3.0.9"
     Dim i As Integer
     ZENv = getVersionNr
     'find the version of the software
@@ -177,23 +183,13 @@ Private Sub Re_Start()
     Dim bLIVE As Boolean
     Dim bCamera As Boolean
     Dim Name As Variant
-    
-    Set tools = Lsm5.tools
-    GlobalMacroKey = "Autofocus"
-    
+
     Delay = 1
-    flgEvent = 7
-    flg = 0
     Lsm5.StopScan
     wait (Delay)
-    LoopingTimerUnit = 1
     GlobalRepetitionSec.BackColor = &HFF8080
-    BlockRepetitions = 1
-    ReDim Preserve GlobalImageIndex(BlockRepetitions)
+   
     LocationTextLabel.Caption = ""
-    GlobalProject = "AutofocusScreen3.0"
-    GlobalProjectName = GlobalProject + ".lvb"
-    HelpNamePDF = "AutofocusScreen_help.pdf"
     UsedDevices40 bLSM, bLIVE, bCamera
     SystemVersionOffset         ' extra offset depending on macroscope
 
@@ -312,12 +308,7 @@ Public Sub Re_Initialize()
     SwitchEnablePage "Trigger1", Trigger1Active
     SwitchEnablePage "Trigger2", Trigger2Active
     SwitchEnableFcsPage "Fcs1", Fcs1Active
-    PubSearchScan = False
-    NoReflectionSignal = False
-    PubSentStageGrid = False
     
-    '  AutofocusForm.Caption = GlobalProject + " for " + SystemName
-    BleachingActivated = False
     FocusMapPresent = False
     'This sets standard values for all task we want to do. This will be changed by the macro
     
@@ -559,7 +550,7 @@ End Sub
 'fills popup menu for chosing a track for post-acquisition tracking
 ' TODO: move in form
 Public Sub FillTrackingChannelList(JobName As String)
-
+    Dim Success As Integer
     Dim iTrack As Integer
     Dim c As Integer
     Dim ca As Integer
@@ -1484,6 +1475,10 @@ End Sub
 '       Set global variables and check if we can create Outputfolder
 '''''
 Private Sub SetDatabase()
+    Dim OiaSettings As OnlineIASettings
+    Set OiaSettings = New OnlineIASettings
+    OiaSettings.initializeDefault
+    
     GlobalDataBaseName = DatabaseTextbox.Value
     If GlobalDataBaseName = "" Then
         DatabaseLabel.Caption = "No output folder"
@@ -1499,7 +1494,7 @@ Private Sub SetDatabase()
             Exit Sub
         End If
         DatabaseLabel.Caption = GlobalDataBaseName
-        SaveSetting "OnlineImageAnalysis", "macro", "OutputFolder", GlobalDataBaseName
+        OiaSettings.writeKeyToRegistry "OutputFolder", GlobalDataBaseName
         LogFileNameBase = GlobalDataBaseName & "\AutofocusScreen.log"
         ErrFileNameBase = GlobalDataBaseName & "\AutofocusScreen.err"
         If Right(GlobalDataBaseName, 1) = "\" Then
@@ -1540,9 +1535,6 @@ Public Sub RestoreAcquisitionParameters()
     Dim SuccessRecenter As Boolean
     
     Time = Timer
-    ReDim BleachTable(BlockRepetitions)
-    ReDim BleachStartTable(BlockRepetitions)
-    ReDim BleachStopTable(BlockRepetitions)
     ChangeButtonStatus True
     Running = False
     ScanStop = False
@@ -1874,8 +1866,6 @@ Private Function StartSetting() As Boolean
     
     initPos = True
     StartSetting = False
-    BleachingActivated = False
-    AutomaticBleaching = False                                  'We do not do FRAps or FLIPS in this case. Bleaches can still be done with the "ExtraBleach" button.
     Set FileSystem = New FileSystemObject
     
     Dim MarkCount As Long
@@ -2081,7 +2071,8 @@ End Function
 '   Set the names of the tracks and find possible tracks
 '''''
 Public Sub AutoFindTracks()
-
+    Dim Track As DsTrack
+    Dim Success As Integer
     Dim i, j As Integer
     Dim ChannelOK As Boolean
     Dim MaxTracks As Integer
@@ -2230,6 +2221,8 @@ End Function
 
 
 Public Function AcquisitionTime() As Double
+    Dim Track As DsTrack
+    Dim Success As Integer
     Dim Track1Speed, Track2Speed, Track3Speed, Track4Speed As Double
     Dim Pixels As Long
     Dim FrameNumber As Integer
@@ -2280,6 +2273,7 @@ End Function
 '       [SelectedTrack] In - Number of selected track
 ''''''
 Private Sub CheckAutofocusTrack(SelectedTrack As Integer)
+    Dim Success As Integer
     Dim Track As DsTrack 'a new track is defined
     Dim DataChannel As DsDataChannel    'a new interface to a data channel is defined
                                         'contains channel dependend parameters of the
@@ -2362,41 +2356,6 @@ End Sub
 
 
 
-'''''
-'   Private Sub StartAlternativeImaging(RecordingDoc As DsRecordingDoc, StartTime As Double, _
-'   AlterDatabaseName As String, name As String)
-'   Alternative Acquisition in every .. round
-'   TODO: Bring it up to normal setting for all
-'''''
-Private Function StartAlternativeImaging(RecordingDoc As DsRecordingDoc, _
-FilePath As String, Name As String) As Boolean
-    
-    Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
-    If RecordingDoc Is Nothing Then
-        Set RecordingDoc = Lsm5.NewScanWindow
-        While RecordingDoc.IsBusy
-            Sleep (20)
-            DoEvents
-            If ScanStop Then
-                Exit Function
-            End If
-        Wend
-    End If
-    DisplayProgress "Acquiring Additional Track...", RGB(0, &HC0, 0)
-    ' take the image
-    If Not ScanToImage(RecordingDoc) Then
-        ScanStop = True
-        Exit Function
-    End If
-
-    RecordingDoc.SetTitle Name
-    
-    If Not SaveDsRecordingDoc(RecordingDoc, FilePath, imgFileFormat) Then
-        ScanStop = True
-        Exit Function
-    End If
-    StartAlternativeImaging = True
-End Function
 
 
 

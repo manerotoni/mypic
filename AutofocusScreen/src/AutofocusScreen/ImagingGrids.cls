@@ -7,6 +7,10 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+'''
+' A Class to manage several AGrid instances (commodity class in absence of inheritance in VBA)
+'''
+
 Option Explicit
 Private Grids() As AGrid
 Private GridNames As Dictionary

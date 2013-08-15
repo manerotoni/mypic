@@ -7,6 +7,9 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+''
+' class to manage several ARepetition
+'''
 Option Explicit
 Private Repetitions As New Collection 'ARepetition to be changed
 Private pZENv As Integer
