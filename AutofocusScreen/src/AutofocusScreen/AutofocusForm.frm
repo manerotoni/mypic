@@ -467,11 +467,9 @@ Private Sub SwitchEnablePage(JobName As String, Enable As Boolean)
     For i = 1 To 4
         Me.Controls(JobName + "Track" + CStr(i)).Enabled = Enable
     Next i
-    If JobName <> "Autofocus" Then
-        Me.Controls(JobName + "ZOffset").Enabled = Enable
-        Me.Controls(JobName + "ZOffsetLabel").Enabled = Enable
-    End If
     
+    Me.Controls(JobName + "ZOffset").Enabled = Enable
+    Me.Controls(JobName + "ZOffsetLabel").Enabled = Enable
     
     Me.Controls(JobName + "Period").Enabled = Enable
     Me.Controls(JobName + "PeriodLabel").Enabled = Enable
@@ -1840,6 +1838,13 @@ Private Sub StartButton_Click()
         If Fcs1Active Then
             NewFcsRecordGui GlobalFcsRecordingDoc, GlobalFcsData, "MacroFcs", ZEN, ZENv
             'Sleep (1000)
+            If ZENv > 2010 And Not ZEN Is Nothing Then
+                ZEN.gui.Fcs.EnablePositions.Value = True
+                ZEN.gui.Fcs.positions.EnablePositionList.Value = True
+                If ZEN.gui.Fcs.positions.PositionList.ItemCount > 0 Then
+                    ZEN.gui.Fcs.positions.PositionListRemoveAll.Execute
+                End If
+            End If
         End If
     End If
     NewRecordGui GlobalRecordingDoc, "MacroImaging", ZEN, ZENv

@@ -144,10 +144,15 @@ Public Function AcquireFcsJob(JobName As String, RecordingDoc As DsRecordingDoc,
     'Create a NewRecord if required
     NewFcsRecord RecordingDoc, FcsData, FileName
     
+    'Use position list mode
+    FcsControl.SamplePositionParameters.SamplePositionMode = eFcsSamplePositionModeList
+    
     '''clear previous positions
     ClearFcsPositionList
+    
     '''update positions
     setFcsPositions positions
+    
     If JobName <> CurrentJobFcs Then
         If Not JobsFcs.putJob(JobName, ZEN) Then
            Exit Function
@@ -177,6 +182,11 @@ positions() As Vector, positionsPx() As Vector) As Boolean
     For i = 0 To UBound(positions)
         positions(i).Z = positions(i).Z + AutofocusForm.Controls(JobName + "ZOffset").Value * 0.000001
     Next i
+    
+    If Not CleanFcsData(RecordingDoc, FcsData) Then
+        Exit Function
+    End If
+    
     If Not AcquireFcsJob(JobName, RecordingDoc, FcsData, FileName, positions) Then
         Exit Function
     End If
@@ -184,16 +194,17 @@ positions() As Vector, positionsPx() As Vector) As Boolean
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
     OiaSettings.initializeDefault
-    
+    Sleep (500)
     If Not SaveFcsMeasurement(FcsData, FilePath & FileName & ".fcs") Then
          Exit Function
     End If
+    While RecordingDoc.IsBusy
+        Sleep (50)
+    Wend
     
     SaveFcsPositionList FilePath & FileName & ".txt", positionsPx
     
-    If Not CleanFcsData(RecordingDoc, FcsData) Then
-        Exit Function
-    End If
+
     
     OiaSettings.writeKeyToRegistry "filePath", FilePath & FileName & ".fcs"
     If ScanStop Then
@@ -316,8 +327,6 @@ Public Function ExecuteJobAndTrack(GridName As String, JobName As String, Record
     Set OiaSettings = New OnlineIASettings
     
     Success = False
-    
-
     If AutofocusForm.Controls(JobName + "Active") Then
         DisplayProgress "Job " & JobName & ", Row " & Grids.thisRow(GridName) & ", Col " & Grids.thisColumn(GridName) & vbCrLf & _
         "subRow " & Grids.thisSubRow(GridName) & ", subCol " & Grids.thisSubColumn(GridName) & ", Rep " & Reps.thisIndex(GridName), RGB(&HC0, &HC0, 0)
@@ -328,9 +337,8 @@ Public Function ExecuteJobAndTrack(GridName As String, JobName As String, Record
         End If
         FileName = FileNameFromGrid(GridName, JobName)
         FilePath = parentPath & FilePathSuffix(GridName, JobName) & "\"
-        If JobName <> "Autofocus" Then
-            StgPos.Z = StgPos.Z + AutofocusForm.Controls(JobName + "ZOffset").Value
-        End If
+        
+        StgPos.Z = StgPos.Z + AutofocusForm.Controls(JobName + "ZOffset").Value
         
         If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
             OiaSettings.writeKeyToRegistry "codeMic", "wait"
@@ -342,6 +350,11 @@ Public Function ExecuteJobAndTrack(GridName As String, JobName As String, Record
         'do any recquired computation
         Time = Timer
         StgPos = TrackOffLine(JobName, RecordingDoc, StgPos)
+        
+        If Not AutofocusForm.Controls(JobName & "TrackZ").Value Then
+            StgPos.Z = StgPos.Z - AutofocusForm.Controls(JobName + "ZOffset").Value
+        End If
+        
         Debug.Print "Time to TrackOffLine " & Timer - Time
         If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
             OiaSettings.writeKeyToRegistry "codeOia", "newImage"
@@ -353,17 +366,14 @@ Public Function ExecuteJobAndTrack(GridName As String, JobName As String, Record
             Debug.Print "X =" & StgPos.X & ", " & newStgPos.X & ", " & StgPos.Y & ", " & newStgPos.Y & ", " & StgPos.Z & ", " & newStgPos.Z
             StgPos = TrackJob(JobName, StgPos, newStgPos)
         End If
-        
-        If JobName <> "Autofocus" Then
-            StgPos.Z = StgPos.Z - AutofocusForm.Controls(JobName + "ZOffset").Value
-        End If
     
     End If
     ExecuteJobAndTrack = StgPos
     Success = True
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog "Error in ExecuteJobAndTrack " + GridName + " " + JobName + " " + parentPath + " " + Err.Description
+    OiaSettings.readKeyFromRegistry ("filePath")
+    ErrorLog.UpdateLog "Error in ExecuteJobAndTrack " + GridName + " " + JobName + " " + parentPath + " " + OiaSettings.getSettings("filePath") + Err.Description
 End Function
 
 
@@ -1115,7 +1125,6 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
                 newPositions = computeCoordinatesFcs(parentJob, parentPosition, newPositionsPx)
                 ErrorLog.UpdateLog "ComputeJobSequential: No position for Job " & JobName & " (key = " & codeMic & ") has been specified!"
             End If
-            ReDim newPositionsPx(0)
             DisplayProgress "Job " & JobName, RGB(&HC0, &HC0, 0)
             If Not ExecuteFcsJob(JobName, GlobalFcsRecordingDoc, GlobalFcsData, parentPath, "FCS1_" & parentFile, newPositions, newPositionsPx) Then
                 GoTo Abort

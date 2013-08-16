@@ -113,7 +113,7 @@ End Function
 ''''
 ' Stop all running FCS jobs and imaging jobs
 ''''
-Public Sub StopAcquisition()
+Public Function StopAcquisition()
     Lsm5.StopScan
     If Lsm5.Info.IsFCS Then
         Dim FcsControl As AimFcsController
@@ -121,7 +121,7 @@ Public Sub StopAcquisition()
         FcsControl.StopAcquisitionAndWait
     End If
     DoEvents
-End Sub
+End Function
 
 '''''
 '   ScanToImage ( RecordingDoc As DsRecordingDoc) As Boolean
@@ -414,9 +414,9 @@ Public Function SaveFcsMeasurement(FcsData As AimFcsData, FileName As String) As
     writer.FileName = FileName
     writer.FileWriteType = eFcsFileWriteTypeAll
     writer.format = eFcsFileFormatConfoCor3WithRawData
-
     writer.Source = FcsData
     writer.Run
+    Sleep (1000)
     'write twice to be sure
     If Not writer.DestinationFilesExist(FileName) Then
         writer.FileName = FileName
@@ -1023,6 +1023,7 @@ Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As Strin
     Dim Error As AimError
     Dim Planes As Long
     Dim Plane As Long
+    Dim positions As Long
     Dim Horizontal As enumAimImportExportCoordinate
     Dim Vertical As enumAimImportExportCoordinate
 
@@ -1043,14 +1044,19 @@ Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As Strin
     
     Planes = 1
     Export.GetPlaneDimensions Horizontal, Vertical
+    If Document.Recording.MultiPositionAcquisition Then
+        positions = Document.Recording.MultiPositionArraySize
+    End If
+    If positions = 0 Then
+        positions = 1
+    End If
     
     Select Case Vertical
         Case eAimImportExportCoordinateY:
-             Planes = image.GetDimensionZ * image.GetDimensionT
+             Planes = image.GetDimensionZ * image.GetDimensionT * positions
         Case eAimImportExportCoordinateZ:
-            Planes = image.GetDimensionT
+             Planes = image.GetDimensionT
     End Select
-    
     'TODO check. what happens here with Export.ExportPlane Nothing why Nothing (thumbnails)
     For Plane = 0 To Planes - 1
         If GetInputState() <> 0 Then
