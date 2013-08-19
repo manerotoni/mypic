@@ -946,7 +946,7 @@ End Sub
 Private Sub FcsSetJob(JobName As String)
     Dim jobDescriptor() As String
     AutofocusForm.Hide
-    ErrorLog.Hide
+    LogManager.Hide
     JobsFcs.setJob JobName, ZEN
     jobDescriptor = JobsFcs.splittedJobDescriptor(JobName, 8)
     AutofocusForm.Controls(JobName + "Label1").Caption = jobDescriptor(0)
@@ -1826,7 +1826,7 @@ Private Sub StartButton_Click()
     
     Running = True
     ChangeButtonStatus False
-    ErrorLog.ResetLog
+    LogManager.ResetLog
     
     InitializeStageProperties
     SetStageSpeed 9, True    'What do we do here

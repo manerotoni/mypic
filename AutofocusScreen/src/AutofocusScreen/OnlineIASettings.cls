@@ -110,7 +110,7 @@ Public Sub initializeDefault()
     Next Key
     Exit Sub
 errMsg:
-    ErrorLog.UpdateLog "OnlineIASettings.initializeDefault error " + Err.Description
+    LogManager.UpdateErrorLog "OnlineIASettings.initializeDefault error " & Err.Description
 End Sub
 
 Public Function getSettings(Key As Variant) As Variant
@@ -124,7 +124,7 @@ Public Function getSettings(Key As Variant) As Variant
     LogTxt = LogTxt & available_subKey(Keys_HowTo)
     
     MsgBox LogTxt
-    ErrorLog.UpdateLog (LogTxt)
+    LogManager.UpdateErrorLog LogTxt
 End Function
 
 
@@ -196,7 +196,7 @@ Public Function checkKeyItem(Key As Variant, Value As Variant)
         errorMsg = "OnlineIASettings error: key " & CStr(Key) & " is not a correct key for registry. Values are " & vbCrLf
         errorMsg = errorMsg & available_subKey(Keys_HowTo)
         MsgBox errorMsg
-        ErrorLog.UpdateLog errorMsg
+        LogManager.UpdateErrorLog errorMsg
     End If
 End Function
 
@@ -214,7 +214,7 @@ Public Function checkSubkey(KeyName As String, Value As Variant, subKey_HowTo As
     errorMsg = "OnlineIASettings error: Wrong " & KeyName & " = " & Me.getSettings(KeyName) & " in Registry. Values are " & vbCrLf
     errorMsg = errorMsg & available_subKey(subKey_HowTo)
     MsgBox errorMsg
-    ErrorLog.UpdateLog errorMsg
+    LogManager.UpdateErrorLog errorMsg
 End Function
 
 
@@ -383,7 +383,7 @@ Public Function getRois(Rois() As Roi) As Boolean
     End If
     roiType = Split(Settings.Item("roiType"), ";")
     If Settings.Item("roiAim") = "" Or Settings.Item("roiX") = "" Or Settings.Item("roiY") = "" Then
-        ErrorLog.UpdateLog "OnlineIASettings.getRois: For each roi you need to define roiType, roiAim, roiX, and roiY! Different rois are separated by semicolumns. " + vbCrLf + "roiType1 ; roiType2; etc." & vbCrLf & _
+        LogManager.UpdateErrorLog "OnlineIASettings.getRois: For each roi you need to define roiType, roiAim, roiX, and roiY! Different rois are separated by semicolumns. " + vbCrLf + "roiType1 ; roiType2; etc." & vbCrLf & _
         "roiX1_roi1, roiX2_roi1; roiX1_roi2, roiX2_roi2, roiX3_roi2; etc. Coordinates in pixels"
         Exit Function
     End If
@@ -393,7 +393,7 @@ Public Function getRois(Rois() As Roi) As Boolean
     YRois() = Split(Settings.Item("roiY"), ";")
     
     If UBound(roiType) <> UBound(roiAim) And UBound(roiType) <> UBound(XRois) And UBound(roiType) <> UBound(YRois) Then
-       ErrorLog.UpdateLog "OnlineIASettings.getRois: Number of Rois and coordinates need to correspond. Different rois are separated by semicolumns. " + vbCrLf + "roiType1 ; roiType2; etc." & vbCrLf & _
+       LogManager.UpdateErrorLog "OnlineIASettings.getRois: Number of Rois and coordinates need to correspond. Different rois are separated by semicolumns. " + vbCrLf + "roiType1 ; roiType2; etc." & vbCrLf & _
         "roiX1_roi1, roiX2_roi1; roiX1_roi2, roiX2_roi2, roiX3_roi2; etc. Coorindates in pixels"
         Exit Function
     End If
@@ -454,7 +454,7 @@ Public Function getPositions(StgPos() As Vector, currentPosition As Vector) As B
     End If
     
     If UBound(locX) <> UBound(locY) Then
-        ErrorLog.UpdateLog "OnlineIASettings.getPositions: nr of values in registry for X, Y are not the same, separate the values with semicolumn " _
+        LogManager.UpdateErrorLog "OnlineIASettings.getPositions: nr of values in registry for X, Y are not the same, separate the values with semicolumn " _
         & vbCrLf & "X=X1; X2; ..." & vbCrLf & "Y = Y1; Y2; Y3...."
         Exit Function
     End If
@@ -471,7 +471,7 @@ Public Function getPositions(StgPos() As Vector, currentPosition As Vector) As B
     End If
         
     If UBound(locZ) <> UBound(locX) Then 'Z has not been set for all positions
-        ErrorLog.UpdateLog "OnlineIASettings.getPositions: nr of values in registry for X, Y, Z are not the same, separate the values with semicolumn " _
+        LogManager.UpdateErrorLog "OnlineIASettings.getPositions: nr of values in registry for X, Y, Z are not the same, separate the values with semicolumn " _
         & vbCrLf & "X=X1; X2; ... " & vbCrLf & "Y = Y1; Y2; Y3.... " & vbCrLf & "Z = Z1; Z2; Z3.... "
         Exit Function
     End If
@@ -535,7 +535,7 @@ Public Function getFcsPositions(StgPos() As Vector, currentPosition As Vector) A
     End If
     
     If UBound(locX) <> UBound(locY) Then
-        ErrorLog.UpdateLog "OnlineIASettings.getFcsPositions: nr of values in registry for fcsX, fcsY are not the same, separate the values with semicolumn " _
+        LogManager.UpdateErrorLog "OnlineIASettings.getFcsPositions: nr of values in registry for fcsX, fcsY are not the same, separate the values with semicolumn " _
         & vbCrLf & "fcsX=X1; X2; ..." & vbCrLf & "Y = Y1; Y2; Y3...."
         Exit Function
     End If
@@ -552,7 +552,7 @@ Public Function getFcsPositions(StgPos() As Vector, currentPosition As Vector) A
     End If
         
     If UBound(locZ) <> UBound(locX) Then 'Z has not been set for all positions
-        ErrorLog.UpdateLog "OnlineIASettings.getFcsPositions: nr of values in registry for fcsX, fcsY, fcsZ are not the same, separate the values with semicolumn " _
+        LogManager.UpdateErrorLog "OnlineIASettings.getFcsPositions: nr of values in registry for fcsX, fcsY, fcsZ are not the same, separate the values with semicolumn " _
         & vbCrLf & "fcsX=X1; X2; ... " & vbCrLf & "fcsY = Y1; Y2; Y3.... " & vbCrLf & "fcsZ = Z1; Z2; Z3.... "
         Exit Function
     End If

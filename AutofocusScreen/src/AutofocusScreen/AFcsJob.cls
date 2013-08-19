@@ -134,7 +134,7 @@ Public Function setJobAi(ZEN As Object) As Boolean
     Exit Function
 ErrorHandle:
     MsgBox "Error in AFcsJob.setJobAi " + Err.Description
-    ErrorLog.UpdateLog "Error in AFcsJob.setJobGui " + Err.Description
+    LogManager.UpdateErrorLog "Error in AFcsJob.setJobGui " + Err.Description
 End Function
 
 
@@ -186,7 +186,7 @@ Public Function putJobAi(ZEN As Object) As Boolean
     Exit Function
 ErrorHandle:
     MsgBox "Error in AFcsJob.setJobGui " + Err.Description
-    ErrorLog.UpdateLog "Error in AFcsJob.setJobGui " + Err.Description
+    LogManager.UpdateErrorLog "Error in AFcsJob.setJobGui " + Err.Description
 End Function
 
      
@@ -280,7 +280,7 @@ Public Function jobDescriptorSettings() As String
     Descriptor = Descriptor & "PositionsEnabled " & PositionsEnabled & vbCrLf
     Descriptor = Descriptor & "TimeSeriesEnabled " & TimeSeriesEnabled & vbCrLf
     Descriptor = Descriptor & "MeasurementTime " & MeasurementTime & vbCrLf
-    Descriptor = Descriptor & "Repetitions " & MeasurementTime & vbCrLf
+    Descriptor = Descriptor & "Repetitions " & Repetitions & vbCrLf
     Descriptor = Descriptor & "BleachTime " & BleachTime & vbCrLf
     Descriptor = Descriptor & "EndJobFcsDef " & vbCrLf
     jobDescriptorSettings = Descriptor

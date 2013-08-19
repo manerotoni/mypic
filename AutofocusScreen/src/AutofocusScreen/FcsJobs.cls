@@ -67,7 +67,7 @@ Public Sub AddJob(Name As String, ZEN As Object)
     'Jobs(iJob).setJob ZEN, ZENv
     Exit Sub
 ErrorHandle:
-    ErrorLog.UpdateLog "Error in FcsJobs.AddJob " + Name + " " + Err.Description
+    LogManager.UpdateErrorLog "Error in FcsJobs.AddJob " + Name + " " + Err.Description
 End Sub
 
 
@@ -85,7 +85,7 @@ Public Function setJob(Name As String, ZEN As Object) As Boolean
     End If
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog "Error in FcsJobs.setJob " + Name + " " + Err.Description
+    LogManager.UpdateErrorLog "Error in FcsJobs.setJob " & Name & " " & Err.Description
 End Function
 
 '''
@@ -101,7 +101,7 @@ Public Function setJobNoAi(Name As String, ConfigName As String) As Boolean
     End If
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog "Error in FcsJobs.setJobNoAi " + Name + " " + Err.Description
+    LogManager.UpdateErrorLog "Error in FcsJobs.setJobNoAi " & Name & " " & Err.Description
 End Function
 
 '''

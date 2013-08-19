@@ -265,7 +265,7 @@ End Sub
 ''
 Public Sub setRois(RoisIn() As Roi)
     If isArrayEmpty(RoisIn) Then
-         ErrorLog.UpdateLog "AJob.setRois tried to initialize Rois with empty vector"
+         LogManager.UpdateErrorLog "AJob.setRois tried to initialize Rois with empty vector"
     Else
         Rois = RoisIn
         pRoiMaxNr = UBound(Rois) + 1

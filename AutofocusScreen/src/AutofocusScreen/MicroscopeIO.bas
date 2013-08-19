@@ -164,7 +164,8 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
     ScanToImage = True
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog ("Error in ScanToImage " & Err.Description)
+    LogManager.UpdateErrorLog "Error in ScanToImage for image " _
+    & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " " & Err.Description
 End Function
 
 ''''
@@ -189,7 +190,7 @@ Public Function ScanToFcs(FcsData As AimFcsData) As Boolean
     ScanToFcs = True
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog ("Error in ScanToFcs " & Err.Description)
+    LogManager.UpdateErrorLog "Error in ScanToFcs from image " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & Err.Description
 End Function
 
 '''''
@@ -234,7 +235,7 @@ Public Function NewRecord(RecordingDoc As DsRecordingDoc, Name As String, Option
     Exit Function
     
 ErrorHandle:
-    ErrorLog.UpdateLog " Error in NewRecord" + Err.Description
+    LogManager.UpdateErrorLog " Error in NewRecord " & Name & Err.Description
     
 End Function
 
@@ -284,11 +285,11 @@ Public Function NewRecordGuiAi(RecordingDoc As DsRecordingDoc, Name As String, Z
         NewRecordGuiAi = True
     Else
         MsgBox "Error: NewRecordGuiAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
-        ErrorLog.UpdateLog "Error: NewRecordGuiAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
+        LogManager.UpdateErrorLog "Error: NewRecordGuiAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
     End If
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog "Error in NewRecordGuiAi " + Err.Description
+    LogManager.UpdateErrorLog "Error in NewRecordGuiAi " & Name & " " & Err.Description
 End Function
 
 
@@ -323,7 +324,7 @@ Public Function NewFcsRecord(RecordingDoc As DsRecordingDoc, FcsData As AimFcsDa
     Exit Function
 
 ErrorHandle:
-    ErrorLog.UpdateLog "Error in NewFcsRecord " + Err.Description
+    LogManager.UpdateErrorLog "Error in NewFcsRecord " & Name & " " & Err.Description
 End Function
 
 '''
@@ -344,7 +345,7 @@ Public Function CleanFcsData(RecordingDoc As DsRecordingDoc, FcsData As AimFcsDa
     CleanFcsData = True
     Exit Function
 NoRecord:
-    ErrorLog.UpdateLog "CleanFcsRecord: Found no active record for FCS!"
+    LogManager.UpdateErrorLog "CleanFcsRecord: Found no active record for FCS!"
 End Function
 
 
@@ -392,11 +393,11 @@ Public Function NewFcsRecordGuiAi(RecordingDoc As DsRecordingDoc, FcsData As Aim
         NewFcsRecordGuiAi = True
     Else
         MsgBox "Error: NewFcsRecordGuiAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
-        ErrorLog.UpdateLog "Error: NewFcsRecordGuiAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
+        LogManager.UpdateErrorLog "Error: NewFcsRecordGuiAi. Tried to use ZEN_Micro_AIM_ApplicationInterface but no ZEN objet has been initialized"
     End If
     Exit Function
 ErrorHandle:
-    ErrorLog.UpdateLog "Error in NewFcsRecordGuiAi " + Err.Description
+    LogManager.UpdateErrorLog "Error in NewFcsRecordGuiAi " & Name & Err.Description
 End Function
 
 ''''
@@ -454,11 +455,11 @@ Public Sub SaveFcsPositionList(sFile As String, positionsPx() As Vector)
     Close
     Exit Sub
 ErrorHandle:
-    ErrorLog.UpdateLog "SaveFcsPositionList Can't write " & sFile & " for the FcsPositions"
+    LogManager.UpdateErrorLog "SaveFcsPositionList Can't write " & sFile & " for the FcsPositions"
     Exit Sub
 ErrorHandle2:
     Close
-    ErrorLog.UpdateLog "positionsPx not assigned"
+    LogManager.UpdateErrorLog "positionsPx not assigned"
 End Sub
 
 '''''
@@ -944,8 +945,8 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
     End If
     
     If Not FoundChannel Then
-        ErrorLog.Show
-        ErrorLog.UpdateLog " MassCenter Was not able to find channel: " & TrackingChannel & " for tracking"
+        LogManager.UpdateErrorLog " MassCenter Was not able to find channel: " & TrackingChannel & " for tracking in " & _
+        GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath")
         Exit Function
     End If
 

@@ -90,10 +90,8 @@ Private Sub SaveFormPage(JobName As String, iFileNum As Integer)
         AutofocusForm.Controls(JobName & "Track" & CInt(i)).Value
     Next i
     
-    If JobName <> "Autofocus" Then
-        Print #iFileNum, JobName & "ZOffset " & AutofocusForm.Controls(JobName & "ZOffset").Value
-    End If
     
+    Print #iFileNum, JobName & "ZOffset " & AutofocusForm.Controls(JobName & "ZOffset").Value
     Print #iFileNum, JobName & "Period " & AutofocusForm.Controls(JobName & "Period").Value
     Print #iFileNum, JobName & "TrackZ " & AutofocusForm.Controls(JobName & "TrackZ").Value
     Print #iFileNum, JobName & "TrackXY " & AutofocusForm.Controls(JobName & "TrackXY").Value
@@ -121,12 +119,12 @@ ErrorHandle:
     MsgBox "Error in SaveFormPage " + JobName + " " + Err.Description
 End Sub
 
-Public Sub ControlTipText()
+Public Function ControlTipText()
     Dim i As Integer
     For i = 0 To UBound(JobNames)
         JobControlTipText JobNames(i)
     Next i
-End Sub
+End Function
 
 '''
 ' Sets tip text for all pages
@@ -137,10 +135,8 @@ Private Sub JobControlTipText(JobName As String)
 
     AutofocusForm.Controls(JobName + "Period").ControlTipText = "Perform job " & JobName & " every xx repetitions"
 
-    If JobName <> "Autofocus" Then
-        AutofocusForm.Controls(JobName + "ZOffset").ControlTipText = "Add xx to Z from previous imaging Job"
-    End If
-    
+
+    AutofocusForm.Controls(JobName + "ZOffset").ControlTipText = "Add xx to Z from previous imaging Job"
     AutofocusForm.Controls(JobName + "TrackZ").ControlTipText = "Update Z of current point with computed position"
     AutofocusForm.Controls(JobName + "TrackXY").ControlTipText = "Update XY of current point with computed position"
     AutofocusForm.Controls(JobName + "CenterOfMass").ControlTipText = "Compute new position from center of mass (done within Macro)"
