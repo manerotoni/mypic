@@ -243,6 +243,10 @@ StgPos As Vector, Optional deltaZ As Integer = -1) As Boolean
         If Not SaveDsRecordingDoc(RecordingDoc, FilePath & FileName & imgFileExtension, imgFileFormat) Then
             Exit Function
         End If
+        'we set the waiting after writing the file this may still be a problem if we do the analysis on the run
+        If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
+            OiaSettings.writeKeyToRegistry "codeMic", "wait"
+        End If
         OiaSettings.writeKeyToRegistry "filePath", FilePath & FileName & imgFileExtension
         LogManager.UpdateLog " save job " & JobName & " " & FilePath & FileName & imgFileExtension
     End If
@@ -347,9 +351,7 @@ Public Function ExecuteJobAndTrack(GridName As String, JobName As String, Record
         
         StgPos.Z = StgPos.Z + AutofocusForm.Controls(JobName + "ZOffset").Value
         
-        If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
-            OiaSettings.writeKeyToRegistry "codeMic", "wait"
-        End If
+
         
         If Not ExecuteJob(JobName, RecordingDoc, FilePath, FileName, StgPos) Then
             Exit Function
@@ -1062,6 +1064,7 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
         Case "focus":
             OiaSettings.writeKeyToRegistry "codeMic", "nothing"
             If OiaSettings.getPositions(newPositionsPx, parentPosition) Then
+                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " positions " & " first pos-pixel " & " X = " & newPositionsPx(0).X & " X = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
                 If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
                     Exit Function
                 End If
@@ -1075,7 +1078,7 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
                 "Specify one position in X, Y, Z of registry (in pixels, (X,Y) = (0,0) upper left corner image, Z = 0 -> central slice of current stack)!"
                 Exit Function
             End If
-            LogManager.UpdateLog " for " & parentPath & parentFile & " focus at  " & " X = " & newPositions(0).X & " X = " & newPositions(0).Y & " Z = " & newPositions(0).Z
+            LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " focus at  " & " X = " & newPositions(0).X & " X = " & newPositions(0).Y & " Z = " & newPositions(0).Z
             
         Case "trigger1", "trigger2": 'store positions for later processing or direct imaging depending on settings
             OiaSettings.writeKeyToRegistry "codeMic", "nothing"
@@ -1086,6 +1089,7 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
                 Exit Function
             End If
             If OiaSettings.getPositions(newPositionsPx, parentPosition) Then
+                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " obtained " * UBound(newPositionsPx) + 1 & " positions " & " first pos-pixel " & " X = " & newPositionsPx(0).X & " X = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
                 If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
                     GoTo Abort
                 End If
@@ -1106,7 +1110,7 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
             End If
             ''' if we run a subjob the grid and counter is reset
             If runSubImagingJob(JobName, JobName, newPositions) Then
-                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " execute job " & JobName & " at (only 1 pos given) " & " X = " & newPositions(0).X & " X = " & newPositions(0).Y & " Z = " & newPositions(0).Z
+                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " execute job " & JobName & " at (only 1st pos given) " & " X = " & newPositions(0).X & " X = " & newPositions(0).Y & " Z = " & newPositions(0).Z
                 'remove positions from parent grid to avoid revisiting the position
                 Grids.setThisValid parentGrid, False
                 'start acquisition of Job on grid named JobName
