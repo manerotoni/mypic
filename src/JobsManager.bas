@@ -985,7 +985,7 @@ End Function
 '   The exit from here is a hard exit upon error or stop
 ''''
 Public Function ComputeJobSequential(parentJob As String, parentGrid As String, parentPosition As Vector, parentPath As String, parentFile As String, RecordingDoc As DsRecordingDoc, Optional deltaZ As Integer = -1) As Vector
-    
+    On Error GoTo ErrorHandle:
     Dim imageSize As Integer
     Dim newPositionsPx() As Vector 'from the registru one obtains positions in pixels
     Dim newPositions() As Vector
@@ -1089,7 +1089,7 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
                 Exit Function
             End If
             If OiaSettings.getPositions(newPositionsPx, parentPosition) Then
-                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " obtained " * UBound(newPositionsPx) + 1 & " positions " & " first pos-pixel " & " X = " & newPositionsPx(0).X & " X = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
+                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " positions " & " first pos-pixel " & " X = " & newPositionsPx(0).X & " X = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
                 If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
                     GoTo Abort
                 End If
@@ -1153,6 +1153,11 @@ Public Function ComputeJobSequential(parentJob As String, parentGrid As String, 
     End Select
 Exit Function
 Abort:
+    ScanStop = True ' global flag to stop everything
+    StopAcquisition
+    Exit Function
+ErrorHandle:
+    LogManager.UpdateErrorLog "Error in ComputeJobSequential: " & Err.Description
     ScanStop = True ' global flag to stop everything
     StopAcquisition
 End Function
