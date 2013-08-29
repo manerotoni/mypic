@@ -341,7 +341,7 @@
 </Property>
 <Property>
 <Name>Revision</Name>
-<Value>14258</Value>
+<Value>14366</Value>
 </Property>
 <Property>
 <Name>Created</Name>
@@ -349,7 +349,7 @@
 </Property>
 <Property>
 <Name>Modified</Name>
-<Value>29/08/2013 11:25:49</Value>
+<Value>29/08/2013 14:49:05</Value>
 </Property>
 <Property>
 <Name>ModifiedAuthor</Name>
@@ -1332,6 +1332,10 @@
 <Type>MSForm</Type>
 <Properties>
 <Property>
+<Name>ActiveControl</Name>
+<Value></Value>
+</Property>
+<Property>
 <Name>BackColor</Name>
 <Value>-2147483645</Value>
 </Property>
@@ -1353,7 +1357,7 @@
 </Property>
 <Property>
 <Name>CanUndo</Name>
-<Value>True</Value>
+<Value>False</Value>
 </Property>
 <Property>
 <Name>Cycle</Name>
@@ -1517,8 +1521,8 @@
 </Property>
 </Properties>
 <CodeModule>
-<CountOfDeclarationLines>16</CountOfDeclarationLines>
-<CountOfLines>2735</CountOfLines>
+<CountOfDeclarationLines>27</CountOfDeclarationLines>
+<CountOfLines>2732</CountOfLines>
 <Interfaces>
 </Interfaces>
 <Events>
@@ -1556,21 +1560,8 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>112</CountOfLines>
+<CountOfLines>98</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine> WARNING ZEN does not use spatial units in a consistent way. Switches between um and meter and pixel WARNING&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine> for imaging and moving the stage</CommentLine>
-<CommentLine> Lsm5.Hardware.Cpstages.PositionX: Absolute coordinate in um</CommentLine>
-<CommentLine> Lsm5.Hardware.CpFocus.Position: Absolute coordinate in meter</CommentLine>
-<CommentLine> Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing: in meter. this is the pixelSize</CommentLine>
-<CommentLine> Lsm5.DsRecording.SampleSpacing: in um. this is the pixelSize. In both cases we access the same object</CommentLine>
-<CommentLine></CommentLine>
-<CommentLine> All FCS positions are given in um. For X and Y with respect to center of the image. So 0 0 is in the middle of the image. For</CommentLine>
-<CommentLine> Z one provides an absolute position also un um</CommentLine>
-<CommentLine></CommentLine>
-<CommentLine> For ROI the coordinates are in pixels</CommentLine>
-<CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine> UserForm_Initialize()</CommentLine>
 <CommentLine>   Function called from e.g. AutoFocusForm.Show</CommentLine>
@@ -4248,6 +4239,23 @@
 </Procedure>
 </Procedures>
 <CommentLines>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Module    : AutofocusForm</CommentLine>
+<CommentLine> Author    : Antonio Politi</CommentLine>
+<CommentLine> Version   : 3.0.10</CommentLine>
+<CommentLine> Purpose   : Form to manage Imagingd Fcs Jobs</CommentLine>
+<CommentLine> WARNING ZEN does not use spatial units in a consistent way. Switches between um and meter and pixel WARNING&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
+<CommentLine> for imaging and moving the stage</CommentLine>
+<CommentLine> Lsm5.Hardware.Cpstages.PositionX: Absolute coordinate in um</CommentLine>
+<CommentLine> Lsm5.Hardware.CpFocus.Position: Absolute coordinate in meter</CommentLine>
+<CommentLine> Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing: in meter. this is the pixelSize</CommentLine>
+<CommentLine> Lsm5.DsRecording.SampleSpacing: in um. this is the pixelSize. In both cases we access the same object</CommentLine>
+<CommentLine></CommentLine>
+<CommentLine> All FCS positions are given in um. For X and Y with respect to center of the image. So 0 0 is in the middle of the image. For</CommentLine>
+<CommentLine> Z one provides an absolute position also un um</CommentLine>
+<CommentLine></CommentLine>
+<CommentLine> For ROI the coordinates are in pixels</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
 </CommentLines>
 </CodeModule>
 <Controls>
@@ -6670,192 +6678,7 @@
 <Type>MSForm</Type>
 <Properties>
 <Property>
-<Name>ActiveControl</Name>
 <Value></Value>
-</Property>
-<Property>
-<Name>BackColor</Name>
-<Value>-2147483633</Value>
-</Property>
-<Property>
-<Name>BorderColor</Name>
-<Value>-2147483630</Value>
-</Property>
-<Property>
-<Name>BorderStyle</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>CanPaste</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>CanRedo</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>CanUndo</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>Cycle</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>_Font_Reserved</Name>
-<Value></Value>
-</Property>
-<Property>
-<Name>ForeColor</Name>
-<Value>-2147483630</Value>
-</Property>
-<Property>
-<Name>InsideHeight</Name>
-<Value>195.75</Value>
-</Property>
-<Property>
-<Name>InsideWidth</Name>
-<Value>182.25</Value>
-</Property>
-<Property>
-<Name>KeepScrollBarsVisible</Name>
-<Value>3</Value>
-</Property>
-<Property>
-<Name>MousePointer</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>PictureAlignment</Name>
-<Value>2</Value>
-</Property>
-<Property>
-<Name>Picture</Name>
-<Value></Value>
-</Property>
-<Property>
-<Name>PictureSizeMode</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>PictureTiling</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>ScrollBars</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>ScrollHeight</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>ScrollLeft</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>ScrollTop</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>ScrollWidth</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>SpecialEffect</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>VerticalScrollBarSide</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>Zoom</Name>
-<Value>100</Value>
-</Property>
-<Property>
-<Name>DesignMode</Name>
-<Value>-2</Value>
-</Property>
-<Property>
-<Name>ShowToolbox</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>ShowGridDots</Name>
-<Value>-2</Value>
-</Property>
-<Property>
-<Name>SnapToGrid</Name>
-<Value>-2</Value>
-</Property>
-<Property>
-<Name>GridX</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>GridY</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>DrawBuffer</Name>
-<Value>32000</Value>
-</Property>
-<Property>
-<Name>Name</Name>
-<Value>CreditForm</Value>
-</Property>
-<Property>
-<Name>Caption</Name>
-<Value>Credit</Value>
-</Property>
-<Property>
-<Name>Left</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>Top</Name>
-<Value>-2.25</Value>
-</Property>
-<Property>
-<Name>Width</Name>
-<Value>186.75</Value>
-</Property>
-<Property>
-<Name>Height</Name>
-<Value>216.75</Value>
-</Property>
-<Property>
-<Name>Enabled</Name>
-<Value>True</Value>
-</Property>
-<Property>
-<Name>Tag</Name>
-<Value></Value>
-</Property>
-<Property>
-<Name>HelpContextID</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>WhatsThisButton</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>WhatsThisHelp</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>RightToLeft</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>StartUpPosition</Name>
-<Value>1</Value>
-</Property>
-<Property>
-<Name>ShowModal</Name>
-<Value>True</Value>
 </Property>
 </Properties>
 <CodeModule>
@@ -9211,8 +9034,8 @@
 </Property>
 </Properties>
 <CodeModule>
-<CountOfDeclarationLines>46</CountOfDeclarationLines>
-<CountOfLines>1343</CountOfLines>
+<CountOfDeclarationLines>47</CountOfDeclarationLines>
+<CountOfLines>1586</CountOfLines>
 <Interfaces>
 </Interfaces>
 <Events>
@@ -9223,15 +9046,15 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>88</CountOfLines>
+<CountOfLines>80</CountOfLines>
 <CommentLines>
 <CommentLine>---------------------------------------------------------------------------------------</CommentLine>
 <CommentLine> Procedure : AcquireJob</CommentLine>
 <CommentLine> Purpose   : Sets and execute an imaging Job</CommentLine>
-<CommentLine>             JobName: The name of the Job to execute</CommentLine>
-<CommentLine>             RecordingDoc: the dsRecording where image is stored</CommentLine>
-<CommentLine>             RocordingName: The name of the recording (also for the GUI)</CommentLine>
-<CommentLine>             position: A vector with stage position where to acquire image X, Y, and Z (cental slice)</CommentLine>
+<CommentLine> Variables : JobName - The name of the Job to execute</CommentLine>
+<CommentLine>             RecordingDoc - the dsRecording where image is stored</CommentLine>
+<CommentLine>             RocordingName - The name of the recording (also for the GUI)</CommentLine>
+<CommentLine>             position - A vector with stage position where to acquire image X, Y, and Z (cental slice) in um</CommentLine>
 <CommentLine>---------------------------------------------------------------------------------------</CommentLine>
 </CommentLines>
 <Declaration>Public Function AcquireJob(JobName As String, RecordingDoc As DsRecordingDoc, RecordingName As String, position As Vector) As Boolean</Declaration>
@@ -9276,15 +9099,18 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>61</CountOfLines>
+<CountOfLines>66</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;</CommentLine>
-<CommentLine>   Sets and execute an FCS Job at specified position</CommentLine>
-<CommentLine>       JobName: The name of the Job to execute</CommentLine>
-<CommentLine>       FcsData: the AimFcsData containing the Fcs</CommentLine>
-<CommentLine>       RocordingName: The name of the recording (also for the GUI).Not used yet</CommentLine>
-<CommentLine>       position: A vector array with position where to acquire image X, Y (relative to center of image), and Z (absolute).</CommentLine>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : AcquireFcsJob</CommentLine>
+<CommentLine> Purpose   : Sets and execute an FCS Job at specified position</CommentLine>
+<CommentLine> Variables : JobName  -  The name of the Job to execute</CommentLine>
+<CommentLine>             RecordingDoc - the DsRecordingDoc of the Fcs measurements</CommentLine>
+<CommentLine>             FcsData -  the AimFcsData containing the Fcs</CommentLine>
+<CommentLine>             FileName - Name appearing on top of RecordingDoc</CommentLine>
+<CommentLine>             positions -  A vector array with position where to acquire Fcs X, Y (relative to center of image), and Z (absolute). Unit are in meter!!</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Function AcquireFcsJob(JobName As String, RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, FileName As String, positions() As Vector) As Boolean</Declaration>
 <Parameters>
@@ -9336,11 +9162,20 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>2</CountOfDeclarationLines>
-<CountOfLines>43</CountOfLines>
+<CountOfLines>59</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine> This executes part of the Job save the file compute offline tracking and set the registry</CommentLine>
-<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : ExecuteFcsJob</CommentLine>
+<CommentLine> Purpose   : Executes the AcquireFcsJob and save data and positions</CommentLine>
+<CommentLine> Variables : JobName  -  The name of the Job to execute</CommentLine>
+<CommentLine>             RecordingDoc - the DsRecordingDoc of the Fcs measurements</CommentLine>
+<CommentLine>             FcsData -  the AimFcsData containing the Fcs</CommentLine>
+<CommentLine>             FilePath - Path to store file</CommentLine>
+<CommentLine>             FileName - Name of file</CommentLine>
+<CommentLine>             positions -  A vector array with position where to acquire Fcs X, Y (relative to center of image), and Z (absolute). Unit are in meter!!</CommentLine>
+<CommentLine>             positionsPx - A vector array with position in px relative to upper corner  of image. Z = 0 bottom of stack. Used for logging the position</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Function ExecuteFcsJob(JobName As String, RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, FilePath As String, FileName As String, positions() As Vector, positionsPx() As Vector) As Boolean</Declaration>
 <Parameters>
@@ -9408,11 +9243,19 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>2</CountOfDeclarationLines>
-<CountOfLines>38</CountOfLines>
+<CountOfLines>50</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine> This executes part of the Job save the file compute offline tracking and set the registry</CommentLine>
-<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : ExecuteJob</CommentLine>
+<CommentLine> Purpose   : Executes part of imaging Job and save the file (no tracking)</CommentLine>
+<CommentLine> Variables : JobName  -  The name of the Job to execute</CommentLine>
+<CommentLine>             RecordingDoc - the DsRecordingDoc of the Fcs measurements</CommentLine>
+<CommentLine>             FilePath - Path to store file</CommentLine>
+<CommentLine>             FileName - Name of file</CommentLine>
+<CommentLine>             StgPos -  stage position where to acquire image X, Y (absolute), and Z (absolute). Unit are in micrometer!!</CommentLine>
+<CommentLine>             delatZ - size of Z stack. Not currently used</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Function ExecuteJob(JobName As String, RecordingDoc As DsRecordingDoc, FilePath As String, FileName As String, StgPos As Vector, Optional deltaZ As Integer = -1) As Boolean</Declaration>
 <Parameters>
@@ -9472,11 +9315,17 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>41</CountOfLines>
+<CountOfLines>51</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;</CommentLine>
-<CommentLine> Compute new positions according to center of mass</CommentLine>
-<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : TrackOffLine</CommentLine>
+<CommentLine> Purpose   : Compute new positions according to center of mass</CommentLine>
+<CommentLine> Variables : JobName - Origin job of image</CommentLine>
+<CommentLine>             RecordingDoc - the Recording where image is store</CommentLine>
+<CommentLine>             currentPosition - current absolute stage position (in um)</CommentLine>
+<CommentLine> Returns   : a new stage position</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Function TrackOffLine(JobName As String, RecordingDoc As DsRecordingDoc, currentPosition As Vector) As Vector</Declaration>
 <Parameters>
@@ -9512,11 +9361,17 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>24</CountOfLines>
+<CountOfLines>31</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine>   Update positions according to track command</CommentLine>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : TrackJob</CommentLine>
+<CommentLine> Purpose   : Update a position with new position according to task specified (either none, Z, XY, or XYZ)</CommentLine>
+<CommentLine> Variables : JobName - Name of job (refer to access of AutofocusForm)</CommentLine>
+<CommentLine>             StgPos - Current stage position (absolute in um)</CommentLine>
+<CommentLine>             StgPosNew - New stage position</CommentLine>
+<CommentLine> Returns :   A stage position</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Function TrackJob(JobName As String, StgPos As Vector, StgPosNew As Vector) As Vector</Declaration>
 <Parameters>
@@ -9551,12 +9406,23 @@
 <Name>ExecuteJobAndTrack</Name>
 <Scope>Public</Scope>
 <Type>Function</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>62</CountOfLines>
+<CountOfDeclarationLines>2</CountOfDeclarationLines>
+<CountOfLines>79</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;</CommentLine>
-<CommentLine>   Execute a job and perform a tracking. Returns an updated position X, Y, and Z</CommentLine>
+<CommentLine></CommentLine>
 <CommentLine>&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : ExecuteJobAndTrack</CommentLine>
+<CommentLine> Purpose   : Execute a imaging job and perform a tracking. Returns an updated position X, Y, and Z</CommentLine>
+<CommentLine> Variables : GridName - Name of position grid</CommentLine>
+<CommentLine>             JobName - Name of imaging Job</CommentLine>
+<CommentLine>             RecordingDoc - The recording Doc</CommentLine>
+<CommentLine>             parentPath - the main imaging path</CommentLine>
+<CommentLine>             StgPos - current stage position (absolute in um)</CommentLine>
+<CommentLine>             Success - True if function finishes</CommentLine>
+<CommentLine> Returns : an updated stage position (absolute in um)</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
 </CommentLines>
 <Declaration>Public Function ExecuteJobAndTrack(GridName As String, JobName As String, RecordingDoc As DsRecordingDoc, parentPath As String, StgPos As Vector, Success As Boolean) As Vector</Declaration>
 <Parameters>
@@ -9616,11 +9482,16 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>168</CountOfLines>
+<CountOfLines>153</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   Performs many things (TODO: write more). Pretty much the whole macro runs through here</CommentLine>
-<CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : StartJobOnGrid</CommentLine>
+<CommentLine> Purpose   : Performs imaging/fcs on a grid. Pretty much the whole macro runs through here</CommentLine>
+<CommentLine> Variables : GridName -</CommentLine>
+<CommentLine>             JobName -</CommentLine>
+<CommentLine>             parentPath - Path from where job has been initiated</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Function StartJobOnGrid(GridName As String, JobName As String, RecordingDoc As DsRecordingDoc, parentPath As String) As Boolean</Declaration>
 <Parameters>
@@ -9664,13 +9535,49 @@
 <Scope>Private</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>11</CountOfLines>
+<CountOfLines>19</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;</CommentLine>
-<CommentLine> Derive filename from Grid and repetition</CommentLine>
-<CommentLine>&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : FileNameFromGrid</CommentLine>
+<CommentLine> Purpose   : Derive filename from Grid and repetition</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Private Function FileNameFromGrid(GridName As String, JobName As String) As String</Declaration>
+<Parameters>
+<Parameter>
+<Name>GridName</Name>
+<Type>String</Type>
+<IsByVal>False</IsByVal>
+<IsOptional>False</IsOptional>
+<IsParamArray>False</IsParamArray>
+<DefaultValue></DefaultValue>
+</Parameter>
+<Parameter>
+<Name>JobName</Name>
+<Type>String</Type>
+<IsByVal>False</IsByVal>
+<IsOptional>False</IsOptional>
+<IsParamArray>False</IsParamArray>
+<DefaultValue></DefaultValue>
+</Parameter>
+</Parameters>
+<ReturnType>String</ReturnType>
+</Procedure>
+<Procedure>
+<Name>FilePathSuffix</Name>
+<Scope>Private</Scope>
+<Type>Function</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>29</CountOfLines>
+<CommentLines>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : FilePathSuffix</CommentLine>
+<CommentLine> Purpose   : Derive filepath Suffix from Grid and repetition</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
+</CommentLines>
+<Declaration>Private Function FilePathSuffix(GridName As String, JobName As String) As String</Declaration>
 <Parameters>
 <Parameter>
 <Name>GridName</Name>
@@ -9696,11 +9603,16 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>19</CountOfLines>
+<CountOfLines>33</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine> check  that newPos is not further away than the size of the image. In fact it should be half the image</CommentLine>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : checkForMaximalDisplacement</CommentLine>
+<CommentLine> Purpose   : check  that newPos is not further away than the size of the image. In fact it should be half the image</CommentLine>
+<CommentLine> Variables : JobName -</CommentLine>
+<CommentLine>             currentPos - stage position in um</CommentLine>
+<CommentLine>             newPos - new stage position in um</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Function checkForMaximalDisplacement(JobName As String, currentPos As Vector, newPos As Vector) As Boolean</Declaration>
 <Parameters>
@@ -9736,11 +9648,16 @@
 <Scope>Private</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>21</CountOfLines>
+<CountOfLines>28</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine> check  that newPos is not further away than the size of the image. In fact it should be half the image</CommentLine>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : checkForMaximalDisplacementVec</CommentLine>
+<CommentLine> Purpose   : check  that newPos vectors are not further away than the size of the image</CommentLine>
+<CommentLine> Variables : JobName -</CommentLine>
+<CommentLine>             currentPos - stage position in um</CommentLine>
+<CommentLine>             newPos - vector of stage positions in um</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Private Function checkForMaximalDisplacementVec(JobName As String, currentPos As Vector, newPos() As Vector) As Boolean</Declaration>
 <Parameters>
@@ -9772,16 +9689,55 @@
 <ReturnType>Boolean</ReturnType>
 </Procedure>
 <Procedure>
+<Name>checkForMaximalDisplacementPixels</Name>
+<Scope>Private</Scope>
+<Type>Function</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>48</CountOfLines>
+<CommentLines>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : checkForMaximalDisplacementPixels</CommentLine>
+<CommentLine> Purpose   : check  that newPos is within possible boundary using pixels</CommentLine>
+<CommentLine> Variables : JobName -</CommentLine>
+<CommentLine>             newPos - A new position in pixels 0,0,0 is upper left bottom slice</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
+</CommentLines>
+<Declaration>Private Function checkForMaximalDisplacementPixels(JobName As String, newPos As Vector) As Boolean</Declaration>
+<Parameters>
+<Parameter>
+<Name>JobName</Name>
+<Type>String</Type>
+<IsByVal>False</IsByVal>
+<IsOptional>False</IsOptional>
+<IsParamArray>False</IsParamArray>
+<DefaultValue></DefaultValue>
+</Parameter>
+<Parameter>
+<Name>newPos</Name>
+<Type>Vector</Type>
+<IsByVal>False</IsByVal>
+<IsOptional>False</IsOptional>
+<IsParamArray>False</IsParamArray>
+<DefaultValue></DefaultValue>
+</Parameter>
+</Parameters>
+<ReturnType>Boolean</ReturnType>
+</Procedure>
+<Procedure>
 <Name>checkForMaximalDisplacementVecPixels</Name>
 <Scope>Private</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>36</CountOfLines>
+<CountOfLines>41</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine> check  that newPos is within possible boundary.</CommentLine>
-<CommentLine>   newPos is a vector of coordinates in pixel. It is positive</CommentLine>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : checkForMaximalDisplacementVecPixels</CommentLine>
+<CommentLine> Purpose   : check  that newPos is within possible boundary using pixels</CommentLine>
+<CommentLine> Variables : JobName -</CommentLine>
+<CommentLine>             newPos - A vector of new positions in pixels 0,0,0 is upper left bottom slice</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Private Function checkForMaximalDisplacementVecPixels(JobName As String, newPos() As Vector) As Boolean</Declaration>
 <Parameters>
@@ -9805,47 +9761,19 @@
 <ReturnType>Boolean</ReturnType>
 </Procedure>
 <Procedure>
-<Name>FilePathSuffix</Name>
-<Scope>Private</Scope>
-<Type>Function</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>17</CountOfLines>
-<CommentLines>
-<CommentLine>&apos;&apos;</CommentLine>
-<CommentLine> Derive filepath Suffix from Grid and repetition</CommentLine>
-<CommentLine>&apos;&apos;</CommentLine>
-</CommentLines>
-<Declaration>Private Function FilePathSuffix(GridName As String, JobName As String) As String</Declaration>
-<Parameters>
-<Parameter>
-<Name>GridName</Name>
-<Type>String</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>JobName</Name>
-<Type>String</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-</Parameters>
-<ReturnType>String</ReturnType>
-</Procedure>
-<Procedure>
 <Name>UpdateFormFromJob</Name>
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>32</CountOfLines>
+<CountOfLines>43</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;</CommentLine>
-<CommentLine>   Update the settings of the corresponding Formpage from the Job</CommentLine>
-<CommentLine>&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : UpdateFormFromJob</CommentLine>
+<CommentLine> Purpose   : Update the settings of the corresponding Formpage from the Job</CommentLine>
+<CommentLine> Variables : Jobs - Contains sevral imaging jobs</CommentLine>
+<CommentLine>             JobName - the name of the job where we want to update</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Sub UpdateFormFromJob(Jobs As ImagingJobs, JobName As String)</Declaration>
 <Parameters>
@@ -9873,16 +9801,23 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>19</CountOfLines>
+<CountOfLines>31</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;</CommentLine>
-<CommentLine>   Update the settings of the corresponding Formpage from the Job</CommentLine>
+<CommentLine></CommentLine>
 <CommentLine>&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : UpdateFormFromJobFcs</CommentLine>
+<CommentLine> Purpose   : Update the settings of the corresponding Formpage from the FcsJob</CommentLine>
+<CommentLine> Variables : JobsFcs - Contains several fcs jobs</CommentLine>
+<CommentLine>             JobName - the name of the job where we want to update</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
-<Declaration>Public Sub UpdateFormFromJobFcs(Jobs As FcsJobs, JobName As String)</Declaration>
+<Declaration>Public Sub UpdateFormFromJobFcs(JobsFcs As FcsJobs, JobName As String)</Declaration>
 <Parameters>
 <Parameter>
-<Name>Jobs</Name>
+<Name>JobsFcs</Name>
 <Type>FcsJobs</Type>
 <IsByVal>False</IsByVal>
 <IsOptional>False</IsOptional>
@@ -9905,11 +9840,15 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>11</CountOfLines>
+<CountOfLines>25</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;</CommentLine>
-<CommentLine>   Update the settings of Job with JobName from corresponding Formpage</CommentLine>
-<CommentLine>&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : UpdateJobFromForm</CommentLine>
+<CommentLine> Purpose   : Update the settings of imaging Job with JobName from corresponding Formpage</CommentLine>
+<CommentLine> Variables : Jobs - Contains sevral imaging jobs</CommentLine>
+<CommentLine>             JobName - the name of the job where we want to update</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Sub UpdateJobFromForm(Jobs As ImagingJobs, JobName As String)</Declaration>
 <Parameters>
@@ -9937,11 +9876,16 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>45</CountOfLines>
+<CountOfLines>58</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;</CommentLine>
-<CommentLine>   Updates the Gui AcquisitionMode from the Job</CommentLine>
-<CommentLine>&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : UpdateGuiFromJob</CommentLine>
+<CommentLine> Purpose   : Updates the Gui AcquisitionMode from the Job</CommentLine>
+<CommentLine> Variables : Jobs - Contains several fcs jobs</CommentLine>
+<CommentLine>             JobName - the name of the job where we want to update</CommentLine>
+<CommentLine>             ZEN - object is assigned for ZENv &gt; 2010</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Sub UpdateGuiFromJob(Jobs As ImagingJobs, JobName As String, ZEN As Object)</Declaration>
 <Parameters>
@@ -9977,13 +9921,18 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>40</CountOfLines>
+<CountOfLines>51</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   computeShiftedCoordinates(offsetPosition As Vector, currentPosition As Vector) As Vector</CommentLine>
-<CommentLine>   given offsetPosition with (0,0,0) center of image central slice (in um)</CommentLine>
-<CommentLine>   the function compute absolute stage/focus coordinates from currentPosition</CommentLine>
-<CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : computeShiftedCoordinates</CommentLine>
+<CommentLine> Purpose   : given offsetPosition with (0,0,0) center of image central slice (in um)</CommentLine>
+<CommentLine>             Computes absolute stage/focus coordinates from currentPosition.</CommentLine>
+<CommentLine>             Considers mirror possible mirror of axis</CommentLine>
+<CommentLine> Variables : offsetPosition - position in um relative to 0,0,0 center of image and central slice</CommentLine>
+<CommentLine>             currentPosiotion -</CommentLine>
+<CommentLine> Returns   : new shifted position</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Function computeShiftedCoordinates(offsetPosition As Vector, currentPosition As Vector) As Vector</Declaration>
 <Parameters>
@@ -10011,13 +9960,17 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>35</CountOfLines>
+<CountOfLines>51</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine> compute offset coordinates for imaging from pixel coordinates</CommentLine>
-<CommentLine> newPosition() As Vector</CommentLine>
-<CommentLine> the values are returned in um!!</CommentLine>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : computeCoordinatesImaging</CommentLine>
+<CommentLine> Purpose   : compute new stage coordinates for imaging from pixel coordinates</CommentLine>
+<CommentLine> Variables : JobName -</CommentLine>
+<CommentLine>             currentPosition - stage position in um</CommentLine>
+<CommentLine>             newPosition - Vector of positions in pixel (0,0,0) is upper left bottom slice</CommentLine>
+<CommentLine> Returns   : stage positions in um!</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Function computeCoordinatesImaging(JobName As String, currentPosition As Vector, newPosition() As Vector) As Vector()</Declaration>
 <Parameters>
@@ -10053,15 +10006,17 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>38</CountOfLines>
+<CountOfLines>48</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine>   compute coordinates for fcs from pixel coordinates</CommentLine>
-<CommentLine>       JobName: the JobName from the image from which we will do FCS (Fcs can only occur after an image)</CommentLine>
-<CommentLine>       currentPosition: current Position of stage and focus in um</CommentLine>
-<CommentLine>       newPosition: new position where to perform FCS in pixels (0,0,0) is upper left corner bottom slice</CommentLine>
-<CommentLine>   Returns a coordinate vector in meter where  the value should be returned in meter!! (for imaging coordinates are returned in meter)</CommentLine>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : computeCoordinatesFcs</CommentLine>
+<CommentLine> Purpose   : Compute coordinates for fcs from pixel coordinates</CommentLine>
+<CommentLine> Variables : JobName -</CommentLine>
+<CommentLine>             currentPosition - stage/focus position in um</CommentLine>
+<CommentLine>             newPosition - Vector of positions in pixel (0,0,0) is upper left bottom slice</CommentLine>
+<CommentLine> Returns   : stage positions in meter!!! (different from computeCoordinatesImaging which returns in um)</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Function computeCoordinatesFcs(JobName As String, currentPosition As Vector, newPosition() As Vector) As Vector()</Declaration>
 <Parameters>
@@ -10097,11 +10052,16 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>103</CountOfLines>
+<CountOfLines>116</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine> create and update a subgrid and eventually decide whether to run Job</CommentLine>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : runSubImagingJob</CommentLine>
+<CommentLine> Purpose   : create and update a subgrid and eventually decide whether to run Job</CommentLine>
+<CommentLine> Variables : GridName - Name of grid where to execute job</CommentLine>
+<CommentLine>             JobName -</CommentLine>
+<CommentLine>             newPositions - Array of stage/focus positions (in um)</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Function runSubImagingJob(GridName As String, JobName As String, newPositions() As Vector) As Boolean</Declaration>
 <Parameters>
@@ -10137,12 +10097,14 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>182</CountOfLines>
+<CountOfLines>188</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;</CommentLine>
-<CommentLine>   Wait for image analysis and perform a specific task.</CommentLine>
-<CommentLine>   The exit from here is a hard exit upon error or stop</CommentLine>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : ComputeJobSequential</CommentLine>
+<CommentLine> Purpose   : Wait for image analysis and perform a specific task.</CommentLine>
+<CommentLine> Variables : parent variables define Job and grid from which one comes</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Function ComputeJobSequential(parentJob As String, parentGrid As String, parentPosition As Vector, parentPath As String, parentFile As String, RecordingDoc As DsRecordingDoc, Optional deltaZ As Integer = -1) As Vector</Declaration>
 <Parameters>
@@ -10205,90 +10167,14 @@
 </Parameters>
 <ReturnType>Vector</ReturnType>
 </Procedure>
-<Procedure>
-<Name>ComputeJobParallel</Name>
-<Scope>Public</Scope>
-<Type>Function</Type>
-<CountOfDeclarationLines>2</CountOfDeclarationLines>
-<CountOfLines>19</CountOfLines>
-<CommentLines>
-</CommentLines>
-<Declaration>Public Function ComputeJobParallel(JobName As String, Recording As DsRecording, FilePath As String, FileName As String, X As Double, Y As Double, Z As Double, Optional deltaZ As Integer = -1) As Double()</Declaration>
-<Parameters>
-<Parameter>
-<Name>JobName</Name>
-<Type>String</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>Recording</Name>
-<Type>DsRecording</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>FilePath</Name>
-<Type>String</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>FileName</Name>
-<Type>String</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>X</Name>
-<Type>Double</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>Y</Name>
-<Type>Double</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>Z</Name>
-<Type>Double</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>deltaZ</Name>
-<Type>Integer</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>True</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue>-1</DefaultValue>
-</Parameter>
-</Parameters>
-<ReturnType>Double()</ReturnType>
-</Procedure>
 </Procedures>
 <CommentLines>
 <CommentLine>---------------------------------------------------------------------------------------</CommentLine>
 <CommentLine> Module    : JobsManager</CommentLine>
 <CommentLine> Author    : Antonio Politi</CommentLine>
 <CommentLine> Date      : 29/08/2013</CommentLine>
-<CommentLine> Purpose   : Functions to perform imaging and fcs using the Imging, Fcs, Grid, repetitions classes</CommentLine>
+<CommentLine> Purpose   : Functions to perform imaging and fcs using the Imging, Fcs, Grid, repetitions classes. The functions</CommentLine>
+<CommentLine>             also access the form AutofocusForm using the same name identifier for the jobs</CommentLine>
 <CommentLine>---------------------------------------------------------------------------------------</CommentLine>
 </CommentLines>
 </CodeModule>
@@ -10857,7 +10743,7 @@
 </Properties>
 <CodeModule>
 <CountOfDeclarationLines>5</CountOfDeclarationLines>
-<CountOfLines>246</CountOfLines>
+<CountOfLines>243</CountOfLines>
 <Interfaces>
 </Interfaces>
 <Events>
@@ -10941,7 +10827,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>33</CountOfLines>
+<CountOfLines>32</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;</CommentLine>
 <CommentLine> Sets tip text for all pages</CommentLine>
@@ -10965,7 +10851,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>18</CountOfLines>
+<CountOfLines>17</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine>   Save page of specific JobFcs using a file specified by iFuleNum</CommentLine>
@@ -10998,7 +10884,7 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>67</CountOfLines>
+<CountOfLines>66</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine>   LoadSettings(FileName As String)</CommentLine>
@@ -17430,7 +17316,7 @@
 </Properties>
 <CodeModule>
 <CountOfDeclarationLines>72</CountOfDeclarationLines>
-<CountOfLines>1197</CountOfLines>
+<CountOfLines>1168</CountOfLines>
 <Interfaces>
 </Interfaces>
 <Events>
@@ -18316,7 +18202,7 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>156</CountOfLines>
+<CountOfLines>127</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine> Compute the centerofmass of image stored in RecordingDoc return values according</CommentLine>
