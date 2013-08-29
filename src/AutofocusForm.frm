@@ -14,18 +14,29 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+'---------------------------------------------------------------------------------------
+' Module    : AutofocusForm
+' Author    : Antonio Politi
+' Version   : 3.0.10
+' Purpose   : Form to manage Imagingd Fcs Jobs
+' WARNING ZEN does not use spatial units in a consistent way. Switches between um and meter and pixel WARNING''''''''''''''''''''
+' for imaging and moving the stage
+' Lsm5.Hardware.Cpstages.PositionX: Absolute coordinate in um
+' Lsm5.Hardware.CpFocus.Position: Absolute coordinate in meter
+' Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing: in meter. this is the pixelSize
+' Lsm5.DsRecording.SampleSpacing: in um. this is the pixelSize. In both cases we access the same object
+'
+' All FCS positions are given in um. For X and Y with respect to center of the image. So 0 0 is in the middle of the image. For
+' Z one provides an absolute position also un um
+'
+' For ROI the coordinates are in pixels
+'---------------------------------------------------------------------------------------
+
 Option Explicit 'force to declare all variables
 
 Private shlShell As Shell32.Shell
 Private shlFolder As Shell32.Folder
 Private Const BIF_RETURNONLYFSDIRS = &H1
-
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-''''''''''''''''''''''Version Description''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-'
-' AutofocusScreen_ZEN_v3.0.9
-'''''''''''''''''''''End: Version Description'''''''''''''''''''''''''''''''''''''''''''''''''''''
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Public Version As String
 Private Const DebugCode = False             'sets key to run tests visible or not
 Private Const ReleaseName = True            'this adds the ZEN version
@@ -56,20 +67,6 @@ StandardColor:
     AutofocusForm.BackColor = &H80000003
 End Sub
 
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-' WARNING ZEN does not use spatial units in a consistent way. Switches between um and meter and pixel WARNING''''''''''''''''''''
-' for imaging and moving the stage
-' Lsm5.Hardware.Cpstages.PositionX: Absolute coordinate in um
-' Lsm5.Hardware.CpFocus.Position: Absolute coordinate in meter
-' Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing: in meter. this is the pixelSize
-' Lsm5.DsRecording.SampleSpacing: in um. this is the pixelSize. In both cases we access the same object
-'
-' All FCS positions are given in um. For X and Y with respect to center of the image. So 0 0 is in the middle of the image. For
-' Z one provides an absolute position also un um
-'
-' For ROI the coordinates are in pixels
-''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
 
 ''''''
 ' UserForm_Initialize()
@@ -78,7 +75,7 @@ End Sub
 '''''
 Public Sub UserForm_Initialize()
     DisplayProgress "Initializing Macro ...", RGB(&HC0, &HC0, 0)
-    Version = " v3.0.9"
+    Version = " v3.0.10"
     Dim i As Integer
     ZENv = getVersionNr
     'find the version of the software

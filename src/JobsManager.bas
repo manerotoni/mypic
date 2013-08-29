@@ -1,7 +1,12 @@
 Attribute VB_Name = "JobsManager"
-''''
-' Functions to perform imaging and fcs using the Imging, Fcs, Grid, repetitions classes
-''''
+'---------------------------------------------------------------------------------------
+' Module    : JobsManager
+' Author    : Antonio Politi
+' Date      : 29/08/2013
+' Purpose   : Functions to perform imaging and fcs using the Imging, Fcs, Grid, repetitions classes. The functions
+'             also access the form AutofocusForm using the same name identifier for the jobs
+'---------------------------------------------------------------------------------------
+
 Option Explicit
 ''' The repetition for tasks
 Public Reps As ImagingRepetitions
@@ -42,19 +47,21 @@ Public Type Vector
   Z As Double
 End Type
 
+'---------------------------------------------------------------------------------------
+' Procedure : AcquireJob
+' Purpose   : Sets and execute an imaging Job
+' Variables : JobName - The name of the Job to execute
+'             RecordingDoc - the dsRecording where image is stored
+'             RocordingName - The name of the recording (also for the GUI)
+'             position - A vector with stage position where to acquire image X, Y, and Z (cental slice) in um
+'---------------------------------------------------------------------------------------
 
-'''
-'   Sets and execute an imaging Job
-'       JobName: The name of the Job to execute
-'       RecordingDoc: the dsRecording where image is stored
-'       RocordingName: The name of the recording (also for the GUI)
-'       position: A vector with stage position where to acquire image X, Y, and Z (cental slice)
-''''
 Public Function AcquireJob(JobName As String, RecordingDoc As DsRecordingDoc, RecordingName As String, position As Vector) As Boolean
-    On Error GoTo ErrorHandle:
+On Error GoTo AcquireJob_Error
     Dim SuccessRecenter As Boolean
     Dim Time As Double
     'stop any running jobs
+    Time = Timer
     StopAcquisition
     'Create a NewRecord if required
     NewRecord RecordingDoc, RecordingName, 0
@@ -67,8 +74,7 @@ Public Function AcquireJob(JobName As String, RecordingDoc As DsRecordingDoc, Re
     End If
     'Debug.Print "Time to move stage " & Round(Timer - Time, 3)
     
-    
-    Time = Timer
+    'Time = Timer
     'Change settings for new Job if it is different from currentJob (global variable)
     If JobName <> CurrentJob Then
         Jobs.putJob JobName, ZEN
@@ -76,7 +82,7 @@ Public Function AcquireJob(JobName As String, RecordingDoc As DsRecordingDoc, Re
     Debug.Print "Time to put Job " & Round(Timer - Time, 3)
     CurrentJob = JobName
     'Not sure if this is required
-    Time = Timer
+    'Time = Timer
     If Jobs.GetSpecialScanMode(JobName) = "ZScanner" Then
         Lsm5.Hardware.CpHrz.Leveling
     End If
@@ -84,14 +90,13 @@ Public Function AcquireJob(JobName As String, RecordingDoc As DsRecordingDoc, Re
     
     
     ''' recenter before acquisition
-    Time = Timer
+    'Time = Timer
     If Not Recenter_pre(position.Z, SuccessRecenter, ZENv) Then
         Exit Function
     End If
     'Debug.Print "Time to recenter pre " & Round(Timer - Time, 3)
 
-
-    Time = Timer
+    'Time = Timer
     'checks if any of the track is on
     If Jobs.isAcquiring(JobName) Then
         If Not ScanToImage(RecordingDoc) Then
@@ -103,33 +108,38 @@ Public Function AcquireJob(JobName As String, RecordingDoc As DsRecordingDoc, Re
     'Debug.Print "Time to scan image " & Round(Timer - Time, 3)
     
     'wait that slice recentered after acquisition
-    Time = Timer
+    'Time = Timer
     If Not Recenter_post(position.Z, SuccessRecenter, ZENv) Then
        Exit Function
     End If
     'Debug.Print "Time to recenter post " & Round(Timer - Time, 3)
     AcquireJob = True
-    LogManager.UpdateLog " Acquire job " & JobName & " " & RecordingName & " at X = " & position.X & ", Y =  " & position.Y & ", Z =  " & position.Z
-    Exit Function
-ErrorHandle:
-    MsgBox "Error: AcquireJob for Job " & JobName & " " & Err.Description
+    LogManager.UpdateLog " Acquire job " & JobName & " " & RecordingName & " at X = " & position.X & ", Y =  " & position.Y & _
+    ", Z =  " & position.Z & " in " & Round(Timer - Time, 3) & " sec"
     Exit Function
 ErrorTrack:
-    MsgBox "Error: AcquireJob for job " & JobName & ". Exit now!"
+    MsgBox "Acquisition Job for " & JobName & " defined. Exit now!"
     Exit Function
+
+   On Error GoTo 0
+   Exit Function
+AcquireJob_Error:
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & ") in procedure AcquireJob of Module JobsManager at line " & Erl
 End Function
 
-
-'''
-'   Sets and execute an FCS Job at specified position
-'       JobName: The name of the Job to execute
-'       FcsData: the AimFcsData containing the Fcs
-'       RocordingName: The name of the recording (also for the GUI).Not used yet
-'       position: A vector array with position where to acquire image X, Y (relative to center of image), and Z (absolute).
-''''
+'---------------------------------------------------------------------------------------
+' Procedure : AcquireFcsJob
+' Purpose   : Sets and execute an FCS Job at specified position
+' Variables : JobName  -  The name of the Job to execute
+'             RecordingDoc - the DsRecordingDoc of the Fcs measurements
+'             FcsData -  the AimFcsData containing the Fcs
+'             FileName - Name appearing on top of RecordingDoc
+'             positions -  A vector array with position where to acquire Fcs X, Y (relative to center of image), and Z (absolute). Unit are in meter!!
+'---------------------------------------------------------------------------------------
+'
 Public Function AcquireFcsJob(JobName As String, RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, FileName As String, positions() As Vector) As Boolean
-    On Error GoTo ErrorHandle:
-    Dim SuccessRecenter As Boolean
+On Error GoTo AcquireFcsJob_Error
+
     Dim Time As Double
     Dim i As Integer
     Dim posTxt As String
@@ -137,12 +147,11 @@ Public Function AcquireFcsJob(JobName As String, RecordingDoc As DsRecordingDoc,
    
     'Stop Fcs acquisition
     StopAcquisition
-    
+    Time = Timer
     If Not NewFcsRecord(RecordingDoc, FcsData, FileName, 0) Then
         GoTo WarningHandle
     End If
     
-    'FcsData.name = "Bla"
     FcsControl.StopAcquisitionAndWait
     'Create a NewRecord if required
     NewFcsRecord RecordingDoc, FcsData, FileName
@@ -170,23 +179,38 @@ Public Function AcquireFcsJob(JobName As String, RecordingDoc As DsRecordingDoc,
     For i = 0 To UBound(positions)
         posTxt = posTxt & ", X = " & positions(0).X & ", Y = " & positions(0).Y & ", Z = " & positions(0).Z
     Next i
-    LogManager.UpdateLog " Acquire Fcsjob " & JobName & " " & FileName & " at " & posTxt
+    LogManager.UpdateLog " Acquire Fcsjob " & JobName & " " & FileName & " at " & posTxt & " in " & Round(Timer - Time, 3) & " sec"
     Exit Function
-ErrorHandle:
-    LogManager.UpdateErrorLog "Error: AcquireFcsJob for Job " & JobName & " " & FileName & " " & Err.Description
-    Exit Function
+    
 WarningHandle:
     MsgBox "AcquireFcsJob for job " + JobName + ". Not able to create document!"
     Exit Function
+
+    On Error GoTo 0
+    Exit Function
+   
+AcquireFcsJob_Error:
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & ") in procedure AcquireFcsJob of Module JobsManager at line " & Erl & " " & FileName
 End Function
 
-'''''
-' This executes part of the Job save the file compute offline tracking and set the registry
-'''''
+'---------------------------------------------------------------------------------------
+' Procedure : ExecuteFcsJob
+' Purpose   : Executes the AcquireFcsJob and save data and positions
+' Variables : JobName  -  The name of the Job to execute
+'             RecordingDoc - the DsRecordingDoc of the Fcs measurements
+'             FcsData -  the AimFcsData containing the Fcs
+'             FilePath - Path to store file
+'             FileName - Name of file
+'             positions -  A vector array with position where to acquire Fcs X, Y (relative to center of image), and Z (absolute). Unit are in meter!!
+'             positionsPx - A vector array with position in px relative to upper corner  of image. Z = 0 bottom of stack. Used for logging the position
+'---------------------------------------------------------------------------------------
+'
 Public Function ExecuteFcsJob(JobName As String, RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, FilePath As String, FileName As String, _
 positions() As Vector, positionsPx() As Vector) As Boolean
+On Error GoTo ExecuteFcsJob_Error
+    
     Dim i As Integer
-    On Error GoTo ErrorHandle:
+
     For i = 0 To UBound(positions)
         positions(i).Z = positions(i).Z + AutofocusForm.Controls(JobName + "ZOffset").Value * 0.000001
     Next i
@@ -218,19 +242,31 @@ positions() As Vector, positionsPx() As Vector) As Boolean
     End If
     ExecuteFcsJob = True
     Exit Function
-ErrorHandle:
-    LogManager.UpdateErrorLog "Error in ExecuteFcsJob for Job " & JobName & " " & FileName & " " & Err.Description
-    MsgBox "Error in ExecuteFcsJob for Job " & JobName & " " & Err.Description
+
+   On Error GoTo 0
+   Exit Function
+
+ExecuteFcsJob_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure ExecuteFcsJob of Module JobsManager at line " & Erl & " " & FileName
 End Function
 
-
-'''''
-' This executes part of the Job save the file compute offline tracking and set the registry
-'''''
+'---------------------------------------------------------------------------------------
+' Procedure : ExecuteJob
+' Purpose   : Executes part of imaging Job and save the file (no tracking)
+' Variables : JobName  -  The name of the Job to execute
+'             RecordingDoc - the DsRecordingDoc of the Fcs measurements
+'             FilePath - Path to store file
+'             FileName - Name of file
+'             StgPos -  stage position where to acquire image X, Y (absolute), and Z (absolute). Unit are in micrometer!!
+'             delatZ - size of Z stack. Not currently used
+'---------------------------------------------------------------------------------------
+'
 Public Function ExecuteJob(JobName As String, RecordingDoc As DsRecordingDoc, FilePath As String, FileName As String, _
 StgPos As Vector, Optional deltaZ As Integer = -1) As Boolean
+On Error GoTo ExecuteJob_Error
 
-    On Error GoTo ErrorHandle:
     If Not AcquireJob(JobName, RecordingDoc, FileName, StgPos) Then
         Exit Function
     End If
@@ -256,16 +292,28 @@ StgPos As Vector, Optional deltaZ As Integer = -1) As Boolean
     End If
     ExecuteJob = True
     Exit Function
-ErrorHandle:
-    LogManager.UpdateErrorLog "Error in ExecuteJob for Job " & JobName & " " & FileName & " " & Err.Description
-    MsgBox "Error in ExecuteJob for Job " & JobName & " " & Err.Description
+
+   On Error GoTo 0
+   Exit Function
+
+ExecuteJob_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure ExecuteJob of Module JobsManager at line " & Erl & " " & FileName
 End Function
 
-'''
-' Compute new positions according to center of mass
-'''''
+'---------------------------------------------------------------------------------------
+' Procedure : TrackOffLine
+' Purpose   : Compute new positions according to center of mass
+' Variables : JobName - Origin job of image
+'             RecordingDoc - the Recording where image is store
+'             currentPosition - current absolute stage position (in um)
+' Returns   : a new stage position
+'---------------------------------------------------------------------------------------
+'
 Public Function TrackOffLine(JobName As String, RecordingDoc As DsRecordingDoc, currentPosition As Vector) As Vector
-    On Error GoTo ErrorHandle:
+On Error GoTo TrackOffLine_Error
+
     Dim newPosition() As Vector
     ReDim newPosition(0)
     Dim TrackingChannel As String
@@ -296,19 +344,27 @@ Public Function TrackOffLine(JobName As String, RecordingDoc As DsRecordingDoc, 
 Abort:
     ScanStop = True
     Exit Function
-ErrorHandle:
-    MsgBox "Error in TrackOffLine " + JobName + " " + Err.Description
-    LogManager.UpdateErrorLog "Error in TrackOffLine " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " " & Err.Description
-    Exit Function
+
+   On Error GoTo 0
+   Exit Function
+
+TrackOffLine_Error:
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure TrackOffLine of Module JobsManager at line " & Erl & " " & JobName
 End Function
 
-
-
-''''
-'   Update positions according to track command
-''''
+'---------------------------------------------------------------------------------------
+' Procedure : TrackJob
+' Purpose   : Update a position with new position according to task specified (either none, Z, XY, or XYZ)
+' Variables : JobName - Name of job (refer to access of AutofocusForm)
+'             StgPos - Current stage position (absolute in um)
+'             StgPosNew - New stage position
+' Returns :   A stage position
+'---------------------------------------------------------------------------------------
+'
 Public Function TrackJob(JobName As String, StgPos As Vector, StgPosNew As Vector) As Vector
-    On Error GoTo ErrorHandle:
+On Error GoTo TrackJob_Error
+    
     TrackJob = StgPos
     If AutofocusForm.Controls(JobName & "TrackZ") Then
         TrackJob.Z = StgPosNew.Z
@@ -318,17 +374,34 @@ Public Function TrackJob(JobName As String, StgPos As Vector, StgPosNew As Vecto
         TrackJob.Y = StgPosNew.Y
     End If
     Exit Function
-ErrorHandle:
-    MsgBox "Error in TrackJob " + JobName + " " + Err.Description
-    LogManager.UpdateErrorLog "Error in TrackJob " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " " & Err.Description
+
+   On Error GoTo 0
+   Exit Function
+
+TrackJob_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure TrackJob of Module JobsManager at line " & Erl & " " & JobName
 End Function
 
 '''
-'   Execute a job and perform a tracking. Returns an updated position X, Y, and Z
+'
 '''
-Public Function ExecuteJobAndTrack(GridName As String, JobName As String, RecordingDoc As DsRecordingDoc, parentPath As String, StgPos As Vector, Success As Boolean) As Vector
-    
-    On Error GoTo ErrorHandle:
+'---------------------------------------------------------------------------------------
+' Procedure : ExecuteJobAndTrack
+' Purpose   : Execute a imaging job and perform a tracking. Returns an updated position X, Y, and Z
+' Variables : GridName - Name of position grid
+'             JobName - Name of imaging Job
+'             RecordingDoc - The recording Doc
+'             parentPath - the main imaging path
+'             StgPos - current stage position (absolute in um)
+'             Success - True if function finishes
+' Returns : an updated stage position (absolute in um)
+'---------------------------------------------------------------------------------------
+Public Function ExecuteJobAndTrack(GridName As String, JobName As String, RecordingDoc As DsRecordingDoc, parentPath As String, StgPos As Vector, _
+Success As Boolean) As Vector
+On Error GoTo ExecuteJobAndTrack_Error
+
     Dim Time As Double
     Dim ScanMode As String
     Dim newStgPos As Vector
@@ -380,25 +453,35 @@ Public Function ExecuteJobAndTrack(GridName As String, JobName As String, Record
     ExecuteJobAndTrack = StgPos
     Success = True
     Exit Function
-ErrorHandle:
     OiaSettings.readKeyFromRegistry ("filePath")
-    LogManager.UpdateErrorLog "Error in ExecuteJobAndTrack " & GridName & " " & JobName & " " & parentPath & " " & OiaSettings.getSettings("filePath") & Err.Description
+   On Error GoTo 0
+   Exit Function
+
+ExecuteJobAndTrack_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure ExecuteJobAndTrack of Module JobsManager at line " & Erl & " " & GridName & " " & JobName & " " & parentPath & " " & OiaSettings.getSettings("filePath")
 End Function
 
-
-
-''''''
-'   Performs many things (TODO: write more). Pretty much the whole macro runs through here
-''''''
+'---------------------------------------------------------------------------------------
+' Procedure : StartJobOnGrid
+' Purpose   : Performs imaging/fcs on a grid. Pretty much the whole macro runs through here
+' Variables : GridName -
+'             JobName -
+'             parentPath - Path from where job has been initiated
+'---------------------------------------------------------------------------------------
+'
 Public Function StartJobOnGrid(GridName As String, JobName As String, RecordingDoc As DsRecordingDoc, parentPath As String) As Boolean
+On Error GoTo StartJobOnGrid_Error
+
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
-    Dim StgPos As Vector, newStgPos As Vector
-    Dim Time As Double
+    Dim StgPos As Vector
+    
     '''The name of jobs run for the global mode
     Dim JobNamesGlobal(2) As String
     Dim iJobGlobal As Integer
-    Dim iGuiDocument As Integer
+
     JobNamesGlobal(0) = "Autofocus"
     JobNamesGlobal(1) = "Acquisition"
     JobNamesGlobal(2) = "AlterAcquisition"
@@ -406,7 +489,6 @@ Public Function StartJobOnGrid(GridName As String, JobName As String, RecordingD
     Dim FileName As String
     Dim deltaZ As Integer
     deltaZ = -1
-    Dim SuccessRecenter As Boolean
     Dim SuccessExecute As Boolean
     'Stop all running acquisitions (maybe to strong)
     StopAcquisition
@@ -414,24 +496,7 @@ Public Function StartJobOnGrid(GridName As String, JobName As String, RecordingD
     'coordinates
     Dim previousZ As Double   'remember position of previous position in Z
     
-    
-    
-    'Coordinates
-    Dim X As Double              ' x value where to move the stage (this is used as reference)
-    Dim Y As Double              ' y value where to move the stage
-    Dim Z As Double              ' z value where to move the stage
-    Dim Xold As Double
-    Dim Yold As Double
-    Dim Zold As Double
-    Dim MaxMovementXY As Double
-    Dim MaxMovementZ As Double
-    
-    'test variables
-    Dim Success As Integer       ' Check if something was sucessfull
-    
-    'Recording stuff
-    Dim FilePath As String   ' full path of file to save (changes through function)
-    
+       
     OiaSettings.resetRegistry
     OiaSettings.readFromRegistry
     
@@ -541,36 +606,77 @@ StopJob:
     StopAcquisition
     DisplayProgress "Stopped", RGB(&HC0, 0, 0)
     Exit Function
-ErrorHandle1:
+    
+   On Error GoTo 0
+   Exit Function
+
+StartJobOnGrid_Error:
     ScanStop = True
-    MsgBox "Error StartJobOnGrid for Job " + JobNamesGlobal(iJobGlobal) + " on Grid " + GridName + " " + Err.Description
-    StopAcquisition
-    Exit Function
-ErrorHandle2:
-    ScanStop = True
-    MsgBox "Error StartJobOnGrid for Job " + JobName + " on Grid " + GridName + " " + Err.Description
-    StopAcquisition
-    Exit Function
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure StartJobOnGrid of Module JobsManager at line " & Erl & " " & " Grid " & GridName & " Job " & JobName
 End Function
 
-'''
-' Derive filename from Grid and repetition
-'''
+'---------------------------------------------------------------------------------------
+' Procedure : FileNameFromGrid
+' Purpose   : Derive filename from Grid and repetition
+'---------------------------------------------------------------------------------------
+'
 Private Function FileNameFromGrid(GridName As String, JobName As String) As String
-On Error GoTo ErrorHandle:
-     FileNameFromGrid = AutofocusForm.TextBoxFileName.Value & Grids.getThisName(GridName) & JobShortNames(JobName) & "_" & Grids.thisSuffix(GridName) & Reps.thisSuffix(GridName)
-     Exit Function
-ErrorHandle:
-    MsgBox "Error in FileNameOnGrid " + Err.Description
+On Error GoTo FileNameFromGrid_Error
+     
+    FileNameFromGrid = AutofocusForm.TextBoxFileName.Value & Grids.getThisName(GridName) & JobShortNames(JobName) & "_" & Grids.thisSuffix(GridName) & Reps.thisSuffix(GridName)
+    Exit Function
+   On Error GoTo 0
+   Exit Function
+
+FileNameFromGrid_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure FileNameFromGrid of Module JobsManager at line " & Erl & " " & GridName & " " & JobName
 End Function
 
-''''
-' check  that newPos is not further away than the size of the image. In fact it should be half the image
-''''
+'---------------------------------------------------------------------------------------
+' Procedure : FilePathSuffix
+' Purpose   : Derive filepath Suffix from Grid and repetition
+'---------------------------------------------------------------------------------------
+'
+Private Function FilePathSuffix(GridName As String, JobName As String) As String
+On Error GoTo FilePathSuffix_Error
+
+    FilePathSuffix = AutofocusForm.TextBoxFileName.Value & Grids.getThisName(GridName) & JobShortNames(JobName)
+    If (Grids.numCol(GridName) * Grids.numRow(GridName) = 1 And Grids.numColSub(GridName) * Grids.numRowSub(GridName) = 1) Then
+        FilePathSuffix = FilePathSuffix & "_" & Grids.thisSuffix(GridName)
+        Exit Function
+    End If
+    If (Grids.numCol(GridName) * Grids.numRow(GridName) > 1 And Not Grids.numColSub(GridName) * Grids.numRowSub(GridName) > 1) _
+    Or (Not Grids.numCol(GridName) * Grids.numRow(GridName) > 1 And Grids.numColSub(GridName) * Grids.numRowSub(GridName) > 1) Then
+        FilePathSuffix = FilePathSuffix & "_" & Grids.thisSuffix(GridName)
+    Else
+        FilePathSuffix = FilePathSuffix & "_" & Grids.thisSuffixWell(GridName) & "\" & FilePathSuffix & "_" & Grids.thisSuffix(GridName)
+    End If
+
+   On Error GoTo 0
+   Exit Function
+
+FilePathSuffix_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure FilePathSuffix of Module JobsManager at line " & Erl & " "
+End Function
+
+'---------------------------------------------------------------------------------------
+' Procedure : checkForMaximalDisplacement
+' Purpose   : check  that newPos is not further away than the size of the image. In fact it should be half the image
+' Variables : JobName -
+'             currentPos - stage position in um
+'             newPos - new stage position in um
+'---------------------------------------------------------------------------------------
+'
 Public Function checkForMaximalDisplacement(JobName As String, currentPos As Vector, newPos As Vector) As Boolean
+On Error GoTo checkForMaximalDisplacement_Error
+    
     Dim MaxMovementXY As Double
     Dim MaxMovementZ As Double
-    
     MaxMovementXY = Max(Jobs.getSamplesPerLine(JobName), Jobs.getLinesPerFrame(JobName)) * Jobs.getSampleSpacing(JobName)
     MaxMovementZ = Jobs.getFramesPerStack(JobName) * Jobs.getFrameSpacing(JobName)
                                 
@@ -581,38 +687,106 @@ Public Function checkForMaximalDisplacement(JobName As String, currentPos As Vec
         Exit Function
     End If
     checkForMaximalDisplacement = True
+
+   On Error GoTo 0
+   Exit Function
+
+checkForMaximalDisplacement_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure checkForMaximalDisplacement of Module JobsManager at line " & Erl & " "
 End Function
 
-
-''''
-' check  that newPos is not further away than the size of the image. In fact it should be half the image
-''''
+'---------------------------------------------------------------------------------------
+' Procedure : checkForMaximalDisplacementVec
+' Purpose   : check  that newPos vectors are not further away than the size of the image
+' Variables : JobName -
+'             currentPos - stage position in um
+'             newPos - vector of stage positions in um
+'---------------------------------------------------------------------------------------
+'
 Private Function checkForMaximalDisplacementVec(JobName As String, currentPos As Vector, newPos() As Vector) As Boolean
-    Dim MaxMovementXY As Double
-    Dim MaxMovementZ As Double
+On Error GoTo checkForMaximalDisplacementVec_Error
     Dim i As Integer
-    MaxMovementXY = CDbl(Max(Jobs.getSamplesPerLine(JobName), Jobs.getLinesPerFrame(JobName))) * Jobs.getSampleSpacing(JobName)
-    MaxMovementZ = Jobs.getFramesPerStack(JobName) * Jobs.getFrameSpacing(JobName)
+
     For i = 0 To UBound(newPos)
-        If Abs(newPos(i).X - currentPos.X) > MaxMovementXY Or Abs(newPos(i).Y - currentPos.Y) > MaxMovementXY Or Abs(newPos(i).Z - currentPos.Z) > MaxMovementZ Then
-            LogManager.UpdateErrorLog "Job " & JobName & " online image analysis returned a too large displacement/focus " & _
-            "dX, dY, dZ = " & Abs(newPos(i).X - currentPos.X) & ", " & Abs(newPos(i).Y - currentPos.Y) & ", " & Abs(newPos(i).Z - currentPos.Z) & vbCrLf & _
-            "accepted dX, dY, dZ = " & MaxMovementXY & ", " & MaxMovementXY & ", " & MaxMovementZ
+        If Not checkForMaximalDisplacement(JobName, currentPos, newPos(i)) Then
             Exit Function
         End If
     Next i
     checkForMaximalDisplacementVec = True
+
+   On Error GoTo 0
+   Exit Function
+
+checkForMaximalDisplacementVec_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure checkForMaximalDisplacementVec of Module JobsManager at line " & Erl & " "
 End Function
 
-''''
-' check  that newPos is within possible boundary.
-'   newPos is a vector of coordinates in pixel. It is positive
-''''
+'---------------------------------------------------------------------------------------
+' Procedure : checkForMaximalDisplacementPixels
+' Purpose   : check  that newPos is within possible boundary using pixels
+' Variables : JobName -
+'             newPos - A new position in pixels 0,0,0 is upper left bottom slice
+'---------------------------------------------------------------------------------------
+'
+Private Function checkForMaximalDisplacementPixels(JobName As String, newPos As Vector) As Boolean
+On Error GoTo checkForMaximalDisplacementPixels_Error
+    
+    Dim MaxX As Long
+    Dim MaxY As Long
+    Dim MaxZ As Long
+ 
+    MaxX = Jobs.getSamplesPerLine(JobName) - 1
+    If Jobs.GetScanMode(JobName) = "ZScan" Then
+        MaxY = 0
+    Else
+        MaxY = Jobs.getLinesPerFrame(JobName) - 1
+    End If
+    If Jobs.isZStack(JobName) Then
+        MaxZ = Jobs.getFramesPerStack(JobName) - 1
+    Else
+        MaxZ = 0
+    End If
+    If newPos.X < 0 Or newPos.Y < 0 Or newPos.Z < 0 Then
+        LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned negative pixel values " & _
+        "X, Y, Z = " & newPos.X & ", " & newPos.Y & ", " & newPos.Z & vbCrLf
+        Exit Function
+    End If
+    If newPos.X > MaxX Or newPos.Y > MaxY Or newPos.Z > MaxZ Then
+        LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
+        "X, Y, Z = " & newPos.X & ", " & newPos.Y & ", " & newPos.Z & vbCrLf & _
+        "accepted range is X = " & 0 & "-" & MaxX & ", Y = " & 0 & "-" & MaxY & ", Z = " & 0 & "-" & MaxZ
+        Exit Function
+    End If
+
+    checkForMaximalDisplacementPixels = True
+
+   On Error GoTo 0
+   Exit Function
+
+checkForMaximalDisplacementPixels_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure checkForMaximalDisplacementPixels of Module JobsManager at line " & Erl & " "
+End Function
+
+'---------------------------------------------------------------------------------------
+' Procedure : checkForMaximalDisplacementVecPixels
+' Purpose   : check  that newPos is within possible boundary using pixels
+' Variables : JobName -
+'             newPos - A vector of new positions in pixels 0,0,0 is upper left bottom slice
+'---------------------------------------------------------------------------------------
+'
 Private Function checkForMaximalDisplacementVecPixels(JobName As String, newPos() As Vector) As Boolean
+On Error GoTo checkForMaximalDisplacementVecPixels_Error
     Dim MaxX As Long
     Dim MaxY As Long
     Dim MaxZ As Long
     Dim i As Integer
+
     MaxX = Jobs.getSamplesPerLine(JobName) - 1
     If Jobs.GetScanMode(JobName) = "ZScan" Then
         MaxY = 0
@@ -625,49 +799,35 @@ Private Function checkForMaximalDisplacementVecPixels(JobName As String, newPos(
         MaxZ = 0
     End If
     For i = 0 To UBound(newPos)
-        If newPos(i).X < 0 Or newPos(i).Y < 0 Or newPos(i).Z < 0 Then
-            LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned negative pixel values " & _
-            "X, Y, Z = " & newPos(i).X & ", " & newPos(i).Y & ", " & newPos(i).Z & vbCrLf
-            Exit Function
-        End If
-        If newPos(i).X > MaxX Or newPos(i).Y > MaxY Or newPos(i).Z > MaxZ Then
-            LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
-            "X, Y, Z = " & newPos(i).X & ", " & newPos(i).Y & ", " & newPos(i).Z & vbCrLf & _
-            "accepted range is X = " & 0 & "-" & MaxX & ", Y = " & 0 & "-" & MaxY & ", Z = " & 0 & "-" & MaxZ
+        If Not checkForMaximalDisplacementPixels(JobName, newPos(i)) Then
             Exit Function
         End If
     Next i
     checkForMaximalDisplacementVecPixels = True
+
+   On Error GoTo 0
+   Exit Function
+
+checkForMaximalDisplacementVecPixels_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure checkForMaximalDisplacementVecPixels of Module JobsManager at line " & Erl & " "
 End Function
 
-'''
-' Derive filepath Suffix from Grid and repetition
-'''
-Private Function FilePathSuffix(GridName As String, JobName As String) As String
-    FilePathSuffix = AutofocusForm.TextBoxFileName.Value & Grids.getThisName(GridName) & JobShortNames(JobName)
-    If (Grids.numCol(GridName) * Grids.numRow(GridName) = 1 And Grids.numColSub(GridName) * Grids.numRowSub(GridName) = 1) Then
-        FilePathSuffix = FilePathSuffix & "_" & Grids.thisSuffix(GridName)
-        Exit Function
-    End If
-    If (Grids.numCol(GridName) * Grids.numRow(GridName) > 1 And Not Grids.numColSub(GridName) * Grids.numRowSub(GridName) > 1) _
-    Or (Not Grids.numCol(GridName) * Grids.numRow(GridName) > 1 And Grids.numColSub(GridName) * Grids.numRowSub(GridName) > 1) Then
-        FilePathSuffix = FilePathSuffix & "_" & Grids.thisSuffix(GridName)
-    Else
-        FilePathSuffix = FilePathSuffix & "_" & Grids.thisSuffixWell(GridName) & "\" & FilePathSuffix & "_" & Grids.thisSuffix(GridName)
-    End If
-End Function
-
-
-'''
-'   Update the settings of the corresponding Formpage from the Job
-'''
+'---------------------------------------------------------------------------------------
+' Procedure : UpdateFormFromJob
+' Purpose   : Update the settings of the corresponding Formpage from the Job
+' Variables : Jobs - Contains sevral imaging jobs
+'             JobName - the name of the job where we want to update
+'---------------------------------------------------------------------------------------
+'
 Public Sub UpdateFormFromJob(Jobs As ImagingJobs, JobName As String)
-    
-    'update form for any new tracks
-    'AutofocusForm.AutoFindTracks
+On Error GoTo UpdateFormFromJob_Error
+
     Dim i As Integer
     Dim Record As DsRecording
     Dim jobDescriptor() As String
+
     Set Record = Jobs.GetRecording(JobName)
     
     For i = 0 To TrackNumber - 1
@@ -687,42 +847,83 @@ Public Sub UpdateFormFromJob(Jobs As ImagingJobs, JobName As String)
         AutofocusForm.Controls(JobName + "TrackXY").Enabled = AutofocusForm.Controls(JobName + "Active")
     End If
     AutofocusForm.FillTrackingChannelList JobName
+
+   On Error GoTo 0
+   Exit Sub
+
+UpdateFormFromJob_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure UpdateFormFromJob of Module JobsManager at line " & Erl & " "
 End Sub
 
 '''
-'   Update the settings of the corresponding Formpage from the Job
+'
 '''
-Public Sub UpdateFormFromJobFcs(Jobs As FcsJobs, JobName As String)
-    
-    'update form for any new tracks
-    'AutofocusForm.AutoFindTracks
-    Dim i As Integer
+'---------------------------------------------------------------------------------------
+' Procedure : UpdateFormFromJobFcs
+' Purpose   : Update the settings of the corresponding Formpage from the FcsJob
+' Variables : JobsFcs - Contains several fcs jobs
+'             JobName - the name of the job where we want to update
+'---------------------------------------------------------------------------------------
+'
+Public Sub UpdateFormFromJobFcs(JobsFcs As FcsJobs, JobName As String)
+On Error GoTo UpdateFormFromJobFcs_Error
+
     Dim jobDescriptor() As String
-     
-         
+ 
     jobDescriptor = JobsFcs.splittedJobDescriptor(JobName, 8)
     AutofocusForm.Controls(JobName + "Label1").Caption = jobDescriptor(0)
     If UBound(jobDescriptor) > 0 Then
         AutofocusForm.Controls(JobName + "Label2").Caption = jobDescriptor(1)
     End If
+
+   On Error GoTo 0
+   Exit Sub
+
+UpdateFormFromJobFcs_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure UpdateFormFromJobFcs of Module JobsManager at line " & Erl & " "
     
 End Sub
 
-'''
-'   Update the settings of Job with JobName from corresponding Formpage
-'''
+'---------------------------------------------------------------------------------------
+' Procedure : UpdateJobFromForm
+' Purpose   : Update the settings of imaging Job with JobName from corresponding Formpage
+' Variables : Jobs - Contains sevral imaging jobs
+'             JobName - the name of the job where we want to update
+'---------------------------------------------------------------------------------------
+'
 Public Sub UpdateJobFromForm(Jobs As ImagingJobs, JobName As String)
+On Error GoTo UpdateJobFromForm_Error
+
     Dim i As Integer
     For i = 0 To TrackNumber - 1
        Jobs.setAcquireTrack JobName, i, AutofocusForm.Controls(JobName + "Track" + CStr(i + 1)).Value
     Next i
     AutofocusForm.UpdateRepetitionTimes
+
+   On Error GoTo 0
+   Exit Sub
+
+UpdateJobFromForm_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure UpdateJobFromForm of Module JobsManager at line " & Erl & " "
 End Sub
 
-'''
-'   Updates the Gui AcquisitionMode from the Job
-'''
+'---------------------------------------------------------------------------------------
+' Procedure : UpdateGuiFromJob
+' Purpose   : Updates the Gui AcquisitionMode from the Job
+' Variables : Jobs - Contains several fcs jobs
+'             JobName - the name of the job where we want to update
+'             ZEN - object is assigned for ZENv > 2010
+'---------------------------------------------------------------------------------------
+'
 Public Sub UpdateGuiFromJob(Jobs As ImagingJobs, JobName As String, ZEN As Object)
+On Error GoTo UpdateGuiFromJob_Error
+
     If ZEN Is Nothing Then
         Exit Sub
     End If
@@ -760,23 +961,32 @@ Public Sub UpdateGuiFromJob(Jobs As ImagingJobs, JobName As String, ZEN As Objec
 '        ZEN.gui.Acquisition.Channels.Track.Acquire.Value = Jobs.GetAcquireTrack(JobName, iTrack)
 '    Next iTrack
 
-    
+   On Error GoTo 0
+   Exit Sub
+
+UpdateGuiFromJob_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure UpdateGuiFromJob of Module JobsManager at line " & Erl & " "
      
 End Sub
 
-
-
-
-
-'''''''
-'   computeShiftedCoordinates(offsetPosition As Vector, currentPosition As Vector) As Vector
-'   given offsetPosition with (0,0,0) center of image central slice (in um)
-'   the function compute absolute stage/focus coordinates from currentPosition
-''''''
+'---------------------------------------------------------------------------------------
+' Procedure : computeShiftedCoordinates
+' Purpose   : given offsetPosition with (0,0,0) center of image central slice (in um)
+'             Computes absolute stage/focus coordinates from currentPosition.
+'             Considers mirror possible mirror of axis
+' Variables : offsetPosition - position in um relative to 0,0,0 center of image and central slice
+'             currentPosiotion -
+' Returns   : new shifted position
+'---------------------------------------------------------------------------------------
+'
 Public Function computeShiftedCoordinates(offsetPosition As Vector, currentPosition As Vector) As Vector
+On Error GoTo computeShiftedCoordinates_Error
+
     Dim Xpre As Integer
     Dim Ypre As Integer
-    
+
     If MirrorX Then
         Xpre = -1
     Else
@@ -798,19 +1008,33 @@ Public Function computeShiftedCoordinates(offsetPosition As Vector, currentPosit
     End If
       
     computeShiftedCoordinates.Z = currentPosition.Z + offsetPosition.Z
-    
+
     computeShiftedCoordinates.X = Round(computeShiftedCoordinates.X, PrecXY)
     computeShiftedCoordinates.Y = Round(computeShiftedCoordinates.Y, PrecXY)
     computeShiftedCoordinates.Z = Round(computeShiftedCoordinates.Z, PrecZ)
+
+   On Error GoTo 0
+   Exit Function
+
+computeShiftedCoordinates_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure computeShiftedCoordinates of Module JobsManager at line " & Erl & " "
 End Function
 
 
-''''
-' compute offset coordinates for imaging from pixel coordinates
-' newPosition() As Vector
-' the values are returned in um!!
-''''
+'---------------------------------------------------------------------------------------
+' Procedure : computeCoordinatesImaging
+' Purpose   : compute new stage coordinates for imaging from pixel coordinates
+' Variables : JobName -
+'             currentPosition - stage position in um
+'             newPosition - Vector of positions in pixel (0,0,0) is upper left bottom slice
+' Returns   : stage positions in um!
+'---------------------------------------------------------------------------------------
+'
 Public Function computeCoordinatesImaging(JobName As String, currentPosition As Vector, newPosition() As Vector) As Vector()
+On Error GoTo computeCoordinatesImaging_Error
+    
     Dim pixelSize As Double
     Dim frameSpacing As Double
     Dim MaxX As Integer
@@ -818,6 +1042,7 @@ Public Function computeCoordinatesImaging(JobName As String, currentPosition As 
     Dim framesPerStack As Integer
     Dim i As Integer
     Dim position() As Vector
+
     position = newPosition
     'pixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing 'This is in meter!!! be careful . Position for imaging is provided in um
     pixelSize = Jobs.getSampleSpacing(JobName) ' this is in um
@@ -834,20 +1059,31 @@ Public Function computeCoordinatesImaging(JobName As String, currentPosition As 
         Else
             position(i).Z = 0
         End If
+        'this accounts for any shifts in XY and mirroring of hardware!
         position(i) = computeShiftedCoordinates(position(i), currentPosition)
     Next i
     computeCoordinatesImaging = position
+
+   On Error GoTo 0
+   Exit Function
+
+computeCoordinatesImaging_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure computeCoordinatesImaging of Module JobsManager at line " & Erl & " "
 End Function
 
-
-''''
-'   compute coordinates for fcs from pixel coordinates
-'       JobName: the JobName from the image from which we will do FCS (Fcs can only occur after an image)
-'       currentPosition: current Position of stage and focus in um
-'       newPosition: new position where to perform FCS in pixels (0,0,0) is upper left corner bottom slice
-'   Returns a coordinate vector in meter where  the value should be returned in meter!! (for imaging coordinates are returned in meter)
-''''
+'---------------------------------------------------------------------------------------
+' Procedure : computeCoordinatesFcs
+' Purpose   : Compute coordinates for fcs from pixel coordinates
+' Variables : JobName -
+'             currentPosition - stage/focus position in um
+'             newPosition - Vector of positions in pixel (0,0,0) is upper left bottom slice
+' Returns   : stage positions in meter!!! (different from computeCoordinatesImaging which returns in um)
+'---------------------------------------------------------------------------------------
+'
 Public Function computeCoordinatesFcs(JobName As String, currentPosition As Vector, newPosition() As Vector) As Vector()
+On Error GoTo computeCoordinatesFcs_Error
     Dim pixelSize As Double
     Dim frameSpacing As Double
     Dim MaxX As Integer
@@ -875,20 +1111,33 @@ Public Function computeCoordinatesFcs(JobName As String, currentPosition As Vect
         position(i).Z = (currentPosition.Z + position(i).Z) * 0.000001
     Next i
     computeCoordinatesFcs = position
+
+   On Error GoTo 0
+   Exit Function
+
+computeCoordinatesFcs_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure computeCoordinatesFcs of Module JobsManager at line " & Erl & " "
 End Function
 
 
-
-
-''''
-' create and update a subgrid and eventually decide whether to run Job
-''''
+'---------------------------------------------------------------------------------------
+' Procedure : runSubImagingJob
+' Purpose   : create and update a subgrid and eventually decide whether to run Job
+' Variables : GridName - Name of grid where to execute job
+'             JobName -
+'             newPositions - Array of stage/focus positions (in um)
+'---------------------------------------------------------------------------------------
+'
 Public Function runSubImagingJob(GridName As String, JobName As String, newPositions() As Vector) As Boolean
+On Error GoTo runSubImagingJob_Error
+    
     Dim i As Integer
     Dim ptNumber As Integer ' number of pts for the grid
     Dim maxWait As Double   ' maximal time to wait for the grid
     Dim GridLowBound As Integer
-       
+
     If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value <> "" Then
         ptNumber = CInt(AutofocusForm.Controls(JobName + "OptimalPtNumber").Value)
     Else
@@ -977,16 +1226,27 @@ Public Function runSubImagingJob(GridName As String, JobName As String, newPosit
             Exit Function
         End If
     End If
+
+   On Error GoTo 0
+   Exit Function
+
+runSubImagingJob_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure runSubImagingJob of Module JobsManager at line " & Erl & " "
     
 End Function
 
-'''
-'   Wait for image analysis and perform a specific task.
-'   The exit from here is a hard exit upon error or stop
-''''
+
+'---------------------------------------------------------------------------------------
+' Procedure : ComputeJobSequential
+' Purpose   : Wait for image analysis and perform a specific task.
+' Variables : parent variables define Job and grid from which one comes
+'---------------------------------------------------------------------------------------
+'
 Public Function ComputeJobSequential(parentJob As String, parentGrid As String, parentPosition As Vector, parentPath As String, parentFile As String, RecordingDoc As DsRecordingDoc, Optional deltaZ As Integer = -1) As Vector
-    On Error GoTo ErrorHandle:
-    Dim imageSize As Integer
+On Error GoTo ComputeJobSequential_Error
+    
     Dim newPositionsPx() As Vector 'from the registru one obtains positions in pixels
     Dim newPositions() As Vector
     Dim Rois() As Roi
@@ -1156,30 +1416,30 @@ Abort:
     ScanStop = True ' global flag to stop everything
     StopAcquisition
     Exit Function
-ErrorHandle:
-    LogManager.UpdateErrorLog "Error in ComputeJobSequential: " & Err.Description
-    ScanStop = True ' global flag to stop everything
-    StopAcquisition
+   On Error GoTo 0
+   Exit Function
+
+ComputeJobSequential_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure ComputeJobSequential of Module JobsManager at line " & Erl & " " & parentPath & " " & parentFile
 End Function
 
-
-
-
-Public Function ComputeJobParallel(JobName As String, Recording As DsRecording, FilePath As String, FileName As String, X As Double, _
-Y As Double, Z As Double, Optional deltaZ As Integer = -1) As Double()
-    Dim OiaSettings As Dictionary
-    Dim NewCoord() As Double
-    ReDim NewCoord(3)
-    'Defaults we dont change anything
-    deltaZ = -1
-    NewCoord(0) = X
-    NewCoord(1) = Y
-    NewCoord(2) = Z
-    NewCoord(3) = deltaZ
-    If AutofocusForm.Controls(JobName & "OiaActive") And AutofocusForm.Controls(JobName & "OiaParalle") Then
-        ComputeJobParallel = NewCoord
-    End If
-End Function
+'Public Function ComputeJobParallel(JobName As String, Recording As DsRecording, FilePath As String, FileName As String, X As Double, _
+'Y As Double, Z As Double, Optional deltaZ As Integer = -1) As Double()
+'    Dim OiaSettings As Dictionary
+'    Dim NewCoord() As Double
+'    ReDim NewCoord(3)
+'    'Defaults we dont change anything
+'    deltaZ = -1
+'    NewCoord(0) = X
+'    NewCoord(1) = Y
+'    NewCoord(2) = Z
+'    NewCoord(3) = deltaZ
+'    If AutofocusForm.Controls(JobName & "OiaActive") And AutofocusForm.Controls(JobName & "OiaParalle") Then
+'        ComputeJobParallel = NewCoord
+'    End If
+'End Function
 
 '
 '
@@ -1324,3 +1584,4 @@ End Function
 ''    Jobs(0).SetSettings
 ' '   MsgBox Jobs.Item(2).Name
 'End Function
+

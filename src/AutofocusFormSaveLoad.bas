@@ -130,7 +130,6 @@ End Function
 ' Sets tip text for all pages
 '''
 Private Sub JobControlTipText(JobName As String)
-    Dim i As Integer
     On Error GoTo ErrorHandle:
 
     AutofocusForm.Controls(JobName + "Period").ControlTipText = "Perform job " & JobName & " every xx repetitions"
@@ -164,7 +163,6 @@ End Sub
 '   TODO: Control that indeed iFileNum is a file
 ''''
 Private Sub SaveFormFcsPage(JobName As String, iFileNum As Integer)
-    Dim i As Integer
     On Error GoTo ErrorHandle:
     Print #iFileNum, ""
     Print #iFileNum, "% " & JobName
@@ -186,7 +184,6 @@ Public Sub LoadFormSettings(FileName As String)
     Dim Fields As String
     Dim JobName As String
     Dim FieldEntries() As String
-    Dim Entries() As String
     Close
     On Error GoTo ErrorHandle
     iFileNum = FreeFile()

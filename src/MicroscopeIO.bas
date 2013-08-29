@@ -857,12 +857,6 @@ Public Function Recenter2011(Z As Double) As Boolean
 End Function
 
 
-
-
-
-
-
-
 ''''
 ' Compute the centerofmass of image stored in RecordingDoc return values according
 '   Use channel with name TrackingChannel
@@ -880,7 +874,6 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
     Dim ColMax As Long
     Dim LineMax As Long
     Dim FrameMax As Integer
-    Dim pixelSize As Double
     Dim frameSpacing As Double
     Dim IntLine() As Variant
     Dim IntCol() As Variant
@@ -890,38 +883,16 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
     Dim Frame As Long
     Dim Line As Long
     Dim Col As Long
-    Dim MinColValue As Single
-    Dim minLineValue As Single
-    Dim minFrameValue As Single
-    Dim MaxColValue As Single
-    Dim MaxLineValue As Single
-    Dim MaxframeValue As Single
-    Dim LineSum As Double
-    Dim LineWeight As Single
-    Dim MidLine As Single
-    Dim Threshold As Single
-    Dim LineValue As Single
-    Dim PosValue As Single
-    Dim ColSum As Single
-    Dim ColWeight As Single
-    Dim MidCol As Single
-    Dim ColValue As Single
-    Dim FrameSum As Single
-    Dim FrameWeight As Single
-    Dim MidFrame As Single
-    Dim FrameValue As Single
-    
+     
    
     DoEvents
-    
-    
+       
     'Find the channel to track
-    Dim Rec As DsRecordingDoc
     Dim FoundChannel As Boolean
     FoundChannel = False
     RegEx.Pattern = "(\w+) (\w+\d+-\w+\d+)"
     Dim name_channel As String
-    If RegEx.Test(TrackingChannel) Then
+    If RegEx.test(TrackingChannel) Then
         Set Match = RegEx.Execute(TrackingChannel)
         name_channel = Match.Item(0).SubMatches.Item(1)
     End If

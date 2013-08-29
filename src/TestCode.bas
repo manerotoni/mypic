@@ -9,7 +9,7 @@ Private Sub test1()
 '    Set viewerGuiServer = Lsm5.viewerGuiServer
 End Sub
 
-Private Sub Test()
+Private Sub test()
   
     Dim vo As AimImageVectorOverlay
     Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions

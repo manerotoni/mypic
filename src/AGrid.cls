@@ -49,7 +49,7 @@ Public Sub initialize(Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If Row = 0 Or Col = 0 Or RowSub = 0 Or ColSub = 0 Then
         initializeToZero
     Else
-        On Error GoTo ErrorHandle:
+  On Error GoTo ErrorHandle:
         Me.numRow = Row
         Me.numCol = Col
         Me.numRowSub = RowSub
@@ -574,7 +574,7 @@ End Sub
 Public Function isPositionGridFile(ByVal sFile As String, ByVal Row As Integer, ByVal Col As Integer, ByVal RowSub As Integer, ByVal ColSub As Integer) As Boolean
     If FileExist(sFile) Then
         Close
-        On Error GoTo ErrorPosFile:
+  On Error GoTo ErrorPosFile:
         Dim iFileNum As Integer
         Dim Fields As String
         Dim FieldEntries() As String
@@ -747,7 +747,7 @@ Public Function isValidGridFile(ByVal sFile As String, Row As Long, Col As Long,
            Line Input #iFileNum, Fields
         Wend
         RegEx.Pattern = CellBase
-        If RegEx.Test(Fields) Then
+        If RegEx.test(Fields) Then
             format = "cellbase"
         Else
             'standard format
@@ -826,7 +826,7 @@ Public Function loadValidGridFile(ByVal sFile As String, format As String) As Bo
                 Line Input #iFileNum, Fields
                 GoodMatch = False
                 RegEx.Pattern = CellBase
-                If RegEx.Test(Fields) Then
+                If RegEx.test(Fields) Then
                     Set Match = RegEx.Execute(Fields)
                     Active = (Match.Item(0).SubMatches.Item(4) <> "none")
                     GoodMatch = True
