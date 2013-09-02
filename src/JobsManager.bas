@@ -1270,7 +1270,7 @@ On Error GoTo ComputeJobSequential_Error
     
     'default return value is currentPosition
     ComputeJobSequential = parentPosition
-    
+       
     Select Case codeMic
         Case "wait":
             'Wait for image analysis to finish
@@ -1323,7 +1323,7 @@ On Error GoTo ComputeJobSequential_Error
         
         Case "focus":
             OiaSettings.writeKeyToRegistry "codeMic", "nothing"
-            If OiaSettings.getPositions(newPositionsPx, parentPosition) Then
+            If OiaSettings.getPositions(newPositionsPx, Jobs.getCentralPointPx(parentJob)) Then
                 LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " positions " & " first pos-pixel " & " X = " & newPositionsPx(0).X & " X = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
                 If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
                     Exit Function
@@ -1348,7 +1348,8 @@ On Error GoTo ComputeJobSequential_Error
                 LogManager.UpdateErrorLog "ComputeJobSequential: job " & JobName & " is not active. Original file " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath")
                 Exit Function
             End If
-            If OiaSettings.getPositions(newPositionsPx, parentPosition) Then
+            
+            If OiaSettings.getPositions(newPositionsPx, Jobs.getCentralPointPx(parentJob)) Then
                 LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " positions " & " first pos-pixel " & " X = " & newPositionsPx(0).X & " X = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
                 If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
                     GoTo Abort

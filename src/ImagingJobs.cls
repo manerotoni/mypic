@@ -222,6 +222,21 @@ Public Function getLinesPerFrame(Name As String) As Long
     getLinesPerFrame = Jobs(JobNames.Item(Name)).Recording.LinesPerFrame
 End Function
 
+'''
+' returns position of central point for a Job
+''''
+Public Function getCentralPointPx(Name As String) As Vector
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    getCentralPointPx.X = (Jobs(JobNames.Item(Name)).Recording.SamplesPerLine - 1) / 2
+    getCentralPointPx.Y = (Jobs(JobNames.Item(Name)).Recording.LinesPerFrame - 1) / 2
+    If isZStack(Name) Then
+        getCentralPointPx.Z = (Jobs(JobNames.Item(Name)).Recording.framesPerStack - 1) / 2
+    Else
+        getCentralPointPx.Z = 0
+    End If
+End Function
 
 '''
 ' Interval for time series
