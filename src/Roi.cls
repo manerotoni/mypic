@@ -226,11 +226,13 @@ Public Function MakeVectorElement() As Boolean
     
     vo.AddElement roiTypeDic.Item(roiType)
     ElementNumber = vo.GetNumberElements - 1
+    Sleep 50 ' this pause is require to finish setting the elements
+    vo.ElementAcquisitionFlags(ElementNumber) = roiAimDic.Item(roiAim)
+    Sleep 50 ' this pause is require to finish setting the elements
     For i = 0 To UBound(roiX)
         vo.AppendElementKnot ElementNumber, roiX(i), roiY(i), 0, 0
     Next i
-    Sleep 50 ' this pause is require to finish setting the elements
-    vo.ElementAcquisitionFlags(ElementNumber) = roiAimDic.Item(roiAim)
+
     MakeVectorElement = True
 End Function
 
