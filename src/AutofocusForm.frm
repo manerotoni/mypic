@@ -34,9 +34,6 @@ Attribute VB_Exposed = False
 
 Option Explicit 'force to declare all variables
 
-Private shlShell As Shell32.Shell
-Private shlFolder As Shell32.Folder
-Private Const BIF_RETURNONLYFSDIRS = &H1
 Public Version As String
 Private Const DebugCode = False             'sets key to run tests visible or not
 Private Const ReleaseName = True            'this adds the ZEN version
@@ -75,7 +72,7 @@ End Sub
 '''''
 Public Sub UserForm_Initialize()
     DisplayProgress "Initializing Macro ...", RGB(&HC0, &HC0, 0)
-    Version = " v3.0.10"
+    Version = " v3.0.11"
     Dim i As Integer
     ZENv = getVersionNr
     'find the version of the software
@@ -156,9 +153,15 @@ NoError:
         imgFileFormat = eAimExportFormatLsm5
         imgFileExtension = ".lsm"
     End If
-    If fileFormatczi Then
-        imgFileFormat = eAimExportFormatCzi
-        imgFileExtension = ".czi"
+    If ZENv > 2010 Then
+        If fileFormatczi Then
+            imgFileFormat = eAimExportFormatCzi
+            imgFileExtension = ".czi"
+        End If
+    Else
+        fileFormatczi.Visible = False
+        imgFileFormat = eAimExportFormatLsm5
+        imgFileExtension = ".lsm"
     End If
     MultiPage1_Change
     ControlTipText
@@ -475,7 +478,7 @@ Private Sub SwitchEnablePage(JobName As String, Enable As Boolean)
     Me.Controls(JobName + "PutJob").Enabled = Enable
     Me.Controls(JobName + "Acquire").Enabled = Enable
             
-    Me.Controls(JobName + "TrackZ").Enabled = Enable
+    Me.Controls(JobName + "TrackZ").Enabled = Enable And Jobs.isZStack(JobName)
     Me.Controls(JobName + "TrackXY").Enabled = Enable And (Jobs.GetScanMode(JobName) <> "ZScan") And (Jobs.GetScanMode(JobName) <> "Line")
     Me.Controls(JobName + "CenterOfMass").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
     Me.Controls(JobName + "CenterOfMassChannel").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
@@ -1893,17 +1896,7 @@ Private Function StartSetting() As Boolean
             LogFileName = LogFileNameBase
             ErrFileName = ErrFileNameBase
             Close
-            If SafeOpenTextFile(LogFileName, LogFile, FileSystem) And SafeOpenTextFile(ErrFileName, ErrFile, FileSystem) Then
-                LogFile.WriteLine "% ZEN software version " & ZENv & " " & Version
-                ErrFile.WriteLine "% ZEN software version " & ZENv & " " & Version
-            
-                LogFile.Close
-                ErrFile.Close
-                Log = True
-            Else
-                Log = False
-            End If
-        Else
+            LogManager.UpdateLog "% ZEN software version " & ZENv & " " & Version
             Log = False
         End If
     End If
@@ -2183,8 +2176,24 @@ Private Sub fileFormatlsm_Click()
 End Sub
 
 Private Sub fileFormatczi_Click()
-    imgFileFormat = eAimExportFormatCzi
-    imgFileExtension = ".czi"
+On Error GoTo fileFormatczi_Click_Error
+    If ZENv > 2010 Then
+        imgFileFormat = eAimExportFormatCzi 'this format does not exist below ZEN2011
+        imgFileExtension = ".czi"
+    Else
+        imgFileFormat = eAimExportFormatLsm5
+        imgFileExtension = ".lsm"
+    End If
+    On Error GoTo 0
+   Exit Sub
+
+fileFormatczi_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure fileFormatczi_Click of Form AutofocusForm at line " & Erl & " "
+    
+    imgFileFormat = eAimExportFormatLsm5
+    imgFileExtension = ".lsm"
 End Sub
  
 '''''''

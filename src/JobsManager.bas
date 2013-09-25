@@ -409,9 +409,12 @@ On Error GoTo ExecuteJobAndTrack_Error
     Dim FilePath As String
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
-    
     Success = False
-    If AutofocusForm.Controls(JobName + "Active") Then
+    
+    'Acquire if active and at periodicity JobNamePeriod
+    If AutofocusForm.Controls(JobName + "Active") And _
+    CBool(Reps.thisIndex(GridName) Mod AutofocusForm.Controls(JobName + "Period")) Then
+  
         DisplayProgress "Job " & JobName & ", Row " & Grids.thisRow(GridName) & ", Col " & Grids.thisColumn(GridName) & vbCrLf & _
         "subRow " & Grids.thisSubRow(GridName) & ", subCol " & Grids.thisSubColumn(GridName) & ", Rep " & Reps.thisIndex(GridName), RGB(&HC0, &HC0, 0)
 
@@ -424,7 +427,6 @@ On Error GoTo ExecuteJobAndTrack_Error
         
         StgPos.Z = StgPos.Z + AutofocusForm.Controls(JobName + "ZOffset").Value
         
-
         
         If Not ExecuteJob(JobName, RecordingDoc, FilePath, FileName, StgPos) Then
             Exit Function
@@ -1270,7 +1272,8 @@ On Error GoTo ComputeJobSequential_Error
     
     'default return value is currentPosition
     ComputeJobSequential = parentPosition
-       
+    'helping variables giving the parentPosition in px
+    
     Select Case codeMic
         Case "wait":
             'Wait for image analysis to finish
