@@ -410,12 +410,10 @@ On Error GoTo ExecuteJobAndTrack_Error
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
     Success = False
-    
     'Acquire if active and at periodicity JobNamePeriod
     If AutofocusForm.Controls(JobName + "Active") And _
-    CBool(Reps.thisIndex(GridName) Mod AutofocusForm.Controls(JobName + "Period")) Then
-  
-        DisplayProgress "Job " & JobName & ", Row " & Grids.thisRow(GridName) & ", Col " & Grids.thisColumn(GridName) & vbCrLf & _
+    Not CBool(CInt(Reps.thisIndex(GridName) - 1) Mod AutofocusForm.Controls(JobName + "Period")) Then
+         DisplayProgress "Job " & JobName & ", Row " & Grids.thisRow(GridName) & ", Col " & Grids.thisColumn(GridName) & vbCrLf & _
         "subRow " & Grids.thisSubRow(GridName) & ", subCol " & Grids.thisSubColumn(GridName) & ", Rep " & Reps.thisIndex(GridName), RGB(&HC0, &HC0, 0)
 
         ScanMode = Jobs.GetScanMode(JobName)
@@ -535,7 +533,8 @@ On Error GoTo StartJobOnGrid_Error
                 StgPos.Y = Grids.getThisY(GridName)
                 StgPos.Z = Grids.getThisZ(GridName)
                 
-                If Reps.getIndex(GridName) = 1 And AutofocusForm.GridScanActive Then
+                'For first repetition and globalgrid we use previous position to prime next position (this is not the optimal way of doing it, better is a focusMap)
+                If Reps.getIndex(GridName) = 1 And AutofocusForm.GridScanActive And GridName = "Global" Then
                     StgPos.Z = previousZ
                 End If
 
@@ -1327,7 +1326,8 @@ On Error GoTo ComputeJobSequential_Error
         Case "focus":
             OiaSettings.writeKeyToRegistry "codeMic", "nothing"
             If OiaSettings.getPositions(newPositionsPx, Jobs.getCentralPointPx(parentJob)) Then
-                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " positions " & " first pos-pixel " & " X = " & newPositionsPx(0).X & " X = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
+                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " position(s) " & _
+                " first pos-pixel " & " X = " & newPositionsPx(0).X & " X = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
                 If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
                     Exit Function
                 End If
