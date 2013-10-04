@@ -1343,7 +1343,9 @@ On Error GoTo ComputeJobSequential_Error
             If runSubImagingJob(JobName, JobName, newPositions) Then
                 LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " execute job " & JobName & " at (only 1st pos given) " & " X = " & newPositions(0).X & " X = " & newPositions(0).Y & " Z = " & newPositions(0).Z
                 'remove positions from parent grid to avoid revisiting the position
-                Grids.setThisValid parentGrid, False
+                If Not AutofocusForm.Controls(JobName + "KeepParent") Then
+                    Grids.setThisValid parentGrid, False
+                End If
                 'start acquisition of Job on grid named JobName
                 If Not StartJobOnGrid(JobName, JobName, RecordingDoc, parentPath & parentFile & "\") Then
                     GoTo Abort
@@ -1377,7 +1379,9 @@ On Error GoTo ComputeJobSequential_Error
             If Not ExecuteFcsJob(JobName, GlobalFcsRecordingDoc, GlobalFcsData, parentPath, "FCS1_" & parentFile, newPositions, newPositionsPx) Then
                 GoTo Abort
             End If
-            
+            If Not AutofocusForm.Controls(JobName + "KeepParent") Then
+                Grids.setThisValid parentGrid, False
+            End If
         Case Else
             MsgBox ("Invalid OnlineImageAnalysis codeMic = " & codeMic)
             GoTo Abort

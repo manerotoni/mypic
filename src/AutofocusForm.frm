@@ -40,6 +40,8 @@ Private Const ReleaseName = True            'this adds the ZEN version
 Private Const LogCode = True                'sets key to run tests visible or not
 
 
+
+
 Private Sub ShowOiaKeys_Click()
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
@@ -72,7 +74,7 @@ End Sub
 '''''
 Public Sub UserForm_Initialize()
     DisplayProgress "Initializing Macro ...", RGB(&HC0, &HC0, 0)
-    Version = " v3.0.11"
+    Version = " v3.0.12"
     Dim i As Integer
     ZENv = getVersionNr
     'find the version of the software
@@ -506,6 +508,7 @@ Private Sub SwitchEnablePage(JobName As String, Enable As Boolean)
         Me.Controls(JobName + "maxWait").Enabled = Enable
         Me.Controls(JobName + "OptimalPtNumber").Enabled = Enable
         Me.Controls(JobName + "OptimalPtNumberLabel").Enabled = Enable
+        Me.Controls(JobName + "KeepParent").Enabled = Enable
     End If
     
     
@@ -534,7 +537,7 @@ Private Sub SwitchEnableFcsPage(JobName As String, Enable As Boolean)
     Me.Controls(JobName + "Acquire").Enabled = Enable
     Me.Controls(JobName + "ZOffset").Enabled = Enable
     Me.Controls(JobName + "ZOffsetLabel").Enabled = Enable
-    
+    Me.Controls(JobName + "KeepParent").Enabled = Enable
     Dim jobDescription() As String
     jobDescription = JobsFcs.splittedJobDescriptor(JobName, 8)
     Me.Controls(JobName + "Label1").Caption = jobDescription(0)
@@ -763,6 +766,10 @@ Private Sub AcquisitionTrackZ_Change()
     JobTrackXYZChange "Acquisition"
 End Sub
 
+Private Sub AlterAcquisitionTrackZ_Change()
+    JobTrackXYZChange "AlterAcquisition"
+End Sub
+
 Private Sub Trigger1TrackZ_Change()
     JobTrackXYZChange "Trigger1"
 End Sub
@@ -780,6 +787,10 @@ End Sub
 
 Private Sub AcquisitionTrackXY_Change()
     JobTrackXYZChange "Acquisition"
+End Sub
+
+Private Sub AlterAcquisitionTrackXY_Change()
+    JobTrackXYZChange "AlterAcquisition"
 End Sub
 
 Private Sub Trigger1TrackXY_Change()
@@ -800,6 +811,11 @@ End Sub
 Private Sub AcquisitionCenterOfMass_Change()
     AcquisitionCenterOfMassChannel.Enabled = AcquisitionCenterOfMass
 End Sub
+
+Private Sub AlterAcquisitionCenterOfMass_Change()
+    AlterAcquisitionCenterOfMassChannel.Enabled = AlterAcquisitionCenterOfMass
+End Sub
+
 
 Private Sub Trigger1CenterOfMass_Change()
     Trigger1CenterOfMassChannel.Enabled = Trigger1CenterOfMass
@@ -917,6 +933,7 @@ Private Sub setJob(JobName As String)
     Jobs.setJob JobName, Lsm5.DsRecording, ZEN
     UpdateFormFromJob Jobs, JobName
     AutoFindTracks
+    SwitchEnablePage JobName, AutofocusForm.Controls(JobName + "Active")
 End Sub
 
 Private Sub AutofocusSetJob_Click()
@@ -978,14 +995,28 @@ End Sub
 ' Put Fcs settings from Fcs Job into ZEN
 '''
 Private Sub putJob(JobName As String)
+    
+    Dim pos() As Vector
+    Dim MarkCount As Long
+    Dim i As Long
+    'this is a work around for a bug in ZEN that deletes all positions after updated of recording
+    MarkCount = Lsm5.Hardware.CpStages.MarkCount
+    ReDim pos(MarkCount - 1)
+    
+    For i = 0 To MarkCount - 1
+        Lsm5.Hardware.CpStages.MarkGetZ i, pos(i).X, pos(i).Y, pos(i).Z
+    Next i
+    
     If ZENv > 2010 And Not ZEN Is Nothing Then
         ZEN.gui.Acquisition.Regions.Delete.Execute
     End If
     Jobs.putJob JobName, ZEN
     'This is just for visualising the job in the Gui
-    If ZENv > 2010 Then
-        UpdateGuiFromJob Jobs, JobName, ZEN
-    End If
+    UpdateGuiFromJob Jobs, JobName, ZEN
+    Lsm5.Hardware.CpStages.MarkClearAll
+    For i = 0 To MarkCount - 1
+        Lsm5.Hardware.CpStages.MarkAddZ pos(i).X, pos(i).Y, pos(i).Z
+    Next i
 End Sub
 
 Private Sub AutofocusPutJob_Click()
@@ -1896,7 +1927,17 @@ Private Function StartSetting() As Boolean
             LogFileName = LogFileNameBase
             ErrFileName = ErrFileNameBase
             Close
-            LogManager.UpdateLog "% ZEN software version " & ZENv & " " & Version
+            If SafeOpenTextFile(LogFileName, LogFile, FileSystem) And SafeOpenTextFile(ErrFileName, ErrFile, FileSystem) Then
+                LogFile.WriteLine "% ZEN software version " & ZENv & " " & Version
+                ErrFile.WriteLine "% ZEN software version " & ZENv & " " & Version
+            
+                LogFile.Close
+                ErrFile.Close
+                Log = True
+            Else
+                Log = False
+            End If
+        Else
             Log = False
         End If
     End If

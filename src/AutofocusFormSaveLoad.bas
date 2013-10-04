@@ -16,8 +16,9 @@ Option Explicit
 Public Sub SaveFormSettings(FileName As String)
     Dim i As Integer
     Dim iFileNum As Integer
+On Error GoTo SaveFormSettings_Error
+
     Close
-    On Error GoTo ErrorHandle
     iFileNum = FreeFile()
     Open FileName For Output As iFileNum
     
@@ -67,9 +68,15 @@ Public Sub SaveFormSettings(FileName As String)
         SaveFormFcsPage JobFcsNames(i), iFileNum
     Next i
     Close #iFileNum
-    Exit Sub
-ErrorHandle:
-    MsgBox "SaveFormSettings: Not able to open " & FileName & " for saving settings"
+
+   On Error GoTo 0
+   Exit Sub
+
+SaveFormSettings_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure SaveFormSettings of Module AutofocusFormSaveLoad at line " & Erl & " "
+
 End Sub
 
 
@@ -80,7 +87,8 @@ End Sub
 ''''
 Private Sub SaveFormPage(JobName As String, iFileNum As Integer)
     Dim i As Integer
-    On Error GoTo ErrorHandle:
+On Error GoTo SaveFormPage_Error
+
     Print #iFileNum, ""
     Print #iFileNum, "% " & JobName
     Print #iFileNum, JobName & "Active " & AutofocusForm.Controls(JobName & "Active").Value
@@ -110,13 +118,18 @@ Private Sub SaveFormPage(JobName As String, iFileNum As Integer)
         Print #iFileNum, JobName & "maxWait " & AutofocusForm.Controls(JobName & "maxWait").Value
         Print #iFileNum, JobName & "OptimalPtNumber " & AutofocusForm.Controls(JobName & "OptimalPtNumber").Value
         Print #iFileNum, JobName & "Autofocus " & AutofocusForm.Controls(JobName & "Autofocus").Value
+        Print #iFileNum, JobName & "KeepParent " & AutofocusForm.Controls(JobName & "KeepParent").Value
     End If
     
     Print #iFileNum, ""
     Print #iFileNum, Jobs.jobDescriptorSettings(JobName)
-    Exit Sub
-ErrorHandle:
-    MsgBox "Error in SaveFormPage " + JobName + " " + Err.Description
+   On Error GoTo 0
+   Exit Sub
+
+SaveFormPage_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure SaveFormPage of Module AutofocusFormSaveLoad at line " & Erl & " "
 End Sub
 
 Public Function ControlTipText()
@@ -148,12 +161,13 @@ Private Sub JobControlTipText(JobName As String)
         AutofocusForm.Controls(JobName + "OptimalPtNumber").ControlTipText = "Wait to find up to xxx positions before starting job " & JobName
         AutofocusForm.Controls(JobName + "maxWait").ControlTipText = "Wait up to xxx seconds before starting job " & JobName
         AutofocusForm.Controls(JobName + "Autofocus").ControlTipText = "Before acquiring " & JobName & " perform Job Autofocus"
+        AutofocusForm.Controls(JobName + "KeepParent").ControlTipText = "If on revisit parent position from which " & JobName & " has been triggered"
     End If
-    Exit Sub
+
     AutofocusForm.Controls(JobName + "PutJob").ControlTipText = "Put Macro acquisition settings into ZEN. Not all settings are shown in the  ZEN GUI!"
     AutofocusForm.Controls(JobName + "SetJob").ControlTipText = "Load settings from ZEN into Macro. Not all settings are shown in the  Macro GUI!"
-    AutofocusForm.Controls(JobName + "AcquireJob").ControlTipText = "Acquire one image with settings of Job " & JobName
-    
+    AutofocusForm.Controls(JobName + "Acquire").ControlTipText = "Acquire one image with settings of Job " & JobName
+    Exit Sub
 ErrorHandle:
     MsgBox "Error in JobControlTipText " + JobName + " " + Err.Description
 End Sub
@@ -163,16 +177,24 @@ End Sub
 '   TODO: Control that indeed iFileNum is a file
 ''''
 Private Sub SaveFormFcsPage(JobName As String, iFileNum As Integer)
-    On Error GoTo ErrorHandle:
+On Error GoTo SaveFormFcsPage_Error
+
     Print #iFileNum, ""
     Print #iFileNum, "% " & JobName
     Print #iFileNum, JobName & "Active " & AutofocusForm.Controls(JobName & "Active").Value
+    Print #iFileNum, JobName & "KeepParent " & AutofocusForm.Controls(JobName & "KeepParent").Value
     
     Print #iFileNum, ""
     Print #iFileNum, JobsFcs.jobDescriptorSettings(JobName)
     Exit Sub
-ErrorHandle:
-    MsgBox "Error in SaveFormPage " + JobName + " " + Err.Description
+
+   On Error GoTo 0
+   Exit Sub
+
+SaveFormFcsPage_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure SaveFormFcsPage of Module AutofocusFormSaveLoad at line " & Erl & " "
 End Sub
 
 ''''
