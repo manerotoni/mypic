@@ -549,6 +549,9 @@ On Error GoTo StartJobOnGrid_Error
                         End If
                     Next iJobGlobal
                 Else
+                    If AutofocusForm.Controls(JobName + "Autofocus") Then
+                        StgPos = ExecuteJobAndTrack(GridName, "Autofocus", RecordingDoc, parentPath, StgPos, SuccessExecute)
+                    End If
                     StgPos = ExecuteJobAndTrack(GridName, JobName, RecordingDoc, parentPath, StgPos, SuccessExecute)
                     If Not SuccessExecute Then
                         GoTo StopJob
@@ -924,44 +927,8 @@ End Sub
 '
 Public Sub UpdateGuiFromJob(Jobs As ImagingJobs, JobName As String, ZEN As Object)
 On Error GoTo UpdateGuiFromJob_Error
-
-    If ZEN Is Nothing Then
-        Exit Sub
-    End If
-    Dim iTrack As Integer
-    Dim ScanMode As String
-    If ZEN Is Nothing Then
-        Exit Sub
-    End If
-    ScanMode = Jobs.GetScanMode(JobName)
-    ZEN.gui.Acquisition.AcquisitionMode.FrameSizeX.Value = Jobs.getSamplesPerLine(JobName)
-    ZEN.gui.Acquisition.AcquisitionMode.FrameSizeY.Value = Jobs.getLinesPerFrame(JobName)
-    
-    If ScanMode = "ZScan" Or ScanMode = "Line" Then
-        ZEN.gui.Acquisition.AcquisitionMode.ScanMode.ByName = "Line"
-    End If
-    
-    If ScanMode = "Stack" Or ScanMode = "Plane" Then
-        ZEN.gui.Acquisition.AcquisitionMode.ScanMode.ByName = "Frame"
-    End If
-    
-    If ScanMode = "Point" Then
-        ZEN.gui.Acquisition.AcquisitionMode.ScanMode.ByName = "Point"
-    End If
-    
-    ZEN.gui.Acquisition.AcquisitionMode.ScanArea.Zoom.Value = Jobs.GetRecording(JobName).ZoomX
-    ZEN.SetListEntrySelected "Scan.Mode.DirectionX", Jobs.GetRecording(JobName).ScanDirection
-    
-    ZEN.gui.Acquisition.Bleaching.StartBleachingAfterNumScans.number.Value = Jobs.GetRecording(JobName).TrackObjectBleach(1).BleachScanNumber
-    ZEN.gui.Acquisition.Bleaching.RepeatBleachAfterNumScans.number.Value = Jobs.GetRecording(JobName).TrackObjectBleach(1).BleachRepeat
-    'Debug.Print "BleachLaserPower " & Jobs.GetRecording(JobName).
-    'ZEN.GUI.Acquisition.AcquisitionMode.BitDepth.ByIndex = 1
-    'This unfortunately does not update the GUI
-'    For iTrack = 0 To Jobs.TrackNumber(JobName) - 1
-'        ZEN.gui.Acquisition.Channels.Track.ByIndex = iTrack '(it does not display properly anyway)
-'        ZEN.gui.Acquisition.Channels.Track.Acquire.Value = Jobs.GetAcquireTrack(JobName, iTrack)
-'    Next iTrack
-
+    Dim Success As Boolean
+    Success = Application.ThrowEvent(eEventDataChanged, 0)
    On Error GoTo 0
    Exit Sub
 
