@@ -1001,11 +1001,12 @@ Private Sub putJob(JobName As String)
     Dim i As Long
     'this is a work around for a bug in ZEN that deletes all positions after updated of recording
     MarkCount = Lsm5.Hardware.CpStages.MarkCount
-    ReDim pos(MarkCount - 1)
-    
-    For i = 0 To MarkCount - 1
-        Lsm5.Hardware.CpStages.MarkGetZ i, pos(i).X, pos(i).Y, pos(i).Z
-    Next i
+    If MarkCount >= 1 Then
+        ReDim pos(MarkCount - 1)
+        For i = 0 To MarkCount - 1
+            Lsm5.Hardware.CpStages.MarkGetZ i, pos(i).X, pos(i).Y, pos(i).Z
+        Next i
+    End If
     
     If ZENv > 2010 And Not ZEN Is Nothing Then
         ZEN.gui.Acquisition.Regions.Delete.Execute
@@ -1014,9 +1015,14 @@ Private Sub putJob(JobName As String)
     'This is just for visualising the job in the Gui
     UpdateGuiFromJob Jobs, JobName, ZEN
     Lsm5.Hardware.CpStages.MarkClearAll
-    For i = 0 To MarkCount - 1
-        Lsm5.Hardware.CpStages.MarkAddZ pos(i).X, pos(i).Y, pos(i).Z
-    Next i
+    If MarkCount >= 1 Then
+        For i = 0 To UBound(pos)
+            Lsm5.Hardware.CpStages.MarkAddZ pos(i).X, pos(i).Y, pos(i).Z
+        Next i
+    End If
+    'does not update the stagepositions in the GUI
+    'Application.ThrowEvent ePropertyEventStage, 0
+    'Application.ThrowEvent eEventUpdateGui, 0
 End Sub
 
 Private Sub AutofocusPutJob_Click()

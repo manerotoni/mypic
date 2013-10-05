@@ -71,7 +71,7 @@ Public GlobalFcsRecordingDoc As DsRecordingDoc
 
 
 Const PauseGrabbing = 50 'pause for polling the whether scan/fcscontroller are acquiring. A high value makes more errors!
-
+Public Const Pause = 100 'pause in ms
 
 '''
 ' Returns version number (ZEN2010, etc.)
@@ -80,11 +80,11 @@ Public Function getVersionNr() As Integer
     Dim VersionNr As Long
     VersionNr = CLng(Left(Lsm5.Info.VersionIs, 1))
     Select Case VersionNr
-        Case 6:
+        Case Is <= 6:
             getVersionNr = 2010
         Case 7:
             getVersionNr = 2011
-        Case 8:
+        Case Is >= 8:
             getVersionNr = 2012
     End Select
     
@@ -124,7 +124,7 @@ Public Function StopAcquisition()
 End Function
 
 '''''
-'   ScanToImage ( RecordingDoc As DsRecordingDoc) As Boolean
+'   ScanToImage (RecordingDoc As DsRecordingDoc) As Boolean
 '   scan overwrite the same image, even with several z-slices
 '''''
 Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
@@ -153,14 +153,15 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
     'Debug.Print "ScanToImage part1 " & Round(Timer - Time, 3)
     Sleep (PauseGrabbing)
     Time = Timer
-    While AcquisitionController.IsGrabbing
-        Sleep (PauseGrabbing) ' the timing makes the different whether we release the system or not often enough. funny enough a small value is better
+    Dim Success As Boolean
+    Application.ThrowEvent eEventUpdateGui, 0
+    While RecordingDoc.IsBusy
+        Sleep (PauseGrabbing)
         DoEvents
         If ScanStop Then
-            Exit Function
+              Exit Function
         End If
     Wend
-    'Debug.Print "ScanToImage properAcq " & Round(Timer - Time, 3)
     ScanToImage = True
     Exit Function
 ErrorHandle:
@@ -171,7 +172,7 @@ End Function
 ''''
 ' Start Fcs Measurment
 ''''
-Public Function ScanToFcs(FcsData As AimFcsData) As Boolean
+Public Function ScanToFcs(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData) As Boolean
     On Error GoTo ErrorHandle
     Dim FcsControl As AimFcsController
     Set FcsControl = Fcs
@@ -180,6 +181,14 @@ Public Function ScanToFcs(FcsData As AimFcsData) As Boolean
     End If
     FcsControl.StartMeasurement FcsData
     Sleep (PauseGrabbing)
+    
+'    While RecordingDoc.IsBusy
+'        Sleep (PauseGrabbing)
+'        If ScanStop Then
+'           Exit Function
+'        End If
+'    Wend
+    
     While FcsControl.IsAcquisitionRunning(1)
         Sleep (PauseGrabbing)
         If ScanStop Then
@@ -1105,6 +1114,90 @@ Public Sub UsedDevices40(bLSM As Boolean, bLIVE As Boolean, bCamera As Boolean)
     Next lTrack
 End Sub
 
+'''''
+''   Autofocus_MoveAcquisition_HRZ(ZOffset As Double) may be interesting to introduce it back for speed reasons
+''   Allow to use HRZ for Move Z-stage (not used at the moment)
+'''''
+'Public Sub Autofocus_MoveAcquisition_HRZ(ZOffset As Double)
+'    Dim NoZStack As Boolean
+'    Const ZBacklash = -50
+'    Dim ZFocus As Double
+'    Dim Zbefore As Double
+'    Dim X As Double
+'    Dim Y As Double
+'
+'    AutofocusForm.RestoreAcquisitionParameters
+'
+'    Set GlobalBackupRecording = Nothing
+'    Lsm5Vba.Application.ThrowEvent eRootReuse, 0
+'    DoEvents
+'
+'    NoZStack = True
+'    If GlobalAcquisitionRecording.ScanMode = "ZScan" Or GlobalAcquisitionRecording.ScanMode = "Stack" Then  'Looks if a Z-Stack is going to be acquired
+'        NoZStack = False
+'    End If
+'
+'    'Moving to the correct position in Z
+'    If AutofocusForm.AutofocusHRZ.Value And NoZStack Then                                            'If using HRZ for autofocusing and there is no Zstack for image acquisition
+'        Lsm5.Hardware.CpHrz.Stepsize = 0.2
+'        Lsm5Vba.Application.ThrowEvent eRootReuse, 0
+'        DoEvents
+'     '   ZFocus = Lsm5.Hardware.CpHrz.Position + ZShift - ZOffset
+'
+'     'Defines the new focus position as the actual position plus the shift and goes back to the object position (that's why you need the offset)
+'
+'        ZFocus = Lsm5.Hardware.CpHrz.position + ZOffset + ZShift
+'
+'        Lsm5.Hardware.CpHrz.position = ZFocus                     'Moves up to the focus position with the focus wheel
+'        Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
+'            Sleep (20)
+'            DoEvents
+'        Loop
+'''''' If I want to do it properly, I should add a lot of controls here, to wait to be sure the HRZ can acces the position, and also to wait it is done...
+'
+'        DoEvents
+'
+'    Else                                        'either there is a Z stack for image acquisition or we're using the focuswheel for autofocussing
+'        If AutofocusForm.AutofocusHRZ.Value Then                             ' Now I'm not sure with the signs and... I some point I just tried random combinations...
+'            ZFocus = Lsm5.Hardware.CpHrz.position - ZOffset - ZShift '         'ZBefore corresponds to the position where the focuswheel was before doing anything. Zshift is the calculated shift
+'        Else                                    'If the HRZ is not calibrated the Z shift might be wrong
+'            ZFocus = Zbefore + ZShift
+'        End If
+'
+'        Lsm5.Hardware.CpHrz.position = ZFocus                     'Moves up to the focus position with the focus wheel
+'        Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
+'            Sleep (20)
+'            DoEvents
+'        Loop
+'    End If
+'
+'    'Moving to the correct position in X and Y
+'
+'    If AutofocusForm.ScanFrameToggle Then
+'        If AutofocusForm.AutofocusTrackXY Then
+'            X = Lsm5.Hardware.CpStages.PositionX - XShift  'the fact that it is "-" in this line and "+" in the next line  probably has to do with where the XY of the origin is set (top right corner and not botom left, I think)
+'            Y = Lsm5.Hardware.CpStages.PositionY - YShift
+'            Success = Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToPosition(X, Y)
+'        End If
+'
+'        Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
+'            If ScanStop Then
+'                Lsm5.StopScan
+'                AutofocusForm.StopAcquisition
+'                DisplayProgress "Stopped", RGB(&HC0, 0, 0)
+'                Exit Sub
+'            End If
+'            DoEvents
+'            Sleep (5)
+'        Loop
+'    End If
+'
+'
+'    DisplayProgress "Autofocus 14", RGB(0, &HC0, 0)
+'    Lsm5Vba.Application.ThrowEvent eRootReuse, 0
+'    DoEvents
+'    DisplayProgress "Autofocus 15", RGB(0, &HC0, 0)
+'End Sub
 
 
 

@@ -147,14 +147,14 @@ On Error GoTo AcquireFcsJob_Error
    
     'Stop Fcs acquisition
     StopAcquisition
+    FcsControl.StopAcquisitionAndWait
     Time = Timer
     If Not NewFcsRecord(RecordingDoc, FcsData, FileName, 0) Then
         GoTo WarningHandle
     End If
     
     FcsControl.StopAcquisitionAndWait
-    'Create a NewRecord if required
-    NewFcsRecord RecordingDoc, FcsData, FileName
+
     
     'Use position list mode
     FcsControl.SamplePositionParameters.SamplePositionMode = eFcsSamplePositionModeList
@@ -171,7 +171,7 @@ On Error GoTo AcquireFcsJob_Error
         End If
     End If
     CurrentJobFcs = JobName
-    If Not ScanToFcs(FcsData) Then
+    If Not ScanToFcs(RecordingDoc, FcsData) Then
         Exit Function
     End If
     AcquireFcsJob = True
