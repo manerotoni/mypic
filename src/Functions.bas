@@ -79,7 +79,7 @@ End Function
 Public Function MINA(values() As Variant) As Variant
     Dim minLocal As Variant
     Dim i As Integer
-    minLocal = 2 ^ 10
+    minLocal = values(0)
     For i = LBound(values) To UBound(values)
         minLocal = MIN(values(i), minLocal)
     Next i
@@ -92,7 +92,7 @@ End Function
 Public Function MAXA(values() As Variant) As Variant
     Dim maxLocal As Variant
     Dim i As Integer
-    maxLocal = 0
+    maxLocal = values(0)
     For i = LBound(values) To UBound(values)
         maxLocal = Max(values(i), maxLocal)
     Next i
