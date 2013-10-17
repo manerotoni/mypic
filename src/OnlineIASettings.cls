@@ -74,7 +74,7 @@ Public Sub initializeDefault()
     Keys_HowTo.Add Keys(2), "file that has been analyzed by Oia (optional)"
     Keys_HowTo.Add Keys(3), "filepath of current image"
     Keys_HowTo.Add Keys(4), "X position stage. Multiple positions: X1; X2; X3; ..."
-    Keys_HowTo.Add Keys(5), "Y position stage. Multiple positions: X1; X2; X3; ..."
+    Keys_HowTo.Add Keys(5), "Y position stage. Multiple positions: Y1; Y2; Y3; ..."
     Keys_HowTo.Add Keys(6), "Z position stage. Empty char: keep current Z-position. Multiple positions: Z1; Z2; Z3; ..."
     Keys_HowTo.Add Keys(7), "X position for fcs. Multiple positions: X1; X2; X3; ..."
     Keys_HowTo.Add Keys(8), "Y position for fcs. Multiple positions: Y1; Y2; Y3; ..."
@@ -228,6 +228,9 @@ Private Sub checkExistKeys()
     End If
 End Sub
 
+Public Sub deleteKeys()
+    DeleteSetting "OnlineImageAnalysis", "macro"
+End Sub
 
 '''
 ' Default registry values is always empty
@@ -426,8 +429,8 @@ End Function
 '   Settings contains all settings for OnlineImageanalysis
 '   StgPos containes the coordinates
 '   StgPos.X, StgPos.Y: defined 0,0 at upper left corner
-'   StgPos.Z: defined 0 for the central slice
-'   units are converted afterwards as it depends on the type of Job (default unit is px)
+'   StgPos.Z: defined 0 for first slice
+'   units are converted afterwards as it depends on the type of Job (default input unit is px)
 ''''
 Public Function getPositions(StgPos() As Vector, currentPosition As Vector) As Boolean
     checkExistKeys

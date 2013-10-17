@@ -98,6 +98,7 @@ NoError:
     
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
+    OiaSettings.deleteKeys
     OiaSettings.resetRegistry
     
     
@@ -157,7 +158,10 @@ NoError:
     End If
     If ZENv > 2010 Then
         If fileFormatczi Then
-            imgFileFormat = eAimExportFormatCzi
+            'this does not exist for ZENv <= 2010
+            'imgFileFormat = eAimExportFormatCzi
+            imgFileFormat = 42
+
             imgFileExtension = ".czi"
         End If
     Else
@@ -2225,7 +2229,8 @@ End Sub
 Private Sub fileFormatczi_Click()
 On Error GoTo fileFormatczi_Click_Error
     If ZENv > 2010 Then
-        imgFileFormat = eAimExportFormatCzi 'this format does not exist below ZEN2011
+        'imgFileFormat = eAimExportFormatCzi 'this format does not exist below ZEN2011
+        imgFileFormat = 42 'this format does not exist below ZEN2011
         imgFileExtension = ".czi"
     Else
         imgFileFormat = eAimExportFormatLsm5
