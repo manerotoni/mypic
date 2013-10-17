@@ -44,7 +44,7 @@ Public Function weightedMean(values() As Variant) As Double
         weightedMean = weight / sum
     Else
         ' then mean is in the center
-        weightedMean = (UBound(values) = LBound(values)) / 2 + LBound(values)
+        weightedMean = (UBound(values) - LBound(values)) / 2 + LBound(values)
     End If
 End Function
 
