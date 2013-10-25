@@ -64,13 +64,12 @@ Public Function setJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
     TimeBetweenStacks = RecordingLoc.TrackObjectByMultiplexOrder(0, 1).TimeBetweenStacks
     
     If ZENv > 2010 Then
-        Set ZEN = Application.ApplicationInterface
         If Recording.ScanDirection = 1 Then
             CorrX = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value
             CorrY = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value
         End If
         'Debug.Print "nr Lasers " & ZEN.gui.Acquisition.Channels.Track.LaserLine.ItemCount
-        ReDim LaserOnOff(0 To TrackNumber - 1, 0 To ZEN.gui.Acquisition.Channels.Track.LaserLine.ItemCount - 1)
+        
     End If
     
     pixelDwell = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
@@ -79,6 +78,7 @@ Public Function setJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
         pAcquireTrack(iTrack) = Recording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire
         If ZENv > 2010 Then
             If SwitchLaserLines Then 'this is experimental it should only switch laserLines and keep the same Track
+                ReDim LaserOnOff(0 To TrackNumber - 1, 0 To ZEN.gui.Acquisition.Channels.Track.LaserLine.ItemCount - 1)
                 ZEN.gui.Acquisition.Channels.Track.ByIndex = iTrack
                 For iLaser = 0 To UBound(LaserOnOff, 2)
                     ZEN.gui.Acquisition.Channels.Track.LaserLine.ByIndex = iLaser
@@ -132,13 +132,16 @@ Public Function putJob(ZEN As Object)
             'ZEN.gui.Acquisition.Channels.Track.ByIndex = iTrack '(it does not display properly anyway)
             'ZEN.gui.Acquisition.Channels.Track.Acquire.Value = pAcquireTrack(iTrack)
             Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire = pAcquireTrack(iTrack)
-            If Not isArrayEmpty(LaserOnOff) And pAcquireTrack(iTrack) And SwitchLaserLines Then
-                For iLaser = 0 To UBound(LaserOnOff, 2)
-                    ZEN.gui.Acquisition.Channels.Track.LaserLine.ByIndex = iLaser
-                    If LaserOnOff(iTrack, iLaser) <> ZEN.gui.Acquisition.Channels.Track.LaserLine.Acquire.Value Then
-                        ZEN.gui.Acquisition.Channels.Track.LaserLine.Acquire.Value = LaserOnOff(iTrack, iLaser)
-                    End If
-                Next iLaser
+            'this is experimental
+            If SwitchLaserLines Then
+                If Not isArrayEmpty(LaserOnOff) And pAcquireTrack(iTrack) Then
+                    For iLaser = 0 To UBound(LaserOnOff, 2)
+                        ZEN.gui.Acquisition.Channels.Track.LaserLine.ByIndex = iLaser
+                        If LaserOnOff(iTrack, iLaser) <> ZEN.gui.Acquisition.Channels.Track.LaserLine.Acquire.Value Then
+                            ZEN.gui.Acquisition.Channels.Track.LaserLine.Acquire.Value = LaserOnOff(iTrack, iLaser)
+                        End If
+                    Next iLaser
+                End If
             End If
         Else
             Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire = pAcquireTrack(iTrack)
