@@ -80,15 +80,18 @@ Public Sub UserForm_Initialize()
     'find the version of the software
     If ZENv > 2010 Then
         On Error GoTo errorMsg
-        
-        Set ZEN = Application.ApplicationInterface
         'in some cases this does not reister properly
         'Set ZEN = Lsm5.CreateObject("Zeiss.Micro.AIM.ApplicationInterface.ApplicationInterface")
+        'this should always work
+        Set ZEN = Application.ApplicationInterface
+        
         'Check if it works
         Dim TestBool As Boolean
+        Dim TestDouble As Double
         TestBool = ZEN.gui.Acquisition.EnableTileScan.Value
         ZEN.gui.Acquisition.EnableTileScan.Value = Not TestBool
         ZEN.gui.Acquisition.EnableTileScan.Value = TestBool
+        TestDouble = ZEN.gui.Acquisition.ZStack.CenterPositionZ.Value
         GoTo NoError
 errorMsg:
         MsgBox "Version is ZEN" & ZENv & " but can't find Zeiss.Micro.AIM.ApplicationInterface." & vbCrLf _
