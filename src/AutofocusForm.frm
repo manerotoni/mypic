@@ -14,6 +14,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
 '---------------------------------------------------------------------------------------
 ' Module    : AutofocusForm
 ' Author    : Antonio Politi
@@ -86,12 +87,9 @@ Public Sub UserForm_Initialize()
         Set ZEN = Application.ApplicationInterface
         
         'Check if it works
-        Dim TestBool As Boolean
-        Dim TestDouble As Double
-        TestBool = ZEN.gui.Acquisition.EnableTileScan.Value
-        ZEN.gui.Acquisition.EnableTileScan.Value = Not TestBool
-        ZEN.gui.Acquisition.EnableTileScan.Value = TestBool
-        TestDouble = ZEN.gui.Acquisition.ZStack.CenterPositionZ.Value
+        TestBool = ZEN.gui.Acquisition.EnableTimeSeries.Value
+        ZEN.gui.Acquisition.EnableTimeSeries.Value = Not TestBool
+        ZEN.gui.Acquisition.EnableTimeSeries.Value = TestBool
         GoTo NoError
 errorMsg:
         MsgBox "Version is ZEN" & ZENv & " but can't find Zeiss.Micro.AIM.ApplicationInterface." & vbCrLf _
