@@ -460,16 +460,20 @@ Public Function nextGridPt() As Boolean
         Me.iRowSub = 1
         If Me.iRow Mod 2 <> 0 Then
             Me.iCol = Me.iCol + 1
+            Me.iColSub = 1
         Else
             Me.iCol = Me.iCol - 1
+            Me.iColSub = 1
         End If
         If Me.iCol > Me.numCol Then
             Me.iCol = numCol
             Me.iRow = Me.iRow + 1
+            Me.iColSub = 1
         End If
         If Me.iCol < 1 Then
             Me.iCol = 1
             Me.iRow = Me.iRow + 1
+            Me.iColSub = 1
         End If
     End If
     

@@ -20,7 +20,7 @@ Public Function UpdateErrorLog(Text As String)
     Dim iFileNum
     Dim ErrText As String
     ErrText = Left(ErrorLogLabel.Caption, MaxSizeLog)
-    ErrorLogLabel.Caption = Now & " " & Text & vbCrLf & ErrText
+    ErrorLogLabel.Caption = Now & " Error: " & Text & vbCrLf & ErrText
     LogManager.Show
     'write to ErrorFile
     If Log Then

@@ -137,7 +137,7 @@ End Function
 '             positions -  A vector array with position where to acquire Fcs X, Y (relative to center of image), and Z (absolute). Unit are in meter!!
 '---------------------------------------------------------------------------------------
 '
-Public Function AcquireFcsJob(JobName As String, RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, FileName As String, positions() As Vector) As Boolean
+Public Function AcquireFcsJob(JobName As String, RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, FileName As String, Positions() As Vector) As Boolean
 On Error GoTo AcquireFcsJob_Error
 
     Dim Time As Double
@@ -163,7 +163,7 @@ On Error GoTo AcquireFcsJob_Error
     ClearFcsPositionList
     
     '''update positions
-    setFcsPositions positions
+    setFcsPositions Positions
     
     If JobName <> CurrentJobFcs Then
         If Not JobsFcs.putJob(JobName, ZEN) Then
@@ -176,8 +176,8 @@ On Error GoTo AcquireFcsJob_Error
     End If
     AcquireFcsJob = True
     posTxt = ""
-    For i = 0 To UBound(positions)
-        posTxt = posTxt & ", X = " & positions(0).X & ", Y = " & positions(0).Y & ", Z = " & positions(0).Z
+    For i = 0 To UBound(Positions)
+        posTxt = posTxt & ", X = " & Positions(0).X & ", Y = " & Positions(0).Y & ", Z = " & Positions(0).Z
     Next i
     LogManager.UpdateLog " Acquire Fcsjob " & JobName & " " & FileName & " at " & posTxt & " in " & Round(Timer - Time, 3) & " sec"
     Exit Function
@@ -206,20 +206,20 @@ End Function
 '---------------------------------------------------------------------------------------
 '
 Public Function ExecuteFcsJob(JobName As String, RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, FilePath As String, FileName As String, _
-positions() As Vector, positionsPx() As Vector) As Boolean
+Positions() As Vector, positionsPx() As Vector) As Boolean
 On Error GoTo ExecuteFcsJob_Error
     
     Dim i As Integer
 
-    For i = 0 To UBound(positions)
-        positions(i).Z = positions(i).Z + AutofocusForm.Controls(JobName + "ZOffset").Value * 0.000001
+    For i = 0 To UBound(Positions)
+        Positions(i).Z = Positions(i).Z + AutofocusForm.Controls(JobName + "ZOffset").Value * 0.000001
     Next i
     
     If Not CleanFcsData(RecordingDoc, FcsData) Then
         Exit Function
     End If
     
-    If Not AcquireFcsJob(JobName, RecordingDoc, FcsData, FileName, positions) Then
+    If Not AcquireFcsJob(JobName, RecordingDoc, FcsData, FileName, Positions) Then
         Exit Function
     End If
     'this is a dummy variable used for consistencey except for autofocus the default is saving of all images

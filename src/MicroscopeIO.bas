@@ -153,8 +153,6 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
     'Debug.Print "ScanToImage part1 " & Round(Timer - Time, 3)
     Sleep (PauseGrabbing)
     Time = Timer
-    Dim Success As Boolean
-    Application.ThrowEvent eEventUpdateGui, 0
     While RecordingDoc.IsBusy
         Sleep (PauseGrabbing)
         DoEvents
@@ -182,7 +180,7 @@ Public Function ScanToFcs(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData)
     FcsControl.StartMeasurement FcsData
     Sleep (PauseGrabbing)
     
-'    While RecordingDoc.IsBusy
+'    While RecordingDoc.IsBusy ' this does not wait
 '        Sleep (PauseGrabbing)
 '        If ScanStop Then
 '           Exit Function
@@ -1004,7 +1002,7 @@ Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As Strin
     Dim Error As AimError
     Dim Planes As Long
     Dim Plane As Long
-    Dim positions As Long
+    Dim Positions As Long
     Dim Horizontal As enumAimImportExportCoordinate
     Dim Vertical As enumAimImportExportCoordinate
 
@@ -1026,15 +1024,15 @@ Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As Strin
     Planes = 1
     Export.GetPlaneDimensions Horizontal, Vertical
     If Document.Recording.MultiPositionAcquisition Then
-        positions = Document.Recording.MultiPositionArraySize
+        Positions = Document.Recording.MultiPositionArraySize
     End If
-    If positions = 0 Then
-        positions = 1
+    If Positions = 0 Then
+        Positions = 1
     End If
     
     Select Case Vertical
         Case eAimImportExportCoordinateY:
-             Planes = image.GetDimensionZ * image.GetDimensionT * positions
+             Planes = image.GetDimensionZ * image.GetDimensionT * Positions
         Case eAimImportExportCoordinateZ:
              Planes = image.GetDimensionT
     End Select

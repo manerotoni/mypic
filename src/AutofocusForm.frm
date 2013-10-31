@@ -85,7 +85,7 @@ Public Sub UserForm_Initialize()
         'Set ZEN = Lsm5.CreateObject("Zeiss.Micro.AIM.ApplicationInterface.ApplicationInterface")
         'this should always work
         Set ZEN = Application.ApplicationInterface
-        
+        Dim TestBool As Boolean
         'Check if it works
         TestBool = ZEN.gui.Acquisition.EnableTimeSeries.Value
         ZEN.gui.Acquisition.EnableTimeSeries.Value = Not TestBool

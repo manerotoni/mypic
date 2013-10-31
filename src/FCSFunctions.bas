@@ -1,6 +1,6 @@
 Attribute VB_Name = "FCSFunctions"
 ''''
-' Module contains Functions used during Fcs
+' Module contains Functions used during Fcs not totally up to date
 ''''
 
 Option Explicit 'force to declare all variables
@@ -13,7 +13,7 @@ Public viewerGuiServer As AimViewerGuiServer
 Public FcsPositions As AimFcsSamplePositionParameters
 Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
 Public FcsData As AimFcsData
-Public Const Pause = 100 'pause in ms
+
 
 
 
@@ -59,14 +59,14 @@ End Function
 '   Create a new position if Pos > FcsPositions.PositionListSize
 '   then all positions inbetween are set to 0
 '''''
-Public Function setFcsPositions(positions() As Vector) As Boolean
+Public Function setFcsPositions(Positions() As Vector) As Boolean
     Dim pos As Integer
     Set FcsControl = Fcs
     Set FcsPositions = FcsControl.SamplePositionParameters
-    For pos = 0 To UBound(positions)
-        FcsPositions.PositionX(pos) = positions(pos).X
-        FcsPositions.PositionY(pos) = positions(pos).Y
-        FcsPositions.PositionZ(pos) = positions(pos).Z
+    For pos = 0 To UBound(Positions)
+        FcsPositions.PositionX(pos) = Positions(pos).X
+        FcsPositions.PositionY(pos) = Positions(pos).Y
+        FcsPositions.PositionZ(pos) = Positions(pos).Z
     Next pos
     Debug.Print FcsPositions.PositionZ(0)
     'this shows the small crosshair
