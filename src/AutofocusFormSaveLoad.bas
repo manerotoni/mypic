@@ -108,6 +108,7 @@ On Error GoTo SaveFormPage_Error
     Print #iFileNum, JobName & "OiaActive " & AutofocusForm.Controls(JobName & "OiaActive").Value
     Print #iFileNum, JobName & "OiaSequential " & AutofocusForm.Controls(JobName & "OiaSequential").Value
     Print #iFileNum, JobName & "OiaParallel " & AutofocusForm.Controls(JobName & "OiaParallel").Value
+    Print #iFileNum, JobName & "SaveImage " & AutofocusForm.Controls(JobName & "SaveImage").Value
     
     If JobName = "Trigger1" Or JobName = "Trigger2" Then
         Print #iFileNum, JobName & "RepetitionTime " & AutofocusForm.Controls(JobName & "RepetitionTime").Value
