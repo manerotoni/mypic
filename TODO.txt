@@ -1,0 +1,2 @@
+To do for version 3 (eventually in the Workflow-Manager):
+Write documentation
