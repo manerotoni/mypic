@@ -1006,6 +1006,8 @@ Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As Strin
     Dim Horizontal As enumAimImportExportCoordinate
     Dim Vertical As enumAimImportExportCoordinate
 
+On Error GoTo SaveDsRecordingDoc_Error
+
     On Error GoTo Done
 
     'Set Image = EngelImageToHechtImage(Document).Image(0, True)
@@ -1049,13 +1051,16 @@ Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As Strin
     Next Plane
     Export.FinishExport
     SaveDsRecordingDoc = True
-    Exit Function
-    
-Done:
-    MsgBox "Check Temporary Files Folder! Cannot Save Temporary File(s)!"
+   On Error GoTo 0
+   Exit Function
+
+SaveDsRecordingDoc_Error:
     ScanStop = True
     Export.FinishExport
     StopAcquisition
+    MsgBox "Check Temporary Files Folder! Cannot Save Temporary File(s)!"
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure SaveDsRecordingDoc of Module MicroscopeIO at line " & Erl & " "
 End Function
 
 

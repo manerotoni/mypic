@@ -517,17 +517,8 @@ dRowSub As Double, dColSub As Double, Optional refRow As Integer = 1, Optional r
                 Next iRowSub
             Next iCol
         Next iRow
-            
-        ' All points are true as default
-        For iRow = 1 To Me.numRow
-            For iCol = 1 To Me.numCol
-                For iRowSub = 1 To numRowSub
-                    For iColSub = 1 To Me.numColSub
-                        GridArray(iRow, iCol, iRowSub, iColSub).Valid = True
-                    Next iColSub
-                Next iRowSub
-            Next iCol
-        Next iRow
+        setAllValid True
+
 End Sub
 
 
@@ -571,38 +562,79 @@ Public Sub makeGridFromManyPts(pos() As Vector, Row As Long, Col As Long, RowSub
 
 End Sub
 
+
+Public Function getGridDimFromFile(ByVal sFile As String) As Long()
+    Dim iFileNum As Integer
+    Dim Fields As String
+    Dim FieldEntries() As String
+    Dim outDim() As Long
+On Error GoTo getGridDimFromFile_Error
+    If Not FileExist(sFile) Then
+        MsgBox ("getGridDimFromFile: position file " & sFile & " does not exist")
+        Exit Function
+    End If
+    Close
+    iFileNum = FreeFile()
+    Open sFile For Input As iFileNum
+    Line Input #iFileNum, Fields
+    While Left(Fields, 1) = "%"
+        Line Input #iFileNum, Fields
+    Wend
+    FieldEntries = Split(Fields, " ")
+    If UBound(FieldEntries) = 3 Then
+        ReDim outDim(0 To 3)
+        outDim(0) = CLng(FieldEntries(0))
+        outDim(1) = CLng(FieldEntries(1))
+        outDim(2) = CLng(FieldEntries(2))
+        outDim(3) = CLng(FieldEntries(3))
+    Else
+         ReDim outDim(0)
+    End If
+    getGridDimFromFile = outDim
+   On Error GoTo 0
+   Exit Function
+
+getGridDimFromFile_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure getGridDimFromFile of Class Module AGrid at line " & Erl & " "
+    ReDim outDim(0)
+    getGridDimFromFile = outDim
+End Function
+
 ''''
 ' isPositionGridFile
 ' Check that entries of first line correspond to 4 specified values
 ''''
 Public Function isPositionGridFile(ByVal sFile As String, ByVal Row As Integer, ByVal Col As Integer, ByVal RowSub As Integer, ByVal ColSub As Integer) As Boolean
-    If FileExist(sFile) Then
-        Close
-  On Error GoTo ErrorPosFile:
-        Dim iFileNum As Integer
-        Dim Fields As String
-        Dim FieldEntries() As String
-        iFileNum = FreeFile()
-        Open sFile For Input As iFileNum
-        Line Input #iFileNum, Fields
-        While Left(Fields, 1) = "%"
-            Line Input #iFileNum, Fields
-        Wend
-        FieldEntries = Split(Fields, " ")
-        If FieldEntries(0) = Row And FieldEntries(1) = Col And FieldEntries(2) = RowSub And FieldEntries(3) = ColSub Then
-            isPositionGridFile = True
-        Else
-           MsgBox ("CheckPosfile: Position file " & sFile & " needs to have same number of rows/col subrows/subcol as grid in form." & vbCrLf & _
-           "File: Row= " & FieldEntries(0) & ", Col= " & FieldEntries(1) & ", RowSub= " & FieldEntries(2) _
-           & ", ColSub= " & FieldEntries(3) & vbCrLf & _
-            "Form: Row= " & Row & ", Col= " & Col & ", RowSub= " & RowSub _
-           & ", ColSub= " & ColSub)
-           isPositionGridFile = False
-        End If
-        Close #iFileNum
-    Else
-       MsgBox ("CheckPosfile: Was not able to load position file " & sFile & ". File does not exist.")
+    If Not FileExist(sFile) Then
+         MsgBox ("CheckPosfile: position file " & sFile & " does not exist")
+        Exit Function
     End If
+    Close
+  On Error GoTo ErrorPosFile:
+    Dim iFileNum As Integer
+    Dim Fields As String
+    Dim FieldEntries() As String
+    iFileNum = FreeFile()
+    Open sFile For Input As iFileNum
+    Line Input #iFileNum, Fields
+    While Left(Fields, 1) = "%"
+        Line Input #iFileNum, Fields
+    Wend
+    FieldEntries = Split(Fields, " ")
+    If FieldEntries(0) = Row And FieldEntries(1) = Col And FieldEntries(2) = RowSub And FieldEntries(3) = ColSub Then
+        isPositionGridFile = True
+    Else
+       MsgBox ("CheckPosfile: Position file " & sFile & " needs to have same number of rows/col subrows/subcol as grid in form." & vbCrLf & _
+       "File: Row= " & FieldEntries(0) & ", Col= " & FieldEntries(1) & ", RowSub= " & FieldEntries(2) _
+       & ", ColSub= " & FieldEntries(3) & vbCrLf & _
+        "Form: Row= " & Row & ", Col= " & Col & ", RowSub= " & RowSub _
+       & ", ColSub= " & ColSub)
+       isPositionGridFile = False
+    End If
+    Close #iFileNum
+
     Exit Function
 ErrorPosFile:
     If Err.number = 70 Then
@@ -616,7 +648,6 @@ End Function
 '   Function loads a file and write entries in Double arrays. First entry of file is structure of grid
 '   Format is Me.numRow numCol numRowSub numColSub
 '   X Y Z X Y Z X Y Z etc
-'   This is not working!!!
 ''''''''
 Public Function loadPositionGridFile(ByVal sFile As String) As Boolean
     Dim iRow As Integer
@@ -648,13 +679,14 @@ Public Function loadPositionGridFile(ByVal sFile As String) As Boolean
           For iRowSub = 1 To Me.numRowSub
             'needs to check this
               For iColSub = 1 To Me.numColSub
-'                  GridArray(iRow, iCol, iRowSub, iColSub).X = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * UBound(posGridX, 3) * 3))
-'                  GridArray(iRow, iCol, iRowSub, iColSub).Y = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * UBound(posGridX, 3) * 3 + 1))
-'                  GridArray(iRow, iCol, iRowSub, iColSub).Z = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * UBound(posGridX, 3) * 3 + 2))
+                   GridArray(iRow, iCol, iRowSub, iColSub).X = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * Me.numColSub * 3))
+                   GridArray(iRow, iCol, iRowSub, iColSub).Y = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * Me.numColSub * 3 + 1))
+                   GridArray(iRow, iCol, iRowSub, iColSub).Z = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * Me.numColSub * 3 + 2))
               Next iColSub
           Next iRowSub
       Next iCol
     Next iRow
+    setAllValid True
     Close #iFileNum
     loadPositionGridFile = True
     Exit Function
@@ -720,6 +752,7 @@ ErrorPosFile:
     End If
     Close #iFileNum
 End Function
+
 
 ''''
 '   Check if file has a validGrid default format
@@ -820,7 +853,7 @@ Public Function loadValidGridFile(ByVal sFile As String, format As String) As Bo
                   FieldEntries = Split(Fields, " ")
                   For iRowSub = 1 To Me.numRowSub
                       For iColSub = 1 To Me.numColSub
-                          GridArray(iRow, iCol, iRowSub, iColSub).Valid = CBool(FieldEntries((iColSub - 1) + (iRowSub - 1) * Me.numRowSub))
+                          GridArray(iRow, iCol, iRowSub, iColSub).Valid = CBool(FieldEntries((iColSub - 1) + (iRowSub - 1) * Me.numColSub))
                       Next iColSub
                   Next iRowSub
                 Next iCol

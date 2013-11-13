@@ -89,6 +89,14 @@ Public Sub updateGridSizePreserve(Name As String, numRow As Long, numCol As Long
     End If
 End Sub
 
+Public Function getGridDimFromFile(Name As String, ByVal sFile As String) As Long()
+    If checkGridName(Name) Then
+        getGridDimFromFile = Grids(GridNames.Item(Name)).getGridDimFromFile(sFile)
+    End If
+End Function
+
+
+
 Public Function isPositionGridFile(Name As String, ByVal sFile As String, ByVal Row As Integer, _
 ByVal Col As Integer, ByVal RowSub As Integer, ByVal ColSub As Integer) As Boolean
     If checkGridName(Name) Then

@@ -2004,8 +2004,9 @@ Private Function StartSetting() As Boolean
             Lsm5.Hardware.CpStages.GetXYPosition pos(0).X, pos(0).Y
             pos(0).Z = Lsm5.Hardware.CpFocus.position
             Grids.makeGridFromOnePt "Global", pos(0), 1, 1, 1, 1, 0, 0, 0, 0
+            initPos = False
         End If
-        GoTo GridReady
+        'GoTo GridReady
     End If
     
    
@@ -2018,14 +2019,19 @@ Private Function StartSetting() As Boolean
     
     
     If GridScanPositionFile <> "" Then
-        If Grids.isPositionGridFile("Global", GridScanPositionFile, Grids.numRow("Global"), Grids.numCol("Global"), _
-        Grids.numRowSub("Global"), Grids.numCol("Global")) Then
-            If Grids.loadPositionGridFile("Global", GridScanPositionFile) Then
-                DisplayProgress "Loading grid positions from file. " & GridScanPositionFile & "....", RGB(0, &HC0, 0)
-                initPos = False
-            Else
-                MsgBox "Not able to use " & GridScanPositionFile & ". Resetting the positions."
+        If Grids.loadPositionGridFile("Global", GridScanPositionFile) Then
+            Dim GridDim() As Long
+            DisplayProgress "Loading grid positions from file. " & GridScanPositionFile & "....", RGB(0, &HC0, 0)
+            GridDim = Grids.getGridDimFromFile("Global", GridScanPositionFile)
+            If UBound(GridDim) = 3 Then
+                GridScan_nRow.Value = GridDim(0)
+                GridScan_nColumn.Value = GridDim(1)
+                GridScan_nRowsub.Value = GridDim(2)
+                GridScan_nColumnsub.Value = GridDim(3)
             End If
+            initPos = False
+        Else
+            MsgBox "Not able to use " & GridScanPositionFile & ". Resetting the positions."
         End If
     End If
         
