@@ -68,13 +68,17 @@ StandardColor:
 End Sub
 
 
+
+Private Sub Start_With_Pump_Click()
+    PumpForm.Show
+End Sub
+
 ''''''
 ' UserForm_Initialize()
 '   Function called from e.g. AutoFocusForm.Show
 '   Load and initialize form
 '''''
 Public Sub UserForm_Initialize()
-
     DisplayProgress "Initializing Macro ...", RGB(&HC0, &HC0, 0)
     Version = " v3.0.12"
     Dim i As Integer
@@ -100,8 +104,6 @@ errorMsg:
         ZENv = 2010
 NoError:
     End If
-On Error GoTo UserForm_Initialize_Error
-
     'Setting ome global variables
     LogFileNameBase = ""
     ErrFileNameBase = ""
@@ -184,14 +186,6 @@ On Error GoTo UserForm_Initialize_Error
     MultiPage1_Change
     ControlTipText
     Re_Start                    ' Initialize some of the variables
-
-   On Error GoTo 0
-   Exit Sub
-
-UserForm_Initialize_Error:
-
-    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-    ") in procedure UserForm_Initialize of Form AutofocusForm at line " & Erl & " "
 End Sub
 
 
@@ -241,11 +235,10 @@ Private Sub Re_Start()
     'Trigger2Autofocus.Value = False
     
     Set Reps = New ImagingRepetitions
-    ReDim RepNames(3)
+    ReDim RepNames(2)
     RepNames(0) = "Global"    'this is Autofocus Acquisition and AlterAcquisition job
     RepNames(1) = "Trigger1"
     RepNames(2) = "Trigger2"
-    RepNames(3) = "Pump"
     
     For i = 0 To 2
         Reps.AddRepetition RepNames(i), CDbl(Me.Controls(RepNames(i) + "RepetitionTime")), _
@@ -1029,7 +1022,7 @@ Private Sub putJob(JobName As String)
     If MarkCount >= 1 Then
         ReDim pos(MarkCount - 1)
         For i = 0 To MarkCount - 1
-            Lsm5.Hardware.CpStages.MarkGetZ i, pos(i).x, pos(i).y, pos(i).Z
+            Lsm5.Hardware.CpStages.MarkGetZ i, pos(i).X, pos(i).Y, pos(i).Z
         Next i
     End If
     
@@ -1042,7 +1035,7 @@ Private Sub putJob(JobName As String)
     Lsm5.Hardware.CpStages.MarkClearAll
     If MarkCount >= 1 Then
         For i = 0 To UBound(pos)
-            Lsm5.Hardware.CpStages.MarkAddZ pos(i).x, pos(i).y, pos(i).Z
+            Lsm5.Hardware.CpStages.MarkAddZ pos(i).X, pos(i).Y, pos(i).Z
         Next i
     End If
     'does not update the stagepositions in the GUI
@@ -1081,8 +1074,8 @@ Private Sub JobAcquire(JobName As String)
         ZEN.gui.Acquisition.Regions.Delete.Execute
     End If
     Dim position As Vector
-    position.x = Lsm5.Hardware.CpStages.PositionX
-    position.y = Lsm5.Hardware.CpStages.PositionY
+    position.X = Lsm5.Hardware.CpStages.PositionX
+    position.Y = Lsm5.Hardware.CpStages.PositionY
     position.Z = Lsm5.Hardware.CpFocus.position
     Running = True
     'for imaging the position to image can be passed directly to AcquireJob. ZEN uses the absolute position in um
@@ -1132,8 +1125,8 @@ Private Sub JobFcsAcquire(JobName As String)
    
     'for Fcs the position for ZEN are passed in meter!! (different to Lsm5.Hardware.CpStages is in um!!)
     ' For X and Y relative position to center. For Z absolute position in meter
-    newPosition(0).x = 0
-    newPosition(0).y = 0
+    newPosition(0).X = 0
+    newPosition(0).Y = 0
     newPosition(0).Z = Lsm5.Hardware.CpFocus.position * 0.000001 'convet from um to meter
     'eventually force creation of FcsRecord
     NewFcsRecordGui GlobalFcsRecordingDoc, GlobalFcsData, JobName & "Job", ZEN, ZENv
@@ -1603,6 +1596,7 @@ Public Sub RestoreAcquisitionParameters()
     PauseButton.Value = False
     PauseButton.Caption = "PAUSE"
     PauseButton.BackColor = &H8000000F
+    Pump = False
     StopAfterRepetition.Value = False
     StopAfterRepetition.BackColor = &H8000000F
     StopButton.BackColor = &H8000000F
@@ -1796,8 +1790,8 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
     posTempZ = Lsm5.Hardware.CpFocus.position
     
     StgPos.Z = posTempZ
-    StgPos.x = Lsm5.Hardware.CpStages.PositionX
-    StgPos.y = Lsm5.Hardware.CpStages.PositionY
+    StgPos.X = Lsm5.Hardware.CpStages.PositionX
+    StgPos.Y = Lsm5.Hardware.CpStages.PositionY
     
     OiaSettings.resetRegistry
     
@@ -1815,7 +1809,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
                 newStgPos = StgPos
             End If
                 
-            Debug.Print "X =" & StgPos.x & ", " & newStgPos.x & ", " & StgPos.y & ", " & newStgPos.y & ", " & StgPos.Z & ", " & newStgPos.Z
+            Debug.Print "X =" & StgPos.X & ", " & newStgPos.X & ", " & StgPos.Y & ", " & newStgPos.Y & ", " & StgPos.Z & ", " & newStgPos.Z
             StgPos = TrackJob(JobName, StgPos, newStgPos)
         End If
     End If
@@ -1833,7 +1827,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
                 newStgPos = StgPos
             End If
                 
-            Debug.Print "X =" & StgPos.x & ", " & newStgPos.x & ", " & StgPos.y & ", " & newStgPos.y & ", " & StgPos.Z & ", " & newStgPos.Z
+            Debug.Print "X =" & StgPos.X & ", " & newStgPos.X & ", " & StgPos.Y & ", " & newStgPos.Y & ", " & StgPos.Z & ", " & newStgPos.Z
             StgPos = TrackJob(JobName, StgPos, newStgPos)
         End If
         StgPos.Z = StgPos.Z - AcquisitionZOffset.Value
@@ -1845,7 +1839,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
         JobName = "AlterAcquisition"
         StgPos.Z = StgPos.Z + AlterAcquisitionZOffset.Value
         ExecuteJob JobName, AutofocusDoc, FilePath, FileName, StgPos, CInt(deltaZ)
-         StgPos = TrackOffLine(JobName, AutofocusDoc, StgPos)
+        StgPos = TrackOffLine(JobName, AutofocusDoc, StgPos)
         If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
             OiaSettings.writeKeyToRegistry "codeOia", "newImage"
             newStgPos = ComputeJobSequential(JobName, "Global", StgPos, FilePath, FileName, AutofocusDoc)
@@ -1853,7 +1847,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
                 newStgPos = StgPos
             End If
                 
-            Debug.Print "X =" & StgPos.x & ", " & newStgPos.x & ", " & StgPos.y & ", " & newStgPos.y & ", " & StgPos.Z & ", " & newStgPos.Z
+            Debug.Print "X =" & StgPos.X & ", " & newStgPos.X & ", " & StgPos.Y & ", " & newStgPos.Y & ", " & StgPos.Z & ", " & newStgPos.Z
             StgPos = TrackJob(JobName, StgPos, newStgPos)
         End If
         StgPos.Z = StgPos.Z - AlterAcquisitionZOffset.Value
@@ -1876,6 +1870,10 @@ End Function
 '   StartButton_Click()
 '''''
 Private Sub StartButton_Click()
+    Execute_StartButton
+End Sub
+
+Public Sub Execute_StartButton()
     DisplayProgress "Prepare acquisition...", RGB(&HC0, &HC0, 0)
     If Not StartSetting() Then
         DisplayProgress "Problems in creating settings (StartSetting). Stopped", RGB(&HC0, 0, 0)
@@ -2006,14 +2004,14 @@ Private Function StartSetting() As Boolean
                 Exit Function
             End If
             ReDim pos(0)
-            Lsm5.Hardware.CpStages.MarkGetZ 0, pos(0).x, pos(0).y, pos(0).Z
+            Lsm5.Hardware.CpStages.MarkGetZ 0, pos(0).X, pos(0).Y, pos(0).Z
             Grids.makeGridFromOnePt "Global", pos(0), GridScan_nRow.Value, GridScan_nColumn.Value, _
             GridScan_nRowsub.Value, GridScan_nColumnsub.Value, GridScan_dRow.Value, GridScan_dColumn.Value, _
             GridScan_dRowsub.Value, GridScan_dColumnsub.Value, GridScan_refRow.Value, GridScan_refColumn.Value
             DisplayProgress "Initialize all grid positions...DONE", RGB(0, &HC0, 0)
         Else
             ReDim pos(0)
-            Lsm5.Hardware.CpStages.GetXYPosition pos(0).x, pos(0).y
+            Lsm5.Hardware.CpStages.GetXYPosition pos(0).X, pos(0).Y
             pos(0).Z = Lsm5.Hardware.CpFocus.position
             Grids.makeGridFromOnePt "Global", pos(0), 1, 1, 1, 1, 0, 0, 0, 0
             initPos = False
@@ -2052,12 +2050,12 @@ Private Function StartSetting() As Boolean
             If MultipleLocationToggle.Value Then
                 ReDim pos(MarkCount - 1)
                 For i = 0 To MarkCount - 1
-                    Lsm5.Hardware.CpStages.MarkGetZ i, pos(i).x, pos(i).y, pos(i).Z
+                    Lsm5.Hardware.CpStages.MarkGetZ i, pos(i).X, pos(i).Y, pos(i).Z
                 Next i
                 Grids.makeGridFromManyPts "Global", pos, 1, MarkCount, GridScan_nRowsub.Value, GridScan_nColumnsub.Value, GridScan_dRowsub.Value, GridScan_dColumnsub.Value
             Else
                 ReDim pos(0)
-                Lsm5.Hardware.CpStages.MarkGetZ 0, pos(0).x, pos(0).y, pos(0).Z
+                Lsm5.Hardware.CpStages.MarkGetZ 0, pos(0).X, pos(0).Y, pos(0).Z
                 Grids.makeGridFromOnePt "Global", pos(0), GridScan_nRow.Value, GridScan_nColumn.Value, _
                 GridScan_nRowsub.Value, GridScan_nColumnsub.Value, GridScan_dRow.Value, GridScan_dColumn.Value, _
                 GridScan_dRowsub.Value, GridScan_dColumnsub.Value, GridScan_refRow.Value, GridScan_refColumn.Value

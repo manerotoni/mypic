@@ -2,13 +2,58 @@ Attribute VB_Name = "Functions"
 '''
 ' Some utility functions
 ''''
-
 Option Explicit
 
+''' A vector
+Public Type Vector
+  X As Double
+  Y As Double
+  Z As Double
+End Type
+
+''''''''''''''''''''''''
+''' Vector operations'''
+''' To do: overload?''''
+''''''''''''''''''''''''
+Public Function Double2Vector(X As Double, Y As Double, Z As Double) As Vector
+    Double2Vector.X = X
+    Double2Vector.Y = Y
+    Double2Vector.Z = Z
+End Function
+
+Public Function Vector2Double(vec As Vector) As Double()
+    Dim vec2D(3) As Double
+    vec2D(0) = vec.X
+    vec2D(1) = vec.Y
+    vec2D(2) = vec.Z
+    Vector2Double = vec2D
+End Function
+
+Public Function diffVector(vec1 As Vector, vec2 As Vector) As Vector
+    diffVector.X = vec1.X - vec2.X
+    diffVector.Y = vec1.Y - vec2.Y
+    diffVector.Z = vec1.Z - vec2.Z
+End Function
+
+Public Function sumVector(vec1 As Vector, vec2 As Vector) As Vector
+    sumVector.X = vec1.X + vec2.X
+    sumVector.Y = vec1.Y + vec2.Y
+    sumVector.Z = vec1.Z + vec2.Z
+End Function
+
+Public Function normVector2D(vec As Vector) As Double
+    normVector2D = Sqr(vec.X ^ 2 + vec.Y ^ 2)
+End Function
+
+Public Function normVector3D(vec As Vector) As Double
+    normVector3D = Sqr(vec.X ^ 2 + vec.Y ^ 2 + vec.Z ^ 2)
+End Function
+
+
+'''Starts the form
 Public Sub Autofocus_Setup()
         AutofocusForm.Show
 End Sub
-
 '''
 '   Display progress in bottom labal of AutofocusForm
 '''
