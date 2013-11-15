@@ -534,6 +534,7 @@ On Error GoTo StartJobOnGrid_Error
                 StgPos.Y = Grids.getThisY(GridName)
                 StgPos.Z = Grids.getThisZ(GridName)
                 If Pump Then
+                    Debug.Print "Time pump " & CDbl(GetTickCount) * 0.001 - lastTimePump
                     lastTimePump = waitForPump(PumpForm.Pump_Time, normVector2D(diffVector(StgPos, cStgPos)), CDbl(GetTickCount) * 0.001 - lastTimePump, _
                     PumpForm.Pump_Interval_distance * 1000, PumpForm.Pump_Interval_Time * 60, 10)
                 End If

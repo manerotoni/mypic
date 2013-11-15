@@ -1908,7 +1908,9 @@ Public Sub Execute_StartButton()
         End If
     End If
     NewRecordGui GlobalRecordingDoc, "MacroImaging", ZEN, ZENv
-
+    If Pump Then
+        lastTimePump = CDbl(GetTickCount) * 0.001
+    End If
     If Not StartJobOnGrid("Global", "Global", GlobalRecordingDoc, GlobalDataBaseName) Then  'This is the main function of the macro
         StopAcquisition
     End If
