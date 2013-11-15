@@ -229,6 +229,7 @@ Private Sub checkExistKeys()
 End Sub
 
 Public Sub deleteKeys()
+    On Error Resume Next
     DeleteSetting "OnlineImageAnalysis", "macro"
 End Sub
 
