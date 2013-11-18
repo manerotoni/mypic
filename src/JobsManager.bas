@@ -1289,7 +1289,8 @@ On Error GoTo ComputeJobSequential_Error
     Dim newPositionsPx() As Vector 'from the registru one obtains positions in pixels
     Dim newPositions() As Vector
     Dim Rois() As Roi
-    Dim codeMic As String
+    Dim codeMic() As String
+    Dim code As Variant
     Dim JobName As String 'local convenience variable
     
     Dim codeMicToJobName As Dictionary 'use to convert codes of regisrty into Jobnames as used in the code
@@ -1300,9 +1301,8 @@ On Error GoTo ComputeJobSequential_Error
     
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
-    codeMic = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="codeMic")
     
-    
+    codeMic = Split(Replace(OiaSettings.readKeyFromRegistry("codeMic"), " ", ""), ";")
     Dim TimeWait, TimeStart, maxTimeWait As Double
     
     maxTimeWait = 100
@@ -1310,17 +1310,16 @@ On Error GoTo ComputeJobSequential_Error
     'default return value is currentPosition
     ComputeJobSequential = parentPosition
     'helping variables giving the parentPosition in px
-    
-    Select Case codeMic
+        
+    Select Case codeMic(0)
         Case "wait":
             'Wait for image analysis to finish
             DisplayProgress "Waiting for image analysis...", RGB(0, &HC0, 0)
             TimeStart = CDbl(GetTickCount) * 0.001
-            Do While ((TimeWait < maxTimeWait) And (codeMic = "wait"))
+            Do While ((TimeWait < maxTimeWait) And (codeMic(0) = "wait"))
                 Sleep (50)
                 TimeWait = CDbl(GetTickCount) * 0.001 - TimeStart
-                codeMic = GetSetting(appname:="OnlineImageAnalysis", section:="macro", _
-                          Key:="codeMic")
+                codeMic = Split(Replace(OiaSettings.readKeyFromRegistry("codeMic"), " ", ""), ";")
                 DoEvents
                 If ScanStop Then
                     GoTo Abort
@@ -1328,8 +1327,7 @@ On Error GoTo ComputeJobSequential_Error
             Loop
 
             If TimeWait > maxTimeWait Then
-                codeMic = "timeExpired"
-                SaveSetting "OnlineImageAnalysis", "macro", "codeMic", codeMic
+                SaveSetting "OnlineImageAnalysis", "macro", "codeMic", "timeExpired"
                 SaveSetting "OnlineImageAnalysis", "macro", "codeOia", "nothing"
             End If
     End Select
@@ -1343,120 +1341,125 @@ On Error GoTo ComputeJobSequential_Error
         GoTo Abort
     End If
     
-
-    Select Case codeMic
-        Case "nothing", "": 'Nothing to do
-            LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " found nothing "
+    codeMic = Split(Replace(OiaSettings.getSettings("codeMic"), " ", ""), ";")
+    
+    ''for all commands in codeMic
+    For Each code In codeMic
+        Select Case code
+            Case "nothing", "": 'Nothing to do
+                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " found nothing "
+                
+            Case "error":
+                OiaSettings.writeKeyToRegistry "codeMic", "nothing"
+                OiaSettings.readKeyFromRegistry "errorMsg"
+                OiaSettings.getSettings ("errorMsg")
+                LogManager.UpdateErrorLog "codeMic error. Online image analysis for job " & parentJob & " file " & parentPath & parentFile & " failed . " _
+                & " Error from Oia: " & OiaSettings.getSettings("errorMsg")
+                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " obtained an error. " & OiaSettings.getSettings("errorMsg")
             
-        Case "error":
-            OiaSettings.writeKeyToRegistry "codeMic", "nothing"
-            OiaSettings.readKeyFromRegistry "errorMsg"
-            OiaSettings.getSettings ("errorMsg")
-            LogManager.UpdateErrorLog "codeMic error. Online image analysis for job " & parentJob & " file " & parentPath & parentFile & " failed . " _
-            & " Error from Oia: " & OiaSettings.getSettings("errorMsg")
-            LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " obtained an error. " & OiaSettings.getSettings("errorMsg")
-        
-        Case "timeExpired":
-            OiaSettings.writeKeyToRegistry "codeMic", "nothing"
-            LogManager.UpdateErrorLog "codeMic timeExpired. Online image analysis for job " & parentJob & " file " & parentPath & parentFile & " took more then " & maxTimeWait & " sec"
-            LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " took more then " & maxTimeWait & " sec"
-        
-        Case "focus":
-            OiaSettings.writeKeyToRegistry "codeMic", "nothing"
-            If OiaSettings.getPositions(newPositionsPx, Jobs.getCentralPointPx(parentJob)) Then
-                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " position(s) " & _
-                " first pos-pixel " & " X = " & newPositionsPx(0).X & " X = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
-                If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
-                    Exit Function
+            Case "timeExpired":
+                OiaSettings.writeKeyToRegistry "codeMic", "nothing"
+                LogManager.UpdateErrorLog "codeMic timeExpired. Online image analysis for job " & parentJob & " file " & parentPath & parentFile & " took more then " & maxTimeWait & " sec"
+                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " took more then " & maxTimeWait & " sec"
+            
+            Case "focus":
+                OiaSettings.writeKeyToRegistry "codeMic", "nothing"
+                If OiaSettings.getPositions(newPositionsPx, Jobs.getCentralPointPx(parentJob)) Then
+                    LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " position(s) " & _
+                    " first pos-pixel " & " X = " & newPositionsPx(0).X & " X = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
+                    If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
+                         GoTo Abort
+                    End If
+                    newPositions = computeCoordinatesImaging(parentJob, parentPosition, newPositionsPx)
+                    If UBound(newPositions) > 0 Then
+                        LogManager.UpdateErrorLog " ComputeJobSequential: for Job focus " & parentPath & parentFile & " passed only one point to X, Y, and Z of regisrty instead of " & UBound(newPositions) + 1 & ". Using the first point!"
+                    End If
+                    ComputeJobSequential = newPositions(0)
+                Else
+                    LogManager.UpdateErrorLog "ComputeJobSequential: No position/wrong position for Job focus. " & parentPath & parentFile & vbCrLf & _
+                    "Specify one position in X, Y, Z of registry (in pixels, (X,Y) = (0,0) upper left corner image, Z = 0 -> central slice of current stack)!"
+                    GoTo nextCode
                 End If
-                newPositions = computeCoordinatesImaging(parentJob, parentPosition, newPositionsPx)
-                If UBound(newPositions) > 0 Then
-                    LogManager.UpdateErrorLog " ComputeJobSequential: for Job focus " & parentPath & parentFile & " passed only one point to X, Y, and Z of regisrty instead of " & UBound(newPositions) + 1 & ". Using the first point!"
+                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " focus at  " & " X = " & newPositions(0).X & " X = " & newPositions(0).Y & " Z = " & newPositions(0).Z
+                
+            Case "trigger1", "trigger2": 'store positions for later processing or direct imaging depending on settings
+                OiaSettings.writeKeyToRegistry "codeMic", "nothing"
+                JobName = codeMicToJobName.item(code)
+                DisplayProgress "Registry codeMic " & code & ": store positions and eventually image job" & JobName & "...", RGB(0, &HC0, 0)
+                If Not AutofocusForm.Controls(JobName + "Active") Then
+                    LogManager.UpdateErrorLog "ComputeJobSequential: job " & JobName & " is not active. Original file " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath")
+                    GoTo nextCode
                 End If
-                ComputeJobSequential = newPositions(0)
-            Else
-                LogManager.UpdateErrorLog "ComputeJobSequential: No position/wrong position for Job focus. " & parentPath & parentFile & vbCrLf & _
-                "Specify one position in X, Y, Z of registry (in pixels, (X,Y) = (0,0) upper left corner image, Z = 0 -> central slice of current stack)!"
-                Exit Function
-            End If
-            LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " focus at  " & " X = " & newPositions(0).X & " X = " & newPositions(0).Y & " Z = " & newPositions(0).Z
-            
-        Case "trigger1", "trigger2": 'store positions for later processing or direct imaging depending on settings
-            OiaSettings.writeKeyToRegistry "codeMic", "nothing"
-            JobName = codeMicToJobName.Item(codeMic)
-            DisplayProgress "Registry codeMic " & codeMic & ": store positions and eventually image job" & JobName & "...", RGB(0, &HC0, 0)
-            If Not AutofocusForm.Controls(JobName + "Active") Then
-                LogManager.UpdateErrorLog "ComputeJobSequential: job " & JobName & " is not active. Original file " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath")
-                Exit Function
-            End If
-            
-            If OiaSettings.getPositions(newPositionsPx, Jobs.getCentralPointPx(parentJob)) Then
-                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " positions " & " first pos-pixel " & " X = " & newPositionsPx(0).X & " X = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
-                If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
+                
+                If OiaSettings.getPositions(newPositionsPx, Jobs.getCentralPointPx(parentJob)) Then
+                    LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " positions " & " first pos-pixel " & " X = " & newPositionsPx(0).X & " X = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
+                    If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
+                        GoTo Abort
+                    End If
+                    newPositions = computeCoordinatesImaging(parentJob, parentPosition, newPositionsPx)
+                    ' if displacement are above the possible displacement estimated from current image then abort (this is obsolete now)
+                    If Not checkForMaximalDisplacementVec(parentJob, parentPosition, newPositions) Then
+                        GoTo Abort
+                    End If
+                Else
+                    LogManager.UpdateErrorLog "ComputeJobSequential: No position for Job " & JobName & " from file " & parentPath & parentFile & " (key = " & code & ") has been specified! Imaging current position. "
+                    ReDim newPositions(0)
+                    newPositions(0) = parentPosition
+                End If
+                
+                If OiaSettings.getRois(Rois) Then
+                    Jobs.setUseRoi JobName, True
+                    Jobs.setRois JobName, Rois
+                End If
+                ''' if we run a subjob the grid and counter is reset
+                If runSubImagingJob(JobName, JobName, newPositions) Then
+                    LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " execute job " & JobName & " at (only 1st pos given) " & " X = " & newPositions(0).X & " X = " & newPositions(0).Y & " Z = " & newPositions(0).Z
+                    'remove positions from parent grid to avoid revisiting the position
+                    If Not AutofocusForm.Controls(JobName + "KeepParent") Then
+                        Grids.setThisValid parentGrid, False
+                    End If
+                    'start acquisition of Job on grid named JobName
+                    If Not StartJobOnGrid(JobName, JobName, RecordingDoc, parentPath & parentFile & "\") Then
+                        GoTo Abort
+                    End If
+                    'set all run positions to notValid
+                    Grids.setAllValid JobName, False
+                End If
+                
+            Case "fcs1":
+                OiaSettings.writeKeyToRegistry "codeMic", "nothing"
+                JobName = codeMicToJobName.item(code)
+                DisplayProgress "Registry codeMic " & code & " executing " & JobName & "...", RGB(0, &HC0, 0)
+                If Not AutofocusForm.Controls(JobName + "Active") Then
+                    LogManager.UpdateErrorLog "ComputeJobSequential: job " & JobName & " is not active. Last image " & parentPath & parentFile
+                    GoTo nextCode
+                End If
+                If OiaSettings.getFcsPositions(newPositionsPx, parentPosition) Then
+                    If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
+                        GoTo Abort
+                    End If
+                    newPositions = computeCoordinatesFcs(parentJob, parentPosition, newPositionsPx)
+                    ' if displacement are above the possible displacement estimated from current image then abort
+                Else
+                    ReDim newPositionsPx(0)
+                    newPositionsPx(0) = Jobs.getCentralPtPx(parentJob)
+                    newPositions = computeCoordinatesFcs(parentJob, parentPosition, newPositionsPx)
+                    LogManager.UpdateErrorLog "ComputeJobSequential: No position for Job " & JobName & " (key = " & code & ") has been specified! Last image " & parentPath & parentFile
+                End If
+                DisplayProgress "Job " & JobName, RGB(&HC0, &HC0, 0)
+                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " execute job " & JobName & " at (only 1 pos given) " & " X = " & newPositions(0).X & " X = " & newPositions(0).Y & " Z = " & newPositions(0).Z
+                If Not ExecuteFcsJob(JobName, GlobalFcsRecordingDoc, GlobalFcsData, parentPath, "FCS1_" & parentFile, newPositions, newPositionsPx) Then
                     GoTo Abort
                 End If
-                newPositions = computeCoordinatesImaging(parentJob, parentPosition, newPositionsPx)
-                ' if displacement are above the possible displacement estimated from current image then abort (this is obsolete now)
-                If Not checkForMaximalDisplacementVec(parentJob, parentPosition, newPositions) Then
-                    GoTo Abort
-                End If
-            Else
-                LogManager.UpdateErrorLog "ComputeJobSequential: No position for Job " & JobName & " from file " & parentPath & parentFile & " (key = " & codeMic & ") has been specified! Imaging current position. "
-                ReDim newPositions(0)
-                newPositions(0) = parentPosition
-            End If
-            
-            If OiaSettings.getRois(Rois) Then
-                Jobs.setUseRoi JobName, True
-                Jobs.setRois JobName, Rois
-            End If
-            ''' if we run a subjob the grid and counter is reset
-            If runSubImagingJob(JobName, JobName, newPositions) Then
-                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " execute job " & JobName & " at (only 1st pos given) " & " X = " & newPositions(0).X & " X = " & newPositions(0).Y & " Z = " & newPositions(0).Z
-                'remove positions from parent grid to avoid revisiting the position
                 If Not AutofocusForm.Controls(JobName + "KeepParent") Then
                     Grids.setThisValid parentGrid, False
                 End If
-                'start acquisition of Job on grid named JobName
-                If Not StartJobOnGrid(JobName, JobName, RecordingDoc, parentPath & parentFile & "\") Then
-                    GoTo Abort
-                End If
-                'set all run positions to notValid
-                Grids.setAllValid JobName, False
-            End If
-            
-        Case "fcs1":
-            OiaSettings.writeKeyToRegistry "codeMic", "nothing"
-            JobName = codeMicToJobName.Item(codeMic)
-            DisplayProgress "Registry codeMic " & codeMic & " executing " & JobName & "...", RGB(0, &HC0, 0)
-            If Not AutofocusForm.Controls(JobName + "Active") Then
-                LogManager.UpdateErrorLog "ComputeJobSequential: job " & JobName & " is not active. Last image " & parentPath & parentFile
-                Exit Function
-            End If
-            If OiaSettings.getFcsPositions(newPositionsPx, parentPosition) Then
-                If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
-                    GoTo Abort
-                End If
-                newPositions = computeCoordinatesFcs(parentJob, parentPosition, newPositionsPx)
-                ' if displacement are above the possible displacement estimated from current image then abort
-            Else
-                ReDim newPositionsPx(0)
-                newPositionsPx(0) = Jobs.getCentralPtPx(parentJob)
-                newPositions = computeCoordinatesFcs(parentJob, parentPosition, newPositionsPx)
-                LogManager.UpdateErrorLog "ComputeJobSequential: No position for Job " & JobName & " (key = " & codeMic & ") has been specified! Last image " & parentPath & parentFile
-            End If
-            DisplayProgress "Job " & JobName, RGB(&HC0, &HC0, 0)
-            LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " execute job " & JobName & " at (only 1 pos given) " & " X = " & newPositions(0).X & " X = " & newPositions(0).Y & " Z = " & newPositions(0).Z
-            If Not ExecuteFcsJob(JobName, GlobalFcsRecordingDoc, GlobalFcsData, parentPath, "FCS1_" & parentFile, newPositions, newPositionsPx) Then
+            Case Else
+                MsgBox ("Invalid OnlineImageAnalysis codeMic = " & code)
                 GoTo Abort
-            End If
-            If Not AutofocusForm.Controls(JobName + "KeepParent") Then
-                Grids.setThisValid parentGrid, False
-            End If
-        Case Else
-            MsgBox ("Invalid OnlineImageAnalysis codeMic = " & codeMic)
-            GoTo Abort
-    End Select
+        End Select
+nextCode:
+    Next code
 Exit Function
 Abort:
     ScanStop = True ' global flag to stop everything
