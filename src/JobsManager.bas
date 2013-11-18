@@ -118,7 +118,7 @@ On Error GoTo AcquireJob_Error
     ", Z =  " & position.Z & " in " & Round(Timer - Time, 3) & " sec"
     Exit Function
 ErrorTrack:
-    MsgBox "Acquisition Job for " & JobName & " defined. Exit now!"
+    MsgBox "No active track for Job " & JobName & " defined. Exit now!"
     Exit Function
 
    On Error GoTo 0
