@@ -1008,8 +1008,6 @@ Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As Strin
 
 On Error GoTo SaveDsRecordingDoc_Error
 
-    On Error GoTo Done
-
     'Set Image = EngelImageToHechtImage(Document).Image(0, True)
     If Not Document Is Nothing Then
         Set image = Document.RecordingDocument.image(0, True)

@@ -83,7 +83,7 @@ On Error GoTo AcquireJob_Error
     CurrentJob = JobName
     'Not sure if this is required
     'Time = Timer
-    If Jobs.GetSpecialScanMode(JobName) = "ZScanner" Then
+    If Jobs.getSpecialScanMode(JobName) = "ZScanner" Then
         Lsm5.Hardware.CpHrz.Leveling
     End If
     'Debug.Print "Time to level Hrz " & Round(Timer - Time, 3)
@@ -416,7 +416,7 @@ On Error GoTo ExecuteJobAndTrack_Error
          DisplayProgress "Job " & JobName & ", Row " & Grids.thisRow(GridName) & ", Col " & Grids.thisColumn(GridName) & vbCrLf & _
         "subRow " & Grids.thisSubRow(GridName) & ", subCol " & Grids.thisSubColumn(GridName) & ", Rep " & Reps.thisIndex(GridName), RGB(&HC0, &HC0, 0)
 
-        ScanMode = Jobs.GetScanMode(JobName)
+        ScanMode = Jobs.getScanMode(JobName)
         If ScanMode = "ZScan" Or ScanMode = "Line" Then
             AutofocusForm.Controls(JobName & "TrackXY").Value = False
         End If
@@ -744,7 +744,7 @@ On Error GoTo checkForMaximalDisplacementPixels_Error
     Dim MaxZ As Long
  
     MaxX = Jobs.getSamplesPerLine(JobName) - 1
-    If Jobs.GetScanMode(JobName) = "ZScan" Then
+    If Jobs.getScanMode(JobName) = "ZScan" Then
         MaxY = 0
     Else
         MaxY = Jobs.getLinesPerFrame(JobName) - 1
@@ -792,7 +792,7 @@ On Error GoTo checkForMaximalDisplacementVecPixels_Error
     Dim i As Integer
 
     MaxX = Jobs.getSamplesPerLine(JobName) - 1
-    If Jobs.GetScanMode(JobName) = "ZScan" Then
+    If Jobs.getScanMode(JobName) = "ZScan" Then
         MaxY = 0
     Else
         MaxY = Jobs.getLinesPerFrame(JobName) - 1
@@ -844,7 +844,7 @@ On Error GoTo UpdateFormFromJob_Error
         AutofocusForm.Controls(JobName + "Label2").Caption = jobDescriptor(1)
     End If
     
-    If Jobs.GetScanMode(JobName) = "ZScan" Or Jobs.GetScanMode(JobName) = "Line" Then
+    If Jobs.getScanMode(JobName) = "ZScan" Or Jobs.getScanMode(JobName) = "Line" Then
         AutofocusForm.Controls(JobName + "TrackXY").Value = False
         AutofocusForm.Controls(JobName + "TrackXY").Enabled = False
     Else
@@ -928,7 +928,15 @@ End Sub
 Public Sub UpdateGuiFromJob(Jobs As ImagingJobs, JobName As String, ZEN As Object)
 On Error GoTo UpdateGuiFromJob_Error
     Dim Success As Boolean
-    Success = Application.ThrowEvent(eEventDataChanged, 0)
+
+    Success = Application.ThrowEvent(tag_Events.eEventDataChanged, 0)
+    If ZENv > 2010 Then
+       If Jobs.isZStack(JobName) Then
+            ZEN.gui.Acquisition.ZStack.UsePiezo.Value = (Jobs.getSpecialScanMode(JobName) = "ZScanner")
+        End If
+            
+    End If
+    
    On Error GoTo 0
    Exit Sub
 

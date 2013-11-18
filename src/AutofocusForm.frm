@@ -43,9 +43,8 @@ Private Const LogCode = True                'sets key to run tests visible or no
 
 
 
-Private Sub AutofocusDefault_Click()
-    
-End Sub
+
+
 
 Private Sub ShowOiaKeys_Click()
     Dim OiaSettings As OnlineIASettings
@@ -135,7 +134,7 @@ NoError:
     Jobs.setZENv ZENv
 
     For i = 0 To UBound(JobNames)
-        If Jobs.GetScanMode(JobNames(i)) = "ZScan" Or Jobs.GetScanMode(JobNames(i)) = "Line" Then
+        If Jobs.getScanMode(JobNames(i)) = "ZScan" Or Jobs.getScanMode(JobNames(i)) = "Line" Then
             Me.Controls(JobNames(i) + "TrackXY").Value = False
             Me.Controls(JobNames(i) + "TrackXY").Enabled = False
         Else
@@ -498,7 +497,7 @@ Private Sub SwitchEnablePage(JobName As String, Enable As Boolean)
     Me.Controls(JobName + "Acquire").Enabled = Enable
             
     Me.Controls(JobName + "TrackZ").Enabled = Enable And Jobs.isZStack(JobName)
-    Me.Controls(JobName + "TrackXY").Enabled = Enable And (Jobs.GetScanMode(JobName) <> "ZScan") And (Jobs.GetScanMode(JobName) <> "Line")
+    Me.Controls(JobName + "TrackXY").Enabled = Enable And (Jobs.getScanMode(JobName) <> "ZScan") And (Jobs.getScanMode(JobName) <> "Line")
     Me.Controls(JobName + "CenterOfMass").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
     Me.Controls(JobName + "CenterOfMassChannel").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
     Me.Controls(JobName + "OiaActive").Enabled = Enable
@@ -941,6 +940,51 @@ End Sub
 
 Private Sub Trigger2OiaParallel_Change()
      ButtonOiaParallel ("Trigger2")
+End Sub
+
+
+''''
+' Standard settings for Autofocus
+''''
+Private Sub AutofocusDefault_Click()
+
+On Error GoTo AutofocusDefault_Click_Error
+
+    Jobs.setFrameSpacing "Autofocus", 0.4
+    Jobs.setFramesPerStack "Autofocus", 101
+    Jobs.setScanMode "Autofocus", "ZScan"
+    Jobs.setScanDirection "Autofocus", 1
+    UpdateFormFromJob Jobs, "Autofocus"
+    UpdateGuiFromJob Jobs, "Autofocus", ZEN
+
+   On Error GoTo 0
+   Exit Sub
+
+AutofocusDefault_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure AutofocusDefault_Click of Form AutofocusForm at line " & Erl & " "
+End Sub
+
+Private Sub AutofocusDefaultPiezo_Click()
+
+On Error GoTo AutofocusDefaultPiezo_Click_Error
+
+    Jobs.setFrameSpacing "Autofocus", 0.1
+    Jobs.setFramesPerStack "Autofocus", 801
+    Jobs.setScanMode "Autofocus", "ZScan"
+    Jobs.setScanDirection "Autofocus", 1
+    Jobs.setSpecialScanMode "Autofocus", "ZScanner"
+    UpdateFormFromJob Jobs, "Autofocus"
+    UpdateGuiFromJob Jobs, "Autofocus", ZEN
+
+   On Error GoTo 0
+   Exit Sub
+
+AutofocusDefaultPiezo_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure AutofocusDefaultPiezo_Click of Form AutofocusForm at line " & Erl & " "
 End Sub
 
 '''
