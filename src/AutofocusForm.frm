@@ -36,7 +36,7 @@ Attribute VB_Exposed = False
 Option Explicit 'force to declare all variables
 
 Public Version As String
-Private Const DebugCode = False             'sets key to run tests visible or not
+Private Const DebugCode = True             'sets key to run tests visible or not
 Private Const ReleaseName = True            'this adds the ZEN version
 Private Const LogCode = True                'sets key to run tests visible or not
 
@@ -1857,6 +1857,7 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
     FailSafeMoveStageZ StgPos.Z
     Recenter_post StgPos.Z, True, ZENv
     If ZENv > 2010 Then
+        ZEN.gui.Acquisition.ZStack.CenterMode.Value = True
         ZEN.gui.Acquisition.ZStack.CenterPositionZ.Value = StgPos.Z
     End If
     AutofocusButtonRun = True

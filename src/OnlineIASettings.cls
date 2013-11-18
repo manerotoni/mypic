@@ -13,11 +13,12 @@ Attribute VB_Exposed = False
 '''''
 
 Option Explicit
+'contains all settings from registry
 Public Settings As Dictionary
 Private Keys() As String
 Private Keys_HowTo As Dictionary
 ''keys used for codeMic
-Public subKey_codeMic_HowTo As Dictionary
+Private subKey_codeMic_HowTo As Dictionary
 ''keys used for codeOia
 Private subKey_codeOia_HowTo As Dictionary
 
@@ -145,7 +146,6 @@ Public Function available_subKey(subKey_HowTo As Dictionary) As String
         Else
             TabSp = "" & vbTab & vbTab
         End If
-        Debug.Print "   " & Key & " " & TabSp & subKey_HowTo.item(Key)
         LogTxt = LogTxt & "   " & Key & " " & TabSp & subKey_HowTo.item(Key) & vbCrLf
     Next Key
     available_subKey = LogTxt
@@ -153,11 +153,12 @@ End Function
 
 Public Function createKeyReport() As String
     Dim report As String
-    report = "Windows registry keys to interact with Online image analysis" & vbCrLf
-    report = report & "location is: HKCU\SOFTWARE\VB and VBA Program Settings\OnlineImageAnalysis\macro" & vbCrLf
-    report = report & "All coordinates must be in pixels. (X, Y, Z) = (0,0,0) is the upper left corner, first slice." & vbCrLf
-    report = report & "------------------------" & vbCrLf
-    report = report & "Principal Keys and meaning:" & vbCrLf
+    report = "Windows registry keys to interact with Online image analysis" & vbCrLf & _
+    "location is: HKCU\SOFTWARE\VB and VBA Program Settings\OnlineImageAnalysis\macro" & vbCrLf & _
+    "All coordinates must be in pixels. (X, Y, Z) = (0,0,0) is the upper left corner, first slice." & vbCrLf & _
+    "Use dot notation for subpixel (e.g. 2.5) !" & vbCrLf & _
+    "------------------------" & vbCrLf & _
+    "Principal Keys and meaning:" & vbCrLf
     report = report & available_subKey(Keys_HowTo)
     report = report & "------------------------" & vbCrLf
     report = report & "codeMic values: several commands separated with ;" & vbCrLf
@@ -401,16 +402,16 @@ Public Function getRois(Rois() As Roi) As Boolean
     If Settings.item("roiType") = "" Then
         Exit Function
     End If
-    roiType = Split(Settings.item("roiType"), ";")
+    roiType = Split(Replace(Settings.item("roiType"), " ", ""), ";")
     If Settings.item("roiAim") = "" Or Settings.item("roiX") = "" Or Settings.item("roiY") = "" Then
         LogManager.UpdateErrorLog "OnlineIASettings.getRois: For each roi you need to define roiType, roiAim, roiX, and roiY! Different rois are separated by semicolumns. " + vbCrLf + "roiType1 ; roiType2; etc." & vbCrLf & _
         "roiX1_roi1, roiX2_roi1; roiX1_roi2, roiX2_roi2, roiX3_roi2; etc. Coordinates in pixels"
         Exit Function
     End If
     
-    roiAim = Split(Settings.item("roiAim"), ";")
-    XRois() = Split(Settings.item("roiX"), ";")
-    YRois() = Split(Settings.item("roiY"), ";")
+    roiAim = Split(Replace(Settings.item("roiAim"), " ", ""), ";")
+    XRois() = Split(Replace(Settings.item("roiX"), " ", ""), ";")
+    YRois() = Split(Replace(Settings.item("roiY"), " ", ""), ";")
     
     If UBound(roiType) <> UBound(roiAim) And UBound(roiType) <> UBound(XRois) And UBound(roiType) <> UBound(YRois) Then
        LogManager.UpdateErrorLog "OnlineIASettings.getRois: Number of Rois and coordinates need to correspond. Different rois are separated by semicolumns. " + vbCrLf + "roiType1 ; roiType2; etc." & vbCrLf & _
