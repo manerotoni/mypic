@@ -43,6 +43,10 @@ Private Const LogCode = True                'sets key to run tests visible or no
 
 
 
+Private Sub AutofocusDefault_Click()
+    
+End Sub
+
 Private Sub ShowOiaKeys_Click()
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
@@ -1763,6 +1767,8 @@ End Sub
 '                        Lsm5.DsRecording.Sample0Z provides the actual shift to the central slice
 ''''''''
 Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = Nothing, Optional FilePath As String = "") As Boolean
+On Error GoTo AutofocusButtonRun_Error
+
     Running = True
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
@@ -1851,9 +1857,21 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
     FailSafeMoveStageZ StgPos.Z
     Recenter_post StgPos.Z, True, ZENv
     If ZENv > 2010 Then
+        On Error GoTo nocenter
         ZEN.gui.Acquisition.ZStack.CenterPositionZ.Value = StgPos.Z
+nocenter:
+        LogManager.UpdateErrorLog "Error. For Autofocus please use Center (and not First/Last) for Z-Stack"
+        On Error GoTo 0
     End If
     AutofocusButtonRun = True
+
+   On Error GoTo 0
+   Exit Function
+
+AutofocusButtonRun_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure AutofocusButtonRun of Form AutofocusForm at line " & Erl & " "
 
 End Function
 
@@ -2209,7 +2227,12 @@ Private Sub CloseButton_Click()
 End Sub
 
 Private Sub ReInitializeButton_Click()
-    Re_Initialize
+    Dim MsgBoxRet As Integer
+     MsgBoxRet = MsgBox("With Reinitialize all imaging settings (Autofocus, Acquisition, etc.) will be reset to the current settings in ZEN!" & _
+    " Do you want to reinitialize?", VbYesNo)
+    If MsgBoxRet = vbYes Then
+        Re_Initialize
+    End If
 End Sub
 
 
