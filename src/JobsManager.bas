@@ -641,6 +641,7 @@ Public Function waitForPump(timeToPump As Double, distDiff As Double, timeDiff A
     
     OiaSettings.readFromRegistry
     OiaSettings.writeKeyToRegistry "codeMic", "wait"
+    Sleep (50)
     OiaSettings.writeKeyToRegistry "codePump", CStr(timeToPump)
     TimeStart = CDbl(GetTickCount) * 0.001
     DisplayProgress "Waiting for pump...", RGB(0, &HC0, 0)

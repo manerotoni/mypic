@@ -1911,6 +1911,9 @@ Public Sub Execute_StartButton()
     NewRecordGui GlobalRecordingDoc, "MacroImaging", ZEN, ZENv
     If Pump Then
         lastTimePump = CDbl(GetTickCount) * 0.001
+        Debug.Print "Time pump " & CDbl(GetTickCount) * 0.001 - lastTimePump
+        lastTimePump = waitForPump(PumpForm.Pump_Time, 0, CDbl(GetTickCount) * 0.001 - lastTimePump, _
+        0 * 1000, 0 * 60, 10)
     End If
     If Not StartJobOnGrid("Global", "Global", GlobalRecordingDoc, GlobalDataBaseName) Then  'This is the main function of the macro
         StopAcquisition
@@ -2410,6 +2413,7 @@ Private Sub ChangeButtonStatus(Enable As Boolean)
     GetCurrentPositionOffsetButton.Enabled = Enable
     CloseButton.Enabled = Enable
     ReinitializeButton.Enabled = Enable
+    PumpForm.Start_Imaging.Enabled = Enable
 End Sub
 
 

@@ -17,7 +17,7 @@ Attribute VB_Exposed = False
 
 
 Private Sub Change_Settings_Click()
-    Pump = False
+    Pump = True
     PumpForm.Hide
 End Sub
 
