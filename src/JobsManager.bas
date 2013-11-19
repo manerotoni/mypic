@@ -929,10 +929,13 @@ Public Sub UpdateGuiFromJob(Jobs As ImagingJobs, JobName As String, ZEN As Objec
 On Error GoTo UpdateGuiFromJob_Error
     Dim Success As Boolean
 
-    Success = Application.ThrowEvent(tag_Events.eEventDataChanged, 0)
+    'Success = Application.ThrowEvent(tag_Events.eEventDataChanged, 0)
+    'not really sure what the second parameter does?
+    Success = Application.ThrowEvent(tag_Events.eEventDsActiveRecChanged, 0)
+    
     If ZENv > 2010 Then
        If Jobs.isZStack(JobName) Then
-            ZEN.gui.Acquisition.ZStack.UsePiezo.Value = (Jobs.getSpecialScanMode(JobName) = "ZScanner")
+            'ZEN.gui.Acquisition.ZStack.UsePiezo.Value = (Jobs.getSpecialScanMode(JobName) = "ZScanner")
         End If
             
     End If
