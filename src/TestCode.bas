@@ -137,16 +137,16 @@ Private Sub setPositions()
     'Recorded: 24/10/2013
     'Description:
     '**************************************
-    Dim ZEN As Zeiss_Micro_AIM_ApplicationInterface.ApplicationInterface
-    Set ZEN = Application.ApplicationInterface
-     
-    ZEN.gui.Acquisition.Positions.currentPosition.ByIndex = 0
-
-    ZEN.gui.Acquisition.Positions.currentPosition.ByIndex = 1
-
-    ZEN.gui.Acquisition.Positions.Remove.Execute
-
-    ZEN.gui.Acquisition.Positions.Add.Execute
-    Dim Positions As Long
-    Positions = Lsm5.DsRecording.MultiPositionArraySize
+'    Dim ZEN As Zeiss_Micro_AIM_ApplicationInterface.ApplicationInterface
+'    Set ZEN = Application.ApplicationInterface
+'
+'    ZEN.gui.Acquisition.Positions.currentPosition.ByIndex = 0
+'
+'    ZEN.gui.Acquisition.Positions.currentPosition.ByIndex = 1
+'
+'    ZEN.gui.Acquisition.Positions.Remove.Execute
+'
+'    ZEN.gui.Acquisition.Positions.Add.Execute
+'    Dim Positions As Long
+'    Positions = Lsm5.DsRecording.MultiPositionArraySize
 End Sub

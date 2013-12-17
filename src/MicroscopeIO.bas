@@ -135,7 +135,6 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
     Dim Time As Double
     'Dim gui As Object
     'Set gui = Lsm5.ViewerGuiServer not recquired anymore
-    
     Time = Timer
     If RecordingDoc Is Nothing Then
         Exit Function
@@ -606,7 +605,62 @@ Public Function MoveToNextLocation(Optional Mark As Integer = 0) As Boolean
 End Function
 
 
+'---------------------------------------------------------------------------------------
+' Procedure : getMarkedStagePosition
+' Purpose   : get positions in marked stage gui
+'---------------------------------------------------------------------------------------
+'
+Public Function getMarkedStagePosition() As Vector()
+    Dim MarkCount As Long
+    Dim pos() As Vector
+    Dim i As Long
+On Error GoTo getMarkedStagePosition_Error
 
+    MarkCount = Lsm5.Hardware.CpStages.MarkCount
+    If MarkCount >= 1 Then
+        ReDim pos(MarkCount - 1)
+        For i = 0 To MarkCount - 1
+            Lsm5.Hardware.CpStages.MarkGetZ i, pos(i).X, pos(i).Y, pos(i).Z
+        Next i
+    End If
+    getMarkedStagePosition = pos
+   On Error GoTo 0
+   Exit Function
+
+getMarkedStagePosition_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure getMarkedStagePosition of Module MicroscopeIO at line " & Erl & " "
+End Function
+
+
+'---------------------------------------------------------------------------------------
+' Procedure : setMarkedStagePosition
+' Purpose   : set positions in marked stage gui from Vector pos
+'---------------------------------------------------------------------------------------
+'
+Public Sub setMarkedStagePosition(pos() As Vector)
+    Dim MarkCount As Long
+    Dim i As Long
+    On Error GoTo noPos
+    If UBound(pos) >= 0 Then
+On Error GoTo getMarkedStagePosition_Error
+        Lsm5.Hardware.CpStages.MarkClearAll
+        For i = 0 To UBound(pos)
+            Lsm5.Hardware.CpStages.MarkAddZ pos(i).X, pos(i).Y, pos(i).Z
+        Next i
+    End If
+   On Error GoTo 0
+   Exit Sub
+
+getMarkedStagePosition_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure getMarkedStagePosition of Module MicroscopeIO at line " & Erl & " "
+    Exit Sub
+noPos:
+    
+End Sub
 
 ''''
 '   WaitForRecentering(Z As Double, Success As Boolean) As Boolean
@@ -1007,8 +1061,6 @@ Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As Strin
     Dim Vertical As enumAimImportExportCoordinate
 
 On Error GoTo SaveDsRecordingDoc_Error
-
-    On Error GoTo Done
 
     'Set Image = EngelImageToHechtImage(Document).Image(0, True)
     If Not Document Is Nothing Then

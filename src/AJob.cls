@@ -29,11 +29,6 @@ Private pRoiMaxNr As Integer
 
 
 
-''''DON'T USE YET''''
-'''If True swicth lasers instead of Tracks
-Const SwitchLaserLines = False ' this is not clear whether it works or not properly. Sometimes it is fast sometimes slow?
-'''record which lasers are on or off
-Private LaserOnOff() As Boolean
 
 
 Public Property Get AcquireTrack() As Boolean()
@@ -76,17 +71,6 @@ Public Function setJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
     ReDim pAcquireTrack(TrackNumber - 1)
     For iTrack = 0 To TrackNumber - 1
         pAcquireTrack(iTrack) = Recording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire
-        If ZENv > 2010 Then
-            If SwitchLaserLines Then 'this is experimental it should only switch laserLines and keep the same Track
-                ReDim LaserOnOff(0 To TrackNumber - 1, 0 To ZEN.gui.Acquisition.Channels.Track.LaserLine.ItemCount - 1)
-                ZEN.gui.Acquisition.Channels.Track.ByIndex = iTrack
-                For iLaser = 0 To UBound(LaserOnOff, 2)
-                    ZEN.gui.Acquisition.Channels.Track.LaserLine.ByIndex = iLaser
-                    LaserOnOff(iTrack, iLaser) = ZEN.gui.Acquisition.Channels.Track.LaserLine.Acquire.Value
-                    'Debug.Print " iTrack " & iTrack & " Laser " & iLaser & " status " & ZEN.gui.Acquisition.Channels.Track.LaserLine.Acquire.Value
-                Next iLaser
-            End If
-        End If
     Next iTrack
     UseRoi = AcquisitionParameters.UseROIs
     setRoiFromZen
@@ -110,7 +94,6 @@ Public Function putJob(ZEN As Object)
     Dim Time As Double
     If TrackNumber <> Lsm5.DsRecording.GetNormalTrackCount Then
         MsgBox "Nr of Tracks of  Job " + Name + " is " + CStr(TrackNumber) + ". Available tracks " + CStr(Lsm5.DsRecording.GetNormalTrackCount) + vbCrLf + "This may cause problems"
-        
         'Exit Function
     End If
     
@@ -128,48 +111,41 @@ Public Function putJob(ZEN As Object)
     
     Time = Timer
     For iTrack = 0 To TrackNumber - 1
-        If ZENv > 2010 Then
-            'ZEN.gui.Acquisition.Channels.Track.ByIndex = iTrack '(it does not display properly anyway)
-            'ZEN.gui.Acquisition.Channels.Track.Acquire.Value = pAcquireTrack(iTrack)
-            Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire = pAcquireTrack(iTrack)
-            'this is experimental
-            If SwitchLaserLines Then
-                If Not isArrayEmpty(LaserOnOff) And pAcquireTrack(iTrack) Then
-                    For iLaser = 0 To UBound(LaserOnOff, 2)
-                        ZEN.gui.Acquisition.Channels.Track.LaserLine.ByIndex = iLaser
-                        If LaserOnOff(iTrack, iLaser) <> ZEN.gui.Acquisition.Channels.Track.LaserLine.Acquire.Value Then
-                            ZEN.gui.Acquisition.Channels.Track.LaserLine.Acquire.Value = LaserOnOff(iTrack, iLaser)
-                        End If
-                    Next iLaser
-                End If
-            End If
-        Else
-            Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire = pAcquireTrack(iTrack)
-        End If
+        Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire = pAcquireTrack(iTrack)
         Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).TimeBetweenStacks = TimeBetweenStacks
         Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).SampleObservationTime = pixelDwell
+'        If ZENv > 2010 Then
+'            'this is experimental
+'            If SwitchLaserLines Then
+'                If Not isArrayEmpty(LaserOnOff) And pAcquireTrack(iTrack) Then
+'                    For iLaser = 0 To UBound(LaserOnOff, 2)
+'                        ZEN.gui.Acquisition.Channels.Track.LaserLine.ByIndex = iLaser
+'                        If LaserOnOff(iTrack, iLaser) <> ZEN.gui.Acquisition.Channels.Track.LaserLine.Acquire.Value Then
+'                            ZEN.gui.Acquisition.Channels.Track.LaserLine.Acquire.Value = LaserOnOff(iTrack, iLaser)
+'                        End If
+'                    Next iLaser
+'                End If
+'            End If
+'        End If
     Next iTrack
     Debug.Print "Times set tracks " & Round(Timer - Time, 3)
     
     AcquisitionParameters.UseROIs = UseRoi
     Time = Timer
-  
-   If ZENv > 2010 Then
-      'this is slow ~1 sec (and can be only used for acquisition only
-       'ZEN.gui.Acquisition.AcquisitionMode.ScanArea.Zoom.Value = Recording.ZoomX
-       'ZEN.SetListEntrySelected "Scan.Mode.DirectionX", Recording.ScanDirection
-        If Recording.ScanDirection Then
-            If ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value <> CorrX Then
-               ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value = CorrX
-            End If
-            If ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value <> CorrY Then
-                ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value = CorrY
-            End If
-        End If
-    End If
-    Debug.Print "Time update Corr.X " & Round(Timer - Time, 3)
+ 
+'   the correction is not saved in the DsRecording
+    If ZENv > 2010 Then
+         If Recording.ScanDirection Then
+             If ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value <> CorrX Then
+                ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value = CorrX
+             End If
+             If ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value <> CorrY Then
+                 ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value = CorrY
+             End If
+         End If
+     End If
+'    Debug.Print "Time update Corr.X " & Round(Timer - Time, 3)
     createRois
-    'testDescriptor
     putJob = True
     Exit Function
 ErrorHandle:
