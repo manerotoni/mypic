@@ -956,16 +956,16 @@ End Sub
 ' Standard settings for Autofocus
 ''''
 Private Sub AutofocusDefault_Click()
-
+    Dim pos() As Vector
 On Error GoTo AutofocusDefault_Click_Error
-
+    pos = getMarkedStagePosition
     Jobs.setFrameSpacing "Autofocus", 0.4
     Jobs.setFramesPerStack "Autofocus", 101
     Jobs.setScanMode "Autofocus", "ZScan"
-    Jobs.setScanDirection "Autofocus", 1
+    'Jobs.setScanDirection "Autofocus", 1 (bidirectional scanning)
     UpdateFormFromJob Jobs, "Autofocus"
     UpdateGuiFromJob Jobs, "Autofocus", ZEN
-
+    setMarkedStagePosition pos
    On Error GoTo 0
    Exit Sub
 
@@ -976,18 +976,20 @@ AutofocusDefault_Click_Error:
 End Sub
 
 Private Sub AutofocusDefaultPiezo_Click()
-Lsm5.Hardware.CpHrz.Exist (Lsm5.Hardware.CpHrz.Name)
+    Dim pos() As Vector
 On Error GoTo AutofocusDefaultPiezo_Click_Error
-
-    Jobs.setFrameSpacing "Autofocus", 0.1
-    Jobs.setFramesPerStack "Autofocus", 801
-    Jobs.setScanMode "Autofocus", "ZScan"
-    Jobs.setScanDirection "Autofocus", 1
-    Jobs.setSpecialScanMode "Autofocus", "ZScanner"
-    Jobs.setTimeSeries "Autofocus", False
-    UpdateFormFromJob Jobs, "Autofocus"
-    UpdateGuiFromJob Jobs, "Autofocus", ZEN
-
+    If Lsm5.Hardware.CpHrz.Exist(Lsm5.Hardware.CpHrz.Name) Then
+        pos = getMarkedStagePosition
+        Jobs.setFrameSpacing "Autofocus", 0.1
+        Jobs.setFramesPerStack "Autofocus", 801
+        Jobs.setScanMode "Autofocus", "ZScan"
+        'Jobs.setScanDirection "Autofocus", 1
+        Jobs.setSpecialScanMode "Autofocus", "ZScanner"
+        Jobs.setTimeSeries "Autofocus", False
+        UpdateFormFromJob Jobs, "Autofocus"
+        UpdateGuiFromJob Jobs, "Autofocus", ZEN
+        setMarkedStagePosition pos
+    End If
    On Error GoTo 0
    Exit Sub
 
@@ -1068,29 +1070,19 @@ End Sub
 Private Sub putJob(JobName As String)
     
     Dim pos() As Vector
-    Dim MarkCount As Long
     Dim i As Long
     'this is a work around for a bug in ZEN that deletes all positions after updated of recording
-    MarkCount = Lsm5.Hardware.CpStages.MarkCount
-    If MarkCount >= 1 Then
-        ReDim pos(MarkCount - 1)
-        For i = 0 To MarkCount - 1
-            Lsm5.Hardware.CpStages.MarkGetZ i, pos(i).X, pos(i).Y, pos(i).Z
-        Next i
-    End If
+    pos = getMarkedStagePosition
     
     If ZENv > 2010 And Not ZEN Is Nothing Then
         ZEN.gui.Acquisition.Regions.Delete.Execute
     End If
+    
     Jobs.putJob JobName, ZEN
     'This is just for visualising the job in the Gui
     UpdateGuiFromJob Jobs, JobName, ZEN
-    Lsm5.Hardware.CpStages.MarkClearAll
-    If MarkCount >= 1 Then
-        For i = 0 To UBound(pos)
-            Lsm5.Hardware.CpStages.MarkAddZ pos(i).X, pos(i).Y, pos(i).Z
-        Next i
-    End If
+    setMarkedStagePosition pos
+    
     'does not update the stagepositions in the GUI
     'Application.ThrowEvent ePropertyEventStage, 0
     'Application.ThrowEvent eEventUpdateGui, 0
@@ -1742,6 +1734,8 @@ Private Function GetCurrentPositionOffsetButtonRun(Optional AutofocusDoc As DsRe
         Exit Function
     End If
     JobName = "Autofocus"
+    Jobs.putJob JobName, ZEN
+    DisplayProgress "Autofocus execute job", RGB(0, &HC0, 0)
     ExecuteJob JobName, AutofocusDoc, FilePath, FileName, StgPos, CInt(deltaZ)
     StgPos = TrackOffLine(JobName, AutofocusDoc, StgPos)
     If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then

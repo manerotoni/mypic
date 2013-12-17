@@ -1139,19 +1139,22 @@ On Error GoTo runSubImagingJob_Error
         ''start counter for gridcreation!!!
         Grids.updateGridSize GridName, 1, 1, 1, UBound(newPositions) + 1
         GridLowBound = 1
+     Else
+        GridLowBound = Grids.numColSub(GridName) + 1
+        Grids.updateGridSizePreserve GridName, 1, 1, 1, UBound(newPositions) + GridLowBound
+    End If
+    
+    If Grids.getNrValidPts(GridName) = 0 Then
         If TimersGridCreation Is Nothing Then
             Set TimersGridCreation = New Timers
         End If
         TimersGridCreation.addTimer GridName
         TimersGridCreation.updateTimeStart GridName
-    Else
-        GridLowBound = Grids.numColSub(GridName) + 1
-        Grids.updateGridSizePreserve GridName, 1, 1, 1, UBound(newPositions) + GridLowBound
     End If
     
     ''' input grid positions
     For i = 0 To UBound(newPositions)
-            Grids.setPt GridName, newPositions(i), True, 1, 1, 1, i + GridLowBound
+        Grids.setPt GridName, newPositions(i), True, 1, 1, 1, i + GridLowBound
     Next i
     
     If ptNumber = 0 Or maxWait = 0 Then
@@ -1174,38 +1177,25 @@ On Error GoTo runSubImagingJob_Error
     
         
     If AutofocusForm.Controls(JobName + "maxWait").Value = "" Then
-        If Grids.getNrPts(GridName) >= ptNumber Then
+        If Grids.getNrValidPts(GridName) >= AutofocusForm.Controls(JobName + "OptimalPtNumber").Value Then
             'trim grid
-            Grids.updateGridSizePreserve GridName, 1, 1, 1, AutofocusForm.Controls(JobName + "OptimalPtNumber").Value
             runSubImagingJob = True
             Exit Function
         End If
     End If
     
     'both are unequal 0. you chose which occurs first
-    If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value <> "" Then
-        If Grids.getNrPts(GridName) >= AutofocusForm.Controls(JobName + "OptimalPtNumber").Value Then
-            'trim grid
-            Grids.updateGridSizePreserve GridName, 1, 1, 1, AutofocusForm.Controls(JobName + "OptimalPtNumber").Value
-            runSubImagingJob = True
-            Exit Function
-        End If
-        
-        If TimersGridCreation.wait(GridName, CDbl(AutofocusForm.Controls(JobName + "maxWait").Value)) < 0 Then
-            runSubImagingJob = True
-            Exit Function
-        End If
+    If Grids.getNrValidPts(GridName) >= AutofocusForm.Controls(JobName + "OptimalPtNumber").Value Then
+        runSubImagingJob = True
+        Exit Function
+    End If
+    Debug.Print "Wait for " & TimersGridCreation.wait(GridName, CDbl(AutofocusForm.Controls(JobName + "maxWait").Value))
+
+    If TimersGridCreation.wait(GridName, CDbl(AutofocusForm.Controls(JobName + "maxWait").Value)) < 0 Then
+        runSubImagingJob = True
+        Exit Function
     End If
     
-    If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value <> "" And AutofocusForm.Controls(JobName + "OptimalPtNumber").Value = "" Then
-        If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value >= Grids.getNrPts(GridName) Then
-            'trim grid
-            Grids.updateGridSizePreserve GridName, 1, 1, 1, AutofocusForm.Controls(JobName + "OptimalPtNumber").Value
-            runSubImagingJob = True
-            Exit Function
-        End If
-    End If
-
    On Error GoTo 0
    Exit Function
 
@@ -1226,6 +1216,7 @@ End Function
 Public Function ComputeJobSequential(parentJob As String, parentGrid As String, parentPosition As Vector, parentPath As String, parentFile As String, RecordingDoc As DsRecordingDoc, Optional deltaZ As Integer = -1) As Vector
 On Error GoTo ComputeJobSequential_Error
     
+    Dim i As Integer
     Dim newPositionsPx() As Vector 'from the registru one obtains positions in pixels
     Dim newPositions() As Vector
     Dim Rois() As Roi
@@ -1350,13 +1341,14 @@ On Error GoTo ComputeJobSequential_Error
                 Jobs.setUseRoi JobName, True
                 Jobs.setRois JobName, Rois
             End If
+            
+            '''Parent grid is rest here
+            If Not AutofocusForm.Controls(JobName + "KeepParent") Then
+                Grids.setThisValid parentGrid, False
+            End If
             ''' if we run a subjob the grid and counter is reset
             If runSubImagingJob(JobName, JobName, newPositions) Then
                 LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " execute job " & JobName & " at (only 1st pos given) " & " X = " & newPositions(0).X & " X = " & newPositions(0).Y & " Z = " & newPositions(0).Z
-                'remove positions from parent grid to avoid revisiting the position
-                If Not AutofocusForm.Controls(JobName + "KeepParent") Then
-                    Grids.setThisValid parentGrid, False
-                End If
                 'start acquisition of Job on grid named JobName
                 If Not StartJobOnGrid(JobName, JobName, RecordingDoc, parentPath & parentFile & "\") Then
                     GoTo Abort
@@ -1397,6 +1389,20 @@ On Error GoTo ComputeJobSequential_Error
             MsgBox ("Invalid OnlineImageAnalysis codeMic = " & codeMic)
             GoTo Abort
     End Select
+    '''Check for jobs where time has been exceeded
+    For i = 3 To 4
+         If Grids.getNrValidPts(JobNames(i)) > 0 Then
+            If TimersGridCreation.wait(JobNames(i), CDbl(AutofocusForm.Controls(JobNames(i) + "maxWait").Value)) < 0 Then
+                LogManager.UpdateLog " OnlineImageAnalysis from " & parentPath & parentFile & " execute job " & JobNames(i) & " after maximal time exceeded "
+                'start acquisition of Job on grid named JobName
+                If Not StartJobOnGrid(JobNames(i), JobNames(i), RecordingDoc, parentPath & parentFile & "\") Then
+                    GoTo Abort
+                End If
+                'set all run positions to notValid
+                Grids.setAllValid JobNames(i), False
+            End If
+        End If
+    Next i
 Exit Function
 Abort:
     ScanStop = True ' global flag to stop everything
