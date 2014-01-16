@@ -865,7 +865,7 @@ Public Function loadValidGridFile(ByVal sFile As String, format As String) As Bo
                 RegEx.Pattern = CellBase
                 If RegEx.test(Fields) Then
                     Set Match = RegEx.Execute(Fields)
-                    Active = (Match.Item(0).SubMatches.Item(4) <> "none")
+                    Active = (Match.item(0).SubMatches.item(4) <> "none")
                     GoodMatch = True
                 End If
                 'check it

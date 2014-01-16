@@ -535,8 +535,8 @@ On Error GoTo StartJobOnGrid_Error
                 StgPos.Z = Grids.getThisZ(GridName)
                 If Pump Then
                     Debug.Print "Time pump " & CDbl(GetTickCount) * 0.001 - lastTimePump
-                    lastTimePump = waitForPump(PumpForm.Pump_Time, normVector2D(diffVector(StgPos, cStgPos)), CDbl(GetTickCount) * 0.001 - lastTimePump, _
-                    PumpForm.Pump_Interval_distance * 1000, PumpForm.Pump_Interval_Time * 60, 10)
+                    lastTimePump = waitForPump(PumpForm.Pump_Time, PumpForm.Pump_wait, lastTimePump, normVector2D(diffVector(StgPos, cStgPos)), PumpForm.Pump_Interval_Time * 60, _
+                    PumpForm.Pump_Interval_distance * 1000, PumpForm.Pump_Time / 1000 * 3)
                 End If
                 'For first repetition and globalgrid we use previous position to prime next position (this is not the optimal way of doing it, better is a focusMap)
                 If Reps.getIndex(GridName) = 1 And AutofocusForm.GridScanActive And GridName = "Global" Then
@@ -586,6 +586,11 @@ On Error GoTo StartJobOnGrid_Error
         While ((Reps.wait(JobName) > 0) And (Reps.getIndex(JobName) < Reps.getRepetitionNumber(JobName)))
             Sleep (100)
             DoEvents
+            If Pump Then
+                Debug.Print "Time pump " & CDbl(GetTickCount) * 0.001 - lastTimePump
+                lastTimePump = waitForPump(PumpForm.Pump_Time, PumpForm.Pump_wait, lastTimePump, 0, PumpForm.Pump_Interval_Time * 60, _
+                PumpForm.Pump_Interval_distance * 1000, PumpForm.Pump_Time / 1000 * 3)
+            End If
             If ScanPause = True Then
                 If Not AutofocusForm.Pause Then ' Pause is true if Resume
                     GoTo StopJob
@@ -626,7 +631,23 @@ StartJobOnGrid_Error:
 End Function
 
 
-Public Function waitForPump(timeToPump As Double, distDiff As Double, timeDiff As Double, distMax As Double, timeMax As Double, maxTimeWaitRegistry As Double) As Double
+'---------------------------------------------------------------------------------------
+' Procedure : waitForPump
+' Purpose   : check if activation of pump is recquired if yes write command to registry
+' Variables:
+' Inputs:
+'        timeToPump: time to activate the pump (in ms)
+'        timeToWait: time to wait after pump event (in ms)
+'        lastTimePump: time of last event (in ms): CDbl(GetTickCount) * 0.001
+'        distDiff: a distance (in um)
+'        timeMax: maximal timeDiff over which pump is activated
+'        distmax: maximal distDiff over which pump is activated
+'        maxTimeWaitRegistry: maximal time we wait for registry
+' Outputs:
+'        updated last time pump was active
+'---------------------------------------------------------------------------------------
+'
+Public Function waitForPump(timeToPump As Double, timeToWait As Double, lastTimePump As Double, distDiff As Double, timeMax As Double, distMax As Double, maxTimeWaitRegistry As Double) As Double
     
     Dim doPump As Boolean
     Dim OiaSettings As OnlineIASettings
@@ -634,15 +655,16 @@ Public Function waitForPump(timeToPump As Double, distDiff As Double, timeDiff A
     Dim TimeWait As Double
     Set OiaSettings = New OnlineIASettings
     ''check if we need to pump
-    If distDiff <= distMax And timeDiff <= timeMax Then
+    If distDiff <= distMax And CDbl(GetTickCount) * 0.001 - lastTimePump <= timeMax Then
         waitForPump = lastTimePump
         Exit Function
     End If
     
     OiaSettings.readFromRegistry
     OiaSettings.writeKeyToRegistry "codeMic", "wait"
-    Sleep (50)
     OiaSettings.writeKeyToRegistry "codePump", CStr(timeToPump)
+    DoEvents
+    Sleep (200)
     TimeStart = CDbl(GetTickCount) * 0.001
     DisplayProgress "Waiting for pump...", RGB(0, &HC0, 0)
     Do While OiaSettings.readKeyFromRegistry("codeMic") = "wait" And (TimeWait < maxTimeWaitRegistry)
@@ -668,7 +690,6 @@ Public Function waitForPump(timeToPump As Double, distDiff As Double, timeDiff A
     Select Case OiaSettings.getSettings("codeMic")
         Case "nothing", "": 'Nothing to do
             LogManager.UpdateLog " Pump from was successfull "
-            
         Case "error":
             OiaSettings.writeKeyToRegistry "codeMic", "nothing"
             OiaSettings.getSettings ("errorMsg")
@@ -683,12 +704,16 @@ Public Function waitForPump(timeToPump As Double, distDiff As Double, timeDiff A
     End Select
     
     waitForPump = CDbl(GetTickCount) * 0.001
+    Sleep (timeToWait)
     Exit Function
 
 Abort:
     ScanStop = True ' global flag to stop everything
     StopAcquisition
-     
+
+   On Error GoTo 0
+   Exit Function
+
 End Function
 
 
@@ -1428,6 +1453,8 @@ On Error GoTo ComputeJobSequential_Error
                 End If
                 
             Case "fcs1":
+                
+                Sleep (2000) ''introduced after first crash on 20112013
                 OiaSettings.writeKeyToRegistry "codeMic", "nothing"
                 JobName = codeMicToJobName.item(code)
                 DisplayProgress "Registry codeMic " & code & " executing " & JobName & "...", RGB(0, &HC0, 0)
@@ -1435,7 +1462,7 @@ On Error GoTo ComputeJobSequential_Error
                     LogManager.UpdateErrorLog "ComputeJobSequential: job " & JobName & " is not active. Last image " & parentPath & parentFile
                     GoTo nextCode
                 End If
-                If OiaSettings.getFcsPositions(newPositionsPx, parentPosition) Then
+                If OiaSettings.getFcsPositions(newPositionsPx, Jobs.getCentralPointPx(parentJob)) Then
                     If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
                         GoTo Abort
                     End If
@@ -1455,6 +1482,8 @@ On Error GoTo ComputeJobSequential_Error
                 If Not AutofocusForm.Controls(JobName + "KeepParent") Then
                     Grids.setThisValid parentGrid, False
                 End If
+                
+                Sleep (2000) ''introduced after first crash on 20112013
             Case Else
                 MsgBox ("Invalid OnlineImageAnalysis codeMic = " & code)
                 GoTo Abort

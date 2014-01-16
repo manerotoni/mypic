@@ -901,7 +901,7 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
     Dim name_channel As String
     If RegEx.test(TrackingChannel) Then
         Set Match = RegEx.Execute(TrackingChannel)
-        name_channel = Match.Item(0).SubMatches.Item(1)
+        name_channel = Match.item(0).SubMatches.item(1)
     End If
     Dim name_channelA() As String
     name_channelA = Split(name_channel, "-")
@@ -999,7 +999,7 @@ End Function
 Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As String, FileFormat As enumAimExportFormat) As Boolean
     Dim Export As AimImageExport
     Dim image As AimImageMemory
-    Dim Error As AimError
+    Dim error As AimError
     Dim Planes As Long
     Dim Plane As Long
     Dim Positions As Long
@@ -1008,7 +1008,6 @@ Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As Strin
 
 On Error GoTo SaveDsRecordingDoc_Error
 
-    On Error GoTo Done
 
     'Set Image = EngelImageToHechtImage(Document).Image(0, True)
     If Not Document Is Nothing Then
@@ -1020,8 +1019,8 @@ On Error GoTo SaveDsRecordingDoc_Error
     Export.FileName = FileName
     Export.format = FileFormat
     Export.StartExport image, image
-    Set Error = Export
-    Error.LastErrorMessage
+    Set error = Export
+    error.LastErrorMessage
     
     Planes = 1
     Export.GetPlaneDimensions Horizontal, Vertical

@@ -168,7 +168,7 @@ Public Function InCollection(Col As Collection, Key As String) As Boolean
 
   Err.Clear
   On Error Resume Next
-    var = Col.Item(Key)
+    var = Col.item(Key)
     errNumber = CLng(Err.number)
   On Error GoTo 0
 

@@ -498,8 +498,19 @@ Private Sub SwitchEnablePage(JobName As String, Enable As Boolean)
     Me.Controls(JobName + "PutJob").Enabled = Enable
     Me.Controls(JobName + "Acquire").Enabled = Enable
             
-    Me.Controls(JobName + "TrackZ").Enabled = Enable And Jobs.isZStack(JobName)
-    Me.Controls(JobName + "TrackXY").Enabled = Enable And (Jobs.GetScanMode(JobName) <> "ZScan") And (Jobs.GetScanMode(JobName) <> "Line")
+    If Jobs.isZStack(JobName) Then
+        Me.Controls(JobName + "TrackZ").Enabled = Enable
+    Else
+        Me.Controls(JobName + "TrackZ").Enabled = False
+        Me.Controls(JobName + "TrackZ").Value = False
+    End If
+    
+    If Jobs.GetScanMode(JobName) = "ZScan" Or Jobs.GetScanMode(JobName) = "Line" Then
+        Me.Controls(JobName + "TrackXY").Enabled = False
+        Me.Controls(JobName + "TrackXY").Value = False
+    Else
+        Me.Controls(JobName + "TrackXY").Enabled = Enable
+    End If
     Me.Controls(JobName + "CenterOfMass").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
     Me.Controls(JobName + "CenterOfMassChannel").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
     Me.Controls(JobName + "OiaActive").Enabled = Enable
@@ -1911,9 +1922,8 @@ Public Sub Execute_StartButton()
     NewRecordGui GlobalRecordingDoc, "MacroImaging", ZEN, ZENv
     If Pump Then
         lastTimePump = CDbl(GetTickCount) * 0.001
-        Debug.Print "Time pump " & CDbl(GetTickCount) * 0.001 - lastTimePump
-        lastTimePump = waitForPump(PumpForm.Pump_Time, 0, CDbl(GetTickCount) * 0.001 - lastTimePump, _
-        0 * 1000, 0 * 60, 10)
+        Sleep (100)
+        lastTimePump = waitForPump(PumpForm.Pump_Time, PumpForm.Pump_wait, lastTimePump, 0, 0, 0, PumpForm.Pump_Time / 1000 * 3)
     End If
     If Not StartJobOnGrid("Global", "Global", GlobalRecordingDoc, GlobalDataBaseName) Then  'This is the main function of the macro
         StopAcquisition

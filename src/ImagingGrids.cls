@@ -54,7 +54,7 @@ Optional numRowSub As Long = 0, Optional numColSub As Long = 0)
     End If
     
     GridNames.Add Name, UBound(Grids)
-    iGrid = GridNames.Item(Name)
+    iGrid = GridNames.item(Name)
     Set Grids(iGrid) = New AGrid
     Grids(iGrid).NameGrid = Name
     Grids(iGrid).initialize numRow, numCol, numRowSub, numColSub
@@ -71,27 +71,27 @@ End Function
 
 Public Function isGridEmpty(Name As String) As Boolean
     If checkGridName(Name) Then
-        isGridEmpty = Grids(GridNames.Item(Name)).isGridEmpty
+        isGridEmpty = Grids(GridNames.item(Name)).isGridEmpty
     End If
 End Function
 
 
 Public Sub updateGridSize(Name As String, numRow As Long, numCol As Long, numRowSub As Long, numColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).initialize numRow, numCol, numRowSub, numColSub
+        Grids(GridNames.item(Name)).initialize numRow, numCol, numRowSub, numColSub
     End If
 End Sub
 
 
 Public Sub updateGridSizePreserve(Name As String, numRow As Long, numCol As Long, numRowSub As Long, numColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).updateGridSizePreserve numRow, numCol, numRowSub, numColSub
+        Grids(GridNames.item(Name)).updateGridSizePreserve numRow, numCol, numRowSub, numColSub
     End If
 End Sub
 
 Public Function getGridDimFromFile(Name As String, ByVal sFile As String) As Long()
     If checkGridName(Name) Then
-        getGridDimFromFile = Grids(GridNames.Item(Name)).getGridDimFromFile(sFile)
+        getGridDimFromFile = Grids(GridNames.item(Name)).getGridDimFromFile(sFile)
     End If
 End Function
 
@@ -100,7 +100,7 @@ End Function
 Public Function isPositionGridFile(Name As String, ByVal sFile As String, ByVal Row As Integer, _
 ByVal Col As Integer, ByVal RowSub As Integer, ByVal ColSub As Integer) As Boolean
     If checkGridName(Name) Then
-        isPositionGridFile = Grids(GridNames.Item(Name)).isPositionGridFile(sFile, Row, Col, RowSub, ColSub)
+        isPositionGridFile = Grids(GridNames.item(Name)).isPositionGridFile(sFile, Row, Col, RowSub, ColSub)
     End If
 End Function
 
@@ -109,14 +109,14 @@ End Function
 '''
 Public Function loadPositionGridFile(Name As String, sFile As String) As Boolean
     If checkGridName(Name) Then
-        loadPositionGridFile = Grids(GridNames.Item(Name)).loadPositionGridFile(sFile)
+        loadPositionGridFile = Grids(GridNames.item(Name)).loadPositionGridFile(sFile)
     End If
 End Function
 
 
 Public Function writePositionGridFile(Name As String, sFile As String) As Boolean
     If checkGridName(Name) Then
-        writePositionGridFile = Grids(GridNames.Item(Name)).writePositionGridFile(sFile)
+        writePositionGridFile = Grids(GridNames.item(Name)).writePositionGridFile(sFile)
     End If
 End Function
 
@@ -124,7 +124,7 @@ End Function
 Public Function isValidGridFile(Name As String, ByVal sFile As String, ByVal Row As Long, _
 ByVal Col As Long, ByVal RowSub As Long, ByVal ColSub As Long) As String
     If checkGridName(Name) Then
-        isValidGridFile = Grids(GridNames.Item(Name)).isValidGridFile(sFile, Row, Col, RowSub, ColSub)
+        isValidGridFile = Grids(GridNames.item(Name)).isValidGridFile(sFile, Row, Col, RowSub, ColSub)
     End If
 End Function
 
@@ -133,140 +133,140 @@ End Function
 '''
 Public Function loadValidGridFile(Name As String, sFile As String, format As String) As Boolean
     If checkGridName(Name) Then
-        loadValidGridFile = Grids(GridNames.Item(Name)).loadValidGridFile(sFile, format)
+        loadValidGridFile = Grids(GridNames.item(Name)).loadValidGridFile(sFile, format)
     End If
 End Function
 
 Public Function setIndeces(Name As String, Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Boolean
     If checkGridName(Name) Then
-        setIndeces = Grids(GridNames.Item(Name)).setIndeces(Row, Col, RowSub, ColSub)
+        setIndeces = Grids(GridNames.item(Name)).setIndeces(Row, Col, RowSub, ColSub)
     End If
 End Function
 
 Public Function nextGridPt(Name As String) As Boolean
     If checkGridName(Name) Then
-        nextGridPt = Grids(GridNames.Item(Name)).nextGridPt
+        nextGridPt = Grids(GridNames.item(Name)).nextGridPt
     End If
 End Function
 
 Public Function thisRow(Name As String) As Integer
     If checkGridName(Name) Then
-        thisRow = Grids(GridNames.Item(Name)).iRow
+        thisRow = Grids(GridNames.item(Name)).iRow
     End If
 End Function
 
 
 Public Function thisColumn(Name As String) As Integer
     If checkGridName(Name) Then
-        thisColumn = Grids(GridNames.Item(Name)).iCol
+        thisColumn = Grids(GridNames.item(Name)).iCol
     End If
 End Function
 
 Public Function thisSubRow(Name As String) As Integer
     If checkGridName(Name) Then
-        thisSubRow = Grids(GridNames.Item(Name)).iRowSub
+        thisSubRow = Grids(GridNames.item(Name)).iRowSub
     End If
 End Function
 
 
 Public Function thisSubColumn(Name As String) As Integer
     If checkGridName(Name) Then
-        thisSubColumn = Grids(GridNames.Item(Name)).iColSub
+        thisSubColumn = Grids(GridNames.item(Name)).iColSub
     End If
 End Function
 
 Public Function getThisPt(Name As String, pos As Vector, Valid As Boolean)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).getThisPt pos, Valid
+        Grids(GridNames.item(Name)).getThisPt pos, Valid
     End If
 End Function
 
 
 Public Function setThisPt(Name As String, pos As Vector, Valid As Boolean)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).setThisPt pos, Valid
+        Grids(GridNames.item(Name)).setThisPt pos, Valid
     End If
 End Function
 
 Public Function getNrPts(Name As String) As Long
     If checkGridName(Name) Then
-        getNrPts = Grids(GridNames.Item(Name)).getNrPts
+        getNrPts = Grids(GridNames.item(Name)).getNrPts
     End If
 End Function
 
 
 Public Function getNrValidPts(Name As String) As Long
     If checkGridName(Name) Then
-        getNrValidPts = Grids(GridNames.Item(Name)).getNrValidPts
+        getNrValidPts = Grids(GridNames.item(Name)).getNrValidPts
     End If
 End Function
 
 Public Function getPt(Name As String, pos As Vector, Valid As Boolean, _
 Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).getPt pos, Valid, Row, Col, RowSub, ColSub
+        Grids(GridNames.item(Name)).getPt pos, Valid, Row, Col, RowSub, ColSub
     End If
 End Function
 
 Public Function setPt(Name As String, pos As Vector, Valid As Boolean, _
 Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).setPt pos, Valid, Row, Col, RowSub, ColSub
+        Grids(GridNames.item(Name)).setPt pos, Valid, Row, Col, RowSub, ColSub
     End If
 End Function
 
 Public Function getThisX(Name As String) As Double
     If checkGridName(Name) Then
-        getThisX = Grids(GridNames.Item(Name)).getThisX
+        getThisX = Grids(GridNames.item(Name)).getThisX
     End If
 End Function
 
 Public Sub setThisX(Name As String, Value As Double)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).setThisX Value
+        Grids(GridNames.item(Name)).setThisX Value
     End If
 End Sub
 
 
 Public Function getThisY(Name As String) As Double
     If checkGridName(Name) Then
-        getThisY = Grids(GridNames.Item(Name)).getThisY
+        getThisY = Grids(GridNames.item(Name)).getThisY
     End If
 End Function
 
 Public Sub setThisY(Name As String, Value As Double)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).setThisY Value
+        Grids(GridNames.item(Name)).setThisY Value
     End If
 End Sub
 
 Public Function getThisZ(Name As String) As Double
     If checkGridName(Name) Then
-        getThisZ = Grids(GridNames.Item(Name)).getThisZ
+        getThisZ = Grids(GridNames.item(Name)).getThisZ
     End If
 End Function
 
 Public Sub setThisZ(Name As String, Value As Double)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).setThisZ Value
+        Grids(GridNames.item(Name)).setThisZ Value
     End If
 End Sub
 
 Public Function getThisValid(Name As String) As Boolean
     If checkGridName(Name) Then
-        getThisValid = Grids(GridNames.Item(Name)).getThisValid
+        getThisValid = Grids(GridNames.item(Name)).getThisValid
     End If
 End Function
 
 Public Sub setThisValid(Name As String, Value As Boolean)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).setThisValid Value
+        Grids(GridNames.item(Name)).setThisValid Value
     End If
 End Sub
 
 Public Sub setAllValid(Name As String, Value As Boolean)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).setAllValid Value
+        Grids(GridNames.item(Name)).setAllValid Value
     End If
 End Sub
 
@@ -274,57 +274,57 @@ End Sub
 
 Public Function getX(Name As String, Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Double
     If checkGridName(Name) Then
-        getX = Grids(GridNames.Item(Name)).getX(Row, Col, RowSub, ColSub)
+        getX = Grids(GridNames.item(Name)).getX(Row, Col, RowSub, ColSub)
     End If
 End Function
 
 
 Public Sub setX(Name As String, Value As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).setX Value, Row, Col, RowSub, ColSub
+        Grids(GridNames.item(Name)).setX Value, Row, Col, RowSub, ColSub
     End If
 End Sub
 
 Public Function getY(Name As String, Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Double
     If checkGridName(Name) Then
-        getY = Grids(GridNames.Item(Name)).getY(Row, Col, RowSub, ColSub)
+        getY = Grids(GridNames.item(Name)).getY(Row, Col, RowSub, ColSub)
     End If
 End Function
 
 Public Sub setY(Name As String, Value As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).setY Value, Row, Col, RowSub, ColSub
+        Grids(GridNames.item(Name)).setY Value, Row, Col, RowSub, ColSub
     End If
 End Sub
 
 Public Function getZ(Name As String, Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Double
     If checkGridName(Name) Then
-        getZ = Grids(GridNames.Item(Name)).getZ(Row, Col, RowSub, ColSub)
+        getZ = Grids(GridNames.item(Name)).getZ(Row, Col, RowSub, ColSub)
     End If
 End Function
 
 Public Sub setZ(Name As String, Value As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).setZ Value, Row, Col, RowSub, ColSub
+        Grids(GridNames.item(Name)).setZ Value, Row, Col, RowSub, ColSub
     End If
 End Sub
 
 Public Function getValid(Name As String, Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Boolean
     If checkGridName(Name) Then
-        getValid = Grids(GridNames.Item(Name)).getValid(Row, Col, RowSub, ColSub)
+        getValid = Grids(GridNames.item(Name)).getValid(Row, Col, RowSub, ColSub)
     End If
 End Function
 
 Public Sub setValid(Name As String, Value As Boolean, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).setValid Value, Row, Col, RowSub, ColSub
+        Grids(GridNames.item(Name)).setValid Value, Row, Col, RowSub, ColSub
     End If
 End Sub
 
 
 Public Function writeValidGridFile(Name As String, sFile As String) As Boolean
     If checkGridName(Name) Then
-        writeValidGridFile = Grids(GridNames.Item(Name)).writeValidGridFile(sFile)
+        writeValidGridFile = Grids(GridNames.item(Name)).writeValidGridFile(sFile)
     End If
 End Function
 
@@ -333,86 +333,86 @@ End Function
 Public Sub makeGridFromOnePt(Name As String, pos As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, dRow As Double, dCol As Double, _
 dRowSub As Double, dColSub As Double, Optional refRow As Integer = 1, Optional refCol As Integer = 1)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).makeGridFromOnePt pos, Row, Col, RowSub, ColSub, dRow, dCol, dRowSub, dColSub, refRow, refCol
+        Grids(GridNames.item(Name)).makeGridFromOnePt pos, Row, Col, RowSub, ColSub, dRow, dCol, dRowSub, dColSub, refRow, refCol
     End If
 End Sub
 
 Public Sub makeGridFromManyPts(Name As String, pos() As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, _
 dRowSub As Double, dColSub As Double)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).makeGridFromManyPts pos, Row, Col, RowSub, ColSub, dRowSub, dColSub
+        Grids(GridNames.item(Name)).makeGridFromManyPts pos, Row, Col, RowSub, ColSub, dRowSub, dColSub
     End If
 End Sub
 
 
 Public Function thisSuffix(Name As String) As String
     If checkGridName(Name) Then
-        thisSuffix = Grids(GridNames.Item(Name)).thisSuffix
+        thisSuffix = Grids(GridNames.item(Name)).thisSuffix
     End If
 End Function
 
 Public Function thisSuffixWell(Name As String) As String
     If checkGridName(Name) Then
-        thisSuffixWell = Grids(GridNames.Item(Name)).thisSuffixWell
+        thisSuffixWell = Grids(GridNames.item(Name)).thisSuffixWell
     End If
 End Function
 
 
 Public Function getThisName(Name As String) As String
     If checkGridName(Name) Then
-        getThisName = Grids(GridNames.Item(Name)).getThisName
+        getThisName = Grids(GridNames.item(Name)).getThisName
     End If
 End Function
 
 
 Public Sub setThisName(Name As String, Value As String)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).setThisName Value
+        Grids(GridNames.item(Name)).setThisName Value
     End If
 End Sub
 
 Public Function getName(Name As String, numRow As Long, numCol As Long, numRowSub As Long, numColSub As Long) As String
     If checkGridName(Name) Then
-        getName = Grids(GridNames.Item(Name)).getName(numRow, numCol, numRowSub, numColSub)
+        getName = Grids(GridNames.item(Name)).getName(numRow, numCol, numRowSub, numColSub)
     End If
 End Function
 
 Public Sub setName(Name As String, Value As String, numRow As Long, numCol As Long, numRowSub As Long, numColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.Item(Name)).setName Value, numRow, numCol, numRowSub, numColSub
+        Grids(GridNames.item(Name)).setName Value, numRow, numCol, numRowSub, numColSub
     End If
 End Sub
 
 
 Public Function suffix(Name As String, numRow As Long, numCol As Long, numRowSub As Long, numColSub As Long) As String
     If checkGridName(Name) Then
-        suffix = Grids(GridNames.Item(Name)).suffix(numRow, numCol, numRowSub, numColSub)
+        suffix = Grids(GridNames.item(Name)).suffix(numRow, numCol, numRowSub, numColSub)
     End If
 End Function
 
 Public Function numCol(Name As String) As Integer
     If checkGridName(Name) Then
-        numCol = Grids(GridNames.Item(Name)).numCol
+        numCol = Grids(GridNames.item(Name)).numCol
     End If
 End Function
 
 
 Public Function numRow(Name As String) As Integer
     If checkGridName(Name) Then
-        numRow = Grids(GridNames.Item(Name)).numCol
+        numRow = Grids(GridNames.item(Name)).numCol
     End If
 End Function
 
 
 Public Function numColSub(Name As String) As Integer
     If checkGridName(Name) Then
-        numColSub = Grids(GridNames.Item(Name)).numColSub
+        numColSub = Grids(GridNames.item(Name)).numColSub
     End If
 End Function
 
 
 Public Function numRowSub(Name As String) As Integer
     If checkGridName(Name) Then
-        numRowSub = Grids(GridNames.Item(Name)).numRowSub
+        numRowSub = Grids(GridNames.item(Name)).numRowSub
     End If
 End Function
