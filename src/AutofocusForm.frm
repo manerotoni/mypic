@@ -19,7 +19,7 @@ Attribute VB_Exposed = False
 '---------------------------------------------------------------------------------------
 ' Module    : AutofocusForm
 ' Author    : Antonio Politi
-' Version   : 3.0.10
+' Version   : 3.0.14
 ' Purpose   : Form to manage Imagingd Fcs Jobs
 ' WARNING ZEN does not use spatial units in a consistent way. Switches between um and meter and pixel WARNING''''''''''''''''''''
 ' for imaging and moving the stage
@@ -85,7 +85,7 @@ End Sub
 '''''
 Public Sub UserForm_Initialize()
     DisplayProgress "Initializing Macro ...", RGB(&HC0, &HC0, 0)
-    Version = " v3.0.13"
+    Version = " v3.0.14"
     Dim i As Integer
     ZENv = getVersionNr
     'find the version of the software
