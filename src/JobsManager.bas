@@ -535,8 +535,8 @@ On Error GoTo StartJobOnGrid_Error
                 StgPos.Z = Grids.getThisZ(GridName)
                 If Pump Then
                     Debug.Print "Time pump " & CDbl(GetTickCount) * 0.001 - lastTimePump
-                    lastTimePump = waitForPump(PumpForm.Pump_Time, PumpForm.Pump_wait, lastTimePump, normVector2D(diffVector(StgPos, cStgPos)), PumpForm.Pump_Interval_Time * 60, _
-                    PumpForm.Pump_Interval_distance * 1000, PumpForm.Pump_Time / 1000 * 3)
+                    lastTimePump = waitForPump(PumpForm.Pump_time, PumpForm.Pump_wait, lastTimePump, normVector2D(diffVector(StgPos, cStgPos)), PumpForm.Pump_interval_time * 60, _
+                    PumpForm.Pump_interval_distance * 1000, PumpForm.Pump_time / 1000 * 3)
                 End If
                 'For first repetition and globalgrid we use previous position to prime next position (this is not the optimal way of doing it, better is a focusMap)
                 If Reps.getIndex(GridName) = 1 And AutofocusForm.GridScanActive And GridName = "Global" Then
@@ -588,8 +588,8 @@ On Error GoTo StartJobOnGrid_Error
             DoEvents
             If Pump Then
                 Debug.Print "Time pump " & CDbl(GetTickCount) * 0.001 - lastTimePump
-                lastTimePump = waitForPump(PumpForm.Pump_Time, PumpForm.Pump_wait, lastTimePump, 0, PumpForm.Pump_Interval_Time * 60, _
-                PumpForm.Pump_Interval_distance * 1000, PumpForm.Pump_Time / 1000 * 3)
+                lastTimePump = waitForPump(PumpForm.Pump_time, PumpForm.Pump_wait, lastTimePump, 0, PumpForm.Pump_interval_time * 60, _
+                PumpForm.Pump_interval_distance * 1000, PumpForm.Pump_time / 1000 * 3)
             End If
             If ScanPause = True Then
                 If Not AutofocusForm.Pause Then ' Pause is true if Resume

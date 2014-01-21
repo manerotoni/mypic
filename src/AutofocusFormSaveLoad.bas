@@ -58,6 +58,14 @@ On Error GoTo SaveFormSettings_Error
     Print #iFileNum, "GridScan_dRowsub " & AutofocusForm.GridScan_dRowsub.Value
     Print #iFileNum, "GridScan_dColumnsub " & AutofocusForm.GridScan_dColumnsub.Value
     
+    'Save water pump settings
+    Print #iFileNum, "% Pump "
+    Print #iFileNum, "Pump_interval_time " & PumpForm.Pump_interval_time
+    Print #iFileNum, "Pump_interval_distance " & PumpForm.Pump_interval_distance.Value
+    Print #iFileNum, "Pump_time " & PumpForm.Pump_time
+    Print #iFileNum, "Pump_wait " & PumpForm.Pump_wait.Value
+    
+    
     'Save settings of all pages
     For i = 0 To UBound(JobNames)
         SaveFormPage JobNames(i), iFileNum
@@ -67,6 +75,9 @@ On Error GoTo SaveFormSettings_Error
     For i = 0 To UBound(JobFcsNames)
         SaveFormFcsPage JobFcsNames(i), iFileNum
     Next i
+    
+
+      
     Close #iFileNum
 
    On Error GoTo 0
@@ -211,6 +222,7 @@ Public Sub LoadFormSettings(FileName As String)
     On Error GoTo ErrorHandle
     iFileNum = FreeFile()
     Open FileName For Input As iFileNum
+    
     Do While Not EOF(iFileNum)
             Line Input #iFileNum, Fields
             While Left(Fields, 1) = "%"
@@ -253,8 +265,17 @@ Public Sub LoadFormSettings(FileName As String)
                         UpdateFormFromJobFcs JobsFcs, JobName
                         'UpdateJobFromForm Jobs, JobName
                 End If
-                On Error Resume Next
-                AutofocusForm.Controls(FieldEntries(0)).Value = FieldEntries(1)
+                If Left(FieldEntries(0), 4) = "Pump" Then
+                    On Error Resume Next
+                    PumpForm.Controls(FieldEntries(0)).Value = FieldEntries(1)
+                ElseIf Left(FieldEntries(0), 6) <> "EndJob" Then
+                    On Error Resume Next
+                    AutofocusForm.Controls(FieldEntries(0)).Value = FieldEntries(1)
+                End If
+                If Err Then
+                    LogManager.UpdateErrorLog "Warning " & FieldEntries(0) & " does not exist as parameter"
+                    On Error GoTo 0
+                End If
             End If
 NextLine:
     Loop
