@@ -22,6 +22,11 @@ Public TimeBetweenStacks As Double
 Public UseRoi As Boolean
 Public CorrX  As Double ' corretion for double directional scanning
 Public CorrY As Double  ' corretion for double directional scanning
+Public SamplingNumber As Long
+Public SamplingMode As Long
+Public SamplingMethod As Long
+Public BitDepth As Long
+
 '''a Job can also have Rois associated to it
 Private Rois() As Roi
 ''Number of Rois associated to the Job
@@ -67,7 +72,11 @@ Public Function setJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
         
     End If
     
-    pixelDwell = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
+    Me.pixelDwell = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
+    Me.SamplingNumber = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingNumber
+    Me.SamplingMethod = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingMethod
+    Me.SamplingMode = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingMode
+    Me.BitDepth = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).DataChannelObjectByIndex(0, 1).BitsPerSample
     ReDim pAcquireTrack(TrackNumber - 1)
     For iTrack = 0 To TrackNumber - 1
         pAcquireTrack(iTrack) = Recording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire
@@ -83,7 +92,7 @@ End Function
 ''''
 ' putJob put settings from Me.recording into ZEN
 ''''
-Public Function putJob(ZEN As Object)
+Public Function putJob(ZEN As Object, Optional Extensive As Boolean)
     On Error GoTo ErrorHandle:
     Dim AcquisitionController As AimAcquisitionController40.AimScanController
     Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
@@ -110,10 +119,18 @@ Public Function putJob(ZEN As Object)
     'this seems to be not recquired in Zen 2012
     
     Time = Timer
+    Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).TimeBetweenStacks = TimeBetweenStacks
+    Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime = Me.pixelDwell
+    If Extensive Then
+        Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingNumber = Me.SamplingNumber
+        Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingMode = Me.SamplingMode
+        Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingMethod = Me.SamplingMethod
+        Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).DataChannelObjectByIndex(0, 1).BitsPerSample = Me.BitDepth
+    End If
+        
     For iTrack = 0 To TrackNumber - 1
         Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire = pAcquireTrack(iTrack)
-        Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).TimeBetweenStacks = TimeBetweenStacks
-        Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).SampleObservationTime = pixelDwell
+
 '        If ZENv > 2010 Then
 '            'this is experimental
 '            If SwitchLaserLines Then
@@ -386,16 +403,23 @@ Public Function splittedJobDescriptor(MaxLines As Integer, jobDescription As Str
 End Function
 
 ''
-' create a String to save of the "complete" job desriptin
+' create a String to save of the "complete" job desription
 ''
 Public Function jobDescriptorSettings() As String
     Dim Descriptor As String
     Descriptor = "JobName " & Me.Name & vbCrLf
-    Descriptor = Descriptor & "pixelDwell " & Me.pixelDwell & vbCrLf
     Descriptor = Descriptor & "ScanMode " & Recording.ScanMode & vbCrLf
-    Descriptor = Descriptor & "SamplesPerLine " & Recording.SamplesPerLine & vbCrLf
-    Descriptor = Descriptor & "LinesPerFrame " & Recording.LinesPerFrame & vbCrLf
+    Descriptor = Descriptor & "SamplesPerLine " & Recording.SamplesPerLine & vbCrLf ' FrameSizeX
+    Descriptor = Descriptor & "LinesPerFrame " & Recording.LinesPerFrame & vbCrLf   ' FrameSizeY
     Descriptor = Descriptor & "LineStepNumber " & Recording.LineStepNumber & vbCrLf
+    Descriptor = Descriptor & "pixelDwell " & Me.pixelDwell & vbCrLf
+    Descriptor = Descriptor & "SamplingNumber " & Me.SamplingNumber & vbCrLf
+    Descriptor = Descriptor & "SamplingMode " & Me.SamplingMode & vbCrLf
+    Descriptor = Descriptor & "SamplingMethod " & Me.SamplingMethod & vbCrLf
+    Descriptor = Descriptor & "BitDepth " & Me.BitDepth & vbCrLf
+    Descriptor = Descriptor & "ScanDirection " & Recording.ScanDirection & vbCrLf
+    Descriptor = Descriptor & "CorrX " & Me.CorrX & vbCrLf
+    Descriptor = Descriptor & "CorrY " & Me.CorrY & vbCrLf
     Descriptor = Descriptor & "FramesPerStack " & Recording.framesPerStack & vbCrLf
     Descriptor = Descriptor & "FrameSpacing " & Recording.frameSpacing & vbCrLf
     Descriptor = Descriptor & "Bleaching " & isBleaching & vbCrLf
@@ -453,6 +477,21 @@ Public Function changeJobFromDescriptor(Descriptor As String, Value As Variant)
             Recording.LinesPerFrame = CLng(Value)
         Case "LineStepNumber":
             Recording.LineStepNumber = CLng(Value)
+        Case "SamplingNumber":
+            Debug.Print Value
+            Me.SamplingNumber = CLng(Value)
+        Case "SamplingMode":
+            Me.SamplingMode = CLng(Value)
+        Case "SamplingMethod":
+            Me.SamplingMethod = CLng(Value)
+        Case "BitDepth":
+            Me.BitDepth = CLng(Value)
+        Case "ScanDirection":
+            Recording.ScanDirection = CLng(Value)
+        Case "CorrX":
+            Me.CorrX = CDbl(Value)
+        Case "CorrY":
+            Me.CorrY = CDbl(Value)
         Case "FramesPerStack":
             Recording.framesPerStack = CLng(Value)
         Case "FrameSpacing":

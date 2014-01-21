@@ -407,7 +407,7 @@ End Sub
 Private Sub ButtonLoadSettings_Click()
     Dim Filter As String, FileName As String
     Dim Flags As Long
-  
+    Dim pos() As Vector
     Flags = OFN_FILEMUSTEXIST Or OFN_HIDEREADONLY Or _
             OFN_PATHMUSTEXIST
     Filter$ = "Settings (*.ini)" & Chr$(0) & "*.ini" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
@@ -417,7 +417,9 @@ Private Sub ButtonLoadSettings_Click()
     FileName = CommonDialogAPI.ShowOpen(Filter, Flags, "", DatabaseTextbox.Value, "Load AutofocusScreen settings")
     DisplayProgress "Load Settings...", RGB(&HC0, &HC0, 0)
     If FileName <> "" Then
+        pos = getMarkedStagePosition
         LoadFormSettings FileName
+        setMarkedStagePosition pos
     End If
     DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
     
