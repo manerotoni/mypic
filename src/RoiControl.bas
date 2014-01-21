@@ -94,30 +94,38 @@ Private Sub TestMakeVectorElement()
     Dim vo As AimImageVectorOverlay
     Set vo = AcquisitionController.AcquisitionRegions
     vo.Cleanup
-    ' add a circle
-    ReDim X(0 To 1)
-    ReDim Y(0 To 1)
-    X(0) = 256
-    Y(0) = 256
-    X(1) = 256
-    Y(1) = 200
-    MakeVectorElement "circle", X, Y, "acquisition"
+    'vo.ElementAcquisitionFlags(0) = AimVectorOverlay40.eVectorOverlayAcquisitionFlagsBleach Or AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAnalysis
+    Application.ThrowEvent tag_Events.eEventDsRoiValidState, 1
+    Application.ThrowEvent tag_Events.eEventDsStatusDisplay, 1
+    Application.ThrowEvent tag_Events.eEventDataChanged, 1
+    Lsm5.DsRecording.ZoomX = 2
+    Lsm5.DsRecording.ZoomY = 2
     
-    X(0) = 256
-    Y(0) = 256
-    X(1) = 200
-    Y(1) = 200
-    MakeVectorElement "rectangle", X, Y, "bleach"
-    
-    ReDim X(2)
-    ReDim Y(2)
-    X(0) = 256
-    Y(0) = 256
-    X(1) = 200
-    Y(1) = 200
-    Y(2) = 100
-    X(2) = 150
-    MakeVectorElement "polyline", X, Y, "acquisition"
+''    ' add a circle
+''    ReDim X(0 To 1)
+''    ReDim Y(0 To 1)
+''    X(0) = 256
+''    Y(0) = 256
+''    X(1) = 256
+''    Y(1) = 200
+''    MakeVectorElement "circle", X, Y, "acquisition"
+''
+''    X(0) = 256
+''    Y(0) = 256
+''    X(1) = 200
+''    Y(1) = 200
+''    MakeVectorElement "rectangle", X, Y, "bleach"
+''
+''    ReDim X(2)
+''    ReDim Y(2)
+''    X(0) = 256
+''    Y(0) = 256
+''    X(1) = 200
+''    Y(1) = 200
+''    Y(2) = 100
+''    X(2) = 150
+''    MakeVectorElement "polyline", X, Y, "acquisition"
+''    Application.ThrowEvent tag_Events.eEventDsRoiValidState, 0
 End Sub
 
 

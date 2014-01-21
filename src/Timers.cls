@@ -63,6 +63,6 @@ End Sub
 
 Public Function wait(Name As String, Delay As Double) As Double
     If checkTimerName(Name) Then
-        wait = Timers(TimerNames.item(Name)).TimeStart + Delay - CDbl(GetTickCount) * 0.001
+        wait = Timers(TimerNames.item(Name)).TimeStart - CDbl(GetTickCount) * 0.001 + Delay
     End If
 End Function

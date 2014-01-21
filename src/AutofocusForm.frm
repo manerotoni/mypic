@@ -15,6 +15,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
+
 '---------------------------------------------------------------------------------------
 ' Module    : AutofocusForm
 ' Author    : Antonio Politi
@@ -36,9 +37,13 @@ Attribute VB_Exposed = False
 Option Explicit 'force to declare all variables
 
 Public Version As String
-Private Const DebugCode = True             'sets key to run tests visible or not
+
+Private Const DebugCode = False             ' this is should be disabled for the moment
 Private Const ReleaseName = True            'this adds the ZEN version
 Private Const LogCode = True                'sets key to run tests visible or not
+
+
+
 
 
 
@@ -80,7 +85,7 @@ End Sub
 '''''
 Public Sub UserForm_Initialize()
     DisplayProgress "Initializing Macro ...", RGB(&HC0, &HC0, 0)
-    Version = " v3.0.12"
+    Version = " v3.0.13"
     Dim i As Integer
     ZENv = getVersionNr
     'find the version of the software
@@ -136,7 +141,7 @@ NoError:
     Jobs.setZENv ZENv
 
     For i = 0 To UBound(JobNames)
-        If Jobs.GetScanMode(JobNames(i)) = "ZScan" Or Jobs.GetScanMode(JobNames(i)) = "Line" Then
+        If Jobs.getScanMode(JobNames(i)) = "ZScan" Or Jobs.getScanMode(JobNames(i)) = "Line" Then
             Me.Controls(JobNames(i) + "TrackXY").Value = False
             Me.Controls(JobNames(i) + "TrackXY").Enabled = False
         Else
@@ -483,6 +488,15 @@ End Sub
 Private Sub SwitchEnablePage(JobName As String, Enable As Boolean)
 
     Dim i As Integer
+    If JobName = "Autofocus" Then
+        Me.Controls(JobName + "Default").Enabled = Enable
+        If Not Lsm5.Hardware.CpHrz.Exist(Lsm5.Hardware.CpHrz.Name) Then
+            Me.Controls(JobName + "DefaultPiezo").Visible = False
+        Else
+            Me.Controls(JobName + "DefaultPiezo").Visible = True
+            Me.Controls(JobName + "DefaultPiezo").Enabled = Enable
+        End If
+    End If
     Me.Controls(JobName + "Label").Enabled = Enable
     For i = 1 To 4
         Me.Controls(JobName + "Track" + CStr(i)).Enabled = Enable
@@ -498,19 +512,8 @@ Private Sub SwitchEnablePage(JobName As String, Enable As Boolean)
     Me.Controls(JobName + "PutJob").Enabled = Enable
     Me.Controls(JobName + "Acquire").Enabled = Enable
             
-    If Jobs.isZStack(JobName) Then
-        Me.Controls(JobName + "TrackZ").Enabled = Enable
-    Else
-        Me.Controls(JobName + "TrackZ").Enabled = False
-        Me.Controls(JobName + "TrackZ").Value = False
-    End If
-    
-    If Jobs.GetScanMode(JobName) = "ZScan" Or Jobs.GetScanMode(JobName) = "Line" Then
-        Me.Controls(JobName + "TrackXY").Enabled = False
-        Me.Controls(JobName + "TrackXY").Value = False
-    Else
-        Me.Controls(JobName + "TrackXY").Enabled = Enable
-    End If
+    Me.Controls(JobName + "TrackZ").Enabled = Enable And Jobs.isZStack(JobName)
+    Me.Controls(JobName + "TrackXY").Enabled = Enable And (Jobs.getScanMode(JobName) <> "ZScan") And (Jobs.getScanMode(JobName) <> "Line")
     Me.Controls(JobName + "CenterOfMass").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
     Me.Controls(JobName + "CenterOfMassChannel").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
     Me.Controls(JobName + "OiaActive").Enabled = Enable
@@ -955,6 +958,54 @@ Private Sub Trigger2OiaParallel_Change()
      ButtonOiaParallel ("Trigger2")
 End Sub
 
+
+''''
+' Standard settings for Autofocus
+''''
+Private Sub AutofocusDefault_Click()
+    Dim pos() As Vector
+On Error GoTo AutofocusDefault_Click_Error
+    pos = getMarkedStagePosition
+    Jobs.setFrameSpacing "Autofocus", 0.4
+    Jobs.setFramesPerStack "Autofocus", 101
+    Jobs.setScanMode "Autofocus", "ZScan"
+    'Jobs.setScanDirection "Autofocus", 1 (bidirectional scanning)
+    UpdateFormFromJob Jobs, "Autofocus"
+    UpdateGuiFromJob Jobs, "Autofocus", ZEN
+    setMarkedStagePosition pos
+   On Error GoTo 0
+   Exit Sub
+
+AutofocusDefault_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure AutofocusDefault_Click of Form AutofocusForm at line " & Erl & " "
+End Sub
+
+Private Sub AutofocusDefaultPiezo_Click()
+    Dim pos() As Vector
+On Error GoTo AutofocusDefaultPiezo_Click_Error
+    If Lsm5.Hardware.CpHrz.Exist(Lsm5.Hardware.CpHrz.Name) Then
+        pos = getMarkedStagePosition
+        Jobs.setFrameSpacing "Autofocus", 0.1
+        Jobs.setFramesPerStack "Autofocus", 801
+        Jobs.setScanMode "Autofocus", "ZScan"
+        'Jobs.setScanDirection "Autofocus", 1
+        Jobs.setSpecialScanMode "Autofocus", "ZScanner"
+        Jobs.setTimeSeries "Autofocus", False
+        UpdateFormFromJob Jobs, "Autofocus"
+        UpdateGuiFromJob Jobs, "Autofocus", ZEN
+        setMarkedStagePosition pos
+    End If
+   On Error GoTo 0
+   Exit Sub
+
+AutofocusDefaultPiezo_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure AutofocusDefaultPiezo_Click of Form AutofocusForm at line " & Erl & " "
+End Sub
+
 '''
 ' Load settings from ZEN into Form/Joblist
 '''
@@ -1026,29 +1077,19 @@ End Sub
 Private Sub putJob(JobName As String)
     
     Dim pos() As Vector
-    Dim MarkCount As Long
     Dim i As Long
     'this is a work around for a bug in ZEN that deletes all positions after updated of recording
-    MarkCount = Lsm5.Hardware.CpStages.MarkCount
-    If MarkCount >= 1 Then
-        ReDim pos(MarkCount - 1)
-        For i = 0 To MarkCount - 1
-            Lsm5.Hardware.CpStages.MarkGetZ i, pos(i).X, pos(i).Y, pos(i).Z
-        Next i
-    End If
+    pos = getMarkedStagePosition
     
     If ZENv > 2010 And Not ZEN Is Nothing Then
         ZEN.gui.Acquisition.Regions.Delete.Execute
     End If
+    
     Jobs.putJob JobName, ZEN
     'This is just for visualising the job in the Gui
     UpdateGuiFromJob Jobs, JobName, ZEN
-    Lsm5.Hardware.CpStages.MarkClearAll
-    If MarkCount >= 1 Then
-        For i = 0 To UBound(pos)
-            Lsm5.Hardware.CpStages.MarkAddZ pos(i).X, pos(i).Y, pos(i).Z
-        Next i
-    End If
+    setMarkedStagePosition pos
+    
     'does not update the stagepositions in the GUI
     'Application.ThrowEvent ePropertyEventStage, 0
     'Application.ThrowEvent eEventUpdateGui, 0
@@ -1633,97 +1674,93 @@ End Sub
 '       Performs Autofocus and update ZOffset according to ZShift
 ''''''
 Private Sub GetCurrentPositionOffsetButton_Click()
-    If Not GetCurrentPositionOffsetButtonRun Then
+    Dim posTempZ As Double
+    Dim node As AimExperimentTreeNode
+    Set viewerGuiServer = Lsm5.viewerGuiServer
+    Dim RecordingDoc As DsRecordingDoc
+    Dim SuccessRecenter As Boolean
+    Running = True
+    posTempZ = Lsm5.Hardware.CpFocus.position
+    Recenter_pre posTempZ, SuccessRecenter, ZENv
+ 
+    'Check if there is an existing document then start acquisition
+    Set node = viewerGuiServer.ExperimentTreeNodeSelected
+    If Not node Is Nothing Then
+        If node.type <> eExperimentTeeeNodeTypeLsm Then
+            Lsm5.NewScanWindow
+        End If
+        Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
+    End If
+    If Not GetCurrentPositionOffsetButtonRun(RecordingDoc, GlobalDataBaseName) Then
+        DisplayProgress "Stopped", RGB(&HC0, 0, 0)
         StopAcquisition
     End If
-    RestoreAcquisitionParameters
+    AutofocusForm.RestoreAcquisitionParameters
+
 End Sub
 
-Private Function GetCurrentPositionOffsetButtonRun() As Boolean
- '   Dim X As Double
-'    Dim Y As Double
-'    Dim Z As Double
-'    Dim deltaZ As Double
-'    Dim GridPos As GridPosType
-'    Dim time As Double
-'    Dim pos As Double
-'    Dim LogMsg As String
-'    Dim SuccessRecenter As Boolean
-'    Running = True
-'    Dim NewPicture As DsRecordingDoc
-'    DisplayProgress "Get Current Position Offset - Autofocus", RGB(0, &HC0, 0)             'Gives information to the user
-'    posTempZ = Lsm5.Hardware.CpFocus.Position
-'    Z = posTempZ
-'    X = Lsm5.Hardware.CpStages.PositionX
-'    Y = Lsm5.Hardware.CpStages.PositionY
-'
-'    'recenter only after activation of new track
-'    If AutofocusActive Then
-'        StopScanCheck
-'        If AutofocusHRZ Then
-'            Lsm5.Hardware.CpHrz.Leveling
-'        End If
-'       'FailSafeMoveStageZ (posTempZ) 'move at position
-'        ' Acquire image and calculate center of mass stored in XMass, YMass and ZMass
-'        DisplayProgress "Autofocus Activate Tracks", RGB(0, &HC0, 0)
-'        time = Timer
-'        If Not AutofocusForm.ActivateTrack(GlobalAutoFocusRecording, "Autofocus") Then
-'            MsgBox "No track selected for Autofocus! Cannot Autofocus!"
-'            Exit Function
-'        End If
-'
-'        LogMessage "% Get current position: time activate AF track " & Round(Timer - time), Log, LogFileName, LogFile, FileSystem
-'
-'        'DoEvents
-'        'Sample0Z = Lsm5.DsRecording.Sample0Z
-'        DisplayProgress "Autofocus: Recenter prior AF acquisition.... ", RGB(0, &HC0, 0)
-'        DoEvents
-'        time = Timer
-'        If Not Recenter_pre(posTempZ, SuccessRecenter, ZENv) Then
-'            Exit Function
-'        End If
-'        pos = Lsm5.Hardware.CpFocus.Position
-'        time = Round(Timer - time, 2)
-'        LogMsg = "% Get current position: center Z (pre AFimg) " & posTempZ & ", time required" & time & ", succes within rep. " & SuccessRecenter
-'        LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
-'        'Use internal agorithm to compute Xmass etc.
-'        If Not MicroscopeIO.Autofocus_StackShift(NewPicture) Then
-'                Exit Function
-'        End If
-'
-'        DisplayProgress "Autofocus compute", RGB(0, &HC0, 0)
-'
-'        If Not ComputeNewCoordinatesAfterAF(NewPicture, X, Y, Z, deltaZ, "Autofocus") Then
-'            Exit Function
-'        End If
-'        AcquisitionZOffset.Value = posTempZ - Z
-'
-'        DisplayProgress "Autofocus: Recenter after AF acquisition...", RGB(0, &HC0, 0)
-'
-'        time = Timer
-'        If Not Recenter_post(posTempZ, SuccessRecenter, ZENv) Then
-'            Exit Function
-'        End If
-'        time = Round(Timer - time, 2)
-'        LogMsg = "% Get current position: recenter Z (post AFImg) " & posTempZ
-'        If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or AutofocusHRZ Then
-'                LogMsg = LogMsg & "; obtained central slide " & pos & "; position " & pos & ", time required " & time & ", succes within rep. " & SuccessRecenter
-'        Else
-'            LogMsg = LogMsg & "; obtained central slide " & Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 _
-'            - Lsm5.DsRecording.Sample0Z + pos & "; position " & pos & ", time required " & time & ", succes within rep. " & SuccessRecenter
-'        End If
-'        LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
-'
-'        posTempZ = Z
-'        time = Timer
-'        If Not Recenter_pre(posTempZ, SuccessRecenter, ZENv) Then
-'            Exit Function
-'        End If
-'        time = Round(Timer - time, 2)
-'        LogMsg = "% Get current position: center Z (end) " & posTempZ & ", time required" & time & ", success" & SuccessRecenter
-'        LogMessage LogMsg, Log, LogFileName, LogFile, FileSystem
-'    End If
-'    GetCurrentPositionOffsetButtonRun = True
+Private Function GetCurrentPositionOffsetButtonRun(Optional AutofocusDoc As DsRecordingDoc = Nothing, Optional FilePath As String = "") As Boolean
+    Running = True
+    Dim OiaSettings As OnlineIASettings
+    Set OiaSettings = New OnlineIASettings
+    Dim StgPos As Vector
+    Dim newStgPos As Vector
+    Dim posTempZ  As Double
+    Dim FileName As String
+    Dim Time As Double
+    Dim NewCoord() As Double
+    Dim deltaZ As Double
+    Dim Sample0Z As Double ' test variable
+    Dim pos As Double ' test variable for position
+    Dim LogMsg  As String
+    Dim SuccessRecenter As Boolean
+    DisplayProgress "Autofocus move initial position", RGB(0, &HC0, 0)
+    Dim JobName As String
+    StopAcquisition
+    ' Recenter and move where it should be
+    posTempZ = Lsm5.Hardware.CpFocus.position
+    
+    StgPos.Z = posTempZ
+    StgPos.X = Lsm5.Hardware.CpStages.PositionX
+    StgPos.Y = Lsm5.Hardware.CpStages.PositionY
+    
+    OiaSettings.resetRegistry
+    
+    FileName = "AF_T000" & imgFileExtension
+
+    'recenter only after activation of new track
+    If Not AutofocusActive Then
+        MsgBox "GetCurrentPositionOffset: Autofocus job need to be active"
+        Exit Function
+    End If
+    If Not AutofocusTrackZ Then
+        MsgBox "GetCurrentPositionOffset: Autofocus TrackZ need to be active!"
+        Exit Function
+    End If
+    If Not AutofocusCenterOfMass And Not AutofocusOiaActive Then
+        MsgBox "GetCurrentPositionOffset: Autofocus CenterOfMass or Oia need to be active!"
+        Exit Function
+    End If
+    JobName = "Autofocus"
+    Jobs.putJob JobName, ZEN
+    DisplayProgress "Autofocus execute job", RGB(0, &HC0, 0)
+    ExecuteJob JobName, AutofocusDoc, FilePath, FileName, StgPos, CInt(deltaZ)
+    StgPos = TrackOffLine(JobName, AutofocusDoc, StgPos)
+    If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
+        OiaSettings.writeKeyToRegistry "codeOia", "newImage"
+        newStgPos = ComputeJobSequential(JobName, "Global", StgPos, FilePath, FileName, AutofocusDoc)
+        If Not checkForMaximalDisplacement(JobName, StgPos, newStgPos) Then
+            newStgPos = StgPos
+        End If
+            
+        Debug.Print "X =" & StgPos.X & ", " & newStgPos.X & ", " & StgPos.Y & ", " & newStgPos.Y & ", " & StgPos.Z & ", " & newStgPos.Z
+        StgPos = TrackJob(JobName, StgPos, newStgPos)
+    End If
+
+    
+    MsgBox "Computed ZOffset is " & CDbl(posTempZ - StgPos.Z) & " um"
+
+    GetCurrentPositionOffsetButtonRun = True
 End Function
 
 '''''''
@@ -1739,13 +1776,7 @@ Public Sub AutofocusButton_Click()
     Running = True
     posTempZ = Lsm5.Hardware.CpFocus.position
     Recenter_pre posTempZ, SuccessRecenter, ZENv
-    Dim i As Long
-    Dim NrTracks As Long
-    ReDim GlobalBackupActiveTracks(Lsm5.DsRecording.TrackCount)
-    For i = 0 To Lsm5.DsRecording.TrackCount - 1
-       GlobalBackupActiveTracks(i) = Lsm5.DsRecording.TrackObjectByMultiplexOrder(i, 1).Acquire
-    Next i
-    
+ 
     'Check if there is an existing document then start acquisition
     Set node = viewerGuiServer.ExperimentTreeNodeSelected
     If Not node Is Nothing Then
@@ -1780,6 +1811,8 @@ End Sub
 '                        Lsm5.DsRecording.Sample0Z provides the actual shift to the central slice
 ''''''''
 Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = Nothing, Optional FilePath As String = "") As Boolean
+On Error GoTo AutofocusButtonRun_Error
+
     Running = True
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
@@ -1868,10 +1901,21 @@ Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = No
     FailSafeMoveStageZ StgPos.Z
     Recenter_post StgPos.Z, True, ZENv
     If ZENv > 2010 Then
-        ZEN.gui.Acquisition.ZStack.CenterMode.Value = True
+        On Error GoTo nocenter
         ZEN.gui.Acquisition.ZStack.CenterPositionZ.Value = StgPos.Z
     End If
     AutofocusButtonRun = True
+
+   On Error GoTo 0
+   Exit Function
+nocenter:
+    LogManager.UpdateErrorLog "Error. For Autofocus please use Center (and not First/Last) for Z-Stack"
+    On Error GoTo 0
+    Exit Function
+AutofocusButtonRun_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure AutofocusButtonRun of Form AutofocusForm at line " & Erl & " "
 
 End Function
 
@@ -2235,7 +2279,12 @@ Private Sub CloseButton_Click()
 End Sub
 
 Private Sub ReInitializeButton_Click()
-    Re_Initialize
+    Dim MsgBoxRet As Integer
+     MsgBoxRet = MsgBox("With Reinitialize all imaging settings (Autofocus, Acquisition, etc.) will be reset to the current settings in ZEN!" & _
+    " Do you want to reinitialize?", VbYesNo)
+    If MsgBoxRet = vbYes Then
+        Re_Initialize
+    End If
 End Sub
 
 

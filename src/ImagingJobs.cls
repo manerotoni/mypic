@@ -441,18 +441,18 @@ End Function
 '   Plane: just one plane
 '   Line: Just a Line
 '''''
-Public Sub SetScanMode(Name As String, Value As String)
+Public Sub setScanMode(Name As String, Value As String)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
     Jobs(JobNames.item(Name)).Recording.ScanMode = Value
 End Sub
 
-Public Function GetScanMode(Name As String) As String
+Public Function getScanMode(Name As String) As String
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetScanMode = Jobs(JobNames.item(Name)).Recording.ScanMode
+    getScanMode = Jobs(JobNames.item(Name)).Recording.ScanMode
 End Function
 
 'true if record is a ZStack
@@ -469,18 +469,18 @@ End Function
 '   FocusStep: Focuswheel
 '   OnTheFly: Focuswheel that is not syncronized with imaging
 '''''
-Public Sub SetSpecialScanMode(Name As String, Value As String)
+Public Sub setSpecialScanMode(Name As String, Value As String)
     If Not checkJobName(Name) Then
         Exit Sub
     End If
     Jobs(JobNames.item(Name)).Recording.SpecialScanMode = Value
 End Sub
 
-Public Function GetSpecialScanMode(Name As String) As String
+Public Function getSpecialScanMode(Name As String) As String
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    GetSpecialScanMode = Jobs(JobNames.item(Name)).Recording.SpecialScanMode
+    getSpecialScanMode = Jobs(JobNames.item(Name)).Recording.SpecialScanMode
 End Function
 
 '''''
