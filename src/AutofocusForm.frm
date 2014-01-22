@@ -48,6 +48,8 @@ Private Const LogCode = True                'sets key to run tests visible or no
 
 
 
+
+
 Private Sub ShowOiaKeys_Click()
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
@@ -1428,6 +1430,9 @@ Public Sub SwitchEnableGridScanPage(Enable As Boolean)
     GridScan_dColumnsub.Enabled = Enable
     GridScan_dRowsub.Enabled = Enable
     GridScanDescriptionLabel.Enabled = Enable
+    GridScan_WellsFirst.Enabled = Enable
+    GridScan_SubPositionsFirst.Enabled = Enable
+    
 End Sub
 
 
@@ -1969,7 +1974,7 @@ Public Sub Execute_StartButton()
     If Pump Then
         lastTimePump = CDbl(GetTickCount) * 0.001
         Sleep (100)
-        lastTimePump = waitForPump(PumpForm.Pump_Time, PumpForm.Pump_wait, lastTimePump, 0, 0, 0, PumpForm.Pump_Time / 1000 * 3)
+        lastTimePump = waitForPump(PumpForm.Pump_time, PumpForm.Pump_wait, lastTimePump, 0, 0, 0, PumpForm.Pump_time / 1000 * 3)
     End If
     If Not StartJobOnGrid("Global", "Global", GlobalRecordingDoc, GlobalDataBaseName) Then  'This is the main function of the macro
         StopAcquisition

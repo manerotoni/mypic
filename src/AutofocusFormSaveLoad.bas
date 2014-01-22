@@ -57,6 +57,8 @@ On Error GoTo SaveFormSettings_Error
     Print #iFileNum, "GridScan_nColumnsub " & AutofocusForm.GridScan_nColumnsub.Value
     Print #iFileNum, "GridScan_dRowsub " & AutofocusForm.GridScan_dRowsub.Value
     Print #iFileNum, "GridScan_dColumnsub " & AutofocusForm.GridScan_dColumnsub.Value
+    Print #iFileNum, "GridScan_SubPositionsFirst " & AutofocusForm.GridScan_SubPositionsFirst.Value
+    Print #iFileNum, "GridScan_WellsFirst " & AutofocusForm.GridScan_WellsFirst.Value
     
     'Save water pump settings
     Print #iFileNum, "% Pump "

@@ -436,54 +436,103 @@ End Sub
 
 '''
 ' Go to next gridPt according to meandering. True if there is a next grid pt. False if Grid has reached an end
+' WellFirst changes order of meandering. First Col and Row then Sub
 '''
-Public Function nextGridPt() As Boolean
-    'update GridSub
-    If Me.iRowSub Mod 2 <> 0 Then
-        Me.iColSub = Me.iColSub + 1
-    Else
-        Me.iColSub = Me.iColSub - 1
-    End If
-    
-    If Me.iColSub > numColSub Then
-        Me.iColSub = Me.numColSub
-        Me.iRowSub = Me.iRowSub + 1
-    End If
-    
-    If Me.iColSub < 1 Then
-        Me.iColSub = 1
-        Me.iRowSub = Me.iRowSub + 1
-    End If
-        
-    'update mainGrid
-    If Me.iRowSub > Me.numRowSub Then
-        Me.iRowSub = 1
+Public Function nextGridPt(Optional WellFirst As Boolean) As Boolean
+    If WellFirst Then
+        'update mainGrid
         If Me.iRow Mod 2 <> 0 Then
             Me.iCol = Me.iCol + 1
-            Me.iColSub = 1
         Else
             Me.iCol = Me.iCol - 1
-            Me.iColSub = 1
         End If
         If Me.iCol > Me.numCol Then
-            Me.iCol = numCol
+            Me.iCol = Me.numCol
             Me.iRow = Me.iRow + 1
-            Me.iColSub = 1
         End If
+    
         If Me.iCol < 1 Then
             Me.iCol = 1
             Me.iRow = Me.iRow + 1
+        End If
+        
+        'update GridSub
+        If Me.iRow > Me.numRow Then
+            Me.iRow = 1
+            If Me.iRowSub Mod 2 <> 0 Then
+                Me.iColSub = Me.iColSub + 1
+                Me.iCol = 1
+            Else
+                Me.iColSub = Me.iColSub - 1
+                Me.iCol = 1
+            End If
+            If Me.iColSub > Me.numColSub Then
+                Me.iColSub = Me.numColSub
+                Me.iRowSub = Me.iRowSub + 1
+                Me.iCol = 1
+            End If
+            If Me.iColSub < 1 Then
+                Me.iColSub = 1
+                Me.iRowSub = Me.iRowSub + 1
+                Me.iCol = 1
+            End If
+        End If
+    
+        ''end of grid has been reached
+        If Me.iRowSub > Me.numRowSub Then
+            nextGridPt = False
+        Else
+            nextGridPt = True
+        End If
+    
+    
+    Else
+        'update GridSub
+        If Me.iRowSub Mod 2 <> 0 Then
+            Me.iColSub = Me.iColSub + 1
+        Else
+            Me.iColSub = Me.iColSub - 1
+        End If
+        
+        If Me.iColSub > numColSub Then
+            Me.iColSub = Me.numColSub
+            Me.iRowSub = Me.iRowSub + 1
+        End If
+        
+        If Me.iColSub < 1 Then
             Me.iColSub = 1
+            Me.iRowSub = Me.iRowSub + 1
+        End If
+            
+        'update mainGrid
+        If Me.iRowSub > Me.numRowSub Then
+            Me.iRowSub = 1
+            If Me.iRow Mod 2 <> 0 Then
+                Me.iCol = Me.iCol + 1
+                Me.iColSub = 1
+            Else
+                Me.iCol = Me.iCol - 1
+                Me.iColSub = 1
+            End If
+            If Me.iCol > Me.numCol Then
+                Me.iCol = numCol
+                Me.iRow = Me.iRow + 1
+                Me.iColSub = 1
+            End If
+            If Me.iCol < 1 Then
+                Me.iCol = 1
+                Me.iRow = Me.iRow + 1
+                Me.iColSub = 1
+            End If
+        End If
+        
+        ''end of grid has been reached
+        If Me.iRow > Me.numRow Then
+            nextGridPt = False
+        Else
+            nextGridPt = True
         End If
     End If
-    
-    ''end of grid has been reached
-    If Me.iRow > Me.numRow Then
-        nextGridPt = False
-    Else
-        nextGridPt = True
-    End If
-                    
 End Function
 
 
