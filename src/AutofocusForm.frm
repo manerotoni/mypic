@@ -307,7 +307,8 @@ Private Sub Re_Start()
     If ZENv = 2010 Then
         ZBacklash = 0.5
     ElseIf ZENv > 2010 Then
-        ZBacklash = 0.5
+        ZBacklash = 0
+        ZSafeDown = 0
     End If
     
     '''Contains all settings for the repetitions of the jobs
@@ -1974,7 +1975,7 @@ Public Sub Execute_StartButton()
     If Pump Then
         lastTimePump = CDbl(GetTickCount) * 0.001
         Sleep (100)
-        lastTimePump = waitForPump(PumpForm.Pump_time, PumpForm.Pump_wait, lastTimePump, 0, 0, 0, PumpForm.Pump_time / 1000 * 3)
+        'lastTimePump = waitForPump(PumpForm.Pump_time, PumpForm.Pump_wait, lastTimePump, 0, 0, 0, 10)
     End If
     If Not StartJobOnGrid("Global", "Global", GlobalRecordingDoc, GlobalDataBaseName) Then  'This is the main function of the macro
         StopAcquisition

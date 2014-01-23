@@ -59,6 +59,7 @@ Public Function AcquireJob(JobName As String, RecordingDoc As DsRecordingDoc, Re
 On Error GoTo AcquireJob_Error
     Dim SuccessRecenter As Boolean
     Dim Time As Double
+    Dim cZPos As Double
     'stop any running jobs
     Time = Timer
     StopAcquisition
@@ -67,8 +68,23 @@ On Error GoTo AcquireJob_Error
     'move stage if required
     Time = Timer
     If Round(Lsm5.Hardware.CpStages.PositionX, PrecXY) <> Round(position.X, PrecXY) Or Round(Lsm5.Hardware.CpStages.PositionY, PrecXY) <> Round(position.Y, PrecXY) Then
+        cZPos = Lsm5.Hardware.CpFocus.position
+        If ZSafeDown <> 0 Then
+            If Not FailSafeMoveStageZ(cZPos - ZSafeDown) Then
+                Exit Function
+            End If
+        End If
         If Not FailSafeMoveStageXY(position.X, position.Y) Then
             Exit Function
+        End If
+        If ZSafeDown <> 0 Then
+            If Not FailSafeMoveStageZ(cZPos) Then
+                Exit Function
+            End If
+        End If
+        'extra waiting time after the movement
+        If Pump Then
+            Sleep (500)
         End If
     End If
     'Debug.Print "Time to move stage " & Round(Timer - Time, 3)
@@ -535,8 +551,9 @@ On Error GoTo StartJobOnGrid_Error
                 StgPos.Z = Grids.getThisZ(GridName)
                 If Pump Then
                     Debug.Print "Time pump " & CDbl(GetTickCount) * 0.001 - lastTimePump
+                    Debug.Print "Traveled Distance " & CDbl(normVector2D(diffVector(StgPos, cStgPos)))
                     lastTimePump = waitForPump(PumpForm.Pump_time, PumpForm.Pump_wait, lastTimePump, normVector2D(diffVector(StgPos, cStgPos)), PumpForm.Pump_interval_time * 60, _
-                    PumpForm.Pump_interval_distance * 1000, PumpForm.Pump_time / 1000 * 3)
+                    PumpForm.Pump_interval_distance * 1000, 10)
                 End If
                 'For first repetition and globalgrid we use previous position to prime next position (this is not the optimal way of doing it, better is a focusMap)
                 If Reps.getIndex(GridName) = 1 And AutofocusForm.GridScanActive And GridName = "Global" Then
@@ -574,7 +591,7 @@ On Error GoTo StartJobOnGrid_Error
                     Exit Function
                 End If
             End If
-        Loop While Grids.nextGridPt(JobName)
+        Loop While Grids.nextGridPt(JobName, AutofocusForm.GridScan_WellsFirst)
         ''Wait till next repetition
         Reps.updateTimeStart (JobName)
         
@@ -589,7 +606,7 @@ On Error GoTo StartJobOnGrid_Error
             If Pump Then
                 Debug.Print "Time pump " & CDbl(GetTickCount) * 0.001 - lastTimePump
                 lastTimePump = waitForPump(PumpForm.Pump_time, PumpForm.Pump_wait, lastTimePump, 0, PumpForm.Pump_interval_time * 60, _
-                PumpForm.Pump_interval_distance * 1000, PumpForm.Pump_time / 1000 * 3)
+                PumpForm.Pump_interval_distance * 1000, 10)
             End If
             If ScanPause = True Then
                 If Not AutofocusForm.Pause Then ' Pause is true if Resume
@@ -642,7 +659,7 @@ End Function
 '        distDiff: a distance (in um)
 '        timeMax: maximal timeDiff over which pump is activated
 '        distmax: maximal distDiff over which pump is activated
-'        maxTimeWaitRegistry: maximal time we wait for registry
+'        maxTimeWaitRegistry: maximal time we wait for registry (sec)
 ' Outputs:
 '        updated last time pump was active
 '---------------------------------------------------------------------------------------

@@ -38,6 +38,7 @@ Public Const PrecXY = 2                    'precision of X and Y passed for stag
 Public ZBacklash  As Double           'ToDo: is it still recquired?.
                                            'Has to do with the movements of the focus wheel that are "better"
                                             'if they are long enough. For amoment a test did not gave significant differences This is required for ZEN2010
+Public ZSafeDown As Double
 Public ZENv As Integer            'String variable indicating the version of ZEN used 2010 ir 2011 (2012)
 Public ZEN As Object             'Object containing Zeiss.Micro.AIM.ApplicationInterface.ApplicationInterface (for ZEN > 2011)
 
