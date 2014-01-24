@@ -2141,8 +2141,9 @@ Private Function StartSetting() As Boolean
             MsgBox "Not able to use " & GridScanValidFile & " for loading valid positions."
         End If
     End If
-
+    
 GridReady:
+
     Grids.writePositionGridFile "Global", GlobalDataBaseName & "positionsGrid.csv"
     Grids.writeValidGridFile "Global", GlobalDataBaseName & "validGrid.csv"
 
@@ -2151,6 +2152,7 @@ GridReady:
         SetDatabase
         SaveFormSettings GlobalDataBaseName & "\AutofocusScreen.ini"
     End If
+    Grids.setAllParentPath "Global", GlobalDataBaseName
     StartSetting = True
     Exit Function
 ErrorHandleDataBase:

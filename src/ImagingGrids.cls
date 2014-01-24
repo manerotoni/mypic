@@ -143,9 +143,9 @@ Public Function setIndeces(Name As String, Row As Long, Col As Long, RowSub As L
     End If
 End Function
 
-Public Function nextGridPt(Name As String) As Boolean
+Public Function nextGridPt(Name As String, Optional WellFirst As Boolean) As Boolean
     If checkGridName(Name) Then
-        nextGridPt = Grids(GridNames.item(Name)).nextGridPt
+        nextGridPt = Grids(GridNames.item(Name)).nextGridPt(WellFirst)
     End If
 End Function
 
@@ -365,11 +365,32 @@ Public Function getThisName(Name As String) As String
 End Function
 
 
+Public Function getThisParentPath(Name As String) As String
+    If checkGridName(Name) Then
+        getThisParentPath = Grids(GridNames.item(Name)).getThisParentPath
+    End If
+End Function
+
+
 Public Sub setThisName(Name As String, Value As String)
     If checkGridName(Name) Then
         Grids(GridNames.item(Name)).setThisName Value
     End If
 End Sub
+
+Public Sub setThisParentPath(Name As String, Value As String)
+    If checkGridName(Name) Then
+        Grids(GridNames.item(Name)).setThisParentPath Value
+    End If
+End Sub
+
+
+Public Sub setAllParentPath(Name As String, Value As String)
+    If checkGridName(Name) Then
+        Grids(GridNames.item(Name)).setAllParentPath Value
+    End If
+End Sub
+
 
 Public Function getName(Name As String, numRow As Long, numCol As Long, numRowSub As Long, numColSub As Long) As String
     If checkGridName(Name) Then
@@ -377,9 +398,17 @@ Public Function getName(Name As String, numRow As Long, numCol As Long, numRowSu
     End If
 End Function
 
-Public Sub setName(Name As String, Value As String, numRow As Long, numCol As Long, numRowSub As Long, numColSub As Long)
+
+
+Public Function getParentPath(Name As String, numRow As Long, numCol As Long, numRowSub As Long, numColSub As Long) As String
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setName Value, numRow, numCol, numRowSub, numColSub
+        getParentPath = Grids(GridNames.item(Name)).getParentPath(numRow, numCol, numRowSub, numColSub)
+    End If
+End Function
+
+Public Sub setParentPath(Name As String, Value As String, numRow As Long, numCol As Long, numRowSub As Long, numColSub As Long)
+    If checkGridName(Name) Then
+        Grids(GridNames.item(Name)).setParentPath Value, numRow, numCol, numRowSub, numColSub
     End If
 End Sub
 

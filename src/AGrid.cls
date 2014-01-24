@@ -21,7 +21,8 @@ Const maxZeros = 4
 
 '''' A gridpoint is the unit of a grid. It will have a name specified by its position in the array
 Private Type GridPoint
-    Name As String    'this is used as prefix for the name
+    ParentPath As String 'Absolute path to store the object
+    Name As String    'this should be used as prefix for the name, e.g. siRNA name
     X As Double
     Y As Double
     Z As Double
@@ -211,16 +212,16 @@ Public Function getThisName() As String
 End Function
 
 
+Public Sub setThisName(Value As String)
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Name = Value
+End Sub
+
+
 Public Function getName(Row As Long, Col As Long, RowSub As Long, ColSub As Long) As String
     If correctIndeces(Row, Col, RowSub, ColSub) Then
         getName = GridArray(Row, Col, RowSub, ColSub).Name
     End If
 End Function
-
-
-Public Sub setThisName(Value As String)
-    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Name = Value
-End Sub
 
 
 Public Sub setName(Value As String, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
@@ -234,8 +235,45 @@ Public Sub setName(Value As String, Row As Long, Col As Long, RowSub As Long, Co
     End If
 End Sub
 
+Public Function getThisParentPath() As String
+    getThisParentPath = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).ParentPath
+End Function
 
 
+Public Sub setThisParentPath(Value As String)
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).ParentPath = Value
+End Sub
+
+
+Public Function getParentPath(Row As Long, Col As Long, RowSub As Long, ColSub As Long) As String
+    If correctIndeces(Row, Col, RowSub, ColSub) Then
+        getParentPath = GridArray(Row, Col, RowSub, ColSub).ParentPath
+    End If
+End Function
+
+
+Public Sub setParentPath(Value As String, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
+    If correctIndeces(Row, Col, RowSub, ColSub) Then
+        GridArray(Row, Col, RowSub, ColSub).ParentPath = Value
+    End If
+End Sub
+
+Public Sub setAllParentPath(Value As String)
+    Dim iRow As Long
+    Dim iCol As Long
+    Dim iRowSub As Long
+    Dim iColSub As Long
+    
+    For iRow = 1 To Me.numRow
+        For iCol = 1 To Me.numCol
+            For iRowSub = 1 To Me.numRowSub
+                For iColSub = 1 To Me.numColSub
+                    GridArray(iRow, iCol, iRowSub, iColSub).ParentPath = Value
+                Next iColSub
+            Next iRowSub
+        Next iCol
+    Next iRow
+End Sub
 
 
 Public Function getIndeces(Row As Long, Col As Long, RowSub As Long, ColSub As Long)
