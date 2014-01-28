@@ -59,7 +59,6 @@ Public Function AcquireJob(JobName As String, RecordingDoc As DsRecordingDoc, Re
 On Error GoTo AcquireJob_Error
     Dim SuccessRecenter As Boolean
     Dim Time As Double
-    Dim cZPos As Double
     Dim cStgPos As Vector 'current stage position
     Lsm5.Hardware.CpStages.GetXYPosition cStgPos.X, cStgPos.Y
     cStgPos.Z = Lsm5.Hardware.CpFocus.position
@@ -70,10 +69,9 @@ On Error GoTo AcquireJob_Error
     NewRecord RecordingDoc, RecordingName, 0
     'move stage if required
     Time = Timer
-    If Round(Lsm5.Hardware.CpStages.PositionX, PrecXY) <> Round(position.X, PrecXY) Or Round(Lsm5.Hardware.CpStages.PositionY, PrecXY) <> Round(position.Y, PrecXY) Then
-        cZPos = Lsm5.Hardware.CpFocus.position
+    If Round(cStgPos.X, PrecXY) <> Round(position.X, PrecXY) Or Round(cStgPos.Y, PrecXY) <> Round(position.Y, PrecXY) Then
         If ZSafeDown <> 0 Then
-            If Not FailSafeMoveStageZ(cZPos - ZSafeDown) Then
+            If Not FailSafeMoveStageZ(cStgPos.Z - ZSafeDown) Then
                 Exit Function
             End If
         End If
@@ -81,17 +79,18 @@ On Error GoTo AcquireJob_Error
             Exit Function
         End If
         If ZSafeDown <> 0 Then
-            If Not FailSafeMoveStageZ(cZPos) Then
+            If Not FailSafeMoveStageZ(cStgPos.Z) Then
                 Exit Function
             End If
         End If
+        'pump some water after large movement
+        If Pump Then
+            lastTimePump = waitForPump(PumpForm.Pump_time, PumpForm.Pump_wait, CDbl(GetTickCount) * 0.001, normVector2D(diffVector(position, cStgPos)), PumpForm.Pump_interval_time * 60, _
+            PumpForm.Pump_interval_distance * 1000, 10)
+        End If
     End If
     
-    'pump some water after large movement or if time has elapsed
-    If Pump Then
-        lastTimePump = waitForPump(PumpForm.Pump_time, PumpForm.Pump_wait, lastTimePump, normVector2D(diffVector(position, cStgPos)), PumpForm.Pump_interval_time * 60, _
-        PumpForm.Pump_interval_distance * 1000, 10)
-    End If
+
         
     'Time = Timer
     'Change settings for new Job if it is different from currentJob (global variable)
@@ -555,7 +554,11 @@ On Error GoTo StartJobOnGrid_Error
                 If Reps.getIndex(GridName) = 1 And AutofocusForm.GridScanActive And GridName = "Global" Then
                     StgPos.Z = previousZ
                 End If
-
+                'pump if time elapsed before starting imaging on a specific point
+                If Pump Then
+                    lastTimePump = waitForPump(PumpForm.Pump_time, PumpForm.Pump_wait, lastTimePump, 0, PumpForm.Pump_interval_time * 60, _
+                    PumpForm.Pump_interval_distance * 1000, 10)
+                End If
                 ' Recenter and move where it should be. Job global is a series of jobs
                 ' TODO move into one single function per task
                 If JobName = "Global" Then

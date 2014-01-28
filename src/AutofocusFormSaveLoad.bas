@@ -196,6 +196,7 @@ On Error GoTo SaveFormFcsPage_Error
     Print #iFileNum, ""
     Print #iFileNum, "% " & JobName
     Print #iFileNum, JobName & "Active " & AutofocusForm.Controls(JobName & "Active").Value
+    Print #iFileNum, JobName & "ZOffset " & AutofocusForm.Controls(JobName & "ZOffset").Value
     Print #iFileNum, JobName & "KeepParent " & AutofocusForm.Controls(JobName & "KeepParent").Value
     
     Print #iFileNum, ""
