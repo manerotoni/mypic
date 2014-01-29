@@ -66,7 +66,7 @@ On Error GoTo SaveFormSettings_Error
     Print #iFileNum, "Pump_interval_distance " & PumpForm.Pump_interval_distance.Value
     Print #iFileNum, "Pump_time " & PumpForm.Pump_time
     Print #iFileNum, "Pump_wait " & PumpForm.Pump_wait.Value
-    
+    Print #iFileNum, "Pump_interval_Jobs " & PumpForm.Pump_interval_Jobs
     
     'Save settings of all pages
     For i = 0 To UBound(JobNames)

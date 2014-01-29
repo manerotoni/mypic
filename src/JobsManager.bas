@@ -85,7 +85,7 @@ On Error GoTo AcquireJob_Error
         End If
         'pump some water after large movement
         If Pump Then
-            lastTimePump = waitForPump(PumpForm.Pump_time, PumpForm.Pump_wait, CDbl(GetTickCount) * 0.001, normVector2D(diffVector(position, cStgPos)), PumpForm.Pump_interval_time * 60, _
+            lastTimePump = waitForPump(PumpForm.Pump_time, PumpForm.Pump_wait, lastTimePump, normVector2D(diffVector(position, cStgPos)), 0, _
             PumpForm.Pump_interval_distance * 1000, 10)
         End If
     End If
@@ -130,6 +130,11 @@ On Error GoTo AcquireJob_Error
     If Not Recenter_post(position.Z, SuccessRecenter, ZENv) Then
        Exit Function
     End If
+    While Not isReady(5)
+        SleepWithEvents (500)
+    Wend
+    ''workaround to avoid Fcs crashes
+    SleepWithEvents (PauseEndAcquisition)
     'Debug.Print "Time to recenter post " & Round(Timer - Time, 3)
     AcquireJob = True
     LogManager.UpdateLog " Acquire job " & JobName & " " & RecordingName & " at X = " & position.X & ", Y =  " & position.Y & _
@@ -192,6 +197,11 @@ On Error GoTo AcquireFcsJob_Error
     If Not ScanToFcs(RecordingDoc, FcsData) Then
         Exit Function
     End If
+    While Not isReady(5)
+        SleepWithEvents (500)
+    Wend
+    'workaround for crashes
+    SleepWithEvents (PauseEndAcquisition)
     AcquireFcsJob = True
     posTxt = ""
     For i = 0 To UBound(Positions)
@@ -557,7 +567,7 @@ On Error GoTo StartJobOnGrid_Error
                 'pump if time elapsed before starting imaging on a specific point
                 If Pump Then
                     lastTimePump = waitForPump(PumpForm.Pump_time, PumpForm.Pump_wait, lastTimePump, 0, PumpForm.Pump_interval_time * 60, _
-                    PumpForm.Pump_interval_distance * 1000, 10)
+                    0, 10)
                 End If
                 ' Recenter and move where it should be. Job global is a series of jobs
                 ' TODO move into one single function per task
@@ -604,7 +614,7 @@ On Error GoTo StartJobOnGrid_Error
             DoEvents
             If Pump Then
                 lastTimePump = waitForPump(PumpForm.Pump_time, PumpForm.Pump_wait, lastTimePump, 0, PumpForm.Pump_interval_time * 60, _
-                PumpForm.Pump_interval_distance * 1000, 10)
+                0, 10)
             End If
             If ScanPause = True Then
                 If Not AutofocusForm.Pause Then ' Pause is true if Resume
@@ -670,7 +680,7 @@ Public Function waitForPump(timeToPump As Double, timeToWait As Double, lastTime
     Dim TimeWait As Double
     Set OiaSettings = New OnlineIASettings
     ''check if we need to pump
-    If distDiff <= distMax And CDbl(GetTickCount) * 0.001 - lastTimePump <= timeMax Then
+    If (distDiff <= distMax Or distMax = 0) And (CDbl(GetTickCount) * 0.001 - lastTimePump <= timeMax Or timeMax = 0) Then
         waitForPump = lastTimePump
         Exit Function
     End If

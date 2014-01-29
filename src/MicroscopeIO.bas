@@ -71,9 +71,8 @@ Public GlobalFcsData As AimFcsData
 Public GlobalFcsRecordingDoc As DsRecordingDoc
 
 
-Const PauseGrabbing = 50 'pause for polling the whether scan/fcscontroller are acquiring. A high value makes more errors!
-Public Const Pause = 100 'pause in ms
-
+Public Const PauseGrabbing = 50 'pause for polling the whether scan/fcscontroller are acquiring. A high value makes more errors!
+Public PauseEndAcquisition As Double
 '''
 ' Returns version number (ZEN2010, etc.)
 '''
@@ -123,6 +122,37 @@ Public Function StopAcquisition()
     End If
     DoEvents
 End Function
+
+''''
+' Check if system is busy in some of its actions
+''''
+Public Function isReady(Optional Time As Double = 0.1) As Boolean
+    Dim BusyFcs As Boolean
+    Dim message As String
+    Dim AimScanCalibration As AimScanCalibration
+    Set AimScanCalibration = Lsm5.ExternalDsObject.Scancontroller
+
+    If Lsm5.Info.IsFCS Then
+        Dim FcsControl As AimFcsController
+        Set FcsControl = Fcs
+        BusyFcs = FcsControl.IsAcquisitionRunning(1)
+    End If
+    isReady = CInt(AimScanCalibration.GetIsHardwareBusy(True, Time, message) Or BusyFcs Or Lsm5.Info.IsAnyHardwareBusy)
+    isReady = Not isReady
+End Function
+
+'''
+' Sleep for a certain time and perform DoEvents inbetween. WaitTime is in milliseconds
+'''
+Public Sub SleepWithEvents(WaitTime As Double)
+    Dim i As Long
+    Dim cycles As Long
+    cycles = Round(WaitTime / PauseGrabbing)
+    For i = 0 To cycles
+        Sleep (PauseGrabbing)
+        DoEvents
+    Next i
+End Sub
 
 '''''
 '   ScanToImage (RecordingDoc As DsRecordingDoc) As Boolean
@@ -233,8 +263,7 @@ Public Function NewRecord(RecordingDoc As DsRecordingDoc, Name As String, Option
         node.type = eExperimentTeeeNodeTypeLsm
         Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
         While RecordingDoc.IsBusy
-            Sleep (Pause)
-            DoEvents
+            SleepWithEvents (100)
         Wend
     End If
     RecordingDoc.SetTitle Name
@@ -321,8 +350,7 @@ Public Function NewFcsRecord(RecordingDoc As DsRecordingDoc, FcsData As AimFcsDa
         FcsData.Name = Name
         Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
         While RecordingDoc.IsBusy
-            Sleep (Pause)
-            DoEvents
+            SleepWithEvents (100)
         Wend
     End If
 

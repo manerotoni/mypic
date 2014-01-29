@@ -1934,6 +1934,7 @@ End Function
 '   StartButton_Click()
 '''''
 Private Sub StartButton_Click()
+    PauseEndAcquisition = 0
     Execute_StartButton
 End Sub
 
