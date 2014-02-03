@@ -88,7 +88,7 @@ End Sub
 '''''
 Public Sub UserForm_Initialize()
     DisplayProgress "Initializing Macro ...", RGB(&HC0, &HC0, 0)
-    Version = " v3.0.15"
+    Version = " v3.0.16"
     Dim i As Integer
     ZENv = getVersionNr
     'find the version of the software
