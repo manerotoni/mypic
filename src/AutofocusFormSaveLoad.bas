@@ -26,46 +26,46 @@ On Error GoTo SaveFormSettings_Error
 
     'Single MultipelocationToggle
     Print #iFileNum, "% Single Multiple "
-    Print #iFileNum, "MultipleLocationToggle " & AutofocusForm.MultipleLocationToggle.Value
-    Print #iFileNum, "SingleLocationToggle " & AutofocusForm.SingleLocationToggle.Value
+    Print #iFileNum, "MultipleLocationToggle " & AutofocusForm.MultipleLocationToggle.value
+    Print #iFileNum, "SingleLocationToggle " & AutofocusForm.SingleLocationToggle.value
     
     
     'Looping
     Print #iFileNum, "% GlobalRepetition "
     Print #iFileNum, "GlobalRepetitionSec " & AutofocusForm.GlobalRepetitionSec
     Print #iFileNum, "GlobalRepetitionMin " & AutofocusForm.GlobalRepetitionMin
-    Print #iFileNum, "GlobalRepetitionTime " & AutofocusForm.GlobalRepetitionTime.Value
-    Print #iFileNum, "GlobalRepetitionInterval " & AutofocusForm.GlobalRepetitionInterval.Value
-    Print #iFileNum, "GlobalRepetitionNumber " & AutofocusForm.GlobalRepetitionNumber.Value
+    Print #iFileNum, "GlobalRepetitionTime " & AutofocusForm.GlobalRepetitionTime.value
+    Print #iFileNum, "GlobalRepetitionInterval " & AutofocusForm.GlobalRepetitionInterval.value
+    Print #iFileNum, "GlobalRepetitionNumber " & AutofocusForm.GlobalRepetitionNumber.value
     
     'Output
     Print #iFileNum, "% Output "
-    Print #iFileNum, "DatabaseTextbox " & AutofocusForm.DatabaseTextbox.Value
-    Print #iFileNum, "TextBoxFileName " & AutofocusForm.TextBoxFileName.Value
+    Print #iFileNum, "DatabaseTextbox " & AutofocusForm.DatabaseTextbox.value
+    Print #iFileNum, "TextBoxFileName " & AutofocusForm.TextBoxFileName.value
     
     'Grid Acquisition
     Print #iFileNum, "% Grid "
-    Print #iFileNum, "GridScanActive " & AutofocusForm.GridScanActive.Value
-    Print #iFileNum, "GridScan_validGridDefault " & AutofocusForm.GridScan_validGridDefault.Value
-    Print #iFileNum, "GridScan_nRow " & AutofocusForm.GridScan_nRow.Value
-    Print #iFileNum, "GridScan_nColumn " & AutofocusForm.GridScan_nColumn.Value
-    Print #iFileNum, "GridScan_dRow " & AutofocusForm.GridScan_dRow.Value
-    Print #iFileNum, "GridScan_dColumn " & AutofocusForm.GridScan_dColumn.Value
-    Print #iFileNum, "GridScan_refRow " & AutofocusForm.GridScan_refRow.Value
-    Print #iFileNum, "GridScan_refColumn " & AutofocusForm.GridScan_refColumn.Value
-    Print #iFileNum, "GridScan_nRowsub " & AutofocusForm.GridScan_nRowsub.Value
-    Print #iFileNum, "GridScan_nColumnsub " & AutofocusForm.GridScan_nColumnsub.Value
-    Print #iFileNum, "GridScan_dRowsub " & AutofocusForm.GridScan_dRowsub.Value
-    Print #iFileNum, "GridScan_dColumnsub " & AutofocusForm.GridScan_dColumnsub.Value
-    Print #iFileNum, "GridScan_SubPositionsFirst " & AutofocusForm.GridScan_SubPositionsFirst.Value
-    Print #iFileNum, "GridScan_WellsFirst " & AutofocusForm.GridScan_WellsFirst.Value
+    Print #iFileNum, "GridScanActive " & AutofocusForm.GridScanActive.value
+    Print #iFileNum, "GridScan_validGridDefault " & AutofocusForm.GridScan_validGridDefault.value
+    Print #iFileNum, "GridScan_nRow " & AutofocusForm.GridScan_nRow.value
+    Print #iFileNum, "GridScan_nColumn " & AutofocusForm.GridScan_nColumn.value
+    Print #iFileNum, "GridScan_dRow " & AutofocusForm.GridScan_dRow.value
+    Print #iFileNum, "GridScan_dColumn " & AutofocusForm.GridScan_dColumn.value
+    Print #iFileNum, "GridScan_refRow " & AutofocusForm.GridScan_refRow.value
+    Print #iFileNum, "GridScan_refColumn " & AutofocusForm.GridScan_refColumn.value
+    Print #iFileNum, "GridScan_nRowsub " & AutofocusForm.GridScan_nRowsub.value
+    Print #iFileNum, "GridScan_nColumnsub " & AutofocusForm.GridScan_nColumnsub.value
+    Print #iFileNum, "GridScan_dRowsub " & AutofocusForm.GridScan_dRowsub.value
+    Print #iFileNum, "GridScan_dColumnsub " & AutofocusForm.GridScan_dColumnsub.value
+    Print #iFileNum, "GridScan_SubPositionsFirst " & AutofocusForm.GridScan_SubPositionsFirst.value
+    Print #iFileNum, "GridScan_WellsFirst " & AutofocusForm.GridScan_WellsFirst.value
     
     'Save water pump settings
     Print #iFileNum, "% Pump "
     Print #iFileNum, "Pump_interval_time " & PumpForm.Pump_interval_time
-    Print #iFileNum, "Pump_interval_distance " & PumpForm.Pump_interval_distance.Value
+    Print #iFileNum, "Pump_interval_distance " & PumpForm.Pump_interval_distance.value
     Print #iFileNum, "Pump_time " & PumpForm.Pump_time
-    Print #iFileNum, "Pump_wait " & PumpForm.Pump_wait.Value
+    Print #iFileNum, "Pump_wait " & PumpForm.Pump_wait.value
     Print #iFileNum, "Pump_interval_Jobs " & PumpForm.Pump_interval_Jobs
     
     'Save settings of all pages
@@ -104,35 +104,35 @@ On Error GoTo SaveFormPage_Error
 
     Print #iFileNum, ""
     Print #iFileNum, "% " & JobName
-    Print #iFileNum, JobName & "Active " & AutofocusForm.Controls(JobName & "Active").Value
+    Print #iFileNum, JobName & "Active " & AutofocusForm.Controls(JobName & "Active").value
     
     For i = 1 To 4
         Print #iFileNum, JobName & "Track" & CInt(i) & " " & _
-        AutofocusForm.Controls(JobName & "Track" & CInt(i)).Value
+        AutofocusForm.Controls(JobName & "Track" & CInt(i)).value
     Next i
     
     
-    Print #iFileNum, JobName & "ZOffset " & AutofocusForm.Controls(JobName & "ZOffset").Value
-    Print #iFileNum, JobName & "Period " & AutofocusForm.Controls(JobName & "Period").Value
-    Print #iFileNum, JobName & "TrackZ " & AutofocusForm.Controls(JobName & "TrackZ").Value
-    Print #iFileNum, JobName & "TrackXY " & AutofocusForm.Controls(JobName & "TrackXY").Value
-    Print #iFileNum, JobName & "CenterOfMass " & AutofocusForm.Controls(JobName & "CenterOfMass").Value
-    Print #iFileNum, JobName & "CenterOfMassChannel " & AutofocusForm.Controls(JobName & "CenterOfMassChannel").Value
-    Print #iFileNum, JobName & "OiaActive " & AutofocusForm.Controls(JobName & "OiaActive").Value
-    Print #iFileNum, JobName & "OiaSequential " & AutofocusForm.Controls(JobName & "OiaSequential").Value
-    Print #iFileNum, JobName & "OiaParallel " & AutofocusForm.Controls(JobName & "OiaParallel").Value
-    Print #iFileNum, JobName & "SaveImage " & AutofocusForm.Controls(JobName & "SaveImage").Value
+    Print #iFileNum, JobName & "ZOffset " & AutofocusForm.Controls(JobName & "ZOffset").value
+    Print #iFileNum, JobName & "Period " & AutofocusForm.Controls(JobName & "Period").value
+    Print #iFileNum, JobName & "TrackZ " & AutofocusForm.Controls(JobName & "TrackZ").value
+    Print #iFileNum, JobName & "TrackXY " & AutofocusForm.Controls(JobName & "TrackXY").value
+    Print #iFileNum, JobName & "FocusMethod " & AutofocusForm.Controls(JobName & "FocusMethod").value
+    Print #iFileNum, JobName & "CenterOfMassChannel " & AutofocusForm.Controls(JobName & "CenterOfMassChannel").value
+    Print #iFileNum, JobName & "OiaActive " & AutofocusForm.Controls(JobName & "OiaActive").value
+    Print #iFileNum, JobName & "OiaSequential " & AutofocusForm.Controls(JobName & "OiaSequential").value
+    Print #iFileNum, JobName & "OiaParallel " & AutofocusForm.Controls(JobName & "OiaParallel").value
+    Print #iFileNum, JobName & "SaveImage " & AutofocusForm.Controls(JobName & "SaveImage").value
     
     If JobName = "Trigger1" Or JobName = "Trigger2" Then
-        Print #iFileNum, JobName & "RepetitionTime " & AutofocusForm.Controls(JobName & "RepetitionTime").Value
-        Print #iFileNum, JobName & "RepetitionSec " & AutofocusForm.Controls(JobName & "RepetitionSec").Value
-        Print #iFileNum, JobName & "RepetitionMin " & AutofocusForm.Controls(JobName & "RepetitionMin").Value
-        Print #iFileNum, JobName & "RepetitionInterval " & AutofocusForm.Controls(JobName & "RepetitionInterval").Value
-        Print #iFileNum, JobName & "RepetitionNumber " & AutofocusForm.Controls(JobName & "RepetitionNumber").Value
-        Print #iFileNum, JobName & "maxWait " & AutofocusForm.Controls(JobName & "maxWait").Value
-        Print #iFileNum, JobName & "OptimalPtNumber " & AutofocusForm.Controls(JobName & "OptimalPtNumber").Value
-        Print #iFileNum, JobName & "Autofocus " & AutofocusForm.Controls(JobName & "Autofocus").Value
-        Print #iFileNum, JobName & "KeepParent " & AutofocusForm.Controls(JobName & "KeepParent").Value
+        Print #iFileNum, JobName & "RepetitionTime " & AutofocusForm.Controls(JobName & "RepetitionTime").value
+        Print #iFileNum, JobName & "RepetitionSec " & AutofocusForm.Controls(JobName & "RepetitionSec").value
+        Print #iFileNum, JobName & "RepetitionMin " & AutofocusForm.Controls(JobName & "RepetitionMin").value
+        Print #iFileNum, JobName & "RepetitionInterval " & AutofocusForm.Controls(JobName & "RepetitionInterval").value
+        Print #iFileNum, JobName & "RepetitionNumber " & AutofocusForm.Controls(JobName & "RepetitionNumber").value
+        Print #iFileNum, JobName & "maxWait " & AutofocusForm.Controls(JobName & "maxWait").value
+        Print #iFileNum, JobName & "OptimalPtNumber " & AutofocusForm.Controls(JobName & "OptimalPtNumber").value
+        Print #iFileNum, JobName & "Autofocus " & AutofocusForm.Controls(JobName & "Autofocus").value
+        Print #iFileNum, JobName & "KeepParent " & AutofocusForm.Controls(JobName & "KeepParent").value
     End If
     
     Print #iFileNum, ""
@@ -165,7 +165,7 @@ Private Sub JobControlTipText(JobName As String)
     AutofocusForm.Controls(JobName + "ZOffset").ControlTipText = "Add xx to Z from previous imaging Job"
     AutofocusForm.Controls(JobName + "TrackZ").ControlTipText = "Update Z of current point with computed position"
     AutofocusForm.Controls(JobName + "TrackXY").ControlTipText = "Update XY of current point with computed position"
-    AutofocusForm.Controls(JobName + "CenterOfMass").ControlTipText = "Compute new position from center of mass (done within Macro)"
+    AutofocusForm.Controls(JobName + "FocusMethod").ControlTipText = "Compute new position from one of the listed methods. Center of Mass (thr) will cut 80% of the signal and then compute center of mass (done within Macro)"
     AutofocusForm.Controls(JobName + "OiaActive").ControlTipText = "If active macro listens to online image analysis"
     AutofocusForm.Controls(JobName + "OiaSequential").ControlTipText = "Macro waits for image analysis to finish. Acquire image -> OnlineImage analysis -> perform task"
     AutofocusForm.Controls(JobName + "OiaParallel").ControlTipText = "Imaging and analysis run in parallel."
@@ -195,9 +195,9 @@ On Error GoTo SaveFormFcsPage_Error
 
     Print #iFileNum, ""
     Print #iFileNum, "% " & JobName
-    Print #iFileNum, JobName & "Active " & AutofocusForm.Controls(JobName & "Active").Value
-    Print #iFileNum, JobName & "ZOffset " & AutofocusForm.Controls(JobName & "ZOffset").Value
-    Print #iFileNum, JobName & "KeepParent " & AutofocusForm.Controls(JobName & "KeepParent").Value
+    Print #iFileNum, JobName & "Active " & AutofocusForm.Controls(JobName & "Active").value
+    Print #iFileNum, JobName & "ZOffset " & AutofocusForm.Controls(JobName & "ZOffset").value
+    Print #iFileNum, JobName & "KeepParent " & AutofocusForm.Controls(JobName & "KeepParent").value
     
     Print #iFileNum, ""
     Print #iFileNum, JobsFcs.jobDescriptorSettings(JobName)
@@ -270,10 +270,10 @@ Public Sub LoadFormSettings(FileName As String)
                 End If
                 If Left(FieldEntries(0), 4) = "Pump" Then
                     On Error Resume Next
-                    PumpForm.Controls(FieldEntries(0)).Value = FieldEntries(1)
+                    PumpForm.Controls(FieldEntries(0)).value = FieldEntries(1)
                 ElseIf Left(FieldEntries(0), 6) <> "EndJob" Then
                     On Error Resume Next
-                    AutofocusForm.Controls(FieldEntries(0)).Value = FieldEntries(1)
+                    AutofocusForm.Controls(FieldEntries(0)).value = FieldEntries(1)
                 End If
                 If Err Then
                     LogManager.UpdateErrorLog "Warning " & FieldEntries(0) & " does not exist as parameter"

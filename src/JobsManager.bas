@@ -240,7 +240,7 @@ On Error GoTo ExecuteFcsJob_Error
     Dim i As Integer
 
     For i = 0 To UBound(Positions)
-        Positions(i).Z = Positions(i).Z + AutofocusForm.Controls(JobName + "ZOffset").Value * 0.000001
+        Positions(i).Z = Positions(i).Z + AutofocusForm.Controls(JobName + "ZOffset").value * 0.000001
     Next i
     
     If Not CleanFcsData(RecordingDoc, FcsData) Then
@@ -347,10 +347,11 @@ On Error GoTo TrackOffLine_Error
     Dim TrackingChannel As String
     newPosition(0) = currentPosition
     TrackOffLine = currentPosition
-    If AutofocusForm.Controls(JobName & "CenterOfMass") And (AutofocusForm.Controls(JobName & "TrackZ") Or AutofocusForm.Controls(JobName & "TrackXY")) Then
-        TrackingChannel = AutofocusForm.Controls(JobName & "CenterOfMassChannel").List(AutofocusForm.Controls(JobName & "CenterOfMassChannel").ListIndex)
+    If AutofocusForm.Controls(JobName & "FocusMethod").value <> "None" And (AutofocusForm.Controls(JobName & "TrackZ") Or AutofocusForm.Controls(JobName & "TrackXY")) Then
         ''compute center of mass in pixel
-        newPosition(0) = MassCenter(RecordingDoc, TrackingChannel)
+        TrackingChannel = AutofocusForm.Controls(JobName & "CenterOfMassChannel").value
+
+        newPosition(0) = MassCenter(RecordingDoc, TrackingChannel, AutofocusForm.Controls(JobName & "FocusMethod").value)
         If Not checkForMaximalDisplacementVecPixels(JobName, newPosition) Then
             GoTo Abort
         End If
@@ -446,12 +447,12 @@ On Error GoTo ExecuteJobAndTrack_Error
 
         ScanMode = Jobs.getScanMode(JobName)
         If ScanMode = "ZScan" Or ScanMode = "Line" Then
-            AutofocusForm.Controls(JobName & "TrackXY").Value = False
+            AutofocusForm.Controls(JobName & "TrackXY").value = False
         End If
         FileName = FileNameFromGrid(GridName, JobName)
         FilePath = Grids.getThisParentPath(GridName) & FilePathSuffix(GridName, JobName) & "\"
         'FilePath = GridSet
-        StgPos.Z = StgPos.Z + AutofocusForm.Controls(JobName + "ZOffset").Value
+        StgPos.Z = StgPos.Z + AutofocusForm.Controls(JobName + "ZOffset").value
         
         
         If Not ExecuteJob(JobName, RecordingDoc, FilePath, FileName, StgPos) Then
@@ -461,8 +462,8 @@ On Error GoTo ExecuteJobAndTrack_Error
         Time = Timer
         StgPos = TrackOffLine(JobName, RecordingDoc, StgPos)
         
-        If Not AutofocusForm.Controls(JobName & "TrackZ").Value Then
-            StgPos.Z = StgPos.Z - AutofocusForm.Controls(JobName + "ZOffset").Value
+        If Not AutofocusForm.Controls(JobName & "TrackZ").value Then
+            StgPos.Z = StgPos.Z - AutofocusForm.Controls(JobName + "ZOffset").value
         End If
         
         Debug.Print "Time to TrackOffLine " & Timer - Time
@@ -527,7 +528,7 @@ On Error GoTo StartJobOnGrid_Error
     OiaSettings.resetRegistry
     OiaSettings.readFromRegistry
     
-    FileName = AutofocusForm.TextBoxFileName.Value & Grids.getName(JobName, 1, 1, 1, 1) & Grids.suffix(JobName, 1, 1, 1, 1) & Reps.suffix(JobName, 1)
+    FileName = AutofocusForm.TextBoxFileName.value & Grids.getName(JobName, 1, 1, 1, 1) & Grids.suffix(JobName, 1, 1, 1, 1) & Reps.suffix(JobName, 1)
     'create a new Gui document if recquired
     NewRecord RecordingDoc, FileName
     
@@ -749,7 +750,7 @@ End Function
 '
 Private Function FileNameFromGrid(GridName As String, JobName As String) As String
 On Error GoTo FileNameFromGrid_Error
-    FileNameFromGrid = AutofocusForm.TextBoxFileName.Value & Grids.getThisName(GridName) & JobShortNames(JobName) & "_" & Grids.thisSuffix(GridName) & Reps.thisSuffix(GridName)
+    FileNameFromGrid = AutofocusForm.TextBoxFileName.value & Grids.getThisName(GridName) & JobShortNames(JobName) & "_" & Grids.thisSuffix(GridName) & Reps.thisSuffix(GridName)
     Exit Function
    On Error GoTo 0
    Exit Function
@@ -768,7 +769,7 @@ End Function
 Private Function FilePathSuffix(GridName As String, JobName As String) As String
 On Error GoTo FilePathSuffix_Error
 
-    FilePathSuffix = AutofocusForm.TextBoxFileName.Value & Grids.getThisName(GridName) & JobShortNames(JobName)
+    FilePathSuffix = AutofocusForm.TextBoxFileName.value & Grids.getThisName(GridName) & JobShortNames(JobName)
     If (Grids.numCol(GridName) * Grids.numRow(GridName) = 1 And Grids.numColSub(GridName) * Grids.numRowSub(GridName) = 1) Then
         FilePathSuffix = FilePathSuffix & "_" & Grids.thisSuffix(GridName)
         Exit Function
@@ -802,7 +803,7 @@ On Error GoTo checkForMaximalDisplacement_Error
     
     Dim MaxMovementXY As Double
     Dim MaxMovementZ As Double
-    MaxMovementXY = Max(Jobs.getSamplesPerLine(JobName), Jobs.getLinesPerFrame(JobName)) * Jobs.getSampleSpacing(JobName)
+    MaxMovementXY = MAX(Jobs.getSamplesPerLine(JobName), Jobs.getLinesPerFrame(JobName)) * Jobs.getSampleSpacing(JobName)
     MaxMovementZ = Jobs.getFramesPerStack(JobName) * Jobs.getFrameSpacing(JobName)
                                 
     If Abs(newPos.X - currentPos.X) > MaxMovementXY Or Abs(newPos.Y - currentPos.Y) > MaxMovementXY Or Abs(newPos.Z - currentPos.Z) > MaxMovementZ Then
@@ -956,7 +957,7 @@ On Error GoTo UpdateFormFromJob_Error
     Set Record = Jobs.GetRecording(JobName)
     
     For i = 0 To TrackNumber - 1
-       AutofocusForm.Controls(JobName + "Track" + CStr(i + 1)).Value = Jobs.getAcquireTrack(JobName, i)
+       AutofocusForm.Controls(JobName + "Track" + CStr(i + 1)).value = Jobs.getAcquireTrack(JobName, i)
     Next i
          
     jobDescriptor = Jobs.splittedJobDescriptor(JobName, 8)
@@ -966,7 +967,7 @@ On Error GoTo UpdateFormFromJob_Error
     End If
     
     If Jobs.getScanMode(JobName) = "ZScan" Or Jobs.getScanMode(JobName) = "Line" Then
-        AutofocusForm.Controls(JobName + "TrackXY").Value = False
+        AutofocusForm.Controls(JobName + "TrackXY").value = False
         AutofocusForm.Controls(JobName + "TrackXY").Enabled = False
     Else
         AutofocusForm.Controls(JobName + "TrackXY").Enabled = AutofocusForm.Controls(JobName + "Active")
@@ -1025,7 +1026,7 @@ On Error GoTo UpdateJobFromForm_Error
 
     Dim i As Integer
     For i = 0 To TrackNumber - 1
-       Jobs.setAcquireTrack JobName, i, AutofocusForm.Controls(JobName + "Track" + CStr(i + 1)).Value
+       Jobs.setAcquireTrack JobName, i, AutofocusForm.Controls(JobName + "Track" + CStr(i + 1)).value
     Next i
     AutofocusForm.UpdateRepetitionTimes
 
@@ -1238,14 +1239,14 @@ On Error GoTo runSubImagingJob_Error
     Dim maxWait As Double   ' maximal time to wait for the grid
     Dim GridLowBound As Integer
 
-    If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value <> "" Then
-        ptNumber = CInt(AutofocusForm.Controls(JobName + "OptimalPtNumber").Value)
+    If AutofocusForm.Controls(JobName + "OptimalPtNumber").value <> "" Then
+        ptNumber = CInt(AutofocusForm.Controls(JobName + "OptimalPtNumber").value)
     Else
         ptNumber = 0
     End If
     
-    If AutofocusForm.Controls(JobName + "maxWait").Value <> "" Then
-        maxWait = CDbl(AutofocusForm.Controls(JobName + "maxWait").Value)
+    If AutofocusForm.Controls(JobName + "maxWait").value <> "" Then
+        maxWait = CDbl(AutofocusForm.Controls(JobName + "maxWait").value)
     Else
         maxWait = 0
     End If
@@ -1284,22 +1285,22 @@ On Error GoTo runSubImagingJob_Error
         Exit Function
     End If
         
-    If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value = "" And AutofocusForm.Controls(JobName + "maxWait").Value = "" Then
+    If AutofocusForm.Controls(JobName + "OptimalPtNumber").value = "" And AutofocusForm.Controls(JobName + "maxWait").value = "" Then
         ' if the value is empty we image whatever has been found
         runSubImagingJob = True
         Exit Function
     End If
     
-    If AutofocusForm.Controls(JobName + "OptimalPtNumber").Value = "" Then
-        If TimersGridCreation.wait(GridName, CDbl(AutofocusForm.Controls(JobName + "maxWait").Value)) < 0 Then
+    If AutofocusForm.Controls(JobName + "OptimalPtNumber").value = "" Then
+        If TimersGridCreation.wait(GridName, CDbl(AutofocusForm.Controls(JobName + "maxWait").value)) < 0 Then
             runSubImagingJob = True
             Exit Function
         End If
     End If
     
         
-    If AutofocusForm.Controls(JobName + "maxWait").Value = "" Then
-        If Grids.getNrValidPts(GridName) >= AutofocusForm.Controls(JobName + "OptimalPtNumber").Value Then
+    If AutofocusForm.Controls(JobName + "maxWait").value = "" Then
+        If Grids.getNrValidPts(GridName) >= AutofocusForm.Controls(JobName + "OptimalPtNumber").value Then
             'trim grid
             runSubImagingJob = True
             Exit Function
@@ -1307,13 +1308,13 @@ On Error GoTo runSubImagingJob_Error
     End If
     
     'both are unequal 0. you chose which occurs first
-    If Grids.getNrValidPts(GridName) >= AutofocusForm.Controls(JobName + "OptimalPtNumber").Value Then
+    If Grids.getNrValidPts(GridName) >= AutofocusForm.Controls(JobName + "OptimalPtNumber").value Then
         runSubImagingJob = True
         Exit Function
     End If
-    Debug.Print "Wait for " & TimersGridCreation.wait(GridName, CDbl(AutofocusForm.Controls(JobName + "maxWait").Value))
+    Debug.Print "Wait for " & TimersGridCreation.wait(GridName, CDbl(AutofocusForm.Controls(JobName + "maxWait").value))
 
-    If TimersGridCreation.wait(GridName, CDbl(AutofocusForm.Controls(JobName + "maxWait").Value)) < 0 Then
+    If TimersGridCreation.wait(GridName, CDbl(AutofocusForm.Controls(JobName + "maxWait").value)) < 0 Then
         runSubImagingJob = True
         Exit Function
     End If
@@ -1518,7 +1519,7 @@ nextCode:
     '''Check for jobs where time has been exceeded
     For i = 3 To 4
          If Grids.getNrValidPts(JobNames(i)) > 0 Then
-            If TimersGridCreation.wait(JobNames(i), CDbl(AutofocusForm.Controls(JobNames(i) + "maxWait").Value)) < 0 Then
+            If TimersGridCreation.wait(JobNames(i), CDbl(AutofocusForm.Controls(JobNames(i) + "maxWait").value)) < 0 Then
                 LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " execute job " & JobNames(i) & " after maximal time exceeded "
                 'start acquisition of Job on grid named JobName
                 If Not StartJobOnGrid(JobNames(i), JobNames(i), RecordingDoc, ParentPath & parentFile & "\") Then
