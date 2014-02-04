@@ -505,6 +505,7 @@ On Error GoTo StartJobOnGrid_Error
 
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
+    Dim i As Integer
     Dim StgPos As Vector
     '''The name of jobs run for the global mode
     Dim JobNamesGlobal(2) As String
@@ -548,6 +549,8 @@ On Error GoTo StartJobOnGrid_Error
         Sleep (500)
         Exit Function
     End If
+    
+    Grids.setIsRunning GridName, True
     
     While Reps.nextRep(GridName) ' cycle all repetitions
         Grids.setIndeces GridName, 1, 1, 1, 1
@@ -627,6 +630,23 @@ On Error GoTo StartJobOnGrid_Error
                 GoTo StopJob
             End If
             DisplayProgress "Waiting " & CStr(CInt(Reps.wait(JobName))) & " s before scanning repetition  " & Reps.getIndex(JobName) + 1, RGB(&HC0, &HC0, 0)
+            
+            '''Check for extra jobs to run
+            For i = 3 To 4
+                 If Grids.getNrValidPts(JobNames(i)) > 0 And Not Grids.getIsRunning(JobNames(i)) Then
+                    If TimersGridCreation.wait(JobNames(i), CDbl(AutofocusForm.Controls(JobNames(i) + "maxWait").value)) < 0 Then
+                        LogManager.UpdateLog " OnlineImageAnalysis  execute job " & JobNames(i) & " after maximal time exceeded "
+                        'start acquisition of Job on grid named JobName
+                        If Not StartJobOnGrid(JobNames(i), JobNames(i), RecordingDoc, ParentPath & "\") Then
+                            GoTo StopJob
+                        End If
+                        'set all run positions to notValid
+                        Grids.setAllValid JobNames(i), False
+                        Grids.setIsRunning JobNames(i), False
+                    End If
+                End If
+            Next i
+        
         Wend
         Sleep (100)
         DoEvents
@@ -640,6 +660,7 @@ On Error GoTo StartJobOnGrid_Error
         End If
     Wend
     StartJobOnGrid = True
+    Grids.setIsRunning GridName, False
     Exit Function
 StopJob:
     ScanStop = True
@@ -1401,7 +1422,7 @@ On Error GoTo ComputeJobSequential_Error
     For Each code In codeMic
         Select Case code
             Case "nothing", "": 'Nothing to do
-                LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " found nothing "
+                LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " found " & code
                 
             Case "error":
                 OiaSettings.writeKeyToRegistry "codeMic", "nothing"
@@ -1417,6 +1438,8 @@ On Error GoTo ComputeJobSequential_Error
                 LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " took more then " & maxTimeWait & " sec"
             
             Case "focus":
+                LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " focus "
+
                 OiaSettings.writeKeyToRegistry "codeMic", "nothing"
                 If OiaSettings.getPositions(newPositionsPx, Jobs.getCentralPointPx(parentJob)) Then
                     LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " position(s) " & _
@@ -1437,6 +1460,8 @@ On Error GoTo ComputeJobSequential_Error
                 LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " focus at  " & " X = " & newPositions(0).X & " X = " & newPositions(0).Y & " Z = " & newPositions(0).Z
                 
             Case "trigger1", "trigger2": 'store positions for later processing or direct imaging depending on settings
+                LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " found " & code
+
                 OiaSettings.writeKeyToRegistry "codeMic", "nothing"
                 JobName = codeMicToJobName.item(code)
                 DisplayProgress "Registry codeMic " & code & ": store positions and eventually image job" & JobName & "...", RGB(0, &HC0, 0)
@@ -1518,7 +1543,7 @@ nextCode:
 
     '''Check for jobs where time has been exceeded
     For i = 3 To 4
-         If Grids.getNrValidPts(JobNames(i)) > 0 Then
+         If Grids.getNrValidPts(JobNames(i)) > 0 And Not Grids.getIsRunning(JobNames(i)) Then
             If TimersGridCreation.wait(JobNames(i), CDbl(AutofocusForm.Controls(JobNames(i) + "maxWait").value)) < 0 Then
                 LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " execute job " & JobNames(i) & " after maximal time exceeded "
                 'start acquisition of Job on grid named JobName
@@ -1527,6 +1552,7 @@ nextCode:
                 End If
                 'set all run positions to notValid
                 Grids.setAllValid JobNames(i), False
+                Grids.setIsRunning JobNames(i), False
             End If
         End If
     Next i

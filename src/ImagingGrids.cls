@@ -128,9 +128,19 @@ ByVal Col As Long, ByVal RowSub As Long, ByVal ColSub As Long) As String
     End If
 End Function
 
-'''
-'
-'''
+
+Public Function setIsRunning(Name As String, value As Boolean)
+    If checkGridName(Name) Then
+        Grids(GridNames.item(Name)).setIsRunning (value)
+    End If
+End Function
+
+Public Function getIsRunning(Name As String) As Boolean
+    If checkGridName(Name) Then
+        getIsRunning = Grids(GridNames.item(Name)).getIsRunning
+    End If
+End Function
+
 Public Function loadValidGridFile(Name As String, sFile As String, format As String) As Boolean
     If checkGridName(Name) Then
         loadValidGridFile = Grids(GridNames.item(Name)).loadValidGridFile(sFile, format)
@@ -175,16 +185,16 @@ Public Function thisSubColumn(Name As String) As Integer
     End If
 End Function
 
-Public Function getThisPt(Name As String, pos As Vector, Valid As Boolean)
+Public Function getThisPt(Name As String, Pos As Vector, Valid As Boolean)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).getThisPt pos, Valid
+        Grids(GridNames.item(Name)).getThisPt Pos, Valid
     End If
 End Function
 
 
-Public Function setThisPt(Name As String, pos As Vector, Valid As Boolean)
+Public Function setThisPt(Name As String, Pos As Vector, Valid As Boolean)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setThisPt pos, Valid
+        Grids(GridNames.item(Name)).setThisPt Pos, Valid
     End If
 End Function
 
@@ -201,17 +211,17 @@ Public Function getNrValidPts(Name As String) As Long
     End If
 End Function
 
-Public Function getPt(Name As String, pos As Vector, Valid As Boolean, _
+Public Function getPt(Name As String, Pos As Vector, Valid As Boolean, _
 Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).getPt pos, Valid, Row, Col, RowSub, ColSub
+        Grids(GridNames.item(Name)).getPt Pos, Valid, Row, Col, RowSub, ColSub
     End If
 End Function
 
-Public Function setPt(Name As String, pos As Vector, Valid As Boolean, _
+Public Function setPt(Name As String, Pos As Vector, Valid As Boolean, _
 Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setPt pos, Valid, Row, Col, RowSub, ColSub
+        Grids(GridNames.item(Name)).setPt Pos, Valid, Row, Col, RowSub, ColSub
     End If
 End Function
 
@@ -221,9 +231,9 @@ Public Function getThisX(Name As String) As Double
     End If
 End Function
 
-Public Sub setThisX(Name As String, Value As Double)
+Public Sub setThisX(Name As String, value As Double)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setThisX Value
+        Grids(GridNames.item(Name)).setThisX value
     End If
 End Sub
 
@@ -234,9 +244,9 @@ Public Function getThisY(Name As String) As Double
     End If
 End Function
 
-Public Sub setThisY(Name As String, Value As Double)
+Public Sub setThisY(Name As String, value As Double)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setThisY Value
+        Grids(GridNames.item(Name)).setThisY value
     End If
 End Sub
 
@@ -246,9 +256,9 @@ Public Function getThisZ(Name As String) As Double
     End If
 End Function
 
-Public Sub setThisZ(Name As String, Value As Double)
+Public Sub setThisZ(Name As String, value As Double)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setThisZ Value
+        Grids(GridNames.item(Name)).setThisZ value
     End If
 End Sub
 
@@ -258,15 +268,15 @@ Public Function getThisValid(Name As String) As Boolean
     End If
 End Function
 
-Public Sub setThisValid(Name As String, Value As Boolean)
+Public Sub setThisValid(Name As String, value As Boolean)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setThisValid Value
+        Grids(GridNames.item(Name)).setThisValid value
     End If
 End Sub
 
-Public Sub setAllValid(Name As String, Value As Boolean)
+Public Sub setAllValid(Name As String, value As Boolean)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setAllValid Value
+        Grids(GridNames.item(Name)).setAllValid value
     End If
 End Sub
 
@@ -279,9 +289,9 @@ Public Function getX(Name As String, Row As Long, Col As Long, RowSub As Long, C
 End Function
 
 
-Public Sub setX(Name As String, Value As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
+Public Sub setX(Name As String, value As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setX Value, Row, Col, RowSub, ColSub
+        Grids(GridNames.item(Name)).setX value, Row, Col, RowSub, ColSub
     End If
 End Sub
 
@@ -291,9 +301,9 @@ Public Function getY(Name As String, Row As Long, Col As Long, RowSub As Long, C
     End If
 End Function
 
-Public Sub setY(Name As String, Value As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
+Public Sub setY(Name As String, value As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setY Value, Row, Col, RowSub, ColSub
+        Grids(GridNames.item(Name)).setY value, Row, Col, RowSub, ColSub
     End If
 End Sub
 
@@ -303,9 +313,9 @@ Public Function getZ(Name As String, Row As Long, Col As Long, RowSub As Long, C
     End If
 End Function
 
-Public Sub setZ(Name As String, Value As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
+Public Sub setZ(Name As String, value As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setZ Value, Row, Col, RowSub, ColSub
+        Grids(GridNames.item(Name)).setZ value, Row, Col, RowSub, ColSub
     End If
 End Sub
 
@@ -315,9 +325,9 @@ Public Function getValid(Name As String, Row As Long, Col As Long, RowSub As Lon
     End If
 End Function
 
-Public Sub setValid(Name As String, Value As Boolean, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
+Public Sub setValid(Name As String, value As Boolean, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setValid Value, Row, Col, RowSub, ColSub
+        Grids(GridNames.item(Name)).setValid value, Row, Col, RowSub, ColSub
     End If
 End Sub
 
@@ -330,17 +340,17 @@ End Function
 
 
 
-Public Sub makeGridFromOnePt(Name As String, pos As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, dRow As Double, dCol As Double, _
+Public Sub makeGridFromOnePt(Name As String, Pos As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, dRow As Double, dCol As Double, _
 dRowSub As Double, dColSub As Double, Optional refRow As Integer = 1, Optional refCol As Integer = 1)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).makeGridFromOnePt pos, Row, Col, RowSub, ColSub, dRow, dCol, dRowSub, dColSub, refRow, refCol
+        Grids(GridNames.item(Name)).makeGridFromOnePt Pos, Row, Col, RowSub, ColSub, dRow, dCol, dRowSub, dColSub, refRow, refCol
     End If
 End Sub
 
-Public Sub makeGridFromManyPts(Name As String, pos() As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, _
+Public Sub makeGridFromManyPts(Name As String, Pos() As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, _
 dRowSub As Double, dColSub As Double)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).makeGridFromManyPts pos, Row, Col, RowSub, ColSub, dRowSub, dColSub
+        Grids(GridNames.item(Name)).makeGridFromManyPts Pos, Row, Col, RowSub, ColSub, dRowSub, dColSub
     End If
 End Sub
 
@@ -372,22 +382,22 @@ Public Function getThisParentPath(Name As String) As String
 End Function
 
 
-Public Sub setThisName(Name As String, Value As String)
+Public Sub setThisName(Name As String, value As String)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setThisName Value
+        Grids(GridNames.item(Name)).setThisName value
     End If
 End Sub
 
-Public Sub setThisParentPath(Name As String, Value As String)
+Public Sub setThisParentPath(Name As String, value As String)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setThisParentPath Value
+        Grids(GridNames.item(Name)).setThisParentPath value
     End If
 End Sub
 
 
-Public Sub setAllParentPath(Name As String, Value As String)
+Public Sub setAllParentPath(Name As String, value As String)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setAllParentPath Value
+        Grids(GridNames.item(Name)).setAllParentPath value
     End If
 End Sub
 
@@ -406,9 +416,9 @@ Public Function getParentPath(Name As String, numRow As Long, numCol As Long, nu
     End If
 End Function
 
-Public Sub setParentPath(Name As String, Value As String, numRow As Long, numCol As Long, numRowSub As Long, numColSub As Long)
+Public Sub setParentPath(Name As String, value As String, numRow As Long, numCol As Long, numRowSub As Long, numColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setParentPath Value, numRow, numCol, numRowSub, numColSub
+        Grids(GridNames.item(Name)).setParentPath value, numRow, numCol, numRowSub, numColSub
     End If
 End Sub
 
