@@ -14,12 +14,14 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-
-
 Private Sub Change_Settings_Click()
     Pump = True
     PauseEndAcquisition = PumpForm.Pump_interval_Jobs
     PumpForm.Hide
+End Sub
+
+Private Sub Pump_interval_Jobs_Change()
+
 End Sub
 
 Private Sub Start_Imaging_Click()

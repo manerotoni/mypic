@@ -19,7 +19,7 @@ Attribute VB_Exposed = False
 '---------------------------------------------------------------------------------------
 ' Module    : AutofocusForm
 ' Author    : Antonio Politi
-' Version   : 3.0.15
+' Version   : 3.0.17
 ' Purpose   : Form to manage Imagingd Fcs Jobs
 ' WARNING ZEN does not use spatial units in a consistent way. Switches between um and meter and pixel WARNING''''''''''''''''''''
 ' for imaging and moving the stage
@@ -88,7 +88,7 @@ End Sub
 '''''
 Public Sub UserForm_Initialize()
     DisplayProgress "Initializing Macro ...", RGB(&HC0, &HC0, 0)
-    Version = " v3.0.16"
+    Version = " v3.0.17"
     Dim i As Integer
     ZENv = getVersionNr
     'find the version of the software
@@ -248,11 +248,7 @@ Private Sub Re_Start()
         Me.Controls(CStr(Name) + "Active").value = False
         SwitchEnableFcsPage CStr(Name), Me.Controls(CStr(Name) + "Active").value
     Next Name
-    
-    'Trigger2Autofocus.Value = False
 
-    'Trigger2Autofocus.Value = False
-    
     Set Reps = New ImagingRepetitions
     ReDim RepNames(2)
     RepNames(0) = "Global"    'this is Autofocus Acquisition and AlterAcquisition job
@@ -1222,6 +1218,7 @@ End Sub
 Private Sub Fcs1Acquire_Click()
     JobFcsAcquire "Fcs1"
 End Sub
+
 '''''
 ' Looping/RepetitionSettings
 '''''
@@ -1235,10 +1232,10 @@ End Sub
 
 Private Sub RepetitionMin(Name As String)
     'if previously it was in sec divide by 60
-    Me.Controls(Name + "RepetitionTime").value = CDbl(Me.Controls(Name + "RepetitionTime").value / 60)
+    'Me.Controls(Name + "RepetitionTime").value = CDbl(Me.Controls(Name + "RepetitionTime").value / 60)
     Me.Controls(Name + "RepetitionMin").BackColor = &HFF8080
     Me.Controls(Name + "RepetitionSec").BackColor = &H8000000F
-    Me.Controls(Name + "RepetitionTime").MAX = 60
+    Me.Controls(Name + "RepetitionTime").MAX = 360
     RepetitionTime (Name)
 End Sub
 
@@ -1246,7 +1243,7 @@ End Sub
 Private Sub RepetitionSec(Name As String)
     Me.Controls(Name + "RepetitionTime").MAX = 360
     Debug.Print CDbl(Me.Controls(Name + "RepetitionTime").value)
-    Me.Controls(Name + "RepetitionTime").value = CDbl(Me.Controls(Name + "RepetitionTime").value) * 60
+    'Me.Controls(Name + "RepetitionTime").value = CDbl(Me.Controls(Name + "RepetitionTime").value) * 60
     Me.Controls(Name + "RepetitionSec").BackColor = &HFF8080
     Me.Controls(Name + "RepetitionMin").BackColor = &H8000000F
     RepetitionTime (Name)
@@ -1254,11 +1251,12 @@ End Sub
 
 Private Sub RepetitionMinChange(Name As String)
     If Me.Controls(Name + "RepetitionMin").value Then
+        Me.Controls(Name + "RepetitionSec").value = Not Me.Controls(Name + "RepetitionMin").value
         RepetitionMin Name
     Else
+        Me.Controls(Name + "RepetitionSec").value = Not Me.Controls(Name + "RepetitionMin").value
         RepetitionSec Name
     End If
-    Me.Controls(Name + "RepetitionSec").value = Not Me.Controls(Name + "RepetitionMin").value
 End Sub
 
 Private Sub RepetitionSecChange(Name As String)
