@@ -40,11 +40,11 @@ Public Property Get AcquireTrack() As Boolean()
     AcquireTrack = pAcquireTrack
 End Property
 
-Public Property Let AcquireTrack(Value() As Boolean)
+Public Property Let AcquireTrack(value() As Boolean)
     Dim i As Integer
-    ReDim pAcquireTrack(UBound(Value))
-    For i = 0 To UBound(Value)
-        pAcquireTrack(i) = Value(i)
+    ReDim pAcquireTrack(UBound(value))
+    For i = 0 To UBound(value)
+        pAcquireTrack(i) = value(i)
     Next i
 End Property
 
@@ -65,8 +65,8 @@ Public Function setJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
     
     If ZENv > 2010 Then
         If Recording.ScanDirection = 1 Then
-            CorrX = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value
-            CorrY = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value
+            CorrX = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.value
+            CorrY = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.value
         End If
         'Debug.Print "nr Lasers " & ZEN.gui.Acquisition.Channels.Track.LaserLine.ItemCount
         
@@ -153,11 +153,11 @@ Public Function putJob(ZEN As Object, Optional Extensive As Boolean)
 '   the correction is not saved in the DsRecording
     If ZENv > 2010 Then
          If Recording.ScanDirection Then
-             If ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value <> CorrX Then
-                ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.Value = CorrX
+             If ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.value <> CorrX Then
+                ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.value = CorrX
              End If
-             If ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value <> CorrY Then
-                 ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.Value = CorrY
+             If ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.value <> CorrY Then
+                 ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.value = CorrY
              End If
          End If
      End If
@@ -169,9 +169,9 @@ ErrorHandle:
     MsgBox "Error in AJob.putJob " + Name + " " + Err.Description
 End Function
 
-Public Sub setAcquireTrack(iTrack As Integer, Value As Boolean)
+Public Sub setAcquireTrack(iTrack As Integer, value As Boolean)
     If UBound(pAcquireTrack) >= iTrack Then
-        pAcquireTrack(iTrack) = Value
+        pAcquireTrack(iTrack) = value
     End If
 End Sub
 
@@ -191,8 +191,8 @@ Public Function getAcquireTrack(iTrack As Integer) As Boolean
     End If
 End Function
 
-Public Sub ReDimAcquireTrack(Value As Integer)
-    ReDim Preserve pAcquireTrack(Value)
+Public Sub ReDimAcquireTrack(value As Integer)
+    ReDim Preserve pAcquireTrack(value)
 End Sub
 
 
@@ -200,9 +200,9 @@ Public Function GetRecording() As DsRecording
     Set GetRecording = Recording
 End Function
 
-Public Sub SetRecording(Value As DsRecording)
+Public Sub SetRecording(value As DsRecording)
    Set Recording = Lsm5.CreateBackupRecording
-   Recording.Copy Value
+   Recording.Copy value
    TrackNumber = Recording.GetNormalTrackCount
 End Sub
 
@@ -458,7 +458,7 @@ End Function
 ''''
 ' change a job from a descriptor
 '''
-Public Function changeJobFromDescriptor(Descriptor As String, Value As Variant)
+Public Function changeJobFromDescriptor(Descriptor As String, value As Variant)
     Dim Success As Integer
     If Recording Is Nothing Then
         MsgBox "AJob.changeJobFromDescriptor Recording has not been initiated!"
@@ -466,54 +466,54 @@ Public Function changeJobFromDescriptor(Descriptor As String, Value As Variant)
     
     Select Case Descriptor
         Case "JobName":
-            Name = CStr(Value)
+            Name = CStr(value)
         Case "pixelDwell":
-            pixelDwell = CDbl(Value)
+            pixelDwell = CDbl(value)
         Case "ScanMode":
-            Recording.ScanMode = CStr(Value)
+            Recording.ScanMode = CStr(value)
         Case "SamplesPerLine":
-            Recording.SamplesPerLine = CLng(Value)
+            Recording.SamplesPerLine = CLng(value)
         Case "LinesPerFrame":
-            Recording.LinesPerFrame = CLng(Value)
+            Recording.LinesPerFrame = CLng(value)
         Case "LineStepNumber":
-            Recording.LineStepNumber = CLng(Value)
+            Recording.LineStepNumber = CLng(value)
         Case "SamplingNumber":
-            Debug.Print Value
-            Me.SamplingNumber = CLng(Value)
+            Debug.Print value
+            Me.SamplingNumber = CLng(value)
         Case "SamplingMode":
-            Me.SamplingMode = CLng(Value)
+            Me.SamplingMode = CLng(value)
         Case "SamplingMethod":
-            Me.SamplingMethod = CLng(Value)
+            Me.SamplingMethod = CLng(value)
         Case "BitDepth":
-            Me.BitDepth = CLng(Value)
+            Me.BitDepth = CLng(value)
         Case "ScanDirection":
-            Recording.ScanDirection = CLng(Value)
+            Recording.ScanDirection = CLng(value)
         Case "CorrX":
-            Me.CorrX = CDbl(Value)
+            Me.CorrX = CDbl(value)
         Case "CorrY":
-            Me.CorrY = CDbl(Value)
+            Me.CorrY = CDbl(value)
         Case "FramesPerStack":
-            Recording.framesPerStack = CLng(Value)
+            Recording.framesPerStack = CLng(value)
         Case "FrameSpacing":
-            Recording.frameSpacing = CDbl(Value)
+            Recording.frameSpacing = CDbl(value)
         Case "Bleaching":
-            If CBool(Value) Then
-                Recording.TrackObjectBleach(Success).Acquire = CBool(Value)
-                Recording.TrackObjectBleach(Success).UseBleachParameters = CBool(Value)
+            If CBool(value) Then
+                Recording.TrackObjectBleach(Success).Acquire = CBool(value)
+                Recording.TrackObjectBleach(Success).UseBleachParameters = CBool(value)
             End If
         Case "UseRoi":
-            Me.UseRoi = CBool(Value)
+            Me.UseRoi = CBool(value)
         Case "Zoom":
-            Recording.ZoomX = CDbl(Value)
-            Recording.ZoomY = CDbl(Value)
+            Recording.ZoomX = CDbl(value)
+            Recording.ZoomY = CDbl(value)
         Case "SpecialScanMode":
-            Recording.SpecialScanMode = CStr(Value)
+            Recording.SpecialScanMode = CStr(value)
         Case "TimeSeries":
-            Recording.TimeSeries = CBool(Value)
+            Recording.TimeSeries = CBool(value)
         Case "StacksPerRecord":
-            Recording.StacksPerRecord = CLng(Value)
+            Recording.StacksPerRecord = CLng(value)
         Case "TimeBetweenStacks":
-            Me.TimeBetweenStacks = CDbl(Value)
+            Me.TimeBetweenStacks = CDbl(value)
         Case "EndJobDef":
             
         Case Else:

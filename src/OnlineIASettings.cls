@@ -180,21 +180,21 @@ End Function
 '''
 ' Check existence of Key and whether Item is consistent with it
 ''
-Public Function checkKeyItem(Key As Variant, Value As Variant)
+Public Function checkKeyItem(Key As Variant, value As Variant)
     Dim errorMsg As String
     If Settings.Exists(Key) Then
-        Settings.item(Key) = Value
+        Settings.item(Key) = value
         Select Case Key
             Case "codeOia"
-                checkKeyItem = checkSubkey(CStr(Key), Value, subKey_codeOia_HowTo)
+                checkKeyItem = checkSubkey(CStr(Key), value, subKey_codeOia_HowTo)
                 Exit Function
             Case "codeMic"
-                checkKeyItem = checkSubkey(CStr(Key), Value, subKey_codeMic_HowTo)
+                checkKeyItem = checkSubkey(CStr(Key), value, subKey_codeMic_HowTo)
                 Exit Function
             Case "roiAim"
-                checkKeyItem = checkSubkey(CStr(Key), Value, subKey_roiAim_HowTo)
+                checkKeyItem = checkSubkey(CStr(Key), value, subKey_roiAim_HowTo)
             Case "roiType"
-                checkKeyItem = checkSubkey(CStr(Key), Value, subKey_roiType_HowTo)
+                checkKeyItem = checkSubkey(CStr(Key), value, subKey_roiType_HowTo)
                 Exit Function
             Case Else
                 checkKeyItem = True
@@ -207,13 +207,13 @@ Public Function checkKeyItem(Key As Variant, Value As Variant)
     End If
 End Function
 
-Public Function checkSubkey(KeyName As String, Value As Variant, subKey_HowTo As Dictionary) As Boolean
+Public Function checkSubkey(KeyName As String, value As Variant, subKey_HowTo As Dictionary) As Boolean
     Dim errorMsg As String
     Dim Key As Variant
     Dim code As Variant
     Dim codeArr() As String
     Dim item As Variant
-    codeArr = Split(Value, ";")
+    codeArr = Split(value, ";")
     For Each code In codeArr
         code = Replace(code, " ", "")
         On Error GoTo noKey
@@ -312,13 +312,13 @@ End Sub
 '   writeKeyToRegistry()
 '       Write a specific value in Key of registry
 ''''
-Public Sub writeKeyToRegistry(Key As Variant, Value As Variant)
+Public Sub writeKeyToRegistry(Key As Variant, value As Variant)
     Dim Success As Boolean
     checkExistKeys
     
-    If checkKeyItem(Key, Value) Then
-        Settings.item(Key) = Value
-        SaveSetting "OnlineImageAnalysis", "macro", Key, Value
+    If checkKeyItem(Key, value) Then
+        Settings.item(Key) = value
+        SaveSetting "OnlineImageAnalysis", "macro", Key, value
     End If
 End Sub
 

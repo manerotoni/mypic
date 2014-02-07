@@ -130,11 +130,11 @@ On Error GoTo AcquireJob_Error
     If Not Recenter_post(position.Z, SuccessRecenter, ZENv) Then
        Exit Function
     End If
-    While Not isReady(5)
-        SleepWithEvents (500)
-    Wend
+    'While Not isReady(5)
+    '    SleepWithEvents (500)
+    'Wend
     ''workaround to avoid Fcs crashes
-    SleepWithEvents (PauseEndAcquisition)
+    'SleepWithEvents (PauseEndAcquisition)
     'Debug.Print "Time to recenter post " & Round(Timer - Time, 3)
     AcquireJob = True
     LogManager.UpdateLog " Acquire job " & JobName & " " & RecordingName & " at X = " & position.X & ", Y =  " & position.Y & _
@@ -197,11 +197,12 @@ On Error GoTo AcquireFcsJob_Error
     If Not ScanToFcs(RecordingDoc, FcsData) Then
         Exit Function
     End If
-    While Not isReady(5)
-        SleepWithEvents (500)
-    Wend
+    'This may causes error
+    'While Not isReady(5)
+    '    SleepWithEvents (500)
+    'Wend
     'workaround for crashes
-    SleepWithEvents (PauseEndAcquisition)
+    'SleepWithEvents (PauseEndAcquisition)
     AcquireFcsJob = True
     posTxt = ""
     For i = 0 To UBound(Positions)
@@ -601,7 +602,6 @@ On Error GoTo StartJobOnGrid_Error
             If ScanPause = True Then
                 If Not AutofocusForm.Pause Then ' Pause is true if Resume
                     GoTo StopJob
-                    Exit Function
                 End If
             End If
         Loop While Grids.nextGridPt(JobName, AutofocusForm.GridScan_WellsFirst)
@@ -611,6 +611,10 @@ On Error GoTo StartJobOnGrid_Error
         If Reps.wait(JobName) > 0 Then
             DisplayProgress "Waiting " & CStr(CInt(Reps.wait(JobName))) & " s before scanning repetition  " & Reps.getIndex(JobName) + 1, RGB(&HC0, &HC0, 0)
             DoEvents
+        End If
+        
+        If AutofocusForm.StopAfterRepetition Then
+            GoTo StopJob
         End If
         
         While ((Reps.wait(JobName) > 0) And (Reps.getIndex(JobName) < Reps.getRepetitionNumber(JobName)))
@@ -646,7 +650,6 @@ On Error GoTo StartJobOnGrid_Error
                     End If
                 End If
             Next i
-        
         Wend
         Sleep (100)
         DoEvents

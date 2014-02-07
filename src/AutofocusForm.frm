@@ -4,7 +4,7 @@ Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} AutofocusForm
    ClientHeight    =   13530
    ClientLeft      =   45
    ClientTop       =   330
-   ClientWidth     =   7575
+   ClientWidth     =   7665
    OleObjectBlob   =   "AutofocusForm.frx":0000
    ShowModal       =   0   'False
    StartUpPosition =   3  'Windows Default
@@ -41,7 +41,6 @@ Public Version As String
 Private Const DebugCode = False             ' this is should be disabled for the moment
 Private Const ReleaseName = True            'this adds the ZEN version
 Private Const LogCode = True                'sets key to run tests visible or not
-
 
 
 
@@ -1499,7 +1498,6 @@ End Sub
 ''''
 Private Sub StopAfterRepetition_Click()
 
-
     If StopAfterRepetition.value Then
         StopAfterRepetition.BackColor = 12648447
     Else
@@ -1707,7 +1705,7 @@ Private Sub GetCurrentPositionOffsetButton_Click()
     'Check if there is an existing document then start acquisition
     Set node = viewerGuiServer.ExperimentTreeNodeSelected
     If Not node Is Nothing Then
-        If node.type <> eExperimentTeeeNodeTypeLsm Then
+        If node.Type <> eExperimentTeeeNodeTypeLsm Then
             Lsm5.NewScanWindow
         End If
         Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
@@ -1801,7 +1799,7 @@ Public Sub AutofocusButton_Click()
     'Check if there is an existing document then start acquisition
     Set node = viewerGuiServer.ExperimentTreeNodeSelected
     If Not node Is Nothing Then
-        If node.type <> eExperimentTeeeNodeTypeLsm Then
+        If node.Type <> eExperimentTeeeNodeTypeLsm Then
             Lsm5.NewScanWindow
         End If
         Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
@@ -2009,7 +2007,9 @@ Private Function StartSetting() As Boolean
     Dim initPos As Boolean   'if False and gridsize correspond positions are taken from file positionsGrid.csv
     Dim SuccessRecenter As Boolean
     Dim Pos() As Vector
-    
+    Dim PosCurr As Vector   'current position
+    Lsm5.Hardware.CpStages.GetXYPosition PosCurr.X, PosCurr.Y
+    PosCurr.Z = Lsm5.Hardware.CpFocus.position
     
     initPos = True
     StartSetting = False
@@ -2022,7 +2022,8 @@ Private Function StartSetting() As Boolean
         MsgBox ("Select at least one location in the stage control window, or uncheck the multiple location button")
         Exit Function
     End If
-    'This loads value of Databasename
+    
+    ''Create and check directory for output and log files
     SetDatabase
     If GlobalDataBaseName = "" Then
         MsgBox ("No outputfolder selected ! Cannot start acquisition.")
@@ -2053,7 +2054,7 @@ Private Function StartSetting() As Boolean
         End If
     End If
     SetFileName
-    If Not AcquisitionTracksOn And Not AutofocusActive And Not AlterAcquisitionActive Then
+    If Not AcquisitionActive And Not AutofocusActive And Not AlterAcquisitionActive Then
         MsgBox ("Nothing to do! Check at least one imaging option!")
         Exit Function
     End If
@@ -2065,51 +2066,47 @@ Private Function StartSetting() As Boolean
     'As default we do not overwrite files
     OverwriteFiles = False
     
-    If MultipleLocationToggle Then
-        If GridScanActive Then
-            If MarkCount = 0 Then  ' No marked position
-                MsgBox "GridScan: Use stage to Mark at least the initial position "
-                Exit Function
-            End If
-            GridScan_nColumn.value = MarkCount
-            GridScan_nRow.value = 1
-            Grids.updateGridSize "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
-        Else
-            Grids.updateGridSize "Global", 1, MarkCount, 1, 1
-        End If
+    
+    DisplayProgress "Initialize all grid positions...", RGB(0, &HC0, 0)
+    
+    '''Get Marked positions''''
+    Pos = getMarkedStagePosition
+    If GridCurrentZposition And MarkCount > 0 Then
+        For i = 0 To MarkCount - 1
+            Pos(i).Z = PosCurr.Z
+        Next i
     End If
     
-    If SingleLocationToggle Then
-        If GridScanActive Then
-            If MarkCount = 0 Then  ' No marked position
-                MsgBox "GridScan: Use stage to Mark at least the initial position "
-                Exit Function
-            End If
-            ReDim Pos(0)
-            Lsm5.Hardware.CpStages.MarkGetZ 0, Pos(0).X, Pos(0).Y, Pos(0).Z
+    '''Set Grid'''
+    If GridScanActive Then
+        If MarkCount = 0 Then  ' No marked position
+            MsgBox "GridScan: Use stage to Mark at least the initial position "
+            Exit Function
+        End If
+        '''regular spaced grid starting from Pos(0)'''
+        If SingleLocationToggle Then
             Grids.makeGridFromOnePt "Global", Pos(0), GridScan_nRow.value, GridScan_nColumn.value, _
             GridScan_nRowsub.value, GridScan_nColumnsub.value, GridScan_dRow.value, GridScan_dColumn.value, _
             GridScan_dRowsub.value, GridScan_dColumnsub.value, GridScan_refRow.value, GridScan_refColumn.value
-            DisplayProgress "Initialize all grid positions...DONE", RGB(0, &HC0, 0)
-        Else
-            ReDim Pos(0)
-            Lsm5.Hardware.CpStages.GetXYPosition Pos(0).X, Pos(0).Y
-            Pos(0).Z = Lsm5.Hardware.CpFocus.position
-            Grids.makeGridFromOnePt "Global", Pos(0), 1, 1, 1, 1, 0, 0, 0, 0
-            initPos = False
         End If
-        'GoTo GridReady
+        '''Grid based on marked positions with subgrid''''
+        If MultipleLocationToggle Then
+            GridScan_nColumn.value = MarkCount
+            GridScan_nRow.value = 1
+            Grids.makeGridFromManyPts "Global", Pos, 1, MarkCount, GridScan_nRowsub, GridScan_nColumnsub, GridScan_dRowsub, GridScan_dColumnsub
+        End If
+    Else
+        If SingleLocationToggle Then
+            Grids.makeGridFromOnePt "Global", PosCurr, 1, 1, 1, 1, 0, 0, 0, 0
+        End If
+        '''Grid based on marked positions without subgrid'''
+        If MultipleLocationToggle Then
+            Grids.makeGridFromManyPts "Global", Pos, 1, MarkCount, 1, 1, 0, 0
+        End If
     End If
+            
     
-   
-        
-    
-    If GridScan_nColumn.value * GridScan_nRow.value * GridScan_nColumnsub.value * GridScan_nRowsub.value > 10000 Then
-        MsgBox "GridScan: Maximal number of locations is 10000. Please change Numbers  X and/or Y."
-        Exit Function
-    End If
-    
-    
+    '''Load positions and validity from file'''
     If GridScanPositionFile <> "" Then
         If Grids.loadPositionGridFile("Global", GridScanPositionFile) Then
             Dim GridDim() As Long
@@ -2127,37 +2124,22 @@ Private Function StartSetting() As Boolean
         End If
     End If
         
-    If initPos Then
-            DisplayProgress "Initialize all positions....", RGB(0, &HC0, 0)
-            If MultipleLocationToggle.value Then
-                ReDim Pos(MarkCount - 1)
-                For i = 0 To MarkCount - 1
-                    Lsm5.Hardware.CpStages.MarkGetZ i, Pos(i).X, Pos(i).Y, Pos(i).Z
-                Next i
-                Grids.makeGridFromManyPts "Global", Pos, 1, MarkCount, GridScan_nRowsub.value, GridScan_nColumnsub.value, GridScan_dRowsub.value, GridScan_dColumnsub.value
-            Else
-                ReDim Pos(0)
-                Lsm5.Hardware.CpStages.MarkGetZ 0, Pos(0).X, Pos(0).Y, Pos(0).Z
-                Grids.makeGridFromOnePt "Global", Pos(0), GridScan_nRow.value, GridScan_nColumn.value, _
-                GridScan_nRowsub.value, GridScan_nColumnsub.value, GridScan_dRow.value, GridScan_dColumn.value, _
-                GridScan_dRowsub.value, GridScan_dColumnsub.value, GridScan_refRow.value, GridScan_refColumn.value
-                DisplayProgress "Initialize all grid positions...DONE", RGB(0, &HC0, 0)
-            End If
-    End If
-        
-    
     If GridScanValidFile <> "" Then
         Dim FormatValidFile As String
         FormatValidFile = Grids.isValidGridFile("Global", GridScanValidFile, GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub)
-        If Grids.loadValidGridFile(Name, GridScanValidFile, FormatValidFile) Then
-            
-        Else
+        If Not Grids.loadValidGridFile(Name, GridScanValidFile, FormatValidFile) Then
             MsgBox "Not able to use " & GridScanValidFile & " for loading valid positions."
+            Exit Function
         End If
     End If
     
-GridReady:
-
+    If GridScan_nColumn.value * GridScan_nRow.value * GridScan_nColumnsub.value * GridScan_nRowsub.value > 10000 Then
+        MsgBox "GridScan: Maximal number of locations is 10000. Please change Numbers  X and/or Y."
+        Exit Function
+    End If
+    
+    DisplayProgress "Initialize all grid positions...DONE", RGB(0, &HC0, 0)
+    
     Grids.writePositionGridFile "Global", GlobalDataBaseName & "positionsGrid.csv"
     Grids.writeValidGridFile "Global", GlobalDataBaseName & "validGrid.csv"
 
@@ -2166,6 +2148,7 @@ GridReady:
         SetDatabase
         SaveFormSettings GlobalDataBaseName & "\AutofocusScreen.ini"
     End If
+    
     Grids.setAllParentPath "Global", GlobalDataBaseName
     StartSetting = True
     Exit Function

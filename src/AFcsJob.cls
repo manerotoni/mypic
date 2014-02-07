@@ -108,8 +108,8 @@ Public Function setJobAi(ZEN As Object) As Boolean
         
         For i = 0 To NrLasers - 1
             ZEN.gui.Fcs.LightPath.Lasers.ByIndex = i
-            LaserActive(i) = ZEN.gui.Fcs.LightPath.Lasers.On.Value
-            LaserTransmission(i) = ZEN.gui.Fcs.LightPath.Lasers.Transmission.Value / 100
+            LaserActive(i) = ZEN.gui.Fcs.LightPath.Lasers.On.value
+            LaserTransmission(i) = ZEN.gui.Fcs.LightPath.Lasers.Transmission.value / 100
             LaserName(i) = ZEN.gui.Fcs.LightPath.Lasers.ByName
         Next i
         
@@ -118,14 +118,14 @@ Public Function setJobAi(ZEN As Object) As Boolean
         
         For i = 0 To NrLasers - 1
             ZEN.gui.Fcs.LightPath.BleachLasers.ByIndex = i
-            BleachActive(i) = ZEN.gui.Fcs.LightPath.BleachLasers.On.Value
-            BleachTransmission(i) = ZEN.gui.Fcs.LightPath.BleachLasers.Transmission.Value / 100
+            BleachActive(i) = ZEN.gui.Fcs.LightPath.BleachLasers.On.value
+            BleachTransmission(i) = ZEN.gui.Fcs.LightPath.BleachLasers.Transmission.value / 100
         Next i
         MeasurementTime = FcsControl.AcquisitionParameters.MeasurementTime
         Repetitions = FcsControl.AcquisitionParameters.MeasurementRepeat
         BleachTime = FcsControl.AcquisitionParameters.BleachTime
-        PositionsEnabled = ZEN.gui.Fcs.EnablePositions.Value
-        TimeSeriesEnabled = ZEN.gui.Fcs.EnableTimeSeries.Value
+        PositionsEnabled = ZEN.gui.Fcs.EnablePositions.value
+        TimeSeriesEnabled = ZEN.gui.Fcs.EnableTimeSeries.value
         setJobAi = True
 
     Else
@@ -172,8 +172,8 @@ Public Function putJobAi(ZEN As Object) As Boolean
             End If
             Exit Function
         End If
-        ZEN.gui.Fcs.EnablePositions.Value = PositionsEnabled
-        ZEN.gui.Fcs.EnableTimeSeries.Value = TimeSeriesEnabled
+        ZEN.gui.Fcs.EnablePositions.value = PositionsEnabled
+        ZEN.gui.Fcs.EnableTimeSeries.value = TimeSeriesEnabled
         ZEN.SetDouble "Fcs.Acquisition.MeasureTime", MeasurementTime
         ZEN.SetDouble "Fcs.Acquisition.Repetitions", Repetitions
         ZEN.SetDouble "Fcs.Acquisition.BleachTime", BleachTime
@@ -312,23 +312,23 @@ End Function
 ''''
 ' change a job from a descriptor
 '''
-Public Function changeJobFromDescriptor(Descriptor As String, Value As Variant)
+Public Function changeJobFromDescriptor(Descriptor As String, value As Variant)
     
     Select Case Descriptor
         Case "JobFcsName":
-            Name = CStr(Value)
+            Name = CStr(value)
         Case "LightPathConfig":
-            LightPathConfig = CStr(Value)
+            LightPathConfig = CStr(value)
         Case "PositionsEnabled":
-            PositionsEnabled = CBool(Value)
+            PositionsEnabled = CBool(value)
         Case "TimeSeriesEnabled":
-            TimeSeriesEnabled = CBool(Value)
+            TimeSeriesEnabled = CBool(value)
         Case "MeasurementTime":
-            MeasurementTime = CDbl(Value)
+            MeasurementTime = CDbl(value)
         Case "Repetitions":
-            Repetitions = CInt(Value)
+            Repetitions = CInt(value)
         Case "BleachTime":
-            BleachTime = CDbl(Value)
+            BleachTime = CDbl(value)
         Case "EndJobFcsDef":
             
         Case Else:

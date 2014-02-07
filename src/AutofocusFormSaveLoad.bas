@@ -165,7 +165,11 @@ Private Sub JobControlTipText(JobName As String)
     AutofocusForm.Controls(JobName + "ZOffset").ControlTipText = "Add xx to Z from previous imaging Job"
     AutofocusForm.Controls(JobName + "TrackZ").ControlTipText = "Update Z of current point with computed position"
     AutofocusForm.Controls(JobName + "TrackXY").ControlTipText = "Update XY of current point with computed position"
-    AutofocusForm.Controls(JobName + "FocusMethod").ControlTipText = "Compute new position from one of the listed methods. Center of Mass (thr) will cut 80% of the signal and then compute center of mass (done within Macro)"
+    AutofocusForm.Controls(JobName + "LabelMethod").ControlTipText = "Compute new position within VBA macro from one of the listed methods. Center of Mass (thr): threshold image to keep 20% brightestpart and compute center of mass" & _
+    ". Peak: use maximal value." & " Center of Mass: compute center of mass using the whole image"
+    AutofocusForm.Controls(JobName + "LabelMethod").ControlTipText = "Compute new position within VBA macro from one of the listed methods. Center of Mass (thr): threshold image to keep 20% brightestpart and compute center of mass" & _
+    ". Peak: use maximal value." & " Center of Mass: compute center of mass using the whole image"
+    AutofocusForm.Controls(JobName + "LabelChannel").ControlTipText = "Channel used to compute position"
     AutofocusForm.Controls(JobName + "OiaActive").ControlTipText = "If active macro listens to online image analysis"
     AutofocusForm.Controls(JobName + "OiaSequential").ControlTipText = "Macro waits for image analysis to finish. Acquire image -> OnlineImage analysis -> perform task"
     AutofocusForm.Controls(JobName + "OiaParallel").ControlTipText = "Imaging and analysis run in parallel."

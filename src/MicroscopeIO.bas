@@ -260,7 +260,7 @@ Public Function NewRecord(RecordingDoc As DsRecordingDoc, Name As String, Option
         'node.type = eExperimentTeeeNodeTypeLsm
         'viewerGuiServer.InsertExperimentTreeNode node, True, Container (this last option does not exist for ZEN<2011)
         Set node = Lsm5.NewDocument
-        node.type = eExperimentTeeeNodeTypeLsm
+        node.Type = eExperimentTeeeNodeTypeLsm
         Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
         While RecordingDoc.IsBusy
             SleepWithEvents (100)
@@ -345,7 +345,7 @@ Public Function NewFcsRecord(RecordingDoc As DsRecordingDoc, FcsData As AimFcsDa
         'node.type = eExperimentTeeeNodeTypeConfoCor
         'viewerGuiServer.InsertExperimentTreeNode node, True, Container (this last option does not exist for ZEN<2011)
         Set node = Lsm5.NewDocument
-        node.type = eExperimentTeeeNodeTypeConfoCor
+        node.Type = eExperimentTeeeNodeTypeConfoCor
         Set FcsData = node.FcsData
         FcsData.Name = Name
         Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
@@ -575,7 +575,7 @@ End Function
 Public Function FailSafeMoveStageZ(Z As Double) As Boolean
     FailSafeMoveStageZ = False
     If ZBacklash <> 0 Then
-        Lsm5.Hardware.CpFocus.position = Z - ZBacklash ' move at correct position
+        Lsm5.Hardware.CpFocus.position = Z - ZBacklash ' move at a position with some offset off (this should improve the precision)
         Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy Or Lsm5.Hardware.CpFocus.IsBusy
             Sleep (20)
             If GetInputState() <> 0 Then
@@ -598,7 +598,7 @@ Public Function FailSafeMoveStageZ(Z As Double) As Boolean
             End If
         End If
     Loop
-
+    'Sleep (100)
     FailSafeMoveStageZ = True
 End Function
 
@@ -938,6 +938,7 @@ Public Function Recenter2011(Z As Double) As Boolean
                 Exit Function
             End If
         End If
+        
     End If
     DoEvents
     'this messes around with the slice number. Don't use it

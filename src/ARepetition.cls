@@ -43,10 +43,10 @@ Public Function thisSuffix() As String
 End Function
 
 
-Public Function suffix(Value As Integer) As String
+Public Function suffix(value As Integer) As String
     Dim nrZero As Integer
-    nrZero = maxZeros - Len(CStr(Value))
-    suffix = "_T" + ZeroString(nrZero) + CStr(Value)
+    nrZero = maxZeros - Len(CStr(value))
+    suffix = "_T" + ZeroString(nrZero) + CStr(value)
 End Function
 
 

@@ -159,10 +159,10 @@ Public Function jobDescriptorSettings(Name As String) As String
     jobDescriptorSettings = Jobs(JobNames.item(Name)).jobDescriptorSettings
 End Function
 
-Public Function changeJobFromDescriptor(Name As String, Descriptor As String, Value As Variant)
+Public Function changeJobFromDescriptor(Name As String, Descriptor As String, value As Variant)
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    changeJobFromDescriptor = Jobs(JobNames.item(Name)).changeJobFromDescriptor(Descriptor, Value)
+    changeJobFromDescriptor = Jobs(JobNames.item(Name)).changeJobFromDescriptor(Descriptor, value)
 End Function
 

@@ -339,7 +339,7 @@ Public Function writeValidGridFile(Name As String, sFile As String) As Boolean
 End Function
 
 
-
+'''TODO: These two functions should be fused into one'''
 Public Sub makeGridFromOnePt(Name As String, Pos As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, dRow As Double, dCol As Double, _
 dRowSub As Double, dColSub As Double, Optional refRow As Integer = 1, Optional refCol As Integer = 1)
     If checkGridName(Name) Then
@@ -353,7 +353,7 @@ dRowSub As Double, dColSub As Double)
         Grids(GridNames.item(Name)).makeGridFromManyPts Pos, Row, Col, RowSub, ColSub, dRowSub, dColSub
     End If
 End Sub
-
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Public Function thisSuffix(Name As String) As String
     If checkGridName(Name) Then
