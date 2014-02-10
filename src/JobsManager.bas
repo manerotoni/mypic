@@ -774,7 +774,7 @@ End Function
 '
 Private Function FileNameFromGrid(GridName As String, JobName As String) As String
 On Error GoTo FileNameFromGrid_Error
-    FileNameFromGrid = AutofocusForm.TextBoxFileName.value & Grids.getThisName(GridName) & JobShortNames(JobName) & "_" & Grids.thisSuffix(GridName) & Reps.thisSuffix(GridName)
+    FileNameFromGrid = AutofocusForm.TextBoxFileName.value & Grids.getThisName(GridName) & JobShortNames(JobName) & FNSep & Grids.thisSuffix(GridName) & Reps.thisSuffix(GridName)
     Exit Function
    On Error GoTo 0
    Exit Function
@@ -795,14 +795,14 @@ On Error GoTo FilePathSuffix_Error
 
     FilePathSuffix = AutofocusForm.TextBoxFileName.value & Grids.getThisName(GridName) & JobShortNames(JobName)
     If (Grids.numCol(GridName) * Grids.numRow(GridName) = 1 And Grids.numColSub(GridName) * Grids.numRowSub(GridName) = 1) Then
-        FilePathSuffix = FilePathSuffix & "_" & Grids.thisSuffix(GridName)
+        FilePathSuffix = FilePathSuffix & FNSep & Grids.thisSuffix(GridName)
         Exit Function
     End If
     If (Grids.numCol(GridName) * Grids.numRow(GridName) > 1 And Not Grids.numColSub(GridName) * Grids.numRowSub(GridName) > 1) _
     Or (Not Grids.numCol(GridName) * Grids.numRow(GridName) > 1 And Grids.numColSub(GridName) * Grids.numRowSub(GridName) > 1) Then
-        FilePathSuffix = FilePathSuffix & "_" & Grids.thisSuffix(GridName)
+        FilePathSuffix = FilePathSuffix & FNSep & Grids.thisSuffix(GridName)
     Else
-        FilePathSuffix = FilePathSuffix & "_" & Grids.thisSuffixWell(GridName) & "\" & FilePathSuffix & "_" & Grids.thisSuffix(GridName)
+        FilePathSuffix = FilePathSuffix & FNSep & Grids.thisSuffixWell(GridName) & "\" & FilePathSuffix & FNSep & Grids.thisSuffix(GridName)
     End If
 
    On Error GoTo 0

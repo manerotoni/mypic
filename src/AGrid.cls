@@ -174,7 +174,7 @@ Public Function thisSuffix() As String
     End If
     If iPosition >= 0 Then
         nrZero = maxZeros - Len(CStr(iPosition))
-        Name = Name + "_P" + ZeroString(nrZero) + CStr(iPosition)
+        Name = Name + FNSep + "P" + ZeroString(nrZero) + CStr(iPosition)
     End If
     thisSuffix = Name
 End Function
@@ -216,7 +216,7 @@ Public Function suffix(Row As Long, Col As Long, RowSub As Long, ColSub As Long)
         End If
         If iPosition >= 0 Then
             nrZero = maxZeros - Len(CStr(iPosition))
-            Name = Name + "_P" + ZeroString(nrZero) + CStr(iPosition)
+            Name = Name + FNSep + "P" + ZeroString(nrZero) + CStr(iPosition)
         End If
         suffix = Name
     End If
@@ -245,8 +245,8 @@ Public Sub setName(value As String, Row As Long, Col As Long, RowSub As Long, Co
     If correctIndeces(Row, Col, RowSub, ColSub) Then
         GridArray(Row, Col, RowSub, ColSub).Name = value
         If value <> "" Then
-            If Right(value, 1) <> "_" Then
-                GridArray(Row, Col, RowSub, ColSub).Name = value & "_"
+            If Right(value, 1) <> FNSep Then
+                GridArray(Row, Col, RowSub, ColSub).Name = value & FNSep
             End If
         End If
     End If
@@ -889,7 +889,7 @@ Public Function isValidGridFile(ByVal sFile As String, Row As Long, Col As Long,
         Wend
         RegEx.Pattern = CellBase
         If RegEx.test(Fields) Then
-            format = "cellbase"
+            isValidGridFile = "cellbase"
         Else
             'standard format
             FieldEntries = Split(Fields, " ")
@@ -937,9 +937,9 @@ Public Function loadValidGridFile(ByVal sFile As String, format As String) As Bo
     Dim RegEx As VBScript_RegExp_55.RegExp
     Set RegEx = CreateObject("vbscript.regexp")
     Dim Match As MatchCollection
-    CellBase = "(\d+)--(\d+)--(\d+)--(\S+)--(\S+)"
+    CellBase = "(\d+)--(\d+)--(\d+)--(\(\d+\,\d+\))--(\S+)--(\S+)"
     Dim Active As Boolean
-    If format <> "none" Or format <> "" Then
+    If format <> "none" And format <> "" Then
         iFileNum = FreeFile()
         Open sFile For Input As iFileNum
         If format = "default" Then
@@ -969,22 +969,26 @@ Public Function loadValidGridFile(ByVal sFile As String, format As String) As Bo
                 RegEx.Pattern = CellBase
                 If RegEx.test(Fields) Then
                     Set Match = RegEx.Execute(Fields)
-                    Active = (Match.item(0).SubMatches.item(4) <> "none")
+                    Active = (Match.item(0).SubMatches.item(5) <> "none") And (Match.item(0).SubMatches.item(4) <> "none")
                     GoodMatch = True
                 End If
                 'check it
                 'if this gridposition exists then update activity
-'                If GoodMatch And CInt(Match.Item(0).SubMatches.Item(1)) <= UBound(posGridXY_Valid, 1) And CInt(Match.Item(0).SubMatches.Item(1)) >= LBound(posGridXY_Valid, 1) _
-'                And CInt(Match.Item(0).SubMatches.Item(2)) <= UBound(posGridXY_Valid, 2) And CInt(Match.Item(0).SubMatches.Item(2)) >= LBound(posGridXY_Valid, 2) Then
-'                    For iRowSub = 1 To UBound(posGridXY_Valid, 3)
-'                        For iColSub = 1 To UBound(posGridXY_Valid, 4)
-'                            GridArray(CInt(Match.Item(0).SubMatches.Item(1)), CInt(Match.Item(0).SubMatches.Item(2)), iRowSub, iColSub).Valid = Active
-'                            setName Match.Item(0).SubMatches.Item(3) & "_" & Match.Item(0).SubMatches.Item(4), CInt(Match.Item(0).SubMatches.Item(1)), CInt(Match.Item(0).SubMatches.Item(2)), iRowSub, iColSub
-'                        Next iColSub
-'                    Next iRowSub
-'                End If
+                Debug.Print Match.item(0).SubMatches.item(1)
+                Debug.Print Match.item(0).SubMatches.item(2)
+                
+                If GoodMatch And CInt(Match.item(0).SubMatches.item(1)) <= Me.numRow And CInt(Match.item(0).SubMatches.item(1)) >= 1 _
+                And CInt(Match.item(0).SubMatches.item(2)) <= Me.numCol And CInt(Match.item(0).SubMatches.item(2)) >= 1 Then
+                    For iRowSub = 1 To Me.numRowSub
+                        For iColSub = 1 To Me.numColSub
+                            GridArray(CInt(Match.item(0).SubMatches.item(1)), CInt(Match.item(0).SubMatches.item(2)), iRowSub, iColSub).Valid = Active
+                            GridArray(CInt(Match.item(0).SubMatches.item(1)), CInt(Match.item(0).SubMatches.item(2)), iRowSub, iColSub).Name = Match.item(0).SubMatches.item(3) & FNSep & Match.item(0).SubMatches.item(4) & FNSep & Match.item(0).SubMatches.item(5) & FNSep
+                        Next iColSub
+                    Next iRowSub
+                End If
             Loop
         End If
+        loadValidGridFile = True
     Else
         MsgBox ("loadValidGridFile: was not able to understand format " & format & " of " & sFile)
     End If

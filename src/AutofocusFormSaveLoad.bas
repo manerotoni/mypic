@@ -46,7 +46,6 @@ On Error GoTo SaveFormSettings_Error
     'Grid Acquisition
     Print #iFileNum, "% Grid "
     Print #iFileNum, "GridScanActive " & AutofocusForm.GridScanActive.value
-    Print #iFileNum, "GridScan_validGridDefault " & AutofocusForm.GridScan_validGridDefault.value
     Print #iFileNum, "GridScan_nRow " & AutofocusForm.GridScan_nRow.value
     Print #iFileNum, "GridScan_nColumn " & AutofocusForm.GridScan_nColumn.value
     Print #iFileNum, "GridScan_dRow " & AutofocusForm.GridScan_dRow.value
@@ -61,6 +60,9 @@ On Error GoTo SaveFormSettings_Error
     Print #iFileNum, "GridScan_WellsFirst " & AutofocusForm.GridScan_WellsFirst.value
     Print #iFileNum, "GridCurrentZPosition " & AutofocusForm.GridCurrentZposition
     Print #iFileNum, "GridMarkedZPosition " & AutofocusForm.GridMarkedZPosition
+    Print #iFileNum, "GridScanPositionFile " & AutofocusForm.GridScanPositionFile
+    Print #iFileNum, "GridScanValidFile " & AutofocusForm.GridScanValidFile
+    
     
     'Save water pump settings
     Print #iFileNum, "% Pump "

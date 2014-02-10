@@ -16,6 +16,10 @@ Public FileSystem As FileSystemObject
 Public Log     As Boolean          'If true we log data during the macro
 
 
+'''
+' Separates different part of file name
+'''
+Public Const FNSep = "_"
 '''''
 ' Variables that are set to build the name of the files
 '''''

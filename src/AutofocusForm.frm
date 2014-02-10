@@ -50,6 +50,7 @@ Private Const LogCode = True                'sets key to run tests visible or no
 
 
 
+
 Private Sub ShowOiaKeys_Click()
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
@@ -476,19 +477,37 @@ End Sub
 '   create a focusMap using teh Autofocus Channel
 ''''
 Private Sub FocusMap_Click()
+    Dim RepValue As Long
+    Dim AcqAct As Boolean
+    Dim AltAct As Boolean
+    
     ' This will run just in the AutofocusMode all the AcquisitionTracks are set off
-'    SetDatabase
-'    SaveFormSettings GlobalDataBaseName & "\tmpSettings.ini"
-'    AcquisitionTracksSetOff
-'    'change values
-'    GlobalRepetitionNumber.Value = 1
-'    BlockTimeDelay = 0
-'    GlobalRepetitionSec_Click
-'    AlterAcquisitionActive.Value = False
-'    StartButton_Click
-'    WritePosFile GlobalDataBaseName & "\" & TextBoxFileName.Value & "positionsGrid.csv", posGridX, posGridY, posGridZ
+    If GlobalDataBaseName = "" Then
+        MsgBox ("No outputfolder selected cannot start acquisition")
+        Exit Sub
+    End If
+    
+    If Not AutofocusActive Then
+        MsgBox ("Autofocus job must be set to do a FocusMap")
+    End If
+
+    SetDatabase
+    GridScanPositionFile.value = ""
+    AcqAct = AcquisitionActive
+    AltAct = AlterAcquisitionActive
+    RepValue = GlobalRepetitionNumber.value
+    
+    AcquisitionActive = False
+    AlterAcquisitionActive = False
+    'change values
+    GlobalRepetitionNumber.value = 1
+    StartButton_Click
+    Grids.writePositionGridFile "Global", GlobalDataBaseName & "\" & "focusMap.csv"
+    GridScanPositionFile.value = GlobalDataBaseName & "\" & "focusMap.csv"
 '    'Return to original values for the
-'    LoadFormSettings GlobalDataBaseName & "\tmpSettings.ini"
+    GlobalRepetitionNumber.value = RepValue
+    AcquisitionActive = AcqAct
+    AlterAcquisitionActive = AltAct
 End Sub
 
 
@@ -1097,7 +1116,11 @@ Private Sub putJob(JobName As String)
     Pos = getMarkedStagePosition
     
     If ZENv > 2010 And Not ZEN Is Nothing Then
-        ZEN.gui.Acquisition.Regions.Delete.Execute
+        Dim vo As AimImageVectorOverlay
+        Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
+        If vo.GetNumberElements > 0 Then
+            ZEN.gui.Acquisition.Regions.Delete.Execute
+        End If
     End If
     
     Jobs.putJob JobName, ZEN
@@ -1138,7 +1161,11 @@ Private Sub JobAcquire(JobName As String)
         GlobalRecordingDoc.BringToTop
     End If
     If ZENv > 2010 And Not ZEN Is Nothing Then
-        ZEN.gui.Acquisition.Regions.Delete.Execute
+        Dim vo As AimImageVectorOverlay
+        Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
+        If vo.GetNumberElements > 0 Then
+            ZEN.gui.Acquisition.Regions.Delete.Execute
+        End If
     End If
     Dim position As Vector
     position.X = Lsm5.Hardware.CpStages.PositionX
@@ -1419,7 +1446,6 @@ End Sub
 ''''
 Public Sub SwitchEnableGridScanPage(Enable As Boolean)
 
-    GridScan_validGridDefault.Enabled = Enable
     GridScan_posLabel.Enabled = Enable
     GridScan_nColumnLabel.Enabled = Enable And Not MultipleLocationToggle
     GridScan_nRowLabel.Enabled = Enable And Not MultipleLocationToggle
@@ -2118,7 +2144,6 @@ Private Function StartSetting() As Boolean
                 GridScan_nRowsub.value = GridDim(2)
                 GridScan_nColumnsub.value = GridDim(3)
             End If
-            initPos = False
         Else
             MsgBox "Not able to use " & GridScanPositionFile & ". Resetting the positions."
         End If
@@ -2127,7 +2152,7 @@ Private Function StartSetting() As Boolean
     If GridScanValidFile <> "" Then
         Dim FormatValidFile As String
         FormatValidFile = Grids.isValidGridFile("Global", GridScanValidFile, GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub)
-        If Not Grids.loadValidGridFile(Name, GridScanValidFile, FormatValidFile) Then
+        If Not Grids.loadValidGridFile("Global", GridScanValidFile, FormatValidFile) Then
             MsgBox "Not able to use " & GridScanValidFile & " for loading valid positions."
             Exit Function
         End If
@@ -2312,8 +2337,8 @@ End Sub
 
 Private Sub SetFileName()
     If TextBoxFileName.value <> "" Then
-        If Right(TextBoxFileName.value, 1) <> "_" Then
-            TextBoxFileName.value = TextBoxFileName.value & "_"
+        If Right(TextBoxFileName.value, Len(FNSep)) <> FNSep Then
+            TextBoxFileName.value = TextBoxFileName.value & FNSep
         End If
     End If
 End Sub
