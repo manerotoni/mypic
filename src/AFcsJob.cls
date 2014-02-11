@@ -24,6 +24,7 @@ Private Repetitions As Integer
 Private BleachTime As Double
 Private PositionsEnabled As Boolean
 Private TimeSeriesEnabled As Boolean
+Private ptimeToAcquire As Double 'time to acquire a job in seconds
 
 'Private Filters() As Long
 'Private Channels() As Long
@@ -38,6 +39,15 @@ Private TimeSeriesEnabled As Boolean
 'Private SelectCh2 As Boolean
 'Private SelectCh1Ch2 As Boolean
 'Private SelectCh2Ch1 As Boolean
+
+Public Property Get timeToAcquire() As Double
+    timeToAcquire = ptimeToAcquire
+End Property
+    
+
+Public Property Let timeToAcquire(value As Double)
+    ptimeToAcquire = value
+End Property
 
 '''
 ' setJob(ZEN As Object, ZENv As Integer)

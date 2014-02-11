@@ -126,6 +126,7 @@ On Error GoTo SaveFormPage_Error
     Print #iFileNum, JobName & "OiaSequential " & AutofocusForm.Controls(JobName & "OiaSequential").value
     Print #iFileNum, JobName & "OiaParallel " & AutofocusForm.Controls(JobName & "OiaParallel").value
     Print #iFileNum, JobName & "SaveImage " & AutofocusForm.Controls(JobName & "SaveImage").value
+    Print #iFileNum, JobName & "TimeOut " & AutofocusForm.Controls(JobName & "TimeOut").value
     
     If JobName = "Trigger1" Or JobName = "Trigger2" Then
         Print #iFileNum, JobName & "RepetitionSec " & AutofocusForm.Controls(JobName & "RepetitionSec").value
@@ -206,7 +207,7 @@ On Error GoTo SaveFormFcsPage_Error
     Print #iFileNum, JobName & "Active " & AutofocusForm.Controls(JobName & "Active").value
     Print #iFileNum, JobName & "ZOffset " & AutofocusForm.Controls(JobName & "ZOffset").value
     Print #iFileNum, JobName & "KeepParent " & AutofocusForm.Controls(JobName & "KeepParent").value
-    
+    Print #iFileNum, JobName & "TimeOut " & AutofocusForm.Controls(JobName & "KeepParent").value
     Print #iFileNum, ""
     Print #iFileNum, JobsFcs.jobDescriptorSettings(JobName)
     Exit Sub

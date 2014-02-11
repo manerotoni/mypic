@@ -42,7 +42,7 @@ Public Grids As ImagingGrids
 ''' Timers initiated when great is created, reinitialized if recquired
 Public TimersGridCreation As Timers
 
-
+Private Const TimeOutOverHead = 1
 
 
 
@@ -117,7 +117,7 @@ On Error GoTo AcquireJob_Error
     'Time = Timer
     'checks if any of the track is on
     If Jobs.isAcquiring(JobName) Then
-        If Not ScanToImage(RecordingDoc) Then
+        If Not ScanToImage(RecordingDoc, Jobs.getTimeToAcquire(JobName)) Then
             Exit Function
         End If
     Else
@@ -195,7 +195,7 @@ On Error GoTo AcquireFcsJob_Error
         End If
     End If
     CurrentJobFcs = JobName
-    If Not ScanToFcs(RecordingDoc, FcsData) Then
+    If Not ScanToFcs(RecordingDoc, FcsData, JobsFcs.getTimeToAcquire(JobName)) Then
         Exit Function
     End If
     'This may causes error
@@ -240,7 +240,8 @@ Positions() As Vector, positionsPx() As Vector) As Boolean
 On Error GoTo ExecuteFcsJob_Error
     
     Dim i As Integer
-
+    Dim Time As Double
+    
     For i = 0 To UBound(Positions)
         Positions(i).Z = Positions(i).Z + AutofocusForm.Controls(JobName + "ZOffset").value * 0.000001
     Next i
@@ -248,10 +249,14 @@ On Error GoTo ExecuteFcsJob_Error
     If Not CleanFcsData(RecordingDoc, FcsData) Then
         Exit Function
     End If
-    
+    Time = Timer
     If Not AcquireFcsJob(JobName, RecordingDoc, FcsData, FileName, Positions) Then
         Exit Function
     End If
+    If JobsFcs.getTimeToAcquire(JobName) = 0 And AutofocusForm.Controls(JobName + "TimeOut") Then
+        JobsFcs.setTimeToAcquire JobName, Timer - Time + TimeOutOverHead
+    End If
+    
     'this is a dummy variable used for consistencey except for autofocus the default is saving of all images
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
@@ -296,9 +301,13 @@ End Function
 Public Function ExecuteJob(JobName As String, RecordingDoc As DsRecordingDoc, FilePath As String, FileName As String, _
 StgPos As Vector, Optional deltaZ As Integer = -1) As Boolean
 On Error GoTo ExecuteJob_Error
-
+    Dim Time As Double
+    Time = Timer
     If Not AcquireJob(JobName, RecordingDoc, FileName, StgPos) Then
         Exit Function
+    End If
+    If Jobs.getTimeToAcquire(JobName) = 0 And AutofocusForm.Controls(JobName + "TimeOut") Then
+        Jobs.setTimeToAcquire JobName, Timer - Time + TimeOutOverHead
     End If
     'this is a dummy variable used for consistencey except for autofocus the default is saving of all images
     Dim OiaSettings As OnlineIASettings

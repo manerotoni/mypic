@@ -158,15 +158,14 @@ End Sub
 '   ScanToImage (RecordingDoc As DsRecordingDoc) As Boolean
 '   scan overwrite the same image, even with several z-slices
 '''''
-Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
+Public Function ScanToImage(RecordingDoc As DsRecordingDoc, Optional TimeOut As Double = -1) As Boolean
     On Error GoTo ErrorHandle:
+    Dim Time As Double
     Dim ProgressFifo As IAimProgressFifo ' this shows how far you are with the acquisition image ( the blue bar at the bottom). The usage of it makes the macro quite slow
     Dim AcquisitionController As AimScanController
     Dim treenode As Object
-    Dim Time As Double
     'Dim gui As Object
     'Set gui = Lsm5.ViewerGuiServer not recquired anymore
-    Time = Timer
     If RecordingDoc Is Nothing Then
         Exit Function
     End If
@@ -178,18 +177,24 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc) As Boolean
     Set ProgressFifo = AcquisitionController.DestinationImage(0)
     Lsm5.tools.CheckLockControllers True
     AcquisitionController.StartGrab eGrabModeSingle
+    Time = Timer
     'Set RecordingDoc = Lsm5.StartScan this does not overwrite
     If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
     'Debug.Print "ScanToImage part1 " & Round(Timer - Time, 3)
     Sleep (PauseGrabbing)
-    Time = Timer
     While RecordingDoc.IsBusy
         Sleep (PauseGrabbing)
         DoEvents
         If ScanStop Then
               Exit Function
         End If
+        If TimeOut > 0 And (Timer - Time > TimeOut) Then
+            LogManager.UpdateErrorLog "TimeOut of image acquisition  after " & TimeOut & " sec"
+            Lsm5.StopAcquisition
+            GoTo ExitWhile
+        End If
     Wend
+ExitWhile:
     ScanToImage = True
     Exit Function
 ErrorHandle:
@@ -200,9 +205,10 @@ End Function
 ''''
 ' Start Fcs Measurment
 ''''
-Public Function ScanToFcs(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData) As Boolean
+Public Function ScanToFcs(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, Optional TimeOut As Double = -1) As Boolean
     On Error GoTo ErrorHandle
     Dim FcsControl As AimFcsController
+    Dim Time As Double
     Set FcsControl = Fcs
     If FcsData Is Nothing Then
       Exit Function
@@ -216,14 +222,20 @@ Public Function ScanToFcs(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData)
 '           Exit Function
 '        End If
 '    Wend
-    
+    Time = Timer
     While FcsControl.IsAcquisitionRunning(1)
         Sleep (PauseGrabbing)
         If ScanStop Then
             Exit Function
         End If
         DoEvents
+        If TimeOut > 0 And (Timer - Time > TimeOut) Then
+            LogManager.UpdateErrorLog "TimeOut of Fcs acquisition  after " & TimeOut & " sec"
+            FcsControl.StopAcquisitionAndWait
+            GoTo ExitWhile
+        End If
     Wend
+ExitWhile:
     ScanToFcs = True
     Exit Function
 ErrorHandle:
@@ -676,8 +688,14 @@ Public Sub setMarkedStagePosition(Pos() As Vector)
 On Error GoTo getMarkedStagePosition_Error
         Lsm5.Hardware.CpStages.MarkClearAll
         For i = 0 To UBound(Pos)
-            Lsm5.Hardware.CpStages.MarkAddZ Pos(i).X, Pos(i).Y, Pos(i).Z
+                Lsm5.Hardware.CpStages.MarkAddZ Pos(i).X, Pos(i).Y, Pos(i).Z
         Next i
+        Debug.Print Lsm5.Hardware.CpStages.MarkCount
+        If UBound(Pos) + 1 > Lsm5.Hardware.CpStages.MarkCount Then
+            For i = 0 To UBound(Pos)
+                Lsm5.Hardware.CpStages.MarkAddZ Pos(i).X, Pos(i).Y, Pos(i).Z
+            Next i
+        End If
     End If
    On Error GoTo 0
    Exit Sub

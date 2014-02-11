@@ -26,7 +26,7 @@ Public SamplingNumber As Long
 Public SamplingMode As Long
 Public SamplingMethod As Long
 Public BitDepth As Long
-
+Private ptimeToAcquire As Double 'time to acquire a job in seconds
 '''a Job can also have Rois associated to it
 Private Rois() As Roi
 ''Number of Rois associated to the Job
@@ -35,7 +35,15 @@ Private pRoiMaxNr As Integer
 
 
 
+Public Property Get timeToAcquire() As Double
+    timeToAcquire = ptimeToAcquire
+End Property
+    
 
+Public Property Let timeToAcquire(value As Double)
+    ptimeToAcquire = value
+End Property
+    
 Public Property Get AcquireTrack() As Boolean()
     AcquireTrack = pAcquireTrack
 End Property

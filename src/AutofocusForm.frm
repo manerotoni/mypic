@@ -531,6 +531,7 @@ Private Sub SwitchEnablePage(JobName As String, Enable As Boolean)
             Me.Controls(JobName + "DefaultPiezo").Enabled = Enable
         End If
     End If
+    Me.Controls(JobName + "TimeOut").Enabled = Enable
     Me.Controls(JobName + "Label").Enabled = Enable
     For i = 1 To 4
         Me.Controls(JobName + "Track" + CStr(i)).Enabled = Enable
@@ -607,6 +608,7 @@ Private Sub SwitchEnableFcsPage(JobName As String, Enable As Boolean)
     Me.Controls(JobName + "ZOffset").Enabled = Enable
     Me.Controls(JobName + "ZOffsetLabel").Enabled = Enable
     Me.Controls(JobName + "KeepParent").Enabled = Enable
+    Me.Controls(JobName + "TimeOut").Enabled = Enable
     Dim jobDescription() As String
     jobDescription = JobsFcs.splittedJobDescriptor(JobName, 8)
     Me.Controls(JobName + "Label1").Caption = jobDescription(0)
@@ -2105,6 +2107,14 @@ Private Function StartSetting() As Boolean
                 Me.Controls(Job + "OiaActive") = True
             End If
         End If
+    Next Job
+    
+    '''Set acquisition time to 0
+    For Each Job In JobNames
+        Jobs.setTimeToAcquire CStr(Job), 0
+    Next Job
+    For Each Job In JobFcsNames
+        JobsFcs.setTimeToAcquire CStr(Job), 0
     Next Job
     
     

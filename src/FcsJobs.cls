@@ -31,6 +31,22 @@ Private Sub MsgNoJob(Name As String)
     MsgBox "ImagingJobs: Job " & Name & " has not been defined"
 End Sub
 
+Public Function setTimeToAcquire(Name As String, value As Double)
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    Jobs(JobNames.item(Name)).timeToAcquire = value
+End Function
+
+
+Public Function getTimeToAcquire(Name As String) As Double
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    getTimeToAcquire = Jobs(JobNames.item(Name)).timeToAcquire
+End Function
+
+
 '''
 '   Initialize a series of Jobs with given name
 '''
