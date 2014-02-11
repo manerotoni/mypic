@@ -156,6 +156,7 @@ NoError:
             Me.Controls(JobNames(i) + "FocusMethod").AddItem "Center of Mass (thr)"
             Me.Controls(JobNames(i) + "FocusMethod").AddItem "Peak"
             Me.Controls(JobNames(i) + "FocusMethod").AddItem "Center of Mass"
+            Me.Controls(JobNames(i) + "FocusMethod").AddItem "Online img. analysis"
             Me.Controls(JobNames(i) + "FocusMethod").ListIndex = 0
     Next i
 
@@ -819,9 +820,6 @@ Private Sub JobTrackXYZChange(JobName As String)
     Me.Controls(JobName + "CenterOfMassChannel").Enabled = (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")) _
     And Me.Controls(JobName + "FocusMethod") <> "None"
     Me.Controls(JobName + "FocusMethod").Enabled = Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")
-    If Not (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")) Then
-        'Me.Controls(JobName + "CenterOfMass").value = False
-    End If
 End Sub
 
 Private Sub AutofocusTrackZ_Change()
@@ -868,27 +866,34 @@ Private Sub Trigger2TrackXY_Change()
 End Sub
 
 '''
-' If CenterOfMass = True an internal analysis of center of mass is done
+' If one of the method is true an internal analysis of center of mass is done
 '''
+Private Sub FocusMethodChange(JobName As String)
+    Me.Controls(JobName + "CenterOfMassChannel").Enabled = Me.Controls(JobName + "FocusMethod") <> "None" And Me.Controls(JobName + "FocusMethod") <> "Online img. analysis"
+    If Me.Controls(JobName + "FocusMethod") = "Online img. analysis" Then
+        Me.Controls(JobName + "OiaActive") = True
+    End If
+End Sub
+
 Private Sub AutofocusFocusMethod_Change()
-    AutofocusCenterOfMassChannel.Enabled = AutofocusFocusMethod <> "None"
+   FocusMethodChange "Autofocus"
 End Sub
 
 Private Sub AcquisitionFocusMethod_Change()
-    AcquisitionCenterOfMassChannel.Enabled = AcquisitionFocusMethod <> "None"
+    FocusMethodChange "Acquisition"
 End Sub
 
 Private Sub AlterAcquisitionFocusMethod_Change()
-    AlterAcquisitionCenterOfMassChannel.Enabled = AlterAcquisitionFocusMethod <> "None"
+    FocusMethodChange "AlterAcquisition"
 End Sub
 
 
 Private Sub Trigger1FocusMethod_Change()
-    Trigger1CenterOfMassChannel.Enabled = Trigger1FocusMethod <> "None"
+    FocusMethodChange "Trigger1"
 End Sub
 
 Private Sub Trigger2FocusMethod_Change()
-    Trigger2CenterOfMassChannel.Enabled = Trigger2FocusMethod <> "None"
+    FocusMethodChange "Trigger2"
 End Sub
 
 
@@ -2023,6 +2028,8 @@ Public Sub Execute_StartButton()
 End Sub
 
 
+
+
 ''''''
 '   StartSetting()
 '   Setups and controls before start of experiment
@@ -2032,6 +2039,8 @@ Private Function StartSetting() As Boolean
     Dim i As Integer
     Dim initPos As Boolean   'if False and gridsize correspond positions are taken from file positionsGrid.csv
     Dim SuccessRecenter As Boolean
+    Dim Job As Variant
+    
     Dim Pos() As Vector
     Dim PosCurr As Vector   'current position
     Lsm5.Hardware.CpStages.GetXYPosition PosCurr.X, PosCurr.Y
@@ -2080,10 +2089,25 @@ Private Function StartSetting() As Boolean
         End If
     End If
     SetFileName
+    '''Consistency check
     If Not AcquisitionActive And Not AutofocusActive And Not AlterAcquisitionActive Then
         MsgBox ("Nothing to do! Check at least one imaging option!")
         Exit Function
     End If
+    
+    ''''Track consistency check
+    For Each Job In JobNames
+        If Me.Controls(Job + "Active") And (Me.Controls(Job + "TrackZ") Or Me.Controls(Job + "TrackXY")) Then
+            If Me.Controls(Job + "FocusMethod") = "None" Then
+                MsgBox ("For Job " & Job & ". To TrackZ and/or TrackXY Focus Method must be different then None!")
+                Exit Function
+            End If
+            If Me.Controls(Job + "FocusMethod") = "Online img. analysis" Then
+                Me.Controls(Job + "OiaActive") = True
+            End If
+        End If
+    Next Job
+    
     
     ' do not log if logfilename has not been defined
     If LogCode And LogFileName = "" Then
