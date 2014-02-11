@@ -19,7 +19,7 @@ Attribute VB_Exposed = False
 '---------------------------------------------------------------------------------------
 ' Module    : AutofocusForm
 ' Author    : Antonio Politi
-' Version   : 3.0.18
+' Version   : 3.0.19
 ' Purpose   : Form to manage Imagingd Fcs Jobs
 ' WARNING ZEN does not use spatial units in a consistent way. Switches between um and meter and pixel WARNING''''''''''''''''''''
 ' for imaging and moving the stage
@@ -41,6 +41,8 @@ Public Version As String
 Private Const DebugCode = False             ' this is should be disabled for the moment
 Private Const ReleaseName = True            'this adds the ZEN version
 Private Const LogCode = True                'sets key to run tests visible or not
+
+
 
 
 
@@ -88,7 +90,7 @@ End Sub
 '''''
 Public Sub UserForm_Initialize()
     DisplayProgress "Initializing Macro ...", RGB(&HC0, &HC0, 0)
-    Version = " v3.0.18"
+    Version = " v3.0.19"
     Dim i As Integer
     ZENv = getVersionNr
     'find the version of the software
@@ -503,8 +505,8 @@ Private Sub FocusMap_Click()
     'change values
     GlobalRepetitionNumber.value = 1
     StartButton_Click
-    Grids.writePositionGridFile "Global", GlobalDataBaseName & "\" & "focusMap.csv"
-    GridScanPositionFile.value = GlobalDataBaseName & "\" & "focusMap.csv"
+    Grids.writePositionGridFile "Global", GlobalDataBaseName & "focusMap.csv"
+    GridScanPositionFile.value = GlobalDataBaseName & "focusMap.csv"
 '    'Return to original values for the
     GlobalRepetitionNumber.value = RepValue
     AcquisitionActive = AcqAct
@@ -1732,16 +1734,9 @@ Private Sub GetCurrentPositionOffsetButton_Click()
     Running = True
     posTempZ = Lsm5.Hardware.CpFocus.position
     Recenter_pre posTempZ, SuccessRecenter, ZENv
- 
-    'Check if there is an existing document then start acquisition
-    Set node = viewerGuiServer.ExperimentTreeNodeSelected
-    If Not node Is Nothing Then
-        If node.Type <> eExperimentTeeeNodeTypeLsm Then
-            Lsm5.NewScanWindow
-        End If
-        Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
-    End If
-    If Not GetCurrentPositionOffsetButtonRun(RecordingDoc, GlobalDataBaseName) Then
+    NewRecordGui GlobalRecordingDoc, "AF_T000", ZEN, ZENv
+
+    If Not GetCurrentPositionOffsetButtonRun(GlobalRecordingDoc, GlobalDataBaseName) Then
         DisplayProgress "Stopped", RGB(&HC0, 0, 0)
         StopAcquisition
     End If
@@ -1780,21 +1775,21 @@ Private Function GetCurrentPositionOffsetButtonRun(Optional AutofocusDoc As DsRe
 
     'recenter only after activation of new track
     If Not AutofocusActive Then
-        MsgBox "GetCurrentPositionOffset: Autofocus job need to be active"
+        MsgBox "GetCurrentPositionOffset: Autofocus job needs to be active!"
         Exit Function
     End If
     If Not AutofocusTrackZ Then
-        MsgBox "GetCurrentPositionOffset: Autofocus TrackZ need to be active!"
+        MsgBox "GetCurrentPositionOffset: Autofocus TrackZ needs to be active!"
         Exit Function
     End If
     If Not AutofocusFocusMethod <> "None" And Not AutofocusOiaActive Then
-        MsgBox "GetCurrentPositionOffset: Autofocus method should not be on None or Oia need to be active!"
+        MsgBox "GetCurrentPositionOffset: Autofocus method should not be on None or Online image analysis need to be active!"
         Exit Function
     End If
     JobName = "Autofocus"
     Jobs.putJob JobName, ZEN
     DisplayProgress "Autofocus execute job", RGB(0, &HC0, 0)
-    ExecuteJob JobName, AutofocusDoc, FilePath, FileName, StgPos, CInt(deltaZ)
+    ExecuteJob JobName, AutofocusDoc, FilePath, FileName, StgPos, 0
     StgPos = TrackOffLine(JobName, AutofocusDoc, StgPos)
     If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
         OiaSettings.writeKeyToRegistry "codeOia", "newImage"
@@ -2169,7 +2164,7 @@ Private Function StartSetting() As Boolean
                 GridScan_nColumnsub.value = GridDim(3)
             End If
         Else
-            MsgBox "Not able to use " & GridScanPositionFile & ". Resetting the positions."
+           Exit Function
         End If
     End If
         
@@ -2182,6 +2177,11 @@ Private Function StartSetting() As Boolean
         End If
     End If
     
+    If GridScanPositionFile <> "" Or GridScanValidFile <> "" Then
+        MsgBox "You are using position coordinates stored in " & GridScanPositionFile & vbCrLf & "and/or valid positions stored in " & GridScanValidFile & vbCrLf & _
+        "If you don't want to use these defaults then Stop, remove the file names in the grid tab and Start again"
+    End If
+
     If GridScan_nColumn.value * GridScan_nRow.value * GridScan_nColumnsub.value * GridScan_nRowsub.value > 10000 Then
         MsgBox "GridScan: Maximal number of locations is 10000. Please change Numbers  X and/or Y."
         Exit Function

@@ -97,13 +97,13 @@ On Error GoTo AcquireJob_Error
     If JobName <> CurrentJob Then
         Jobs.putJob JobName, ZEN
     End If
-    Debug.Print "Time to put Job " & Round(Timer - Time, 3)
+   
     CurrentJob = JobName
-    'Not sure if this is required
+    'Not sure if this is required. This always creates an offset
     'Time = Timer
-    If Jobs.getSpecialScanMode(JobName) = "ZScanner" Then
-        Lsm5.Hardware.CpHrz.Leveling
-    End If
+    'If Jobs.getSpecialScanMode(JobName) = "ZScanner" Then
+        'Lsm5.Hardware.CpHrz.Leveling
+    'End If
     'Debug.Print "Time to level Hrz " & Round(Timer - Time, 3)
     
     
@@ -137,6 +137,7 @@ On Error GoTo AcquireJob_Error
     'SleepWithEvents (PauseEndAcquisition)
     'Debug.Print "Time to recenter post " & Round(Timer - Time, 3)
     AcquireJob = True
+    Debug.Print "Time to put put/acquire Job " & JobName & " " & Round(Timer - Time, 3)
     LogManager.UpdateLog " Acquire job " & JobName & " " & RecordingName & " at X = " & position.X & ", Y =  " & position.Y & _
     ", Z =  " & position.Z & " in " & Round(Timer - Time, 3) & " sec"
     Exit Function
@@ -566,7 +567,7 @@ On Error GoTo StartJobOnGrid_Error
                 StgPos.Z = Grids.getThisZ(GridName)
 
                 'For first repetition and globalgrid we use previous position to prime next position (this is not the optimal way of doing it, better is a focusMap)
-                If Reps.getIndex(GridName) = 1 And AutofocusForm.GridScanActive And GridName = "Global" Then
+                If Reps.getIndex(GridName) = 1 And AutofocusForm.GridScanActive And AutofocusForm.SingleLocationToggle And GridName = "Global" And AutofocusForm.GridScanPositionFile = "" Then
                     StgPos.Z = previousZ
                 End If
                 'pump if time elapsed before starting imaging on a specific point
