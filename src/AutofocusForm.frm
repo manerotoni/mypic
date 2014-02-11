@@ -1133,11 +1133,13 @@ Private Sub putJob(JobName As String)
     Jobs.putJob JobName, ZEN
     'This is just for visualising the job in the Gui
     UpdateGuiFromJob Jobs, JobName, ZEN
+    'Need a break as the Gui is updated quite slowly
+    DoEvents
+    Sleep (1000)
+    DoEvents
+    Sleep (1000)
     setMarkedStagePosition Pos
-    
-    'does not update the stagepositions in the GUI
-    'Application.ThrowEvent ePropertyEventStage, 0
-    'Application.ThrowEvent eEventUpdateGui, 0
+
 End Sub
 
 Private Sub AutofocusPutJob_Click()
@@ -1991,6 +1993,8 @@ Public Sub Execute_StartButton()
     LogManager.ResetLog
     
     InitializeStageProperties
+    '''
+    'Debug.Print "Motor Speed " & Lsm5.Hardware.CpStages.MotorSpeed
     SetStageSpeed 9, True    'What do we do here
     'block usage of grid during acquisition
     AutofocusForm.SwitchEnableGridScanPage False
