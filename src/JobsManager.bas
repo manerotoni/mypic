@@ -13,6 +13,8 @@ Public Reps As ImagingRepetitions
 'name of the repetitions
 Public RepNames() As String
 
+Public FocusMethods As Dictionary
+
 'Determines if pumping should be on or off
 Public Pump As Boolean
 'lastTimePump occurred
@@ -352,13 +354,15 @@ End Function
 '
 Public Function TrackOffLine(JobName As String, RecordingDoc As DsRecordingDoc, currentPosition As Vector) As Vector
 On Error GoTo TrackOffLine_Error
-
+    Dim method As Integer
+    method = AutofocusForm.Controls(JobName & "FocusMethod").ListIndex
     Dim newPosition() As Vector
     ReDim newPosition(0)
     Dim TrackingChannel As String
     newPosition(0) = currentPosition
     TrackOffLine = currentPosition
-    If AutofocusForm.Controls(JobName & "FocusMethod").value <> "None" And (AutofocusForm.Controls(JobName & "TrackZ") Or AutofocusForm.Controls(JobName & "TrackXY")) Then
+    
+    If method <> 0 And method <> FocusMethods.count - 1 Then
         ''compute center of mass in pixel
         TrackingChannel = AutofocusForm.Controls(JobName & "CenterOfMassChannel").value
 
@@ -369,16 +373,20 @@ On Error GoTo TrackOffLine_Error
         'transform it in um
         newPosition = computeCoordinatesImaging(JobName, currentPosition, newPosition)
     End If
+    
     If AutofocusForm.Controls(JobName & "TrackZ") Then
         TrackOffLine.Z = newPosition(0).Z
     End If
+    
     If AutofocusForm.Controls(JobName & "TrackXY") Then
         TrackOffLine.X = newPosition(0).X
         TrackOffLine.Y = newPosition(0).Y
     End If
+    
     If Not checkForMaximalDisplacement(JobName, TrackOffLine, currentPosition) Then
         TrackOffLine = currentPosition
     End If
+    
     Debug.Print "X = " & currentPosition.X & ", " & newPosition(0).X & ", Y = " & currentPosition.Y & ", " & newPosition(0).Y & ", Z = " & currentPosition.Z & ", " & newPosition(0).Z
     Exit Function
 Abort:
@@ -1458,7 +1466,7 @@ On Error GoTo ComputeJobSequential_Error
                     LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " position(s) " & _
                     " first pos-pixel " & " X = " & newPositionsPx(0).X & " X = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
                     If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
-                         GoTo Abort
+                         GoTo ExitThis
                     End If
                     newPositions = computeCoordinatesImaging(parentJob, parentPosition, newPositionsPx)
                     If UBound(newPositions) > 0 Then
@@ -1486,12 +1494,12 @@ On Error GoTo ComputeJobSequential_Error
                 If OiaSettings.getPositions(newPositionsPx, Jobs.getCentralPointPx(parentJob)) Then
                     LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " positions " & " first pos-pixel " & " X = " & newPositionsPx(0).X & " X = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
                     If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
-                        GoTo Abort
+                        GoTo ExitThis
                     End If
                     newPositions = computeCoordinatesImaging(parentJob, parentPosition, newPositionsPx)
                     ' if displacement are above the possible displacement estimated from current image then abort (this is obsolete now)
                     If Not checkForMaximalDisplacementVec(parentJob, parentPosition, newPositions) Then
-                        GoTo Abort
+                        GoTo ExitThis
                     End If
                 Else
                     LogManager.UpdateErrorLog "ComputeJobSequential: No position for Job " & JobName & " from file " & ParentPath & parentFile & " (key = " & code & ") has been specified! Imaging current position. "
@@ -1528,7 +1536,7 @@ On Error GoTo ComputeJobSequential_Error
                 End If
                 If OiaSettings.getFcsPositions(newPositionsPx, Jobs.getCentralPointPx(parentJob)) Then
                     If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
-                        GoTo Abort
+                        GoTo ExitThis
                     End If
                     newPositions = computeCoordinatesFcs(parentJob, parentPosition, newPositionsPx)
                     ' if displacement are above the possible displacement estimated from current image then abort
@@ -1553,7 +1561,7 @@ On Error GoTo ComputeJobSequential_Error
         End Select
 nextCode:
     Next code
-
+ExitThis:
     '''Check for jobs where time has been exceeded
     For i = 3 To 4
          If Grids.getNrValidPts(JobNames(i)) > 0 And Not Grids.getIsRunning(JobNames(i)) Then

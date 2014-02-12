@@ -1072,11 +1072,18 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
             Next Col
         Next Line
     Next Frame
-    If method = "Center of Mass (thr)" Then
-        thresh = 0.8
-    Else
-        thresh = 0
-    End If
+    Select Case method
+        Case "Center of Mass (thr)"
+            thresh = 0.8
+        Case "Center of Mass"
+            thresh = 0
+        Case "Peak"
+            thresh = 0
+        Case Else
+            GoTo WrongMethod
+    End Select
+            
+            
     'compute center of mass, threshold by 80% the image
     MassCenter.X = weightedMean(IntCol, XMinMax(0), XMinMax(1), thresh)
     MassCenter.Y = weightedMean(IntLine, YMinMax(0), YMinMax(1), thresh)
@@ -1090,6 +1097,10 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
     Exit Function
 ErrorHandle:
     MsgBox ("Error in MicroscopeIO.MassCenter " + TrackingChannel + " " + Err.Description)
+    ScanStop = True
+    Exit Function
+WrongMethod:
+    MsgBox ("Method " & method & " for computing focus is not known")
     ScanStop = True
 End Function
 
