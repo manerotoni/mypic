@@ -19,7 +19,7 @@ Attribute VB_Exposed = False
 '---------------------------------------------------------------------------------------
 ' Module    : AutofocusForm
 ' Author    : Antonio Politi
-' Version   : 3.0.19
+' Version   : 3.0.20
 ' Purpose   : Form to manage Imagingd Fcs Jobs
 ' WARNING ZEN does not use spatial units in a consistent way. Switches between um and meter and pixel WARNING''''''''''''''''''''
 ' for imaging and moving the stage
@@ -90,8 +90,9 @@ End Sub
 '''''
 Public Sub UserForm_Initialize()
     DisplayProgress "Initializing Macro ...", RGB(&HC0, &HC0, 0)
-    Version = " v3.0.19"
+    Version = " v3.0.20"
     Dim i As Integer
+    Dim Name As Variant
     ZENv = getVersionNr
     'find the version of the software
     If ZENv > 2010 Then
@@ -145,23 +146,32 @@ NoError:
     
     Jobs.initialize JobNames, Lsm5.DsRecording, ZEN
     Jobs.setZENv ZENv
-
-    For i = 0 To UBound(JobNames)
-        Me.Controls(JobNames(i) + "FocusMethod").Clear
-        If Jobs.getScanMode(JobNames(i)) = "ZScan" Or Jobs.getScanMode(JobNames(i)) = "Line" Then
-            Me.Controls(JobNames(i) + "TrackXY").value = False
-            Me.Controls(JobNames(i) + "TrackXY").Enabled = False
+    
+    '''FocusMethods
+    Set FocusMethods = New Dictionary
+    FocusMethods.Add 0, "None"
+    FocusMethods.Add 1, "Center of Mass (thr)"
+    FocusMethods.Add 2, "Peak"
+    FocusMethods.Add 3, "Center of Mass"
+    FocusMethods.Add 4, "Online img. analysis"
+    
+    
+    For Each Name In JobNames
+        Me.Controls(Name + "FocusMethod").Clear
+        If Jobs.getScanMode(CStr(Name)) = "ZScan" Or Jobs.getScanMode(CStr(Name)) = "Line" Then
+            Me.Controls(Name + "TrackXY").value = False
+            Me.Controls(Name + "TrackXY").Enabled = False
         Else
-            Me.Controls(JobNames(i) + "TrackXY").Enabled = True
+            Me.Controls(Name + "TrackXY").Enabled = True
         End If
-            Me.Controls(JobNames(i) + "FocusMethod").AddItem "None"
-            Me.Controls(JobNames(i) + "FocusMethod").AddItem "Center of Mass (thr)"
-            Me.Controls(JobNames(i) + "FocusMethod").AddItem "Peak"
-            Me.Controls(JobNames(i) + "FocusMethod").AddItem "Center of Mass"
-            Me.Controls(JobNames(i) + "FocusMethod").AddItem "Online img. analysis"
-            Me.Controls(JobNames(i) + "FocusMethod").ListIndex = 0
-    Next i
+            
+        For i = 0 To FocusMethods.count - 1
+            Me.Controls(Name + "FocusMethod").AddItem FocusMethods.item(i), i
+        Next i
+        Me.Controls(Name + "FocusMethod").ListIndex = 0
+    Next Name
 
+    
     If Lsm5.Info.IsFCS Then
         Set JobsFcs = New FcsJobs
         ReDim JobFcsNames(0)
@@ -821,8 +831,10 @@ End Sub
 ' TrackZ: If on the Z position will be updated to the latest Z position
 ''''
 Private Sub JobTrackXYZChange(JobName As String)
+    Dim method As Integer
+    method = Me.Controls(JobName + "FocusMethod").ListIndex
     Me.Controls(JobName + "CenterOfMassChannel").Enabled = (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")) _
-    And Me.Controls(JobName + "FocusMethod") <> "None"
+    And method <> 0 And method <> (FocusMethods.count - 1)
     Me.Controls(JobName + "FocusMethod").Enabled = Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")
 End Sub
 
@@ -874,7 +886,7 @@ End Sub
 '''
 Private Sub FocusMethodChange(JobName As String)
     Me.Controls(JobName + "CenterOfMassChannel").Enabled = Me.Controls(JobName + "FocusMethod") <> "None" And Me.Controls(JobName + "FocusMethod") <> "Online img. analysis"
-    If Me.Controls(JobName + "FocusMethod") = "Online img. analysis" Then
+    If Me.Controls(JobName + "FocusMethod").ListIndex = (FocusMethods.count - 1) Then
         Me.Controls(JobName + "OiaActive") = True
     End If
 End Sub
@@ -2099,11 +2111,11 @@ Private Function StartSetting() As Boolean
     ''''Track consistency check
     For Each Job In JobNames
         If Me.Controls(Job + "Active") And (Me.Controls(Job + "TrackZ") Or Me.Controls(Job + "TrackXY")) Then
-            If Me.Controls(Job + "FocusMethod") = "None" Then
+            If Me.Controls(Job + "FocusMethod").ListIndex = 0 Then
                 MsgBox ("For Job " & Job & ". To TrackZ and/or TrackXY Focus Method must be different then None!")
                 Exit Function
             End If
-            If Me.Controls(Job + "FocusMethod") = "Online img. analysis" Then
+            If Me.Controls(Job + "FocusMethod").ListIndex = FocusMethods.count - 1 Then
                 Me.Controls(Job + "OiaActive") = True
             End If
         End If
