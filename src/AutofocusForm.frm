@@ -1788,7 +1788,7 @@ Private Function GetCurrentPositionOffsetButtonRun(Optional AutofocusDoc As DsRe
     OiaSettings.resetRegistry
     
     FileName = "AF_T000" & imgFileExtension
-
+    CurrentJob = ""
     'recenter only after activation of new track
     If Not AutofocusActive Then
         MsgBox "GetCurrentPositionOffset: Autofocus job needs to be active!"
@@ -1901,7 +1901,7 @@ On Error GoTo AutofocusButtonRun_Error
     OiaSettings.resetRegistry
     
     FileName = "AF_T000" & imgFileExtension
-
+    CurrentJob = ""
     'recenter only after activation of new track
     If AutofocusActive Then
         JobName = "Autofocus"
@@ -1963,7 +1963,8 @@ On Error GoTo AutofocusButtonRun_Error
     Recenter_post StgPos.Z, True, ZENv
     If ZENv > 2010 Then
         On Error GoTo nocenter
-        ZEN.gui.Acquisition.ZStack.CenterPositionZ.value = StgPos.Z
+        'this creates problems
+        'ZEN.gui.Acquisition.ZStack.CenterPositionZ.value = StgPos.Z
     End If
     AutofocusButtonRun = True
 

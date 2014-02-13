@@ -177,7 +177,7 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc, Optional TimeOut As 
     Set ProgressFifo = AcquisitionController.DestinationImage(0)
     Lsm5.tools.CheckLockControllers True
     AcquisitionController.StartGrab eGrabModeSingle
-    Time = Timer
+    Time = CDbl(GetTickCount) * 0.001
     'Set RecordingDoc = Lsm5.StartScan this does not overwrite
     If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
     'Debug.Print "ScanToImage part1 " & Round(Timer - Time, 3)
@@ -188,7 +188,7 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc, Optional TimeOut As 
         If ScanStop Then
               Exit Function
         End If
-        If TimeOut > 0 And (Timer - Time > TimeOut) Then
+        If TimeOut > 0 And (CDbl(GetTickCount) * 0.001 - Time > TimeOut) Then
             LogManager.UpdateErrorLog "TimeOut of image acquisition  after " & TimeOut & " sec"
             Lsm5.StopAcquisition
             GoTo ExitWhile
@@ -222,14 +222,14 @@ Public Function ScanToFcs(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData,
 '           Exit Function
 '        End If
 '    Wend
-    Time = Timer
+    Time = CDbl(GetTickCount) * 0.001
     While FcsControl.IsAcquisitionRunning(1)
         Sleep (PauseGrabbing)
         If ScanStop Then
             Exit Function
         End If
         DoEvents
-        If TimeOut > 0 And (Timer - Time > TimeOut) Then
+        If TimeOut > 0 And (CDbl(GetTickCount) * 0.001 - Time > TimeOut) Then
             LogManager.UpdateErrorLog "TimeOut of Fcs acquisition  after " & TimeOut & " sec"
             FcsControl.StopAcquisitionAndWait
             GoTo ExitWhile

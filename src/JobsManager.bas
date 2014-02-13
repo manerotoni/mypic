@@ -44,7 +44,7 @@ Public Grids As ImagingGrids
 ''' Timers initiated when great is created, reinitialized if recquired
 Public TimersGridCreation As Timers
 
-Private Const TimeOutOverHead = 1
+Private Const TimeOutOverHead = 0
 
 
 
