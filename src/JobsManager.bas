@@ -44,7 +44,7 @@ Public Grids As ImagingGrids
 ''' Timers initiated when great is created, reinitialized if recquired
 Public TimersGridCreation As Timers
 
-Private Const TimeOutOverHead = 1
+Private Const TimeOutOverHead = 0
 
 
 
@@ -480,6 +480,10 @@ On Error GoTo ExecuteJobAndTrack_Error
         'do any recquired computation
         Time = Timer
         StgPos = TrackOffLine(JobName, RecordingDoc, StgPos)
+<<<<<<< HEAD
+=======
+
+>>>>>>> TmpfixCrashFCS
         
         Debug.Print "Time to TrackOffLine " & Timer - Time
         If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
@@ -493,9 +497,17 @@ On Error GoTo ExecuteJobAndTrack_Error
             StgPos = TrackJob(JobName, StgPos, newStgPos)
         End If
         
+<<<<<<< HEAD
         If Not AutofocusForm.Controls(JobName & "TrackZ").value Then
             StgPos.Z = StgPos.Z - AutofocusForm.Controls(JobName + "ZOffset").value
         End If
+=======
+                
+        If Not AutofocusForm.Controls(JobName & "TrackZ").value Then
+            StgPos.Z = StgPos.Z - AutofocusForm.Controls(JobName + "ZOffset").value
+        End If
+        
+>>>>>>> TmpfixCrashFCS
     End If
     ExecuteJobAndTrack = StgPos
     Success = True
