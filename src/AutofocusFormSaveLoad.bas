@@ -178,7 +178,7 @@ Private Sub JobControlTipText(JobName As String)
     AutofocusForm.Controls(JobName + "OiaActive").ControlTipText = "If active macro listens to online image analysis"
     AutofocusForm.Controls(JobName + "OiaSequential").ControlTipText = "Macro waits for image analysis to finish. Acquire image -> OnlineImage analysis -> perform task"
     AutofocusForm.Controls(JobName + "OiaParallel").ControlTipText = "Imaging and analysis run in parallel."
-    
+    AutofocusForm.Controls(JobName + "TimeOut").ControlTipText = "Uses to overcome crashes in FCS. If on system will move to next image/fcs after certain time is exceeded. The time is estimated from the first round"
     If JobName = "Trigger1" Or JobName = "Trigger2" Then
         AutofocusForm.Controls(JobName + "Active").ControlTipText = "Job " & JobName & " is performed only after online image analysis command"
         AutofocusForm.Controls(JobName + "OptimalPtNumber").ControlTipText = "Wait to find up to xxx positions before starting job " & JobName
