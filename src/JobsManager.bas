@@ -44,7 +44,7 @@ Public Grids As ImagingGrids
 ''' Timers initiated when great is created, reinitialized if recquired
 Public TimersGridCreation As Timers
 
-Private Const TimeOutOverHead = 0
+Private Const TimeOutOverHead = 1
 
 
 
@@ -480,10 +480,6 @@ On Error GoTo ExecuteJobAndTrack_Error
         'do any recquired computation
         Time = Timer
         StgPos = TrackOffLine(JobName, RecordingDoc, StgPos)
-<<<<<<< HEAD
-=======
-
->>>>>>> TmpfixCrashFCS
         
         Debug.Print "Time to TrackOffLine " & Timer - Time
         If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
@@ -497,17 +493,9 @@ On Error GoTo ExecuteJobAndTrack_Error
             StgPos = TrackJob(JobName, StgPos, newStgPos)
         End If
         
-<<<<<<< HEAD
         If Not AutofocusForm.Controls(JobName & "TrackZ").value Then
             StgPos.Z = StgPos.Z - AutofocusForm.Controls(JobName + "ZOffset").value
         End If
-=======
-                
-        If Not AutofocusForm.Controls(JobName & "TrackZ").value Then
-            StgPos.Z = StgPos.Z - AutofocusForm.Controls(JobName + "ZOffset").value
-        End If
-        
->>>>>>> TmpfixCrashFCS
     End If
     ExecuteJobAndTrack = StgPos
     Success = True
@@ -1475,7 +1463,7 @@ On Error GoTo ComputeJobSequential_Error
                 OiaSettings.writeKeyToRegistry "codeMic", "nothing"
                 If OiaSettings.getPositions(newPositionsPx, Jobs.getCentralPointPx(parentJob)) Then
                     LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " position(s) " & _
-                    " first pos-pixel " & " X = " & newPositionsPx(0).X & " X = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
+                    " first pos-pixel " & " X = " & newPositionsPx(0).X & " Y = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
                     If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
                          GoTo ExitThis
                     End If
@@ -1489,7 +1477,7 @@ On Error GoTo ComputeJobSequential_Error
                     "Specify one position in X, Y, Z of registry (in pixels, (X,Y) = (0,0) upper left corner image, Z = 0 -> central slice of current stack)!"
                     GoTo nextCode
                 End If
-                LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " focus at  " & " X = " & newPositions(0).X & " X = " & newPositions(0).Y & " Z = " & newPositions(0).Z
+                LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " focus at  " & " X = " & newPositions(0).X & " Y = " & newPositions(0).Y & " Z = " & newPositions(0).Z
                 
             Case "trigger1", "trigger2": 'store positions for later processing or direct imaging depending on settings
                 LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " found " & code
@@ -1503,7 +1491,7 @@ On Error GoTo ComputeJobSequential_Error
                 End If
                 
                 If OiaSettings.getPositions(newPositionsPx, Jobs.getCentralPointPx(parentJob)) Then
-                    LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " positions " & " first pos-pixel " & " X = " & newPositionsPx(0).X & " X = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
+                    LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " positions " & " first pos-pixel " & " X = " & newPositionsPx(0).X & " Y = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
                     If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
                         GoTo ExitThis
                     End If
@@ -1527,7 +1515,7 @@ On Error GoTo ComputeJobSequential_Error
                 
                 ''' if we run a subjob the grid and counter is reset
                 If runSubImagingJob(JobName, JobName, newPositions, ParentPath & parentFile & "\") Then
-                    LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " execute job " & JobName & " at (only 1st pos given) " & " X = " & newPositions(0).X & " X = " & newPositions(0).Y & " Z = " & newPositions(0).Z
+                    LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " execute job " & JobName & " at (only 1st pos given) " & " X = " & newPositions(0).X & " Y = " & newPositions(0).Y & " Z = " & newPositions(0).Z
                     'start acquisition of Job on grid named JobName
                     If Not StartJobOnGrid(JobName, JobName, RecordingDoc, ParentPath & parentFile & "\") Then
                         GoTo Abort
@@ -1558,7 +1546,7 @@ On Error GoTo ComputeJobSequential_Error
                     LogManager.UpdateErrorLog "ComputeJobSequential: No position for Job " & JobName & " (key = " & code & ") has been specified! Last image " & ParentPath & parentFile
                 End If
                 DisplayProgress "Job " & JobName, RGB(&HC0, &HC0, 0)
-                LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " execute job " & JobName & " at (only 1 pos given) " & " X = " & newPositions(0).X & " X = " & newPositions(0).Y & " Z = " & newPositions(0).Z
+                LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " execute job " & JobName & " at (only 1 pos given) " & " X = " & newPositions(0).X & " Y = " & newPositions(0).Y & " Z = " & newPositions(0).Z
                 If Not ExecuteFcsJob(JobName, GlobalFcsRecordingDoc, GlobalFcsData, ParentPath, "FCS1_" & parentFile, newPositions, newPositionsPx) Then
                     GoTo Abort
                 End If

@@ -19,7 +19,7 @@ Attribute VB_Exposed = False
 '---------------------------------------------------------------------------------------
 ' Module    : AutofocusForm
 ' Author    : Antonio Politi
-' Version   : 3.0.20
+' Version   : 3.0.21
 ' Purpose   : Form to manage Imagingd Fcs Jobs
 ' WARNING ZEN does not use spatial units in a consistent way. Switches between um and meter and pixel WARNING''''''''''''''''''''
 ' for imaging and moving the stage
@@ -90,7 +90,7 @@ End Sub
 '''''
 Public Sub UserForm_Initialize()
     DisplayProgress "Initializing Macro ...", RGB(&HC0, &HC0, 0)
-    Version = " v3.0.20"
+    Version = " v3.0.21"
     Dim i As Integer
     Dim Name As Variant
     ZENv = getVersionNr
@@ -1788,7 +1788,7 @@ Private Function GetCurrentPositionOffsetButtonRun(Optional AutofocusDoc As DsRe
     OiaSettings.resetRegistry
     
     FileName = "AF_T000" & imgFileExtension
-    CurrentJob = ""
+
     'recenter only after activation of new track
     If Not AutofocusActive Then
         MsgBox "GetCurrentPositionOffset: Autofocus job needs to be active!"
@@ -1901,7 +1901,7 @@ On Error GoTo AutofocusButtonRun_Error
     OiaSettings.resetRegistry
     
     FileName = "AF_T000" & imgFileExtension
-    CurrentJob = ""
+
     'recenter only after activation of new track
     If AutofocusActive Then
         JobName = "Autofocus"
@@ -1963,8 +1963,7 @@ On Error GoTo AutofocusButtonRun_Error
     Recenter_post StgPos.Z, True, ZENv
     If ZENv > 2010 Then
         On Error GoTo nocenter
-        'this creates problems
-        'ZEN.gui.Acquisition.ZStack.CenterPositionZ.value = StgPos.Z
+        ZEN.gui.Acquisition.ZStack.CenterPositionZ.value = StgPos.Z
     End If
     AutofocusButtonRun = True
 
