@@ -2,13 +2,58 @@ Attribute VB_Name = "Functions"
 '''
 ' Some utility functions
 ''''
-
 Option Explicit
 
+''' A vector
+Public Type Vector
+  X As Double
+  Y As Double
+  Z As Double
+End Type
+
+''''''''''''''''''''''''
+''' Vector operations'''
+''' To do: overload?''''
+''''''''''''''''''''''''
+Public Function Double2Vector(X As Double, Y As Double, Z As Double) As Vector
+    Double2Vector.X = X
+    Double2Vector.Y = Y
+    Double2Vector.Z = Z
+End Function
+
+Public Function Vector2Double(vec As Vector) As Double()
+    Dim vec2D(3) As Double
+    vec2D(0) = vec.X
+    vec2D(1) = vec.Y
+    vec2D(2) = vec.Z
+    Vector2Double = vec2D
+End Function
+
+Public Function diffVector(vec1 As Vector, vec2 As Vector) As Vector
+    diffVector.X = vec1.X - vec2.X
+    diffVector.Y = vec1.Y - vec2.Y
+    diffVector.Z = vec1.Z - vec2.Z
+End Function
+
+Public Function sumVector(vec1 As Vector, vec2 As Vector) As Vector
+    sumVector.X = vec1.X + vec2.X
+    sumVector.Y = vec1.Y + vec2.Y
+    sumVector.Z = vec1.Z + vec2.Z
+End Function
+
+Public Function normVector2D(vec As Vector) As Double
+    normVector2D = Sqr(vec.X ^ 2 + vec.Y ^ 2)
+End Function
+
+Public Function normVector3D(vec As Vector) As Double
+    normVector3D = Sqr(vec.X ^ 2 + vec.Y ^ 2 + vec.Z ^ 2)
+End Function
+
+
+'''Starts the form
 Public Sub Autofocus_Setup()
         AutofocusForm.Show
 End Sub
-
 '''
 '   Display progress in bottom labal of AutofocusForm
 '''
@@ -27,27 +72,47 @@ End Sub
 '''
 ' compute a weighted mean of the positiions of an array
 '''
-Public Function weightedMean(values() As Variant) As Double
+Public Function weightedMean(values() As Variant, imin As Long, imax As Long, Optional threshL As Double = 0) As Double
     Dim sum As Variant
     Dim weight As Variant
-    Dim MIN As Variant
-    Dim i As Integer
+    Dim minV As Variant
+    Dim maxV As Variant
+    Dim thresh As Double
+    Dim i As Long
     sum = 0
     weight = 0
-    MIN = MINA(values)
+    minV = MINA(values, imin)
+    maxV = MAXA(values, imax)
+    If threshL < 0 Or threshL > 1 Then
+        threshL = 0
+    End If
+    thresh = minV + (maxV - minV) * threshL
     For i = LBound(values) To UBound(values)
-        sum = sum + (values(i) - MIN)
-        weight = weight + i * (values(i) - MIN)
+        sum = sum + Positive(values(i) - thresh)
+        weight = weight + i * Positive(values(i) - thresh)
     Next i
-    'if sum is 0
+
     If sum > 0 Then
         weightedMean = weight / sum
+        
     Else
-        ' then mean is in the center
+        'if sum is 0 then mean is in the center
         weightedMean = (UBound(values) - LBound(values)) / 2 + LBound(values)
+        imax = (UBound(values) - LBound(values)) / 2 + LBound(values)
+        imin = (UBound(values) - LBound(values)) / 2 + LBound(values)
     End If
 End Function
 
+''''
+' Set negative values to 0
+'''''
+Public Function Positive(value As Variant) As Variant
+    If value < 0 Then
+        Positive = 0
+    Else
+        Positive = value
+    End If
+End Function
 
 ''
 ' Calculate MIN of two values
@@ -64,11 +129,11 @@ End Function
 ''
 ' Calculate MIN of two values
 '''
-Public Function Max(value1 As Variant, value2 As Variant) As Variant
+Public Function MAX(value1 As Variant, value2 As Variant) As Variant
     If value1 < value2 Then
-        Max = value2
+        MAX = value2
     Else
-        Max = value1
+        MAX = value1
     End If
 End Function
 
@@ -76,25 +141,33 @@ End Function
 ''
 ' Calculate MIN of Array
 '''
-Public Function MINA(values() As Variant) As Variant
+Public Function MINA(values() As Variant, Optional imin As Long) As Variant
     Dim minLocal As Variant
     Dim i As Integer
     minLocal = values(0)
+    imin = 0
     For i = LBound(values) To UBound(values)
         minLocal = MIN(values(i), minLocal)
+        If minLocal = values(i) Then
+            imin = i
+        End If
     Next i
     MINA = minLocal
 End Function
 
 ''
-' Calculate MIN of Array
+' Calculate MAX of Array
 '''
-Public Function MAXA(values() As Variant) As Variant
+Public Function MAXA(values() As Variant, Optional imax As Long) As Variant
     Dim maxLocal As Variant
-    Dim i As Integer
+    Dim i As Long
     maxLocal = values(0)
+    imax = 0
     For i = LBound(values) To UBound(values)
-        maxLocal = Max(values(i), maxLocal)
+        maxLocal = MAX(values(i), maxLocal)
+        If maxLocal = values(i) Then
+            imax = i
+        End If
     Next i
     MAXA = maxLocal
 End Function
@@ -123,7 +196,7 @@ Public Function InCollection(Col As Collection, Key As String) As Boolean
 
   Err.Clear
   On Error Resume Next
-    var = Col.Item(Key)
+    var = Col.item(Key)
     errNumber = CLng(Err.number)
   On Error GoTo 0
 
@@ -136,58 +209,58 @@ Public Function InCollection(Col As Collection, Key As String) As Boolean
 
 End Function
 
-'''''
-'   FServerFromDescription(strName As String, StrPath As String, ExecName As String) As Boolean
-'   TODO: What is this?
-'''''
-Function FServerFromDescription(strName As String, StrPath As String, ExecName As String) As Boolean
-    Dim lngResult As Long
-    Dim strTmp As String
-    Dim hKeyServer As Long
-    Dim strBuffer As String
-    Dim cb As Long
-    Dim i As Integer
-     
-    FServerFromDescription = False
-    
-    strTmp = VBA.Space(255)
-    strTmp = strName + "\CLSID"
-    lngResult = RegOpenKeyEx(HKEY_CLASSES_ROOT, strTmp, 0&, KEY_READ, hKeyServer)
-    
-    If (Not lngResult = ERROR_SUCCESS) Then GoTo error_exit
-    strBuffer = VBA.Space(255)
-    cb = Len(strBuffer)
-    
-    lngResult = RegQueryValueEx(hKeyServer, "", 0&, REG_SZ, ByVal strBuffer, cb)
-    If (Not lngResult = ERROR_SUCCESS) Then GoTo error_exit
-    
-    lngResult = RegCloseKey(hKeyServer)
-    strTmp = VBA.Space(255)
-    strTmp = "CLSID\" + Strings.Left(strBuffer, cb - 1) + "\LocalServer32"
-    strBuffer = VBA.Space(255)
-    cb = Len(strBuffer)
-    lngResult = RegOpenKeyEx(HKEY_CLASSES_ROOT, strTmp, 0&, KEY_READ, hKeyServer)
-    If (Not lngResult = ERROR_SUCCESS) Then GoTo error_exit
-        
-    lngResult = RegQueryValueEx(hKeyServer, "", 0&, REG_SZ, ByVal strBuffer, cb)
-    If (Not lngResult = ERROR_SUCCESS) Then GoTo error_exit
-    StrPath = Strings.Left(strBuffer, cb - 1)
-    ExecName = StrPath
-    lngResult = RegCloseKey(hKeyServer)
-    
-    i = Len(StrPath)
-    
-    Do Until (i = 0)
-        If (VBA.Mid(StrPath, i, 1) = "\") Then
-            StrPath = Strings.Left(StrPath, i - 1)
-            FServerFromDescription = True
-            Exit Do
-        End If
-        i = i - 1
-    Loop
-
-error_exit:
-    If (Not hKeyServer = 0) Then lngResult = RegCloseKey(hKeyServer)
-
-End Function
+''''''
+''   FServerFromDescription(strName As String, StrPath As String, ExecName As String) As Boolean
+''   TODO: What is this?
+''''''
+'Function FServerFromDescription(strName As String, StrPath As String, ExecName As String) As Boolean
+'    Dim lngResult As Long
+'    Dim strTmp As String
+'    Dim hKeyServer As Long
+'    Dim strBuffer As String
+'    Dim cb As Long
+'    Dim i As Integer
+'
+'    FServerFromDescription = False
+'
+'    strTmp = VBA.Space(255)
+'    strTmp = strName + "\CLSID"
+'    lngResult = RegOpenKeyEx(HKEY_CLASSES_ROOT, strTmp, 0&, KEY_READ, hKeyServer)
+'
+'    If (Not lngResult = ERROR_SUCCESS) Then GoTo error_exit
+'    strBuffer = VBA.Space(255)
+'    cb = Len(strBuffer)
+'
+'    lngResult = RegQueryValueEx(hKeyServer, "", 0&, REG_SZ, ByVal strBuffer, cb)
+'    If (Not lngResult = ERROR_SUCCESS) Then GoTo error_exit
+'
+'    lngResult = RegCloseKey(hKeyServer)
+'    strTmp = VBA.Space(255)
+'    strTmp = "CLSID\" + Strings.Left(strBuffer, cb - 1) + "\LocalServer32"
+'    strBuffer = VBA.Space(255)
+'    cb = Len(strBuffer)
+'    lngResult = RegOpenKeyEx(HKEY_CLASSES_ROOT, strTmp, 0&, KEY_READ, hKeyServer)
+'    If (Not lngResult = ERROR_SUCCESS) Then GoTo error_exit
+'
+'    lngResult = RegQueryValueEx(hKeyServer, "", 0&, REG_SZ, ByVal strBuffer, cb)
+'    If (Not lngResult = ERROR_SUCCESS) Then GoTo error_exit
+'    StrPath = Strings.Left(strBuffer, cb - 1)
+'    ExecName = StrPath
+'    lngResult = RegCloseKey(hKeyServer)
+'
+'    i = Len(StrPath)
+'
+'    Do Until (i = 0)
+'        If (VBA.Mid(StrPath, i, 1) = "\") Then
+'            StrPath = Strings.Left(StrPath, i - 1)
+'            FServerFromDescription = True
+'            Exit Do
+'        End If
+'        i = i - 1
+'    Loop
+'
+'error_exit:
+'    If (Not hKeyServer = 0) Then lngResult = RegCloseKey(hKeyServer)
+'
+'End Function
 

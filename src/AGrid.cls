@@ -16,12 +16,15 @@ Option Explicit
 
 '''' Name if grid
 Public NameGrid As String
+''' a grid may not be actually running
+Private isRunning As Boolean
 '''' Max zeros padded in front of Wxxxx
 Const maxZeros = 4
 
 '''' A gridpoint is the unit of a grid. It will have a name specified by its position in the array
 Private Type GridPoint
-    Name As String    'this is used as prefix for the name
+    ParentPath As String 'Absolute path to store the object
+    Name As String    'this should be used as prefix for the name, e.g. siRNA name
     X As Double
     Y As Double
     Z As Double
@@ -139,6 +142,21 @@ Private Function correctIndeces(Row As Long, Col As Long, RowSub As Long, ColSub
 End Function
 
 '''
+' set if grid is running or not
+'''
+Public Function setIsRunning(value As Boolean)
+    isRunning = value
+End Function
+
+'''
+' set if grid is running or not
+'''
+Public Function getIsRunning() As Boolean
+    getIsRunning = isRunning
+End Function
+
+
+'''
 ' suffix is WxxxxPxxxx created at current position of grid
 '''
 Public Function thisSuffix() As String
@@ -156,7 +174,7 @@ Public Function thisSuffix() As String
     End If
     If iPosition >= 0 Then
         nrZero = maxZeros - Len(CStr(iPosition))
-        Name = Name + "_P" + ZeroString(nrZero) + CStr(iPosition)
+        Name = Name + FNSep + "P" + ZeroString(nrZero) + CStr(iPosition)
     End If
     thisSuffix = Name
 End Function
@@ -198,7 +216,7 @@ Public Function suffix(Row As Long, Col As Long, RowSub As Long, ColSub As Long)
         End If
         If iPosition >= 0 Then
             nrZero = maxZeros - Len(CStr(iPosition))
-            Name = Name + "_P" + ZeroString(nrZero) + CStr(iPosition)
+            Name = Name + FNSep + "P" + ZeroString(nrZero) + CStr(iPosition)
         End If
         suffix = Name
     End If
@@ -211,6 +229,11 @@ Public Function getThisName() As String
 End Function
 
 
+Public Sub setThisName(value As String)
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Name = value
+End Sub
+
+
 Public Function getName(Row As Long, Col As Long, RowSub As Long, ColSub As Long) As String
     If correctIndeces(Row, Col, RowSub, ColSub) Then
         getName = GridArray(Row, Col, RowSub, ColSub).Name
@@ -218,24 +241,56 @@ Public Function getName(Row As Long, Col As Long, RowSub As Long, ColSub As Long
 End Function
 
 
-Public Sub setThisName(Value As String)
-    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Name = Value
-End Sub
-
-
-Public Sub setName(Value As String, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
+Public Sub setName(value As String, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If correctIndeces(Row, Col, RowSub, ColSub) Then
-        GridArray(Row, Col, RowSub, ColSub).Name = Value
-        If Value <> "" Then
-            If Right(Value, 1) <> "_" Then
-                GridArray(Row, Col, RowSub, ColSub).Name = Value & "_"
+        GridArray(Row, Col, RowSub, ColSub).Name = value
+        If value <> "" Then
+            If Right(value, 1) <> FNSep Then
+                GridArray(Row, Col, RowSub, ColSub).Name = value & FNSep
             End If
         End If
     End If
 End Sub
 
+Public Function getThisParentPath() As String
+    getThisParentPath = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).ParentPath
+End Function
 
 
+Public Sub setThisParentPath(value As String)
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).ParentPath = value
+End Sub
+
+
+Public Function getParentPath(Row As Long, Col As Long, RowSub As Long, ColSub As Long) As String
+    If correctIndeces(Row, Col, RowSub, ColSub) Then
+        getParentPath = GridArray(Row, Col, RowSub, ColSub).ParentPath
+    End If
+End Function
+
+
+Public Sub setParentPath(value As String, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
+    If correctIndeces(Row, Col, RowSub, ColSub) Then
+        GridArray(Row, Col, RowSub, ColSub).ParentPath = value
+    End If
+End Sub
+
+Public Sub setAllParentPath(value As String)
+    Dim iRow As Long
+    Dim iCol As Long
+    Dim iRowSub As Long
+    Dim iColSub As Long
+    
+    For iRow = 1 To Me.numRow
+        For iCol = 1 To Me.numCol
+            For iRowSub = 1 To Me.numRowSub
+                For iColSub = 1 To Me.numColSub
+                    GridArray(iRow, iCol, iRowSub, iColSub).ParentPath = value
+                Next iColSub
+            Next iRowSub
+        Next iCol
+    Next iRow
+End Sub
 
 
 Public Function getIndeces(Row As Long, Col As Long, RowSub As Long, ColSub As Long)
@@ -259,10 +314,10 @@ End Function
 '''
 '   get/set current grid position
 '''
-Public Sub getThisPt(pos As Vector, Valid As Boolean)
-    pos.X = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).X
-    pos.Y = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Y
-    pos.Z = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Z
+Public Sub getThisPt(Pos As Vector, Valid As Boolean)
+    Pos.X = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).X
+    Pos.Y = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Y
+    Pos.Z = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Z
     Valid = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Valid
 End Sub
 
@@ -286,29 +341,29 @@ Public Function getThisValid() As Boolean
 End Function
 
 
-Public Sub setThisPt(pos As Vector, Valid As Boolean)
-    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).X = pos.X
-    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Y = pos.Y
-    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Z = pos.Z
+Public Sub setThisPt(Pos As Vector, Valid As Boolean)
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).X = Pos.X
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Y = Pos.Y
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Z = Pos.Z
     GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Valid = Valid
 End Sub
 
 
-Public Sub setThisX(Value As Double)
-    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).X = Value
+Public Sub setThisX(value As Double)
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).X = value
 End Sub
 
-Public Sub setThisY(Value As Double)
-    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Y = Value
+Public Sub setThisY(value As Double)
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Y = value
 End Sub
 
-Public Sub setThisZ(Value As Double)
-    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Z = Value
+Public Sub setThisZ(value As Double)
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Z = value
 End Sub
 
 
-Public Sub setThisValid(Value As Boolean)
-    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Valid = Value
+Public Sub setThisValid(value As Boolean)
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Valid = value
 End Sub
 
 
@@ -317,11 +372,11 @@ End Sub
 '''
 '   get/set position defined by Row, Colm RowSub and ColSub
 ''''
-Public Sub getPt(pos As Vector, Valid As Boolean, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
+Public Sub getPt(Pos As Vector, Valid As Boolean, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If correctIndeces(Row, Col, RowSub, ColSub) Then
-        pos.X = GridArray(Row, Col, RowSub, ColSub).X
-        pos.Y = GridArray(Row, Col, RowSub, ColSub).Y
-        pos.Z = GridArray(Row, Col, RowSub, ColSub).Z
+        Pos.X = GridArray(Row, Col, RowSub, ColSub).X
+        Pos.Y = GridArray(Row, Col, RowSub, ColSub).Y
+        Pos.Z = GridArray(Row, Col, RowSub, ColSub).Z
         Valid = GridArray(Row, Col, RowSub, ColSub).Valid
     End If
 End Sub
@@ -385,11 +440,11 @@ Public Function getValid(Row As Long, Col As Long, RowSub As Long, ColSub As Lon
     End If
 End Function
 
-Public Sub setPt(pos As Vector, Valid As Boolean, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
+Public Sub setPt(Pos As Vector, Valid As Boolean, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If correctIndeces(Row, Col, RowSub, ColSub) Then
-        GridArray(Row, Col, RowSub, ColSub).X = pos.X
-        GridArray(Row, Col, RowSub, ColSub).Y = pos.Y
-        GridArray(Row, Col, RowSub, ColSub).Z = pos.Z
+        GridArray(Row, Col, RowSub, ColSub).X = Pos.X
+        GridArray(Row, Col, RowSub, ColSub).Y = Pos.Y
+        GridArray(Row, Col, RowSub, ColSub).Z = Pos.Z
         GridArray(Row, Col, RowSub, ColSub).Valid = Valid
     End If
 End Sub
@@ -436,54 +491,103 @@ End Sub
 
 '''
 ' Go to next gridPt according to meandering. True if there is a next grid pt. False if Grid has reached an end
+' WellFirst changes order of meandering. First Col and Row then Sub
 '''
-Public Function nextGridPt() As Boolean
-    'update GridSub
-    If Me.iRowSub Mod 2 <> 0 Then
-        Me.iColSub = Me.iColSub + 1
-    Else
-        Me.iColSub = Me.iColSub - 1
-    End If
-    
-    If Me.iColSub > numColSub Then
-        Me.iColSub = Me.numColSub
-        Me.iRowSub = Me.iRowSub + 1
-    End If
-    
-    If Me.iColSub < 1 Then
-        Me.iColSub = 1
-        Me.iRowSub = Me.iRowSub + 1
-    End If
-        
-    'update mainGrid
-    If Me.iRowSub > Me.numRowSub Then
-        Me.iRowSub = 1
+Public Function nextGridPt(Optional WellFirst As Boolean) As Boolean
+    If WellFirst Then
+        'update mainGrid
         If Me.iRow Mod 2 <> 0 Then
             Me.iCol = Me.iCol + 1
-            Me.iColSub = 1
         Else
             Me.iCol = Me.iCol - 1
-            Me.iColSub = 1
         End If
         If Me.iCol > Me.numCol Then
-            Me.iCol = numCol
+            Me.iCol = Me.numCol
             Me.iRow = Me.iRow + 1
-            Me.iColSub = 1
         End If
+    
         If Me.iCol < 1 Then
             Me.iCol = 1
             Me.iRow = Me.iRow + 1
+        End If
+        
+        'update GridSub
+        If Me.iRow > Me.numRow Then
+            Me.iRow = 1
+            If Me.iRowSub Mod 2 <> 0 Then
+                Me.iColSub = Me.iColSub + 1
+                Me.iCol = 1
+            Else
+                Me.iColSub = Me.iColSub - 1
+                Me.iCol = 1
+            End If
+            If Me.iColSub > Me.numColSub Then
+                Me.iColSub = Me.numColSub
+                Me.iRowSub = Me.iRowSub + 1
+                Me.iCol = 1
+            End If
+            If Me.iColSub < 1 Then
+                Me.iColSub = 1
+                Me.iRowSub = Me.iRowSub + 1
+                Me.iCol = 1
+            End If
+        End If
+    
+        ''end of grid has been reached
+        If Me.iRowSub > Me.numRowSub Then
+            nextGridPt = False
+        Else
+            nextGridPt = True
+        End If
+    
+    
+    Else
+        'update GridSub
+        If Me.iRowSub Mod 2 <> 0 Then
+            Me.iColSub = Me.iColSub + 1
+        Else
+            Me.iColSub = Me.iColSub - 1
+        End If
+        
+        If Me.iColSub > numColSub Then
+            Me.iColSub = Me.numColSub
+            Me.iRowSub = Me.iRowSub + 1
+        End If
+        
+        If Me.iColSub < 1 Then
             Me.iColSub = 1
+            Me.iRowSub = Me.iRowSub + 1
+        End If
+            
+        'update mainGrid
+        If Me.iRowSub > Me.numRowSub Then
+            Me.iRowSub = 1
+            If Me.iRow Mod 2 <> 0 Then
+                Me.iCol = Me.iCol + 1
+                Me.iColSub = 1
+            Else
+                Me.iCol = Me.iCol - 1
+                Me.iColSub = 1
+            End If
+            If Me.iCol > Me.numCol Then
+                Me.iCol = numCol
+                Me.iRow = Me.iRow + 1
+                Me.iColSub = 1
+            End If
+            If Me.iCol < 1 Then
+                Me.iCol = 1
+                Me.iRow = Me.iRow + 1
+                Me.iColSub = 1
+            End If
+        End If
+        
+        ''end of grid has been reached
+        If Me.iRow > Me.numRow Then
+            nextGridPt = False
+        Else
+            nextGridPt = True
         End If
     End If
-    
-    ''end of grid has been reached
-    If Me.iRow > Me.numRow Then
-        nextGridPt = False
-    Else
-        nextGridPt = True
-    End If
-                    
 End Function
 
 
@@ -495,7 +599,7 @@ End Function
 '       refRow:         reference row where main grid starts
 '       refCol:         reference column where main grid starts
 '''''
-Public Sub makeGridFromOnePt(pos As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, dRow As Double, dCol As Double, _
+Public Sub makeGridFromOnePt(Pos As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, dRow As Double, dCol As Double, _
 dRowSub As Double, dColSub As Double, Optional refRow As Integer = 1, Optional refCol As Integer = 1)
         
         initialize Row, Col, RowSub, ColSub
@@ -510,9 +614,9 @@ dRowSub As Double, dColSub As Double, Optional refRow As Integer = 1, Optional r
             For iCol = 1 To Me.numCol
                 For iRowSub = 1 To Me.numRowSub
                     For iColSub = 1 To Me.numColSub
-                        GridArray(iRow, iCol, iRowSub, iColSub).X = Round(pos.X + (1 - refCol) * dCol + (iCol - 1) * dCol + (iColSub - 1 - (Me.numColSub - 1) / 2) * dColSub, PrecXY)
-                        GridArray(iRow, iCol, iRowSub, iColSub).Y = Round(pos.Y + (1 - refRow) * dRow + (iRow - 1) * dRow + (iRowSub - 1 - (Me.numRowSub - 1) / 2) * dRowSub, PrecXY)
-                        GridArray(iRow, iCol, iRowSub, iColSub).Z = Round(pos.Z, PrecZ)
+                        GridArray(iRow, iCol, iRowSub, iColSub).X = Round(Pos.X + (1 - refCol) * dCol + (iCol - 1) * dCol + (iColSub - 1 - (Me.numColSub - 1) / 2) * dColSub, PrecXY)
+                        GridArray(iRow, iCol, iRowSub, iColSub).Y = Round(Pos.Y + (1 - refRow) * dRow + (iRow - 1) * dRow + (iRowSub - 1 - (Me.numRowSub - 1) / 2) * dRowSub, PrecXY)
+                        GridArray(iRow, iCol, iRowSub, iColSub).Z = Round(Pos.Z, PrecZ)
                     Next iColSub
                 Next iRowSub
             Next iCol
@@ -529,14 +633,14 @@ End Sub
 '       X, Y, Z:        Array containing coordinates of main grid.
 '       dXsub, dYsub:   Gridspacing subGrid
 '''''
-Public Sub makeGridFromManyPts(pos() As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, dColSub As Double, dRowSub As Double)
+Public Sub makeGridFromManyPts(Pos() As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, dColSub As Double, dRowSub As Double)
         Dim iCol As Long
         Dim iRow As Long
         Dim iRowSub As Long
         Dim iColSub As Long
         initialize Row, Col, RowSub, ColSub
         
-        If UBound(pos) + 1 <> Me.numCol Then
+        If UBound(Pos) + 1 <> Me.numCol Then
             MsgBox "Number of positions does not correspond to number of gridPts"
             Exit Sub
         End If
@@ -544,9 +648,9 @@ Public Sub makeGridFromManyPts(pos() As Vector, Row As Long, Col As Long, RowSub
         For iCol = 1 To Me.numCol
             For iRowSub = 1 To Me.numRowSub
                 For iColSub = 1 To Me.numColSub
-                    GridArray(1, iCol, iRowSub, iColSub).X = Round(pos(iCol - 1).X + (iColSub - 1 - (Me.numColSub - 1) / 2) * dColSub, PrecXY)
-                    GridArray(1, iCol, iRowSub, iColSub).Y = Round(pos(iCol - 1).Y + (iRowSub - 1 - (Me.numRowSub - 1) / 2) * dRowSub, PrecXY)
-                    GridArray(1, iCol, iRowSub, iColSub).Z = Round(pos(iCol - 1).Z, PrecZ)
+                    GridArray(1, iCol, iRowSub, iColSub).X = Round(Pos(iCol - 1).X + (iColSub - 1 - (Me.numColSub - 1) / 2) * dColSub, PrecXY)
+                    GridArray(1, iCol, iRowSub, iColSub).Y = Round(Pos(iCol - 1).Y + (iRowSub - 1 - (Me.numRowSub - 1) / 2) * dRowSub, PrecXY)
+                    GridArray(1, iCol, iRowSub, iColSub).Z = Round(Pos(iCol - 1).Z, PrecZ)
                 Next iColSub
             Next iRowSub
         Next iCol
@@ -649,13 +753,21 @@ End Function
 '   Format is Me.numRow numCol numRowSub numColSub
 '   X Y Z X Y Z X Y Z etc
 ''''''''
+'---------------------------------------------------------------------------------------
+' Procedure : loadPositionGridFile
+' Author    : LSM User
+' Date      : 02/11/2014
+' Purpose   :
+'---------------------------------------------------------------------------------------
+'
 Public Function loadPositionGridFile(ByVal sFile As String) As Boolean
     Dim iRow As Integer
     Dim iCol As Integer
     Dim iRowSub As Integer
     Dim iColSub As Integer
+   On Error GoTo loadPositionGridFile_Error
+
     Close
-    On Error GoTo ErrorPosFile:
     Dim iFileNum As Integer
     Dim Fields As String
     Dim FieldEntries() As String
@@ -689,14 +801,17 @@ Public Function loadPositionGridFile(ByVal sFile As String) As Boolean
     setAllValid True
     Close #iFileNum
     loadPositionGridFile = True
-    Exit Function
-ErrorPosFile:
+
+   On Error GoTo 0
+   Exit Function
+
+loadPositionGridFile_Error:
     If Err.number = 70 Then
-        MsgBox ("LoadPosFile: Was not able to load position file " & sFile & ". File is open by another program.")
+        MsgBox ("loadPositionGridFile: Was not able to load position file " & sFile & ". File is open by another program.")
     Else
-        MsgBox ("LoadPosFile: Was not able to load position file " & sFile)
+        MsgBox ("loadPositionGridFile: Was not able to load position file " & sFile)
     End If
-    MsgBox ("Was not able to load position file " & sFile)
+
 End Function
     
  
@@ -785,7 +900,7 @@ Public Function isValidGridFile(ByVal sFile As String, Row As Long, Col As Long,
         Wend
         RegEx.Pattern = CellBase
         If RegEx.test(Fields) Then
-            format = "cellbase"
+            isValidGridFile = "cellbase"
         Else
             'standard format
             FieldEntries = Split(Fields, " ")
@@ -833,9 +948,9 @@ Public Function loadValidGridFile(ByVal sFile As String, format As String) As Bo
     Dim RegEx As VBScript_RegExp_55.RegExp
     Set RegEx = CreateObject("vbscript.regexp")
     Dim Match As MatchCollection
-    CellBase = "(\d+)--(\d+)--(\d+)--(\S+)--(\S+)"
+    CellBase = "(\d+)--(\d+)--(\d+)--(\(\d+\,\d+\))--(\S+)--(\S+)"
     Dim Active As Boolean
-    If format <> "none" Or format <> "" Then
+    If format <> "none" And format <> "" Then
         iFileNum = FreeFile()
         Open sFile For Input As iFileNum
         If format = "default" Then
@@ -865,22 +980,26 @@ Public Function loadValidGridFile(ByVal sFile As String, format As String) As Bo
                 RegEx.Pattern = CellBase
                 If RegEx.test(Fields) Then
                     Set Match = RegEx.Execute(Fields)
-                    Active = (Match.Item(0).SubMatches.Item(4) <> "none")
+                    Active = (Match.item(0).SubMatches.item(5) <> "none") And (Match.item(0).SubMatches.item(4) <> "none")
                     GoodMatch = True
                 End If
                 'check it
                 'if this gridposition exists then update activity
-'                If GoodMatch And CInt(Match.Item(0).SubMatches.Item(1)) <= UBound(posGridXY_Valid, 1) And CInt(Match.Item(0).SubMatches.Item(1)) >= LBound(posGridXY_Valid, 1) _
-'                And CInt(Match.Item(0).SubMatches.Item(2)) <= UBound(posGridXY_Valid, 2) And CInt(Match.Item(0).SubMatches.Item(2)) >= LBound(posGridXY_Valid, 2) Then
-'                    For iRowSub = 1 To UBound(posGridXY_Valid, 3)
-'                        For iColSub = 1 To UBound(posGridXY_Valid, 4)
-'                            GridArray(CInt(Match.Item(0).SubMatches.Item(1)), CInt(Match.Item(0).SubMatches.Item(2)), iRowSub, iColSub).Valid = Active
-'                            setName Match.Item(0).SubMatches.Item(3) & "_" & Match.Item(0).SubMatches.Item(4), CInt(Match.Item(0).SubMatches.Item(1)), CInt(Match.Item(0).SubMatches.Item(2)), iRowSub, iColSub
-'                        Next iColSub
-'                    Next iRowSub
-'                End If
+                Debug.Print Match.item(0).SubMatches.item(1)
+                Debug.Print Match.item(0).SubMatches.item(2)
+                
+                If GoodMatch And CInt(Match.item(0).SubMatches.item(1)) <= Me.numRow And CInt(Match.item(0).SubMatches.item(1)) >= 1 _
+                And CInt(Match.item(0).SubMatches.item(2)) <= Me.numCol And CInt(Match.item(0).SubMatches.item(2)) >= 1 Then
+                    For iRowSub = 1 To Me.numRowSub
+                        For iColSub = 1 To Me.numColSub
+                            GridArray(CInt(Match.item(0).SubMatches.item(1)), CInt(Match.item(0).SubMatches.item(2)), iRowSub, iColSub).Valid = Active
+                            GridArray(CInt(Match.item(0).SubMatches.item(1)), CInt(Match.item(0).SubMatches.item(2)), iRowSub, iColSub).Name = Match.item(0).SubMatches.item(3) & FNSep & Match.item(0).SubMatches.item(4) & FNSep & Match.item(0).SubMatches.item(5) & FNSep
+                        Next iColSub
+                    Next iRowSub
+                End If
             Loop
         End If
+        loadValidGridFile = True
     Else
         MsgBox ("loadValidGridFile: was not able to understand format " & format & " of " & sFile)
     End If

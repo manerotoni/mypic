@@ -13,6 +13,7 @@ Attribute VB_Exposed = False
 '''''
 
 Option Explicit
+'contains all settings from registry
 Public Settings As Dictionary
 Private Keys() As String
 Private Keys_HowTo As Dictionary
@@ -34,7 +35,7 @@ Private subKey_roiType_HowTo As Dictionary
 Public Sub initializeDefault()
     On Error GoTo errMsg
 'This variable contains the keys for the OnlineImageanalysis
-    ReDim Keys(0 To 16)
+    ReDim Keys(0 To 17)
     Keys(0) = "codeMic"
     Keys(1) = "codeOia"
     Keys(2) = "fileAnalyzed"
@@ -52,7 +53,8 @@ Public Sub initializeDefault()
     Keys(14) = "roiY"
     Keys(15) = "OutputFolder"
     Keys(16) = "errorMsg"
-  
+    Keys(17) = "codePump"
+    
     Set subKey_roiAim_HowTo = New Dictionary
     subKey_roiAim_HowTo.Add "", "(empty char) do nothing with roi"
     subKey_roiAim_HowTo.Add "nothing", "do nothing with roi"
@@ -83,9 +85,10 @@ Public Sub initializeDefault()
     Keys_HowTo.Add Keys(11), "type of roi. Multiple rois: roiType1; roiTyp2"
     Keys_HowTo.Add Keys(12), "aim of roi. Multiple rois: roiAim1; roiAim2"
     Keys_HowTo.Add Keys(13), "X positions for roi. Multiple rois: X1roi1, X2roi1; X1roi1, X2roi2 ..."
-    Keys_HowTo.Add Keys(14), "Y positions for roi. Multiple rois: X1roi1, X2roi1; X1roi1, X2roi2 ..."
+    Keys_HowTo.Add Keys(14), "Y positions for roi. Multiple rois: Y1roi1, Y2roi1; Y1roi1, Y2roi2 ..."
     Keys_HowTo.Add Keys(15), "main directory where images are stored"
     Keys_HowTo.Add Keys(16), "error message coming from Oia"
+    Keys_HowTo.Add Keys(17), "time (ms) to activate water pump"
     
     Set subKey_codeMic_HowTo = New Dictionary
     subKey_codeMic_HowTo.Add "", "(empty char) wait for image analysis"
@@ -113,11 +116,14 @@ errMsg:
     LogManager.UpdateErrorLog "OnlineIASettings.initializeDefault error " & Err.Description
 End Sub
 
+'''
+' This get settings from stored one not directly from registry
+'''
 Public Function getSettings(Key As Variant) As Variant
     Dim LogTxt As String
     Dim i  As Integer
     If Settings.Exists(Key) Then
-        getSettings = Settings.Item(Key)
+        getSettings = Settings.item(Key)
         Exit Function
     End If
     LogTxt = "OnlineIASettings.getSettings: Failed to get " + Key + " from OiaSettings. Possible values are:" & vbCrLf
@@ -140,21 +146,22 @@ Public Function available_subKey(subKey_HowTo As Dictionary) As String
         Else
             TabSp = "" & vbTab & vbTab
         End If
-        LogTxt = LogTxt & "   " & Key & " " & TabSp & subKey_HowTo.Item(Key) & vbCrLf
+        LogTxt = LogTxt & "   " & Key & " " & TabSp & subKey_HowTo.item(Key) & vbCrLf
     Next Key
     available_subKey = LogTxt
 End Function
 
 Public Function createKeyReport() As String
     Dim report As String
-    report = "Windows registry keys to interact with Online image analysis" & vbCrLf
-    report = report & "location is: HKCU\SOFTWARE\VB and VBA Program Settings\OnlineImageAnalysis\macro" & vbCrLf
-    report = report & "All coordinates must be in pixels. (X, Y, Z) = (0,0,0) is the upper left corner, first slice." & vbCrLf
-    report = report & "------------------------" & vbCrLf
-    report = report & "Principal Keys and meaning:" & vbCrLf
+    report = "Windows registry keys to interact with Online image analysis" & vbCrLf & _
+    "location is: HKCU\SOFTWARE\VB and VBA Program Settings\OnlineImageAnalysis\macro" & vbCrLf & _
+    "All coordinates must be in pixels. (X, Y, Z) = (0,0,0) is the upper left corner, first slice." & vbCrLf & _
+    "Use dot notation for subpixel (e.g. 2.5) !" & vbCrLf & _
+    "------------------------" & vbCrLf & _
+    "Principal Keys and meaning:" & vbCrLf
     report = report & available_subKey(Keys_HowTo)
     report = report & "------------------------" & vbCrLf
-    report = report & "codeMic values:" & vbCrLf
+    report = report & "codeMic values: several commands separated with ;" & vbCrLf
     report = report & available_subKey(subKey_codeMic_HowTo)
     report = report & "------------------------" & vbCrLf
     report = report & "codeOia values:" & vbCrLf
@@ -173,21 +180,21 @@ End Function
 '''
 ' Check existence of Key and whether Item is consistent with it
 ''
-Public Function checkKeyItem(Key As Variant, Value As Variant)
+Public Function checkKeyItem(Key As Variant, value As Variant)
     Dim errorMsg As String
     If Settings.Exists(Key) Then
-        Settings.Item(Key) = Value
+        Settings.item(Key) = value
         Select Case Key
             Case "codeOia"
-                checkKeyItem = checkSubkey(CStr(Key), Value, subKey_codeOia_HowTo)
+                checkKeyItem = checkSubkey(CStr(Key), value, subKey_codeOia_HowTo)
                 Exit Function
             Case "codeMic"
-                checkKeyItem = checkSubkey(CStr(Key), Value, subKey_codeMic_HowTo)
+                checkKeyItem = checkSubkey(CStr(Key), value, subKey_codeMic_HowTo)
                 Exit Function
             Case "roiAim"
-                checkKeyItem = checkSubkey(CStr(Key), Value, subKey_roiAim_HowTo)
+                checkKeyItem = checkSubkey(CStr(Key), value, subKey_roiAim_HowTo)
             Case "roiType"
-                checkKeyItem = checkSubkey(CStr(Key), Value, subKey_roiType_HowTo)
+                checkKeyItem = checkSubkey(CStr(Key), value, subKey_roiType_HowTo)
                 Exit Function
             Case Else
                 checkKeyItem = True
@@ -200,18 +207,25 @@ Public Function checkKeyItem(Key As Variant, Value As Variant)
     End If
 End Function
 
-Public Function checkSubkey(KeyName As String, Value As Variant, subKey_HowTo As Dictionary) As Boolean
+Public Function checkSubkey(KeyName As String, value As Variant, subKey_HowTo As Dictionary) As Boolean
     Dim errorMsg As String
     Dim Key As Variant
-    Dim codeKeys() As Variant
-    codeKeys = subKey_HowTo.Keys
-    For Each Key In codeKeys
-        If Value = Key Then
-            checkSubkey = True
-            Exit Function
+    Dim code As Variant
+    Dim codeArr() As String
+    Dim item As Variant
+    codeArr = Split(value, ";")
+    For Each code In codeArr
+        code = Replace(code, " ", "")
+        On Error GoTo noKey
+        If Not subKey_HowTo.Exists(code) Then
+            GoTo noKey
         End If
-    Next Key
-    errorMsg = "OnlineIASettings error: Wrong " & KeyName & " = " & Me.getSettings(KeyName) & " in Registry. Values are " & vbCrLf
+    Next code
+    checkSubkey = True
+    Exit Function
+noKey:
+    errorMsg = "OnlineIASettings error: Wrong " & KeyName & " = " & CStr(code) _
+    & " in Registry. Values are " & vbCrLf
     errorMsg = errorMsg & available_subKey(subKey_HowTo)
     MsgBox errorMsg
     LogManager.UpdateErrorLog errorMsg
@@ -253,11 +267,11 @@ Public Sub readFromRegistry()
     Dim Key As Variant
     For Each Key In Keys
         If Settings.Exists(Key) Then
-            Settings.Item(Key) = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:=Key)
+            Settings.item(Key) = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:=Key)
         Else
             Settings.Add Key, GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:=Key)
         End If
-        checkKeyItem Key, Settings.Item(Key)
+        checkKeyItem Key, Settings.item(Key)
     Next Key
 End Sub
 
@@ -265,15 +279,18 @@ End Sub
 '   ReadOiaSettingsFromRegistry(Settings As Collection, Keys() As String)
 '       Read Registry using the keys stored in Keys and create a new dictionary
 ''''
-Public Sub readKeyFromRegistry(Key As Variant)
+Public Function readKeyFromRegistry(Key As Variant) As Variant
+    Dim KeyValue As Variant
     checkExistKeys
+    KeyValue = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:=Key)
     If Settings.Exists(Key) Then
-        Settings.Item(Key) = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:=Key)
+        Settings.item(Key) = KeyValue
     Else
-        Settings.Add Key, GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:=Key)
+        Settings.Add Key, KeyValue
     End If
-    checkKeyItem Key, Settings.Item(Key)
-End Sub
+    checkKeyItem Key, Settings.item(Key)
+    readKeyFromRegistry = KeyValue
+End Function
 
 
 ''''
@@ -286,7 +303,7 @@ Public Sub writeToRegistry()
     Dim Key As Variant
     For Each Key In Keys
         If Settings.Exists(Key) Then
-            SaveSetting "OnlineImageAnalysis", "macro", Key, Settings.Item(Key)
+            SaveSetting "OnlineImageAnalysis", "macro", Key, Settings.item(Key)
         End If
     Next Key
 End Sub
@@ -295,13 +312,13 @@ End Sub
 '   writeKeyToRegistry()
 '       Write a specific value in Key of registry
 ''''
-Public Sub writeKeyToRegistry(Key As Variant, Value As Variant)
+Public Sub writeKeyToRegistry(Key As Variant, value As Variant)
     Dim Success As Boolean
     checkExistKeys
     
-    If checkKeyItem(Key, Value) Then
-        Settings.Item(Key) = Value
-        SaveSetting "OnlineImageAnalysis", "macro", Key, Value
+    If checkKeyItem(Key, value) Then
+        Settings.item(Key) = value
+        SaveSetting "OnlineImageAnalysis", "macro", Key, value
     End If
 End Sub
 
@@ -350,7 +367,7 @@ Public Sub writeToFile(FileName As String)
     Open FileName For Output As iFileNum
     
     For Each Key In Settings.Keys
-        Print #iFileNum, Key & " " & Settings.Item(Key)
+        Print #iFileNum, Key & " " & Settings.item(Key)
     Next Key
     Close
 ErrorHandle:
@@ -382,19 +399,19 @@ Public Function getRois(Rois() As Roi) As Boolean
     Dim iRoi As Integer
     Dim roiType() As String
     Dim roiAim() As String
-    If Settings.Item("roiType") = "" Then
+    If Settings.item("roiType") = "" Then
         Exit Function
     End If
-    roiType = Split(Settings.Item("roiType"), ";")
-    If Settings.Item("roiAim") = "" Or Settings.Item("roiX") = "" Or Settings.Item("roiY") = "" Then
+    roiType = Split(Replace(Settings.item("roiType"), " ", ""), ";")
+    If Settings.item("roiAim") = "" Or Settings.item("roiX") = "" Or Settings.item("roiY") = "" Then
         LogManager.UpdateErrorLog "OnlineIASettings.getRois: For each roi you need to define roiType, roiAim, roiX, and roiY! Different rois are separated by semicolumns. " + vbCrLf + "roiType1 ; roiType2; etc." & vbCrLf & _
         "roiX1_roi1, roiX2_roi1; roiX1_roi2, roiX2_roi2, roiX3_roi2; etc. Coordinates in pixels"
         Exit Function
     End If
     
-    roiAim = Split(Settings.Item("roiAim"), ";")
-    XRois() = Split(Settings.Item("roiX"), ";")
-    YRois() = Split(Settings.Item("roiY"), ";")
+    roiAim = Split(Replace(Settings.item("roiAim"), " ", ""), ";")
+    XRois() = Split(Replace(Settings.item("roiX"), " ", ""), ";")
+    YRois() = Split(Replace(Settings.item("roiY"), " ", ""), ";")
     
     If UBound(roiType) <> UBound(roiAim) And UBound(roiType) <> UBound(XRois) And UBound(roiType) <> UBound(YRois) Then
        LogManager.UpdateErrorLog "OnlineIASettings.getRois: Number of Rois and coordinates need to correspond. Different rois are separated by semicolumns. " + vbCrLf + "roiType1 ; roiType2; etc." & vbCrLf & _
@@ -442,7 +459,7 @@ Public Function getPositions(StgPos() As Vector, currentPosition As Vector) As B
     Dim i As Integer
     
     If Settings.Exists("X") Then
-        locX() = Split(Settings.Item("X"), ";")
+        locX() = Split(Settings.item("X"), ";")
     End If
     
     If isArrayEmpty(locX) Then
@@ -450,7 +467,7 @@ Public Function getPositions(StgPos() As Vector, currentPosition As Vector) As B
     End If
     
     If Settings.Exists("Y") Then
-        locY() = Split(Settings.Item("Y"), ";")
+        locY() = Split(Settings.item("Y"), ";")
     End If
     
     If isArrayEmpty(locY) Then
@@ -464,7 +481,7 @@ Public Function getPositions(StgPos() As Vector, currentPosition As Vector) As B
     End If
     
     If Settings.Exists("Z") Then
-        locZ() = Split(Settings.Item("Z"), ";")
+        locZ() = Split(Settings.item("Z"), ";")
     End If
     
     If isArrayEmpty(locZ) Then 'Z has not been set. We use the currentvalue as default
@@ -523,7 +540,7 @@ Public Function getFcsPositions(StgPos() As Vector, currentPosition As Vector) A
     Dim i As Integer
     
     If Settings.Exists("fcsX") Then
-        locX() = Split(Settings.Item("fcsX"), ";")
+        locX() = Split(Settings.item("fcsX"), ";")
     End If
     
     If isArrayEmpty(locX) Then
@@ -531,7 +548,7 @@ Public Function getFcsPositions(StgPos() As Vector, currentPosition As Vector) A
     End If
     
     If Settings.Exists("fcsY") Then
-        locY() = Split(Settings.Item("fcsY"), ";")
+        locY() = Split(Settings.item("fcsY"), ";")
     End If
     
     If isArrayEmpty(locY) Then
@@ -545,7 +562,7 @@ Public Function getFcsPositions(StgPos() As Vector, currentPosition As Vector) A
     End If
     
     If Settings.Exists("fcsZ") Then
-        locZ() = Split(Settings.Item("fcsZ"), ";")
+        locZ() = Split(Settings.item("fcsZ"), ";")
     End If
     
     If isArrayEmpty(locZ) Then 'Z has not been set. We use the currentvalue as default

@@ -1,6 +1,13 @@
 Attribute VB_Name = "TestCode"
 Option Explicit
-
+Private Sub TestOia()
+    Dim codeMic As String
+    Dim Oia As OnlineIASettings
+    Set Oia = New OnlineIASettings
+    Oia.initializeDefault
+    codeMic = Replace(Oia.readKeyFromRegistry("codeMic"), " ", "")
+    Debug.Print codeMic
+End Sub
 Private Sub ChangeAutosaveSettingsImaging()
 '    '**************************************
 '    'Recorded: 02/09/2013

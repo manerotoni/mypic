@@ -41,7 +41,7 @@ Public Sub addTimer(Name As String)
     End If
     
     TimerNames.Add Name, UBound(Timers)
-    iTimer = TimerNames.Item(Name)
+    iTimer = TimerNames.item(Name)
     Timers(iTimer).Name = Name
     Timers(iTimer).TimeStart = CDbl(GetTickCount) * 0.001
 End Sub
@@ -57,12 +57,12 @@ End Function
 
 Public Sub updateTimeStart(Name As String)
     If checkTimerName(Name) Then
-        Timers(TimerNames.Item(Name)).TimeStart = CDbl(GetTickCount) * 0.001
+        Timers(TimerNames.item(Name)).TimeStart = CDbl(GetTickCount) * 0.001
     End If
 End Sub
 
 Public Function wait(Name As String, Delay As Double) As Double
     If checkTimerName(Name) Then
-        wait = Timers(TimerNames.Item(Name)).TimeStart - CDbl(GetTickCount) * 0.001 + Delay
+        wait = Timers(TimerNames.item(Name)).TimeStart - CDbl(GetTickCount) * 0.001 + Delay
     End If
 End Function

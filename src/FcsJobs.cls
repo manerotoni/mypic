@@ -31,6 +31,22 @@ Private Sub MsgNoJob(Name As String)
     MsgBox "ImagingJobs: Job " & Name & " has not been defined"
 End Sub
 
+Public Function setTimeToAcquire(Name As String, value As Double)
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    Jobs(JobNames.item(Name)).timeToAcquire = value
+End Function
+
+
+Public Function getTimeToAcquire(Name As String) As Double
+    If Not checkJobName(Name) Then
+        Exit Function
+    End If
+    getTimeToAcquire = Jobs(JobNames.item(Name)).timeToAcquire
+End Function
+
+
 '''
 '   Initialize a series of Jobs with given name
 '''
@@ -61,7 +77,7 @@ Public Sub AddJob(Name As String, ZEN As Object)
     End If
     Dim i As Integer
     Dim iJob As Integer
-    iJob = JobNames.Item(Name)
+    iJob = JobNames.item(Name)
     Set Jobs(iJob) = New AFcsJob
     Jobs(iJob).Name = Name
     'Jobs(iJob).setJob ZEN, ZENv
@@ -80,7 +96,7 @@ Public Function setJob(Name As String, ZEN As Object) As Boolean
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    If Jobs(JobNames.Item(Name)).setJob(ZEN, ZENv) Then
+    If Jobs(JobNames.item(Name)).setJob(ZEN, ZENv) Then
         setJob = True
     End If
     Exit Function
@@ -96,7 +112,7 @@ Public Function setJobNoAi(Name As String, ConfigName As String) As Boolean
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    If Jobs(JobNames.Item(Name)).setJobNoAi(ConfigName) Then
+    If Jobs(JobNames.item(Name)).setJobNoAi(ConfigName) Then
         setJobNoAi = True
     End If
     Exit Function
@@ -113,7 +129,7 @@ Public Function putJob(Name As String, ZEN As Object) As Boolean
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    If Jobs(JobNames.Item(Name)).putJob(ZEN, ZENv) Then
+    If Jobs(JobNames.item(Name)).putJob(ZEN, ZENv) Then
         putJob = True
     End If
     Exit Function
@@ -128,7 +144,7 @@ Public Function jobDescriptor(Name As String) As String
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    jobDescriptor = Jobs(JobNames.Item(Name)).jobDescriptor
+    jobDescriptor = Jobs(JobNames.item(Name)).jobDescriptor
 End Function
 
 
@@ -139,14 +155,14 @@ Public Function splittedJobDescriptor(Name As String, MaxLines As Integer) As St
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    splittedJobDescriptor = Jobs(JobNames.Item(Name)).splittedJobDescriptor(MaxLines, jobDescriptor(Name))
+    splittedJobDescriptor = Jobs(JobNames.item(Name)).splittedJobDescriptor(MaxLines, jobDescriptor(Name))
 End Function
 
 Public Function getLightPathConfig(Name As String) As String
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    getLightPathConfig = Jobs(JobNames.Item(Name)).LightPathConfig
+    getLightPathConfig = Jobs(JobNames.item(Name)).LightPathConfig
 End Function
 
 ''''
@@ -156,13 +172,13 @@ Public Function jobDescriptorSettings(Name As String) As String
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    jobDescriptorSettings = Jobs(JobNames.Item(Name)).jobDescriptorSettings
+    jobDescriptorSettings = Jobs(JobNames.item(Name)).jobDescriptorSettings
 End Function
 
-Public Function changeJobFromDescriptor(Name As String, Descriptor As String, Value As Variant)
+Public Function changeJobFromDescriptor(Name As String, Descriptor As String, value As Variant)
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    changeJobFromDescriptor = Jobs(JobNames.Item(Name)).changeJobFromDescriptor(Descriptor, Value)
+    changeJobFromDescriptor = Jobs(JobNames.item(Name)).changeJobFromDescriptor(Descriptor, value)
 End Function
 

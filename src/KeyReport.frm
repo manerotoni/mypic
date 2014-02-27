@@ -14,3 +14,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Public Sub UserForm_Initialize()
+    FormatUserForm (Me.Caption)
+End Sub

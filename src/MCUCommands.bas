@@ -1,6 +1,6 @@
 Attribute VB_Name = "MCUCommands"
 '''
-' Module with functions to control the stage
+' Module with functions to control the stage not really used may be obsolete?
 ''''
 
 Option Explicit

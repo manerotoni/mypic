@@ -121,8 +121,8 @@ Public Sub updateTimeStart(Name As String)
     Repetitions(Name).updateTimeStart
 End Sub
 
-Public Sub setInterval(Name As String, Value As Boolean)
-    Repetitions(Name).interval = Value
+Public Sub setInterval(Name As String, value As Boolean)
+    Repetitions(Name).interval = value
 End Sub
 
 Public Function thisIndex(Name As String) As Integer
@@ -133,15 +133,15 @@ End Function
 '''
 '
 '''
-Public Sub setRepetitionTime(Name As String, Value As Double)
-    Repetitions(Name).Time = Value
+Public Sub setRepetitionTime(Name As String, value As Double)
+    Repetitions(Name).Time = value
 End Sub
 
 '''
 'set the number of repetitions
 '''
-Public Sub setRepetitionNumber(Name As String, Value As Integer)
-    Repetitions(Name).number = Value
+Public Sub setRepetitionNumber(Name As String, value As Integer)
+    Repetitions(Name).number = value
 End Sub
 
 '''
@@ -156,7 +156,7 @@ Public Function thisSuffix(Name As String) As String
     thisSuffix = Repetitions(Name).thisSuffix
 End Function
 
-Public Function suffix(Name As String, Value As Integer) As String
-    suffix = Repetitions(Name).suffix(Value)
+Public Function suffix(Name As String, value As Integer) As String
+    suffix = Repetitions(Name).suffix(value)
 End Function
 

@@ -1,20 +1,13 @@
 Attribute VB_Name = "FCSFunctions"
 ''''
-' Module contains Functions used during Fcs not totally up to date
+' Module contains Functions used during Fcs
 ''''
 
 Option Explicit 'force to declare all variables
 
-Public Declare Function GetInputState Lib "user32" () As Long ' Check if mouse or keyboard has been pushed
-
-
 Public FcsControl As AimFcsController
 Public viewerGuiServer As AimViewerGuiServer
 Public FcsPositions As AimFcsSamplePositionParameters
-Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
-Public FcsData As AimFcsData
-
-
 
 
 
@@ -22,37 +15,22 @@ Public FcsData As AimFcsData
 '   GetFcsPosition(PosX As Double, PosY As Double, PosZ As Double)
 '   reads position of small crosshair
 '''''
-Public Sub GetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Optional pos As Long = -1)
-    If pos = -1 Then
+Public Sub GetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Optional Pos As Long = -1)
+    If Pos = -1 Then
         'read actual position of crosshair
         Set viewerGuiServer = Lsm5.viewerGuiServer
         viewerGuiServer.FcsGetLsmCoordinates PosX, PosY, PosZ
     Else
         Set FcsControl = Fcs
         Set FcsPositions = FcsControl.SamplePositionParameters
-        PosX = FcsPositions.PositionX(pos)
-        PosY = FcsPositions.PositionY(pos)
-        PosZ = FcsPositions.PositionZ(pos)
+        PosX = FcsPositions.PositionX(Pos)
+        PosY = FcsPositions.PositionY(Pos)
+        PosZ = FcsPositions.PositionZ(Pos)
     End If
 End Sub
 
 
 
-'''''
-'   SetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Pos As Long)
-'   Create a new position if Pos > FcsPositions.PositionListSize
-'   then all positions inbetween are set to 0
-'
-'''''
-Public Function SetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, pos As Long) As Boolean
-    Set FcsControl = Fcs
-    Set FcsPositions = FcsControl.SamplePositionParameters
-    FcsPositions.PositionX(pos) = PosX
-    FcsPositions.PositionY(pos) = PosY
-    FcsPositions.PositionZ(pos) = PosZ
-    'this shows the small crosshair
-    viewerGuiServer.UpdateFcsPositions
-End Function
 
 '''''
 '   SetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Pos As Long)
@@ -60,14 +38,14 @@ End Function
 '   then all positions inbetween are set to 0
 '''''
 Public Function setFcsPositions(Positions() As Vector) As Boolean
-    Dim pos As Integer
+    Dim Pos As Integer
     Set FcsControl = Fcs
     Set FcsPositions = FcsControl.SamplePositionParameters
-    For pos = 0 To UBound(Positions)
-        FcsPositions.PositionX(pos) = Positions(pos).X
-        FcsPositions.PositionY(pos) = Positions(pos).Y
-        FcsPositions.PositionZ(pos) = Positions(pos).Z
-    Next pos
+    For Pos = 0 To UBound(Positions)
+        FcsPositions.PositionX(Pos) = Positions(Pos).X
+        FcsPositions.PositionY(Pos) = Positions(Pos).Y
+        FcsPositions.PositionZ(Pos) = Positions(Pos).Z
+    Next Pos
     Debug.Print FcsPositions.PositionZ(0)
     'this shows the small crosshair
     viewerGuiServer.UpdateFcsPositions
@@ -100,6 +78,21 @@ End Function
 
 
 
+''''''
+''   SetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Pos As Long)
+''   Create a new position if Pos > FcsPositions.PositionListSize
+''   then all positions inbetween are set to 0
+''
+''''''
+'Public Function SetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Pos As Long) As Boolean
+'    Set FcsControl = Fcs
+'    Set FcsPositions = FcsControl.SamplePositionParameters
+'    FcsPositions.PositionX(Pos) = PosX
+'    FcsPositions.PositionY(Pos) = PosY
+'    FcsPositions.PositionZ(Pos) = PosZ
+'    'this shows the small crosshair
+'    viewerGuiServer.UpdateFcsPositions
+'End Function
 
 
 

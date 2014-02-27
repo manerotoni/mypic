@@ -4,7 +4,7 @@ Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} AutofocusForm
    ClientHeight    =   13530
    ClientLeft      =   45
    ClientTop       =   330
-   ClientWidth     =   7200
+   ClientWidth     =   7665
    OleObjectBlob   =   "AutofocusForm.frx":0000
    ShowModal       =   0   'False
    StartUpPosition =   3  'Windows Default
@@ -15,11 +15,12 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
+
 '---------------------------------------------------------------------------------------
 ' Module    : AutofocusForm
 ' Author    : Antonio Politi
-' Version   : 3.0.10
-' Purpose   : Form to manage Imagingd Fcs Jobs
+' Version   : 3.0.22
+' Purpose   : Form to manage Imaging and Fcs Jobs
 ' WARNING ZEN does not use spatial units in a consistent way. Switches between um and meter and pixel WARNING''''''''''''''''''''
 ' for imaging and moving the stage
 ' Lsm5.Hardware.Cpstages.PositionX: Absolute coordinate in um
@@ -36,63 +37,34 @@ Attribute VB_Exposed = False
 Option Explicit 'force to declare all variables
 
 Public Version As String
+
 Private Const DebugCode = False             ' this is should be disabled for the moment
-Private Const ReleaseName = True            'this adds the ZEN version
-Private Const LogCode = True                'sets key to run tests visible or not
-
-
-
-
-
-
-
-Private Sub ShowOiaKeys_Click()
-    Dim OiaSettings As OnlineIASettings
-    Set OiaSettings = New OnlineIASettings
-    OiaSettings.initializeDefault
-    KeyReport.Show
-    KeyReport.KeyReportLabel.Caption = OiaSettings.createKeyReport
-End Sub
-
-''commodity function to recognize which job is ob top
-Private Sub MultiPage1_Change()
-    
-    On Error GoTo StandardColor:
-        If MultiPage1.Value <= UBound(JobNames) Then
-            AutofocusForm.BackColor = Me.Controls(JobNames(MultiPage1.Value) & "Label").BackColor
-        ElseIf (MultiPage1.Value - UBound(JobNames) - 1) <= UBound(JobFcsNames) And (MultiPage1.Value - UBound(JobNames) - 1) >= 0 Then
-            AutofocusForm.BackColor = Me.Controls(JobFcsNames(MultiPage1.Value - UBound(JobNames) - 1) & "Label").BackColor
-        Else
-            AutofocusForm.BackColor = &H80000003
-        End If
-    Exit Sub
-StandardColor:
-    AutofocusForm.BackColor = &H80000003
-End Sub
+Private Const ReleaseName = True            ' this adds the ZEN version
+Private Const LogCode = True                ' sets key to run tests visible or not
 
 
 ''''''
-' UserForm_Initialize()
 '   Function called from e.g. AutoFocusForm.Show
-'   Load and initialize form
+'   Load and initialize form. Initialize many of the standard settins
 '''''
 Public Sub UserForm_Initialize()
     DisplayProgress "Initializing Macro ...", RGB(&HC0, &HC0, 0)
-    Version = " v3.0.13"
+    Version = " v3.0.22"
     Dim i As Integer
+    Dim Name As Variant
     ZENv = getVersionNr
     'find the version of the software
     If ZENv > 2010 Then
         On Error GoTo errorMsg
-        'in some cases this does not reister properly
+        'in some cases this does not register properly
         'Set ZEN = Lsm5.CreateObject("Zeiss.Micro.AIM.ApplicationInterface.ApplicationInterface")
         'this should always work
         Set ZEN = Application.ApplicationInterface
         Dim TestBool As Boolean
         'Check if it works
-        TestBool = ZEN.gui.Acquisition.EnableTimeSeries.Value
-        ZEN.gui.Acquisition.EnableTimeSeries.Value = Not TestBool
-        ZEN.gui.Acquisition.EnableTimeSeries.Value = TestBool
+        TestBool = ZEN.gui.Acquisition.EnableTimeSeries.value
+        ZEN.gui.Acquisition.EnableTimeSeries.value = Not TestBool
+        ZEN.gui.Acquisition.EnableTimeSeries.value = TestBool
         GoTo NoError
 errorMsg:
         MsgBox "Version is ZEN" & ZENv & " but can't find Zeiss.Micro.AIM.ApplicationInterface." & vbCrLf _
@@ -102,19 +74,20 @@ errorMsg:
         ZENv = 2010
 NoError:
     End If
+    On Error GoTo errorMsg2
     'Setting ome global variables
     LogFileNameBase = ""
     ErrFileNameBase = ""
     Log = LogCode
         
-    
+    '''OiaSettings
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
     OiaSettings.deleteKeys
     OiaSettings.resetRegistry
     
     
-    ''''This variable contains all the imagingJobs
+    ''''This variable contains all the imagingJobs with names JobNames
     Set Jobs = New ImagingJobs
     ReDim JobNames(4)
     JobNames(0) = "Autofocus"
@@ -122,7 +95,8 @@ NoError:
     JobNames(2) = "AlterAcquisition"
     JobNames(3) = "Trigger1"
     JobNames(4) = "Trigger2"
-            
+    
+    ''''Name identifier for files
     Set JobShortNames = New Collection
     JobShortNames.Add "AF", JobNames(0)
     JobShortNames.Add "AQ", JobNames(1)
@@ -132,16 +106,32 @@ NoError:
     
     Jobs.initialize JobNames, Lsm5.DsRecording, ZEN
     Jobs.setZENv ZENv
-
-    For i = 0 To UBound(JobNames)
-        If Jobs.getScanMode(JobNames(i)) = "ZScan" Or Jobs.getScanMode(JobNames(i)) = "Line" Then
-            Me.Controls(JobNames(i) + "TrackXY").Value = False
-            Me.Controls(JobNames(i) + "TrackXY").Enabled = False
+    
+    '''FocusMethods
+    Set FocusMethods = New Dictionary
+    FocusMethods.Add 0, "None"
+    FocusMethods.Add 1, "Center of Mass (thr)"
+    FocusMethods.Add 2, "Peak"
+    FocusMethods.Add 3, "Center of Mass"
+    FocusMethods.Add 4, "Online img. analysis"
+    
+    '''Fill the Form
+    For Each Name In JobNames
+        Me.Controls(Name + "FocusMethod").Clear
+        If Jobs.getScanMode(CStr(Name)) = "ZScan" Or Jobs.getScanMode(CStr(Name)) = "Line" Then
+            Me.Controls(Name + "TrackXY").value = False
+            Me.Controls(Name + "TrackXY").Enabled = False
         Else
-            Me.Controls(JobNames(i) + "TrackXY").Enabled = True
+            Me.Controls(Name + "TrackXY").Enabled = True
         End If
-    Next i
+            
+        For i = 0 To FocusMethods.count - 1
+            Me.Controls(Name + "FocusMethod").AddItem FocusMethods.item(i), i
+        Next i
+        Me.Controls(Name + "FocusMethod").ListIndex = 0
+    Next Name
 
+    '''Check for FCS
     If Lsm5.Info.IsFCS Then
         Set JobsFcs = New FcsJobs
         ReDim JobFcsNames(0)
@@ -156,18 +146,20 @@ NoError:
     If ReleaseName Then
         Me.Caption = Me.Caption + CStr(ZENv)
     End If
-    FormatUserForm (Me.Caption) ' make minimizing button available
+    
+    FormatUserForm (Me.Caption) 'make minimizing button available
     AutofocusForm.Show
     StageSettings MirrorX, MirrorY, ExchangeXY
     
     'set file format
     If Not fileFormatlsm And Not fileFormatczi Then
-        fileFormatlsm.Value = True
+        fileFormatlsm.value = True
     End If
     If fileFormatlsm Then
         imgFileFormat = eAimExportFormatLsm5
         imgFileExtension = ".lsm"
     End If
+    
     If ZENv > 2010 Then
         If fileFormatczi Then
             'this does not exist for ZENv <= 2010
@@ -181,11 +173,29 @@ NoError:
         imgFileFormat = eAimExportFormatLsm5
         imgFileExtension = ".lsm"
     End If
+    
     MultiPage1_Change
     ControlTipText
     Re_Start                    ' Initialize some of the variables
+    Exit Sub
+errorMsg2:
+        MsgBox "Error in initializing the Macro"
 End Sub
 
+'commodity function to recognize which job is on top and change color of Form
+Private Sub MultiPage1_Change()
+    On Error GoTo StandardColor:
+        If MultiPage1.value <= UBound(JobNames) Then
+            AutofocusForm.BackColor = Me.Controls(JobNames(MultiPage1.value) & "Label").BackColor
+        ElseIf (MultiPage1.value - UBound(JobNames) - 1) <= UBound(JobFcsNames) And (MultiPage1.value - UBound(JobNames) - 1) >= 0 Then
+            AutofocusForm.BackColor = Me.Controls(JobFcsNames(MultiPage1.value - UBound(JobNames) - 1) & "Label").BackColor
+        Else
+            AutofocusForm.BackColor = &H80000003
+        End If
+    Exit Sub
+StandardColor:
+    AutofocusForm.BackColor = &H80000003
+End Sub
 
 
 
@@ -195,16 +205,13 @@ End Sub
 ' Initializations that need to be performed only at the first start of the Macro
 ''''
 Private Sub Re_Start()
-    Dim i As Integer
-    Dim Delay As Single
     Dim bLSM As Boolean
     Dim bLIVE As Boolean
     Dim bCamera As Boolean
     Dim Name As Variant
 
-    Delay = 1
     Lsm5.StopScan
-    wait (Delay)
+    SleepWithEvents (1000)
     GlobalRepetitionSec.BackColor = &HFF8080
    
     LocationTextLabel.Caption = ""
@@ -213,45 +220,46 @@ Private Sub Re_Start()
 
     ' Set standard values for Autofocus
     ' blSM is a flag to decide whether systen is LSM (ZEN is LSM for instance). LIVE is 5Live not anymore in use?
-    'TODO: Check if GUI is available (ZEN2011 onward). How do you do this!!
-    '
     
-    'Set default value
+    Me.MultiPage1.value = 0
+    'Set default values
     For Each Name In JobNames
-        Me.Controls(CStr(Name) + "Active").Value = False
-        SwitchEnablePage CStr(Name), Me.Controls(CStr(Name) + "Active").Value
+        Me.Controls(CStr(Name) + "Active").value = False
+        SwitchEnablePage CStr(Name), Me.Controls(CStr(Name) + "Active").value
     Next Name
     
-    'Set default value
+    'Set default values
     For Each Name In JobFcsNames
-        Me.Controls(CStr(Name) + "Active").Value = False
-        SwitchEnableFcsPage CStr(Name), Me.Controls(CStr(Name) + "Active").Value
+        Me.Controls(CStr(Name) + "Active").value = False
+        SwitchEnableFcsPage CStr(Name), Me.Controls(CStr(Name) + "Active").value
+    Next Name
+
+    For Each Name In JobNames
+        Me.Controls(Name + "TimeOut").Visible = DebugCode
     Next Name
     
-    'Trigger2Autofocus.Value = False
-
-    'Trigger2Autofocus.Value = False
+    For Each Name In JobFcsNames
+        Me.Controls(Name + "TimeOut").Visible = DebugCode
+    Next Name
     
     Set Reps = New ImagingRepetitions
     ReDim RepNames(2)
-    RepNames(0) = "Global"    'this is Autofocus Acquisition and AlterAcquisition job
+    RepNames(0) = "Global"    'this is Autofocus, Acquisition and AlterAcquisition job
     RepNames(1) = "Trigger1"
     RepNames(2) = "Trigger2"
     
-    For i = 0 To 2
-        Reps.AddRepetition RepNames(i), CDbl(Me.Controls(RepNames(i) + "RepetitionTime")), _
-        CInt(Me.Controls(RepNames(i) + "RepetitionNumber")), CBool(Me.Controls(RepNames(i) + "RepetitionInterval"))
-    Next i
+    For Each Name In RepNames
+        Reps.AddRepetition CStr(Name), CDbl(Me.Controls(Name + "RepetitionTime")), _
+        CInt(Me.Controls(Name + "RepetitionNumber")), CBool(Me.Controls(Name + "RepetitionInterval"))
+    Next Name
     
     
     'Set standard values for Looping
     GlobalRepetitionNumber = 300
     GlobalRepetitionTime = 1
     
-
-    
     'Set standard values for Gridscan
-    GridScanActive.Value = False
+    GridScanActive.value = False
     SwitchEnableGridScanPage (False)
     
     Set Grids = New ImagingGrids
@@ -261,15 +269,12 @@ Private Sub Re_Start()
     Grids.AddGrid "Trigger2"
     
     'Set standard values for Additional Acquisition
-    AlterAcquisitionActive.Value = False
+    AlterAcquisitionActive.value = False
     SwitchEnablePage "AlterAcquisition", AlterAcquisitionActive
     
     'Set Database name
     'DatabaseTextbox.Value = GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="OutputFolder")
-    DatabaseTextbox.Value = ""
-    'Set repetition and locations
-    'RepetitionNumber = 1
-    'locationNumber = 1
+    DatabaseTextbox.value = ""
     Set FileSystem = New FileSystemObject
     'If we log a new logfile is created and closed again
     If LogCode And LogFileNameBase <> "" Then
@@ -292,17 +297,17 @@ Private Sub Re_Start()
         MultiPage1.Pages("Fcs1Page").Visible = False
     End If
         
-    MultiPage1.Pages("TestsPage").Visible = DebugCode
-    
+    'MultiPage1.Pages("TestsPage").Visible = DebugCode
+
     
     If ZENv = 2010 Then
         ZBacklash = 0.5
     ElseIf ZENv > 2010 Then
-        ZBacklash = 0.5
+        ZBacklash = 0
+        ZSafeDown = 0
     End If
     
     '''Contains all settings for the repetitions of the jobs
-        
     Re_Initialize
 End Sub
 
@@ -326,10 +331,7 @@ Public Sub Re_Initialize()
     SwitchEnablePage "Trigger1", Trigger1Active
     SwitchEnablePage "Trigger2", Trigger2Active
     SwitchEnableFcsPage "Fcs1", Fcs1Active
-    
-    FocusMapPresent = False
-    'This sets standard values for all task we want to do. This will be changed by the macro
-    
+        
     If Lsm5.Hardware.CpHrz.Exist(0) Then
         Lsm5.Hardware.CpHrz.Leveling
         While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy Or Lsm5.Hardware.CpFocus.IsBusy
@@ -370,7 +372,6 @@ End Sub
 
 
 ''''
-'   ButtonSaveSettings_Click()
 '   Open a dialog to save setting of the macro
 ''''
 Private Sub ButtonSaveSettings_Click()
@@ -382,7 +383,7 @@ Private Sub ButtonSaveSettings_Click()
     Filter$ = "Settings (*.ini)" & Chr$(0) & "*.ini" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
             
     
-    FileName = CommonDialogAPI.ShowSave(Filter, Flags, "", DatabaseTextbox.Value, "Save AutofocusScreen settings")
+    FileName = CommonDialogAPI.ShowSave(Filter, Flags, "", DatabaseTextbox.value, "Save AutofocusScreen settings")
     DisplayProgress "Save setings...", RGB(&HC0, &HC0, 0)
     If FileName <> "" Then
         If Right(FileName, 4) <> ".ini" Then
@@ -394,23 +395,24 @@ Private Sub ButtonSaveSettings_Click()
 End Sub
 
 ''''
-'   ButtonSaveSettings_Click()
-'   Open a dialog to save setting of the macro
+'   Open a dialog to load setting of the macro
 ''''
 Private Sub ButtonLoadSettings_Click()
     Dim Filter As String, FileName As String
     Dim Flags As Long
-  
+    Dim Pos() As Vector
     Flags = OFN_FILEMUSTEXIST Or OFN_HIDEREADONLY Or _
             OFN_PATHMUSTEXIST
     Filter$ = "Settings (*.ini)" & Chr$(0) & "*.ini" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
             
     'Filter = "ini file (*.ini) |*.ini"
     
-    FileName = CommonDialogAPI.ShowOpen(Filter, Flags, "", DatabaseTextbox.Value, "Load AutofocusScreen settings")
+    FileName = CommonDialogAPI.ShowOpen(Filter, Flags, "", DatabaseTextbox.value, "Load AutofocusScreen settings")
     DisplayProgress "Load Settings...", RGB(&HC0, &HC0, 0)
     If FileName <> "" Then
+        Pos = getMarkedStagePosition
         LoadFormSettings FileName
+        setMarkedStagePosition Pos
     End If
     DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
     
@@ -418,21 +420,20 @@ End Sub
 
 
 '''''''
-'   MultipleLocationToggle_Change()
 '   Activate MultipleLocation and deactivate SingleLocation
 '''''''
 Private Sub MultipleLocationToggle_Change()
                 
-    If MultipleLocationToggle.Value = True Then
+    If MultipleLocationToggle.value = True Then
         If Lsm5.Hardware.CpStages.MarkCount = 0 Then
             MsgBox "To use MultipleLocations you need to define at least one position with the Stage (Not the positions) dialog!"
-            MultipleLocationToggle.Value = False
+            MultipleLocationToggle.value = False
         End If
     End If
-    SingleLocationToggle.Value = Not MultipleLocationToggle.Value
+    SingleLocationToggle.value = Not MultipleLocationToggle.value
     If GridScanActive Then
         
-        If MultipleLocationToggle.Value Then
+        If MultipleLocationToggle.value Then
             GridScan_nRow = 1
             GridScan_nColumn = Lsm5.Hardware.CpStages.MarkCount
             Grids.updateGridSize "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
@@ -448,7 +449,7 @@ End Sub
 '   Activate Singlelocation and deactivate MultipleLocation
 '''''''
 Private Sub SingleLocationToggle_Change()
-    MultipleLocationToggle.Value = Not SingleLocationToggle
+    MultipleLocationToggle.value = Not SingleLocationToggle
 End Sub
   
 
@@ -457,19 +458,37 @@ End Sub
 '   create a focusMap using teh Autofocus Channel
 ''''
 Private Sub FocusMap_Click()
+    Dim RepValue As Long
+    Dim AcqAct As Boolean
+    Dim AltAct As Boolean
+    
     ' This will run just in the AutofocusMode all the AcquisitionTracks are set off
-'    SetDatabase
-'    SaveFormSettings GlobalDataBaseName & "\tmpSettings.ini"
-'    AcquisitionTracksSetOff
-'    'change values
-'    GlobalRepetitionNumber.Value = 1
-'    BlockTimeDelay = 0
-'    GlobalRepetitionSec_Click
-'    AlterAcquisitionActive.Value = False
-'    StartButton_Click
-'    WritePosFile GlobalDataBaseName & "\" & TextBoxFileName.Value & "positionsGrid.csv", posGridX, posGridY, posGridZ
+    If GlobalDataBaseName = "" Then
+        MsgBox ("No outputfolder selected cannot start acquisition")
+        Exit Sub
+    End If
+    
+    If Not AutofocusActive Then
+        MsgBox ("Autofocus job must be set to do a FocusMap")
+    End If
+
+    SetDatabase
+    GridScanPositionFile.value = ""
+    AcqAct = AcquisitionActive
+    AltAct = AlterAcquisitionActive
+    RepValue = GlobalRepetitionNumber.value
+    
+    AcquisitionActive = False
+    AlterAcquisitionActive = False
+    'change values
+    GlobalRepetitionNumber.value = 1
+    StartButton_Click
+    Grids.writePositionGridFile "Global", GlobalDataBaseName & "focusMap.csv"
+    GridScanPositionFile.value = GlobalDataBaseName & "focusMap.csv"
 '    'Return to original values for the
-'    LoadFormSettings GlobalDataBaseName & "\tmpSettings.ini"
+    GlobalRepetitionNumber.value = RepValue
+    AcquisitionActive = AcqAct
+    AlterAcquisitionActive = AltAct
 End Sub
 
 
@@ -490,6 +509,7 @@ Private Sub SwitchEnablePage(JobName As String, Enable As Boolean)
             Me.Controls(JobName + "DefaultPiezo").Enabled = Enable
         End If
     End If
+    Me.Controls(JobName + "TimeOut").Enabled = Enable
     Me.Controls(JobName + "Label").Enabled = Enable
     For i = 1 To 4
         Me.Controls(JobName + "Track" + CStr(i)).Enabled = Enable
@@ -507,8 +527,11 @@ Private Sub SwitchEnablePage(JobName As String, Enable As Boolean)
             
     Me.Controls(JobName + "TrackZ").Enabled = Enable And Jobs.isZStack(JobName)
     Me.Controls(JobName + "TrackXY").Enabled = Enable And (Jobs.getScanMode(JobName) <> "ZScan") And (Jobs.getScanMode(JobName) <> "Line")
-    Me.Controls(JobName + "CenterOfMass").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
+    Me.Controls(JobName + "FocusMethod").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
     Me.Controls(JobName + "CenterOfMassChannel").Enabled = Enable And (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY"))
+    Me.Controls(JobName + "LabelMethod").Enabled = Enable
+    Me.Controls(JobName + "LabelChannel").Enabled = Enable
+    
     Me.Controls(JobName + "OiaActive").Enabled = Enable
     If Me.Controls(JobName + "OiaActive") Then
         Me.Controls(JobName + "OiaParallel").Enabled = Enable
@@ -551,7 +574,7 @@ Private Sub SwitchEnablePage(JobName As String, Enable As Boolean)
 End Sub
 
 '''''
-' Enable/disable a general set of functions common to all pages
+' Enable/disable a general set of functions common to all pages for Job with name JobName
 '''''
 Private Sub SwitchEnableFcsPage(JobName As String, Enable As Boolean)
     Me.Controls(JobName + "Label").Enabled = Enable
@@ -563,6 +586,7 @@ Private Sub SwitchEnableFcsPage(JobName As String, Enable As Boolean)
     Me.Controls(JobName + "ZOffset").Enabled = Enable
     Me.Controls(JobName + "ZOffsetLabel").Enabled = Enable
     Me.Controls(JobName + "KeepParent").Enabled = Enable
+    Me.Controls(JobName + "TimeOut").Enabled = Enable
     Dim jobDescription() As String
     jobDescription = JobsFcs.splittedJobDescriptor(JobName, 8)
     Me.Controls(JobName + "Label1").Caption = jobDescription(0)
@@ -572,9 +596,9 @@ Private Sub SwitchEnableFcsPage(JobName As String, Enable As Boolean)
 End Sub
     
 
-
-'fills popup menu for chosing a track for post-acquisition tracking
-' TODO: move in form
+''''
+'   fills popup menu for chosing a track for post-acquisition tracking for Job with JobName
+''''
 Public Sub FillTrackingChannelList(JobName As String)
     Dim Success As Integer
     Dim iTrack As Integer
@@ -600,38 +624,36 @@ Public Sub FillTrackingChannelList(JobName As String)
     Next iTrack
     
     If TrackOn Then
-        Me.Controls(JobName + "CenterOfMassChannel").Value = Me.Controls(JobName + "CenterOfMassChannel").List(0) 'initially displayed text in popup menu is a blank line (first channel is 1)
+        Me.Controls(JobName + "CenterOfMassChannel").value = Me.Controls(JobName + "CenterOfMassChannel").List(0) 'initially displayed text in popup menu is a blank line (first channel is 1)
     End If
 End Sub
 
 '''
-'   TrackClick(JobName As String, thisTrack As Integer, Exclusive As Boolean)
-'       Activate iTrack-th track for a specific JobName
-'       If Exclusive all other tracks are inactivated
+'   Activate iTrack-th track for Job with Name JobName
+'   If Exclusive all other tracks are inactivated (obsolete now)
 '''
 Private Sub TrackClick(JobName As String, iTrack As Integer, Optional Exclusive As Boolean = False)
     Dim i As Integer
     Dim AutofocusTrackOn As Boolean
 
-    If Me.Controls(JobName + "Track" + CStr(iTrack)).Value Then
+    If Me.Controls(JobName + "Track" + CStr(iTrack)).value Then
         For i = 1 To TrackNumber
             If i <> iTrack And Exclusive Then
-                Me.Controls(JobName + "Track" + CStr(i)).Value = Not Me.Controls(JobName + "Track" + CStr(iTrack)).Value
+                Me.Controls(JobName + "Track" + CStr(i)).value = Not Me.Controls(JobName + "Track" + CStr(iTrack)).value
             End If
         Next i
-        Jobs.setAcquireTrack JobName, iTrack - 1, Me.Controls(JobName + "Track" + CStr(iTrack)).Value
+        Jobs.setAcquireTrack JobName, iTrack - 1, Me.Controls(JobName + "Track" + CStr(iTrack)).value
         'CheckAutofocusTrack (thisTrack)
     Else
-        Jobs.setAcquireTrack JobName, iTrack - 1, Me.Controls(JobName + "Track" + CStr(iTrack)).Value
+        Jobs.setAcquireTrack JobName, iTrack - 1, Me.Controls(JobName + "Track" + CStr(iTrack)).value
     End If
     FillTrackingChannelList JobName
 End Sub
 
 
 ''''
-' JobActive_Click
-' Enables the corresponding page
-'''''
+'   Enables the corresponding page
+''''
 Private Sub AutofocusActive_Click()
     SwitchEnablePage "Autofocus", AutofocusActive
 End Sub
@@ -652,33 +674,27 @@ Private Sub Trigger2Active_Click()
     SwitchEnablePage "Trigger2", Trigger2Active
 End Sub
 
-
-''''
-' JobActive_Click
-' Enables the corresponding page
-''''
-
 Private Sub Fcs1Active_Click()
     SwitchEnableFcsPage "Fcs1", Fcs1Active
 End Sub
 
 ''''''
-'   Activte Tracks for Jobs (For Autofocus need to be Click as the tracks are exclusive)
+'   Activte Tracks for Jobs (this is kind of redundant)
 ''''''
 Private Sub AutofocusTrack1_Click()
-   TrackClick "Autofocus", 1, False
+   TrackClick "Autofocus", 1
 End Sub
 
 Private Sub AutofocusTrack2_Click()
-    TrackClick "Autofocus", 2, False
+    TrackClick "Autofocus", 2
 End Sub
 
 Private Sub AutofocusTrack3_Click()
-    TrackClick "Autofocus", 3, False
+    TrackClick "Autofocus", 3
 End Sub
 
 Private Sub AutofocusTrack4_Click()
-    TrackClick "Autofocus", 4, False
+    TrackClick "Autofocus", 4
 End Sub
 
 Private Sub AcquisitionTrack1_Change()
@@ -745,12 +761,13 @@ End Sub
 Private Sub Trigger2Track4_Change()
    TrackClick "Trigger2", 4
 End Sub
+
 '''
 ' ZOffset: This is offset added to current central slice position. This position depends on previous history
-''''
+'''
 Private Sub JobZOffsetChange(JobName As String)
-    If Me.Controls(JobName + "ZOffset").Value > Range() * 0.9 Then
-            Me.Controls(JobName + "ZOffset").Value = 0
+    If Me.Controls(JobName + "ZOffset").value > Range() * 0.9 Then
+            Me.Controls(JobName + "ZOffset").value = 0
             MsgBox "ZOffset has to be less than the working distance of the objective: " + CStr(Range) + " um"
     End If
 End Sub
@@ -771,16 +788,15 @@ Private Sub Trigger2ZOffset_Change()
     JobZOffsetChange "Trigger2"
 End Sub
 
-''''
-' TrackZ: If on the Z position will be updated to the latest Z position
-''''
+'''
+'   TrackZ: If on the Z position will be updated to the latest Z position
+'''
 Private Sub JobTrackXYZChange(JobName As String)
+    Dim method As Integer
+    method = Me.Controls(JobName + "FocusMethod").ListIndex
     Me.Controls(JobName + "CenterOfMassChannel").Enabled = (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")) _
-    And Me.Controls(JobName + "CenterOfMass")
-    Me.Controls(JobName + "CenterOfMass").Enabled = Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")
-    If Not (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")) Then
-        Me.Controls(JobName + "CenterOfMass").Value = False
-    End If
+    And method <> 0 And method <> (FocusMethods.count - 1)
+    Me.Controls(JobName + "FocusMethod").Enabled = Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")
 End Sub
 
 Private Sub AutofocusTrackZ_Change()
@@ -827,27 +843,34 @@ Private Sub Trigger2TrackXY_Change()
 End Sub
 
 '''
-' If CenterOfMass = True an internal analysis of center of mass is done
+' If one of the method is true an internal analysis of center of mass is done
 '''
-Private Sub AutofocusCenterOfMass_Change()
-    AutofocusCenterOfMassChannel.Enabled = AutofocusCenterOfMass
+Private Sub FocusMethodChange(JobName As String)
+    Me.Controls(JobName + "CenterOfMassChannel").Enabled = Me.Controls(JobName + "FocusMethod") <> "None" And Me.Controls(JobName + "FocusMethod") <> "Online img. analysis"
+    If Me.Controls(JobName + "FocusMethod").ListIndex = (FocusMethods.count - 1) Then
+        Me.Controls(JobName + "OiaActive") = True
+    End If
 End Sub
 
-Private Sub AcquisitionCenterOfMass_Change()
-    AcquisitionCenterOfMassChannel.Enabled = AcquisitionCenterOfMass
+Private Sub AutofocusFocusMethod_Change()
+   FocusMethodChange "Autofocus"
 End Sub
 
-Private Sub AlterAcquisitionCenterOfMass_Change()
-    AlterAcquisitionCenterOfMassChannel.Enabled = AlterAcquisitionCenterOfMass
+Private Sub AcquisitionFocusMethod_Change()
+    FocusMethodChange "Acquisition"
+End Sub
+
+Private Sub AlterAcquisitionFocusMethod_Change()
+    FocusMethodChange "AlterAcquisition"
 End Sub
 
 
-Private Sub Trigger1CenterOfMass_Change()
-    Trigger1CenterOfMassChannel.Enabled = Trigger1CenterOfMass
+Private Sub Trigger1FocusMethod_Change()
+    FocusMethodChange "Trigger1"
 End Sub
 
-Private Sub Trigger2CenterOfMass_Change()
-    Trigger2CenterOfMassChannel.Enabled = Trigger2CenterOfMass
+Private Sub Trigger2FocusMethod_Change()
+    FocusMethodChange "Trigger2"
 End Sub
 
 
@@ -880,12 +903,14 @@ Private Sub Trigger2OiaActive_Click()
     JobOiaActiveClick "Trigger2"
 End Sub
 
-
+'''
+'   maxWait is the maximal time macro waits between added positions until maxial number of positions are reached
+'''
 Private Sub TriggermaxWait(JobName As String)
 On Error GoTo ErrorHandle:
-    If Me.Controls(JobName + "maxWait").Value < 0 Then
+    If Me.Controls(JobName + "maxWait").value < 0 Then
         MsgBox JobName + "waiting time for setting positions is >=0"
-        Me.Controls(JobName + "maxWait").Value = 0
+        Me.Controls(JobName + "maxWait").value = 0
     End If
     Exit Sub
 ErrorHandle:
@@ -904,30 +929,32 @@ End Sub
 '  Sequential online image analysis. VBA Macro waits after acquisition of image for a change in registry code
 '''''''
 Private Sub AutofocusOiaSequential_Change()
-    AutofocusOiaParallel.Value = Not AutofocusOiaSequential.Value
+    AutofocusOiaParallel.value = Not AutofocusOiaSequential.value
 End Sub
 
 Private Sub AcquisitionOiaSequential_Change()
-    AcquisitionOiaParallel.Value = Not AcquisitionOiaSequential.Value
+    AcquisitionOiaParallel.value = Not AcquisitionOiaSequential.value
+End Sub
+
+Private Sub AlterAcquisitionOiaSequential_Change()
+    AlterAcquisitionOiaParallel.value = Not AlterAcquisitionOiaSequential.value
 End Sub
 
 Private Sub Trigger1OiaSequential_Change()
-    Trigger1OiaParallel.Value = Not Trigger1OiaSequential.Value
+    Trigger1OiaParallel.value = Not Trigger1OiaSequential.value
 End Sub
 
 Private Sub Trigger2OiaSequential_Change()
-    Trigger2OiaParallel.Value = Not Trigger2OiaSequential.Value
+    Trigger2OiaParallel.value = Not Trigger2OiaSequential.value
 End Sub
 
 '''''''
-' Parallel online image analysis. VBA Macro reads before starting job in a text file with name of image file chopped of "_Txxx.lsm"
+' Parallel online image analysis. Not implemented yet
 '''''''
 Private Sub ButtonOiaParallel(JobName As String)
     MsgBox "Parallel mode not implemented yet"
-    Me.Controls(JobName + "OiaSequential").Value = True
-    Me.Controls(JobName + "OiaParallel").Value = False
-    ' to be changed to
-    'Me.Controls(JobName + "OiaSequential").Value = Not Me.Controls(JobName + "OiaParallel").Value
+    Me.Controls(JobName + "OiaSequential").value = True
+    Me.Controls(JobName + "OiaParallel").value = False
 End Sub
 
 Private Sub AutofocusOiaParallel_Change()
@@ -935,13 +962,12 @@ Private Sub AutofocusOiaParallel_Change()
 End Sub
 
 Private Sub AcquisitionOiaParallel_Change()
-     ButtonOiaParallel ("Acquisition")
+    ButtonOiaParallel ("Acquisition")
 End Sub
 
 Private Sub AlterAcquisitionOiaParallel_Change()
      ButtonOiaParallel ("AlterAcquisition")
 End Sub
-
 
 Private Sub Trigger1OiaParallel_Change()
      ButtonOiaParallel ("Trigger1")
@@ -953,19 +979,19 @@ End Sub
 
 
 ''''
-' Standard settings for Autofocus
+' Standard settings for Autofocus without Piezo
 ''''
 Private Sub AutofocusDefault_Click()
-    Dim pos() As Vector
 On Error GoTo AutofocusDefault_Click_Error
-    pos = getMarkedStagePosition
+    Dim Pos() As Vector
+    Pos = getMarkedStagePosition
     Jobs.setFrameSpacing "Autofocus", 0.4
     Jobs.setFramesPerStack "Autofocus", 101
     Jobs.setScanMode "Autofocus", "ZScan"
     'Jobs.setScanDirection "Autofocus", 1 (bidirectional scanning)
     UpdateFormFromJob Jobs, "Autofocus"
     UpdateGuiFromJob Jobs, "Autofocus", ZEN
-    setMarkedStagePosition pos
+    setMarkedStagePosition Pos
    On Error GoTo 0
    Exit Sub
 
@@ -975,11 +1001,14 @@ AutofocusDefault_Click_Error:
     ") in procedure AutofocusDefault_Click of Form AutofocusForm at line " & Erl & " "
 End Sub
 
+''''
+' Standard settings for Autofocus with Piezo
+''''
 Private Sub AutofocusDefaultPiezo_Click()
-    Dim pos() As Vector
+    Dim Pos() As Vector
 On Error GoTo AutofocusDefaultPiezo_Click_Error
     If Lsm5.Hardware.CpHrz.Exist(Lsm5.Hardware.CpHrz.Name) Then
-        pos = getMarkedStagePosition
+        Pos = getMarkedStagePosition
         Jobs.setFrameSpacing "Autofocus", 0.1
         Jobs.setFramesPerStack "Autofocus", 801
         Jobs.setScanMode "Autofocus", "ZScan"
@@ -988,7 +1017,9 @@ On Error GoTo AutofocusDefaultPiezo_Click_Error
         Jobs.setTimeSeries "Autofocus", False
         UpdateFormFromJob Jobs, "Autofocus"
         UpdateGuiFromJob Jobs, "Autofocus", ZEN
-        setMarkedStagePosition pos
+        setMarkedStagePosition Pos
+    Else
+        MsgBox "No piezo is available"
     End If
    On Error GoTo 0
    Exit Sub
@@ -1007,6 +1038,19 @@ Private Sub setJob(JobName As String)
     UpdateFormFromJob Jobs, JobName
     AutoFindTracks
     SwitchEnablePage JobName, AutofocusForm.Controls(JobName + "Active")
+End Sub
+
+Private Sub FcsSetJob(JobName As String)
+    Dim jobDescriptor() As String
+    AutofocusForm.Hide
+    LogManager.Hide
+    JobsFcs.setJob JobName, ZEN
+    jobDescriptor = JobsFcs.splittedJobDescriptor(JobName, 8)
+    AutofocusForm.Controls(JobName + "Label1").Caption = jobDescriptor(0)
+    If UBound(jobDescriptor) > 0 Then
+        AutofocusForm.Controls(JobName + "Label2").Caption = jobDescriptor(1)
+    End If
+    AutofocusForm.Show
 End Sub
 
 Private Sub AutofocusSetJob_Click()
@@ -1029,63 +1073,41 @@ Private Sub Trigger2SetJob_Click()
     setJob "Trigger2"
 End Sub
 
-
-'''
-' Load Settings from ZEN into Form for using it later
-'''
-Private Sub FcsSetJob(JobName As String)
-    Dim jobDescriptor() As String
-    AutofocusForm.Hide
-    LogManager.Hide
-    JobsFcs.setJob JobName, ZEN
-    jobDescriptor = JobsFcs.splittedJobDescriptor(JobName, 8)
-    AutofocusForm.Controls(JobName + "Label1").Caption = jobDescriptor(0)
-    If UBound(jobDescriptor) > 0 Then
-        AutofocusForm.Controls(JobName + "Label2").Caption = jobDescriptor(1)
-    End If
-    AutofocusForm.Show
-End Sub
-
 Private Sub Fcs1SetJob_Click()
     FcsSetJob "Fcs1"
 End Sub
 
 '''
-' Put Fcs settings from Fcs Job into ZEN
-'''
-Private Sub FcsPutJob(JobName As String)
-    JobsFcs.putJob JobName, ZEN
-End Sub
-
-'''
-' Put Fcs settings from Fcs Job into ZEN
-'''
-Private Sub Fcs1PutJob_Click()
-    FcsPutJob "Fcs1"
-End Sub
-
-'''
-' Put Fcs settings from Fcs Job into ZEN
+' Put job JobName from Settings into ZEN
 '''
 Private Sub putJob(JobName As String)
     
-    Dim pos() As Vector
+    Dim Pos() As Vector
     Dim i As Long
     'this is a work around for a bug in ZEN that deletes all positions after updated of recording
-    pos = getMarkedStagePosition
+    Pos = getMarkedStagePosition
     
     If ZENv > 2010 And Not ZEN Is Nothing Then
-        ZEN.gui.Acquisition.Regions.Delete.Execute
+        Dim vo As AimImageVectorOverlay
+        Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
+        If vo.GetNumberElements > 0 Then
+            ZEN.gui.Acquisition.Regions.Delete.Execute
+        End If
     End If
     
     Jobs.putJob JobName, ZEN
     'This is just for visualising the job in the Gui
     UpdateGuiFromJob Jobs, JobName, ZEN
-    setMarkedStagePosition pos
-    
-    'does not update the stagepositions in the GUI
-    'Application.ThrowEvent ePropertyEventStage, 0
-    'Application.ThrowEvent eEventUpdateGui, 0
+    'Need a break as the Gui is updated quite slowly
+    DoEvents
+    Sleep (1000)
+    DoEvents
+    Sleep (1000)
+    setMarkedStagePosition Pos
+End Sub
+
+Private Sub FcsPutJob(JobName As String)
+    JobsFcs.putJob JobName, ZEN
 End Sub
 
 Private Sub AutofocusPutJob_Click()
@@ -1108,15 +1130,28 @@ Private Sub Trigger2PutJob_Click()
     putJob "Trigger2"
 End Sub
 
+Private Sub Fcs1PutJob_Click()
+    FcsPutJob "Fcs1"
+End Sub
 
 
-'''Acquire one image for a job
+'''
+'   Acquire one image for a job
+'''
 Private Sub JobAcquire(JobName As String)
+
+On Error GoTo JobAcquire_Error
+
     If Not GlobalRecordingDoc Is Nothing Then
         GlobalRecordingDoc.BringToTop
     End If
+    
     If ZENv > 2010 And Not ZEN Is Nothing Then
-        ZEN.gui.Acquisition.Regions.Delete.Execute
+        Dim vo As AimImageVectorOverlay
+        Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
+        If vo.GetNumberElements > 0 Then
+            ZEN.gui.Acquisition.Regions.Delete.Execute
+        End If
     End If
     Dim position As Vector
     position.X = Lsm5.Hardware.CpStages.PositionX
@@ -1135,34 +1170,25 @@ Private Sub JobAcquire(JobName As String)
     
     'this is just for visualizing the zoom value in the gui
     If ZENv > 2010 Then
-       ZEN.gui.Acquisition.AcquisitionMode.ScanArea.Zoom.Value = Jobs.GetRecording(JobName).ZoomX
+       ZEN.gui.Acquisition.AcquisitionMode.ScanArea.Zoom.value = Jobs.GetRecording(JobName).ZoomX
        ZEN.SetListEntrySelected "Scan.Mode.DirectionX", Jobs.GetRecording(JobName).ScanDirection
        'ZEN.gui.Document.Reuse.Execute this will delete all extra tracks
     End If
     RestoreAcquisitionParameters
+
+   On Error GoTo 0
+   Exit Sub
+
+JobAcquire_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure JobAcquire of Form AutofocusForm at line " & Erl & " "
 End Sub
 
 
-Private Sub AutofocusAcquire_Click()
-    JobAcquire "Autofocus"
-End Sub
-
-Private Sub AcquisitionAcquire_Click()
-    JobAcquire "Acquisition"
-End Sub
-
-Private Sub AlterAcquisitionAcquire_Click()
-    JobAcquire "AlterAcquisition"
-End Sub
-
-Private Sub Trigger1Acquire_Click()
-    JobAcquire "Trigger1"
-End Sub
-
-Private Sub Trigger2Acquire_Click()
-    JobAcquire "Trigger2"
-End Sub
-
+''''
+' Acquire a Fcs measurments according to settings
+''''
 Private Sub JobFcsAcquire(JobName As String)
     Dim newPosition() As Vector
     ReDim newPosition(0) ' position where FCS will be done
@@ -1191,58 +1217,77 @@ Private Sub JobFcsAcquire(JobName As String)
 End Sub
 
 
+Private Sub AutofocusAcquire_Click()
+    JobAcquire "Autofocus"
+End Sub
+
+Private Sub AcquisitionAcquire_Click()
+    JobAcquire "Acquisition"
+End Sub
+
+Private Sub AlterAcquisitionAcquire_Click()
+    JobAcquire "AlterAcquisition"
+End Sub
+
+Private Sub Trigger1Acquire_Click()
+    JobAcquire "Trigger1"
+End Sub
+
+Private Sub Trigger2Acquire_Click()
+    JobAcquire "Trigger2"
+End Sub
 
 Private Sub Fcs1Acquire_Click()
     JobFcsAcquire "Fcs1"
 End Sub
+
 '''''
 ' Looping/RepetitionSettings
 '''''
 Private Sub RepetitionTime(Name As String)
-    If Me.Controls(Name + "RepetitionSec").Value Then
-        Reps.setRepetitionTime Name, CDbl(Me.Controls(Name + "RepetitionTime").Value)
-    ElseIf Me.Controls(Name + "RepetitionMin").Value Then
-        Reps.setRepetitionTime Name, CDbl(Me.Controls(Name + "RepetitionTime").Value * 60)
+    If Me.Controls(Name + "RepetitionSec").value Then
+        Reps.setRepetitionTime Name, CDbl(Me.Controls(Name + "RepetitionTime").value)
+    ElseIf Me.Controls(Name + "RepetitionMin").value Then
+        Reps.setRepetitionTime Name, CDbl(Me.Controls(Name + "RepetitionTime").value * 60)
     End If
 End Sub
 
 Private Sub RepetitionMin(Name As String)
     'if previously it was in sec divide by 60
-    Me.Controls(Name + "RepetitionTime").Value = CDbl(Me.Controls(Name + "RepetitionTime").Value / 60)
+    'Me.Controls(Name + "RepetitionTime").value = CDbl(Me.Controls(Name + "RepetitionTime").value / 60)
     Me.Controls(Name + "RepetitionMin").BackColor = &HFF8080
     Me.Controls(Name + "RepetitionSec").BackColor = &H8000000F
-    Me.Controls(Name + "RepetitionTime").Max = 60
+    Me.Controls(Name + "RepetitionTime").MAX = 360
     RepetitionTime (Name)
 End Sub
 
 
 Private Sub RepetitionSec(Name As String)
-    Me.Controls(Name + "RepetitionTime").Max = 360
-    Debug.Print CDbl(Me.Controls(Name + "RepetitionTime").Value)
-    Me.Controls(Name + "RepetitionTime").Value = CDbl(Me.Controls(Name + "RepetitionTime").Value) * 60
+    Me.Controls(Name + "RepetitionTime").MAX = 360
+    Debug.Print CDbl(Me.Controls(Name + "RepetitionTime").value)
+    'Me.Controls(Name + "RepetitionTime").value = CDbl(Me.Controls(Name + "RepetitionTime").value) * 60
     Me.Controls(Name + "RepetitionSec").BackColor = &HFF8080
     Me.Controls(Name + "RepetitionMin").BackColor = &H8000000F
     RepetitionTime (Name)
 End Sub
 
 Private Sub RepetitionMinChange(Name As String)
-    If Me.Controls(Name + "RepetitionMin").Value Then
+    If Me.Controls(Name + "RepetitionMin").value Then
+        Me.Controls(Name + "RepetitionSec").value = Not Me.Controls(Name + "RepetitionMin").value
         RepetitionMin Name
     Else
+        Me.Controls(Name + "RepetitionSec").value = Not Me.Controls(Name + "RepetitionMin").value
         RepetitionSec Name
     End If
-    Me.Controls(Name + "RepetitionSec").Value = Not Me.Controls(Name + "RepetitionMin").Value
 End Sub
 
 Private Sub RepetitionSecChange(Name As String)
-    Me.Controls(Name + "RepetitionMin").Value = Not Me.Controls(Name + "RepetitionSec").Value
+    Me.Controls(Name + "RepetitionMin").value = Not Me.Controls(Name + "RepetitionSec").value
 End Sub
-
 
 Public Sub GlobalRepetitionMin_Change()
     RepetitionMinChange ("Global")
 End Sub
-
 
 Private Sub Trigger1RepetitionMin_Change()
     RepetitionMinChange ("Trigger1")
@@ -1296,7 +1341,7 @@ End Sub
 ' Set Interval or delay
 '''
 Private Sub RepetitionInterval(Name As String)
-    Reps.setInterval Name, Me.Controls(Name + "RepetitionInterval").Value
+    Reps.setInterval Name, Me.Controls(Name + "RepetitionInterval").value
 End Sub
 
 Private Sub GlobalRepetitionInterval_Click()
@@ -1312,9 +1357,11 @@ Private Sub Trigger2RepetitionInterval_Click()
     RepetitionInterval "Trigger2"
 End Sub
 
-
+'''
+' Update all repetition times at once
+'''
 Public Sub UpdateRepetitionTimes()
-    
+
     Dim i As Integer
     For i = LBound(RepNames) To UBound(RepNames)
         RepetitionNumber RepNames(i)
@@ -1324,52 +1371,19 @@ Public Sub UpdateRepetitionTimes()
 
 End Sub
 
-
 ''''
-'  AcquisitionTracksOn()
-'  Checks if at least one track for acquisition is on
-'''
-Private Function AcquisitionTracksOn() As Boolean
-    If AcquisitionTrack1 Then
-        AcquisitionTracksOn = True
-    End If
-    If AcquisitionTrack2 Then
-        AcquisitionTracksOn = True
-    End If
-    If AcquisitionTrack3 Then
-        AcquisitionTracksOn = True
-    End If
-    If AcquisitionTrack4 Then
-        AcquisitionTracksOn = True
-    End If
-End Function
-
-'''
-' Sets all acquisitions to off
-'''
-Private Function AcquisitionTracksSetOff() As Boolean
-    AcquisitionTrack1.Value = 0
-    AcquisitionTrack2.Value = 0
-    AcquisitionTrack3.Value = 0
-    AcquisitionTrack4.Value = 0
-End Function
-
-
-''''
-' GridScanActive_Click()
 '   Set the grid scan on or off. Changes also
 ''
 Private Sub GridScanActive_Click()
-    SwitchEnableGridScanPage (GridScanActive.Value)
+    SwitchEnableGridScanPage (GridScanActive.value)
     If GridScanActive Then
-        If MultipleLocationToggle.Value Then
+        If MultipleLocationToggle.value Then
             GridScan_nRow = 1
             GridScan_nColumn = Lsm5.Hardware.CpStages.MarkCount
             Grids.updateGridSize "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
         End If
     End If
 End Sub
-
 
 Private Sub GridScan_nRow_Click()
      Grids.updateGridSize "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
@@ -1395,7 +1409,6 @@ End Sub
 ''''
 Public Sub SwitchEnableGridScanPage(Enable As Boolean)
 
-    GridScan_validGridDefault.Enabled = Enable
     GridScan_posLabel.Enabled = Enable
     GridScan_nColumnLabel.Enabled = Enable And Not MultipleLocationToggle
     GridScan_nRowLabel.Enabled = Enable And Not MultipleLocationToggle
@@ -1419,6 +1432,9 @@ Public Sub SwitchEnableGridScanPage(Enable As Boolean)
     GridScan_dColumnsub.Enabled = Enable
     GridScan_dRowsub.Enabled = Enable
     GridScanDescriptionLabel.Enabled = Enable
+    GridScan_WellsFirst.Enabled = Enable
+    GridScan_SubPositionsFirst.Enabled = Enable
+    
 End Sub
 
 
@@ -1436,15 +1452,15 @@ Private Sub GridScanValidFileButton_Click()
     FileName = CommonDialogAPI.ShowOpen(Filter, Flags, "*.*", "", "Select file containing valid grid positions")
     
     If Right(FileName, 3) <> "*.*" Then
-        GridScanValidFile.Value = FileName
+        GridScanValidFile.value = FileName
     Else
-        GridScanValidFile.Value = ""
+        GridScanValidFile.value = ""
     End If
     
 End Sub
 
 '''''
-'   Open a dialog to set filename where positions of grid are stored
+' Open a dialog to set filename where positions of grid are stored
 '''''
 Private Sub GridScanPositionFileButton_Click()
     Dim Filter As String, FileName As String
@@ -1457,9 +1473,9 @@ Private Sub GridScanPositionFileButton_Click()
     FileName = CommonDialogAPI.ShowOpen(Filter, Flags, "*.*", "", "Select file containing positions of grid")
        
     If Right(FileName, 3) <> "*.*" Then
-        GridScanPositionFile.Value = FileName
+        GridScanPositionFile.value = FileName
     Else
-        GridScanPositionFile.Value = ""
+        GridScanPositionFile.value = ""
     End If
 End Sub
 
@@ -1468,11 +1484,11 @@ End Sub
 
 ''''
 ' Stop all jobs after current repetition of current job
+' In other routines it is checked if this is true
 ''''
 Private Sub StopAfterRepetition_Click()
 
-
-    If StopAfterRepetition.Value Then
+    If StopAfterRepetition.value Then
         StopAfterRepetition.BackColor = 12648447
     Else
         StopAfterRepetition.BackColor = &H8000000F
@@ -1480,43 +1496,41 @@ Private Sub StopAfterRepetition_Click()
 
 End Sub
 
-'''''''''
-'   StopButton_Click()
+'''
 '   ScanStop is used to tell different functions to stop execution and acquisition
 '   A second routine is called to stop the processes
 '       [ScanStop] Global/Out - Set to true
-'''''''
+'''
 Private Sub StopButton_Change()
     If Not Running Then
-        ScanStop = StopButton.Value
-        StopButton.Value = False
+        ScanStop = StopButton.value
+        StopButton.value = False
         StopButton.BackColor = &H8000000F
     Else
-        ScanStop = StopButton.Value
-        If StopButton.Value Then
+        ScanStop = StopButton.value
+        If StopButton.value Then
             StopButton.BackColor = 12648447
         Else
              StopButton.BackColor = &H8000000F
         End If
     End If
+    If ScanStop Then
+        LogManager.UpdateLog "Macro has been stopped by user"
+    End If
 End Sub
 
 
-
-
-
-
 '''
-' Pause a job
-''''
+' Pause a job resume if reclicked
+'''
 Private Sub PauseButton_Click()
     If Not Running Then
         ScanPause = False
-        PauseButton.Value = False
+        PauseButton.value = False
         PauseButton.Caption = "PAUSE"
         PauseButton.BackColor = &H8000000F
     Else
-        If PauseButton.Value Then
+        If PauseButton.value Then
             ScanPause = True
             PauseButton.Caption = "RESUME"
             PauseButton.BackColor = 12648447
@@ -1528,13 +1542,19 @@ Private Sub PauseButton_Click()
     End If
 End Sub
 
-
-
-
+'''''
+' Display Keys used for Online image analysis
+'''''
+Private Sub ShowOiaKeys_Click()
+    Dim OiaSettings As OnlineIASettings
+    Set OiaSettings = New OnlineIASettings
+    OiaSettings.initializeDefault
+    KeyReport.Show
+    KeyReport.KeyReportLabel.Caption = OiaSettings.createKeyReport
+End Sub
 
 
 '''''
-'   CommandButtonNewDataBase_Click()
 '   Open a Dialog to set output folder where to save the results. then cal SetDatabase to set global variables
 '''''
 Private Sub CommandButtonNewDataBase_Click()
@@ -1549,15 +1569,14 @@ Private Sub CommandButtonNewDataBase_Click()
     
     If Len(FileName) > 3 Then
         FileName = Left(FileName, Len(FileName) - 3)
-        DatabaseTextbox.Value = FileName
+        DatabaseTextbox.value = FileName
         SetDatabase
     End If
     
 End Sub
 
 '''''
-'   DatabaseTextbox_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
-'   Only update the outputfolder when enter is pressed. This avoids creating a folded at every keystroke
+'   Only update the outputfolder when enter is pressed. This avoids creating a folder at every keystroke
 '''''
 Private Sub DatabaseTextbox_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
     If KeyCode = 13 Then 'this is the enter key
@@ -1565,27 +1584,32 @@ Private Sub DatabaseTextbox_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVa
     End If
 End Sub
 
+Private Sub TextBoxFileName_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+    If KeyCode = 13 Then 'this is the enter key
+        SetFileName
+    End If
+End Sub
+
 '''''
-'   SetDatabase()
+'   Set global variables for files and check if we can create Outputfolder
 '       [GlobalDataBaseName] Out/Global - The name of Outputfolder
 '       [LogFileNameBase]    Out/Global - The name of the LogfileName
-'       [Log]                Out/Global - If yes results are logged
-'       Set global variables and check if we can create Outputfolder
+'       Log]                Out/Global - If yes results are logged
 '''''
 Private Sub SetDatabase()
     Dim OiaSettings As OnlineIASettings
     Set OiaSettings = New OnlineIASettings
     OiaSettings.initializeDefault
     
-    GlobalDataBaseName = DatabaseTextbox.Value
+    GlobalDataBaseName = DatabaseTextbox.value
     If GlobalDataBaseName = "" Then
         DatabaseLabel.Caption = "No output folder"
     End If
 
     If Not GlobalDataBaseName = "" Then
         If Right(GlobalDataBaseName, 1) <> "\" Then
-            DatabaseTextbox.Value = DatabaseTextbox.Value + "\"
-            GlobalDataBaseName = DatabaseTextbox.Value
+            DatabaseTextbox.value = DatabaseTextbox.value + "\"
+            GlobalDataBaseName = DatabaseTextbox.value
         End If
         On Error GoTo ErrorHandleDataBase
         If Not CheckDir(GlobalDataBaseName) Then
@@ -1619,15 +1643,50 @@ ErrorHandleLogFile:
 End Sub
 
 
-''''''
-'   RestoreAcquisitionParameters()
-'   Restores the image acquisition recording parameters from GlobalBackupRecording
-'   recenter acquisition
-'   Lsm5.DsRecording Out - Recording settings
-''''''
+
+Private Sub SetFileName()
+    If TextBoxFileName.value <> "" Then
+        If Right(TextBoxFileName.value, Len(FNSep)) <> FNSep Then
+            TextBoxFileName.value = TextBoxFileName.value & FNSep
+        End If
+    End If
+End Sub
+
+Private Sub fileFormatlsm_Click()
+    imgFileFormat = eAimExportFormatLsm5
+    imgFileExtension = ".lsm"
+End Sub
+
+Private Sub fileFormatczi_Click()
+On Error GoTo fileFormatczi_Click_Error
+    If ZENv > 2010 Then
+        'imgFileFormat = eAimExportFormatCzi 'this format does not exist below ZEN2011
+        imgFileFormat = 42 'this format does not exist below ZEN2011
+        imgFileExtension = ".czi"
+    Else
+        imgFileFormat = eAimExportFormatLsm5
+        imgFileExtension = ".lsm"
+    End If
+    On Error GoTo 0
+   Exit Sub
+
+fileFormatczi_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure fileFormatczi_Click of Form AutofocusForm at line " & Erl & " "
+    
+    imgFileFormat = eAimExportFormatLsm5
+    imgFileExtension = ".lsm"
+End Sub
+
+
+
+'''
+'   Restores some settings of the form
+'''
 Public Sub RestoreAcquisitionParameters()
     Dim i As Integer
-    Dim pos As Double
+    Dim Pos As Double
     Dim Time As Double
     Dim LogMsg As String
     Dim SuccessRecenter As Boolean
@@ -1638,13 +1697,14 @@ Public Sub RestoreAcquisitionParameters()
     ScanStop = False
     ScanPause = False
     ChangeButtonStatus True
-    PauseButton.Value = False
+    PauseButton.value = False
     PauseButton.Caption = "PAUSE"
     PauseButton.BackColor = &H8000000F
-    StopAfterRepetition.Value = False
+    Pump = False
+    StopAfterRepetition.value = False
     StopAfterRepetition.BackColor = &H8000000F
     StopButton.BackColor = &H8000000F
-    StopButton.Value = False
+    StopButton.value = False
     LocationTextLabel.Caption = ""
     Sleep (1000)
     ''Close LogFile and ErrFile
@@ -1674,16 +1734,9 @@ Private Sub GetCurrentPositionOffsetButton_Click()
     Running = True
     posTempZ = Lsm5.Hardware.CpFocus.position
     Recenter_pre posTempZ, SuccessRecenter, ZENv
- 
-    'Check if there is an existing document then start acquisition
-    Set node = viewerGuiServer.ExperimentTreeNodeSelected
-    If Not node Is Nothing Then
-        If node.type <> eExperimentTeeeNodeTypeLsm Then
-            Lsm5.NewScanWindow
-        End If
-        Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
-    End If
-    If Not GetCurrentPositionOffsetButtonRun(RecordingDoc, GlobalDataBaseName) Then
+    NewRecordGui GlobalRecordingDoc, "AF_T000", ZEN, ZENv
+
+    If Not GetCurrentPositionOffsetButtonRun(GlobalRecordingDoc, GlobalDataBaseName) Then
         DisplayProgress "Stopped", RGB(&HC0, 0, 0)
         StopAcquisition
     End If
@@ -1703,7 +1756,7 @@ Private Function GetCurrentPositionOffsetButtonRun(Optional AutofocusDoc As DsRe
     Dim NewCoord() As Double
     Dim deltaZ As Double
     Dim Sample0Z As Double ' test variable
-    Dim pos As Double ' test variable for position
+    Dim Pos As Double ' test variable for position
     Dim LogMsg  As String
     Dim SuccessRecenter As Boolean
     DisplayProgress "Autofocus move initial position", RGB(0, &HC0, 0)
@@ -1722,21 +1775,21 @@ Private Function GetCurrentPositionOffsetButtonRun(Optional AutofocusDoc As DsRe
 
     'recenter only after activation of new track
     If Not AutofocusActive Then
-        MsgBox "GetCurrentPositionOffset: Autofocus job need to be active"
+        MsgBox "GetCurrentPositionOffset: Autofocus job needs to be active!"
         Exit Function
     End If
     If Not AutofocusTrackZ Then
-        MsgBox "GetCurrentPositionOffset: Autofocus TrackZ need to be active!"
+        MsgBox "GetCurrentPositionOffset: Autofocus TrackZ needs to be active!"
         Exit Function
     End If
-    If Not AutofocusCenterOfMass And Not AutofocusOiaActive Then
-        MsgBox "GetCurrentPositionOffset: Autofocus CenterOfMass or Oia need to be active!"
+    If Not AutofocusFocusMethod <> "None" And Not AutofocusOiaActive Then
+        MsgBox "GetCurrentPositionOffset: Autofocus method should not be on None or Online image analysis need to be active!"
         Exit Function
     End If
     JobName = "Autofocus"
     Jobs.putJob JobName, ZEN
     DisplayProgress "Autofocus execute job", RGB(0, &HC0, 0)
-    ExecuteJob JobName, AutofocusDoc, FilePath, FileName, StgPos, CInt(deltaZ)
+    ExecuteJob JobName, AutofocusDoc, FilePath, FileName, StgPos, 0
     StgPos = TrackOffLine(JobName, AutofocusDoc, StgPos)
     If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
         OiaSettings.writeKeyToRegistry "codeOia", "newImage"
@@ -1756,7 +1809,6 @@ Private Function GetCurrentPositionOffsetButtonRun(Optional AutofocusDoc As DsRe
 End Function
 
 '''''''
-'   AutofocusButton_Click()
 '   calls AutofocusButtonRun
 ''''''''
 Public Sub AutofocusButton_Click()
@@ -1772,7 +1824,7 @@ Public Sub AutofocusButton_Click()
     'Check if there is an existing document then start acquisition
     Set node = viewerGuiServer.ExperimentTreeNodeSelected
     If Not node Is Nothing Then
-        If node.type <> eExperimentTeeeNodeTypeLsm Then
+        If node.Type <> eExperimentTeeeNodeTypeLsm Then
             Lsm5.NewScanWindow
         End If
         Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
@@ -1783,10 +1835,6 @@ Public Sub AutofocusButton_Click()
     End If
     AutofocusForm.RestoreAcquisitionParameters
 End Sub
-
-
-
-
 
 
 
@@ -1801,6 +1849,7 @@ End Sub
 '                        Lots of test to check that focus returned to workingposition. Lsm5.Hardware.CpFocus.Position
 '                        does not give actual position when stage is moving after acquisition.
 '                        Lsm5.DsRecording.Sample0Z provides the actual shift to the central slice
+'                       This function should just be a version with single position
 ''''''''
 Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = Nothing, Optional FilePath As String = "") As Boolean
 On Error GoTo AutofocusButtonRun_Error
@@ -1816,7 +1865,7 @@ On Error GoTo AutofocusButtonRun_Error
     Dim NewCoord() As Double
     Dim deltaZ As Double
     Dim Sample0Z As Double ' test variable
-    Dim pos As Double ' test variable for position
+    Dim Pos As Double ' test variable for position
     Dim LogMsg  As String
     Dim SuccessRecenter As Boolean
     DisplayProgress "Autofocus move initial position", RGB(0, &HC0, 0)
@@ -1832,7 +1881,7 @@ On Error GoTo AutofocusButtonRun_Error
     OiaSettings.resetRegistry
     
     FileName = "AF_T000" & imgFileExtension
-
+    
     'recenter only after activation of new track
     If AutofocusActive Then
         JobName = "Autofocus"
@@ -1853,7 +1902,7 @@ On Error GoTo AutofocusButtonRun_Error
     If AcquisitionActive Then
         FileName = "AQ_T000" & imgFileExtension
         JobName = "Acquisition"
-        StgPos.Z = StgPos.Z + AcquisitionZOffset.Value
+        StgPos.Z = StgPos.Z + AcquisitionZOffset.value
         ExecuteJob JobName, AutofocusDoc, FilePath, FileName, StgPos, CInt(deltaZ)
         StgPos = TrackOffLine(JobName, AutofocusDoc, StgPos)
         If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
@@ -1866,16 +1915,16 @@ On Error GoTo AutofocusButtonRun_Error
             Debug.Print "X =" & StgPos.X & ", " & newStgPos.X & ", " & StgPos.Y & ", " & newStgPos.Y & ", " & StgPos.Z & ", " & newStgPos.Z
             StgPos = TrackJob(JobName, StgPos, newStgPos)
         End If
-        StgPos.Z = StgPos.Z - AcquisitionZOffset.Value
+        StgPos.Z = StgPos.Z - AcquisitionZOffset.value
         
     End If
     
     If AlterAcquisitionActive Then
         FileName = "AL_T000" & imgFileExtension
         JobName = "AlterAcquisition"
-        StgPos.Z = StgPos.Z + AlterAcquisitionZOffset.Value
+        StgPos.Z = StgPos.Z + AlterAcquisitionZOffset.value
         ExecuteJob JobName, AutofocusDoc, FilePath, FileName, StgPos, CInt(deltaZ)
-         StgPos = TrackOffLine(JobName, AutofocusDoc, StgPos)
+        StgPos = TrackOffLine(JobName, AutofocusDoc, StgPos)
         If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
             OiaSettings.writeKeyToRegistry "codeOia", "newImage"
             newStgPos = ComputeJobSequential(JobName, "Global", StgPos, FilePath, FileName, AutofocusDoc)
@@ -1886,7 +1935,7 @@ On Error GoTo AutofocusButtonRun_Error
             Debug.Print "X =" & StgPos.X & ", " & newStgPos.X & ", " & StgPos.Y & ", " & newStgPos.Y & ", " & StgPos.Z & ", " & newStgPos.Z
             StgPos = TrackJob(JobName, StgPos, newStgPos)
         End If
-        StgPos.Z = StgPos.Z - AlterAcquisitionZOffset.Value
+        StgPos.Z = StgPos.Z - AlterAcquisitionZOffset.value
     End If
 
     Recenter_post posTempZ, True, ZENv
@@ -1894,7 +1943,7 @@ On Error GoTo AutofocusButtonRun_Error
     Recenter_post StgPos.Z, True, ZENv
     If ZENv > 2010 Then
         On Error GoTo nocenter
-        ZEN.gui.Acquisition.ZStack.CenterPositionZ.Value = StgPos.Z
+        ZEN.gui.Acquisition.ZStack.CenterPositionZ.value = StgPos.Z
     End If
     AutofocusButtonRun = True
 
@@ -1915,9 +1964,23 @@ End Function
 
 
 '''''
-'   StartButton_Click()
+'   Run the pipeline
 '''''
 Private Sub StartButton_Click()
+    PauseEndAcquisition = 0 ' A work around to avoid errors in FCS. Does not seem to work
+    Execute_StartButton
+End Sub
+
+''''
+'   Run the pipeline and use the waterpump
+''''
+Private Sub Start_With_Pump_Click()
+    PumpForm.Show
+End Sub
+
+Public Sub Execute_StartButton()
+On Error GoTo Execute_StartButton_Error
+
     DisplayProgress "Prepare acquisition...", RGB(&HC0, &HC0, 0)
     If Not StartSetting() Then
         DisplayProgress "Problems in creating settings (StartSetting). Stopped", RGB(&HC0, 0, 0)
@@ -1933,6 +1996,8 @@ Private Sub StartButton_Click()
     LogManager.ResetLog
     
     InitializeStageProperties
+    '''
+    'Debug.Print "Motor Speed " & Lsm5.Hardware.CpStages.MotorSpeed
     SetStageSpeed 9, True    'What do we do here
     'block usage of grid during acquisition
     AutofocusForm.SwitchEnableGridScanPage False
@@ -1943,8 +2008,8 @@ Private Sub StartButton_Click()
             NewFcsRecordGui GlobalFcsRecordingDoc, GlobalFcsData, "MacroFcs", ZEN, ZENv
             'Sleep (1000)
             If ZENv > 2010 And Not ZEN Is Nothing Then
-                ZEN.gui.Fcs.EnablePositions.Value = True
-                ZEN.gui.Fcs.Positions.EnablePositionList.Value = True
+                ZEN.gui.Fcs.EnablePositions.value = True
+                ZEN.gui.Fcs.Positions.EnablePositionList.value = True
                 If ZEN.gui.Fcs.Positions.PositionList.ItemCount > 0 Then
                     ZEN.gui.Fcs.Positions.PositionListRemoveAll.Execute
                 End If
@@ -1952,13 +2017,27 @@ Private Sub StartButton_Click()
         End If
     End If
     NewRecordGui GlobalRecordingDoc, "MacroImaging", ZEN, ZENv
-
+    If Pump Then
+        lastTimePump = CDbl(GetTickCount) * 0.001
+        Sleep (100)
+        'lastTimePump = waitForPump(PumpForm.Pump_time, PumpForm.Pump_wait, lastTimePump, 0, 0, 0, 10)
+    End If
     If Not StartJobOnGrid("Global", "Global", GlobalRecordingDoc, GlobalDataBaseName) Then  'This is the main function of the macro
         StopAcquisition
     End If
     AutofocusForm.RestoreAcquisitionParameters
+
+   On Error GoTo 0
+   Exit Sub
+
+Execute_StartButton_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure Execute_StartButton of Form AutofocusForm at line " & Erl & " "
     
 End Sub
+
+
 
 
 ''''''
@@ -1970,8 +2049,14 @@ Private Function StartSetting() As Boolean
     Dim i As Integer
     Dim initPos As Boolean   'if False and gridsize correspond positions are taken from file positionsGrid.csv
     Dim SuccessRecenter As Boolean
-    Dim pos() As Vector
+    Dim Job As Variant
     
+    Dim Pos() As Vector
+    Dim PosCurr As Vector   'current position
+On Error GoTo StartSetting_Error
+
+    Lsm5.Hardware.CpStages.GetXYPosition PosCurr.X, PosCurr.Y
+    PosCurr.Z = Lsm5.Hardware.CpFocus.position
     
     initPos = True
     StartSetting = False
@@ -1980,11 +2065,12 @@ Private Function StartSetting() As Boolean
     Dim MarkCount As Long
     MarkCount = Lsm5.Hardware.CpStages.MarkCount
     
-    If MultipleLocationToggle.Value And MarkCount < 1 Then
+    If MultipleLocationToggle.value And MarkCount < 1 Then
         MsgBox ("Select at least one location in the stage control window, or uncheck the multiple location button")
         Exit Function
     End If
-    'This loads value of Databasename
+    
+    ''Create and check directory for output and log files
     SetDatabase
     If GlobalDataBaseName = "" Then
         MsgBox ("No outputfolder selected ! Cannot start acquisition.")
@@ -2015,110 +2101,117 @@ Private Function StartSetting() As Boolean
         End If
     End If
     SetFileName
-    If Not AcquisitionTracksOn And Not AutofocusActive And Not AlterAcquisitionActive Then
+    '''Consistency check
+    If Not AcquisitionActive And Not AutofocusActive And Not AlterAcquisitionActive Then
         MsgBox ("Nothing to do! Check at least one imaging option!")
         Exit Function
     End If
+    
+    ''''Track consistency check
+    For Each Job In JobNames
+        If Me.Controls(Job + "Active") And (Me.Controls(Job + "TrackZ") Or Me.Controls(Job + "TrackXY")) Then
+            If Me.Controls(Job + "FocusMethod").ListIndex = 0 Then
+                MsgBox ("For Job " & Job & ". To TrackZ and/or TrackXY Focus Method must be different then None!")
+                Exit Function
+            End If
+            If Me.Controls(Job + "FocusMethod").ListIndex = FocusMethods.count - 1 Then
+                Me.Controls(Job + "OiaActive") = True
+            End If
+        End If
+    Next Job
+    
+    '''Set acquisition time to 0
+    For Each Job In JobNames
+        Jobs.setTimeToAcquire CStr(Job), 0
+    Next Job
+    For Each Job In JobFcsNames
+        JobsFcs.setTimeToAcquire CStr(Job), 0
+    Next Job
+    
     
     ' do not log if logfilename has not been defined
     If LogCode And LogFileName = "" Then
         Log = False
     End If
-    'As default we do not overwrite files
-    OverwriteFiles = False
     
-    If MultipleLocationToggle Then
-        If GridScanActive Then
-            If MarkCount = 0 Then  ' No marked position
-                MsgBox "GridScan: Use stage to Mark at least the initial position "
-                Exit Function
-            End If
-            GridScan_nColumn.Value = MarkCount
-            GridScan_nRow.Value = 1
-            Grids.updateGridSize "Global", GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub
-        Else
-            Grids.updateGridSize "Global", 1, MarkCount, 1, 1
+    
+    DisplayProgress "Initialize all grid positions...", RGB(0, &HC0, 0)
+    
+    '''Get Marked positions''''
+    Pos = getMarkedStagePosition
+    If GridCurrentZposition And MarkCount > 0 Then
+        For i = 0 To MarkCount - 1
+            Pos(i).Z = PosCurr.Z
+        Next i
+    End If
+    
+    '''Set Grid'''
+    If GridScanActive Then
+        If MarkCount = 0 Then  ' No marked position
+            MsgBox "GridScan: Use stage to Mark at least the initial position "
+            Exit Function
+        End If
+        '''regular spaced grid starting from Pos(0)'''
+        If SingleLocationToggle Then
+            Grids.makeGridFromOnePt "Global", Pos(0), GridScan_nRow.value, GridScan_nColumn.value, _
+            GridScan_nRowsub.value, GridScan_nColumnsub.value, GridScan_dRow.value, GridScan_dColumn.value, _
+            GridScan_dRowsub.value, GridScan_dColumnsub.value, GridScan_refRow.value, GridScan_refColumn.value
+        End If
+        '''Grid based on marked positions with subgrid''''
+        If MultipleLocationToggle Then
+            GridScan_nColumn.value = MarkCount
+            GridScan_nRow.value = 1
+            Grids.makeGridFromManyPts "Global", Pos, 1, MarkCount, GridScan_nRowsub, GridScan_nColumnsub, GridScan_dRowsub, GridScan_dColumnsub
+        End If
+    Else
+        If SingleLocationToggle Then
+            Grids.makeGridFromOnePt "Global", PosCurr, 1, 1, 1, 1, 0, 0, 0, 0
+        End If
+        '''Grid based on marked positions without subgrid'''
+        If MultipleLocationToggle Then
+            Grids.makeGridFromManyPts "Global", Pos, 1, MarkCount, 1, 1, 0, 0
         End If
     End If
+            
     
-    If SingleLocationToggle Then
-        If GridScanActive Then
-            If MarkCount = 0 Then  ' No marked position
-                MsgBox "GridScan: Use stage to Mark at least the initial position "
-                Exit Function
-            End If
-            ReDim pos(0)
-            Lsm5.Hardware.CpStages.MarkGetZ 0, pos(0).X, pos(0).Y, pos(0).Z
-            Grids.makeGridFromOnePt "Global", pos(0), GridScan_nRow.Value, GridScan_nColumn.Value, _
-            GridScan_nRowsub.Value, GridScan_nColumnsub.Value, GridScan_dRow.Value, GridScan_dColumn.Value, _
-            GridScan_dRowsub.Value, GridScan_dColumnsub.Value, GridScan_refRow.Value, GridScan_refColumn.Value
-            DisplayProgress "Initialize all grid positions...DONE", RGB(0, &HC0, 0)
-        Else
-            ReDim pos(0)
-            Lsm5.Hardware.CpStages.GetXYPosition pos(0).X, pos(0).Y
-            pos(0).Z = Lsm5.Hardware.CpFocus.position
-            Grids.makeGridFromOnePt "Global", pos(0), 1, 1, 1, 1, 0, 0, 0, 0
-            initPos = False
-        End If
-        'GoTo GridReady
-    End If
-    
-   
-        
-    
-    If GridScan_nColumn.Value * GridScan_nRow.Value * GridScan_nColumnsub.Value * GridScan_nRowsub.Value > 10000 Then
-        MsgBox "GridScan: Maximal number of locations is 10000. Please change Numbers  X and/or Y."
-        Exit Function
-    End If
-    
-    
+    '''Load positions and validity from file'''
     If GridScanPositionFile <> "" Then
         If Grids.loadPositionGridFile("Global", GridScanPositionFile) Then
             Dim GridDim() As Long
             DisplayProgress "Loading grid positions from file. " & GridScanPositionFile & "....", RGB(0, &HC0, 0)
             GridDim = Grids.getGridDimFromFile("Global", GridScanPositionFile)
             If UBound(GridDim) = 3 Then
-                GridScan_nRow.Value = GridDim(0)
-                GridScan_nColumn.Value = GridDim(1)
-                GridScan_nRowsub.Value = GridDim(2)
-                GridScan_nColumnsub.Value = GridDim(3)
+                GridScan_nRow.value = GridDim(0)
+                GridScan_nColumn.value = GridDim(1)
+                GridScan_nRowsub.value = GridDim(2)
+                GridScan_nColumnsub.value = GridDim(3)
             End If
-            initPos = False
         Else
-            MsgBox "Not able to use " & GridScanPositionFile & ". Resetting the positions."
+           Exit Function
         End If
     End If
         
-    If initPos Then
-            DisplayProgress "Initialize all positions....", RGB(0, &HC0, 0)
-            If MultipleLocationToggle.Value Then
-                ReDim pos(MarkCount - 1)
-                For i = 0 To MarkCount - 1
-                    Lsm5.Hardware.CpStages.MarkGetZ i, pos(i).X, pos(i).Y, pos(i).Z
-                Next i
-                Grids.makeGridFromManyPts "Global", pos, 1, MarkCount, GridScan_nRowsub.Value, GridScan_nColumnsub.Value, GridScan_dRowsub.Value, GridScan_dColumnsub.Value
-            Else
-                ReDim pos(0)
-                Lsm5.Hardware.CpStages.MarkGetZ 0, pos(0).X, pos(0).Y, pos(0).Z
-                Grids.makeGridFromOnePt "Global", pos(0), GridScan_nRow.Value, GridScan_nColumn.Value, _
-                GridScan_nRowsub.Value, GridScan_nColumnsub.Value, GridScan_dRow.Value, GridScan_dColumn.Value, _
-                GridScan_dRowsub.Value, GridScan_dColumnsub.Value, GridScan_refRow.Value, GridScan_refColumn.Value
-                DisplayProgress "Initialize all grid positions...DONE", RGB(0, &HC0, 0)
-            End If
-    End If
-        
-    
     If GridScanValidFile <> "" Then
         Dim FormatValidFile As String
         FormatValidFile = Grids.isValidGridFile("Global", GridScanValidFile, GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub)
-        If Grids.loadValidGridFile(Name, GridScanValidFile, FormatValidFile) Then
-            
-        Else
+        If Not Grids.loadValidGridFile("Global", GridScanValidFile, FormatValidFile) Then
             MsgBox "Not able to use " & GridScanValidFile & " for loading valid positions."
+            Exit Function
         End If
     End If
+    
+    If GridScanPositionFile <> "" Or GridScanValidFile <> "" Then
+        MsgBox "You are using position coordinates stored in " & GridScanPositionFile & vbCrLf & "and/or valid positions stored in " & GridScanValidFile & vbCrLf & _
+        "If you don't want to use these defaults then Stop, remove the file names in the grid tab and Start again"
+    End If
 
-GridReady:
+    If GridScan_nColumn.value * GridScan_nRow.value * GridScan_nColumnsub.value * GridScan_nRowsub.value > 10000 Then
+        MsgBox "GridScan: Maximal number of locations is 10000. Please change Numbers  X and/or Y."
+        Exit Function
+    End If
+    
+    DisplayProgress "Initialize all grid positions...DONE", RGB(0, &HC0, 0)
+    
     Grids.writePositionGridFile "Global", GlobalDataBaseName & "positionsGrid.csv"
     Grids.writeValidGridFile "Global", GlobalDataBaseName & "validGrid.csv"
 
@@ -2127,6 +2220,8 @@ GridReady:
         SetDatabase
         SaveFormSettings GlobalDataBaseName & "\AutofocusScreen.ini"
     End If
+    
+    Grids.setAllParentPath "Global", GlobalDataBaseName
     StartSetting = True
     Exit Function
 ErrorHandleDataBase:
@@ -2135,6 +2230,14 @@ ErrorHandleDataBase:
 ErrorHandleLogFile:
     MsgBox "Could not create LogFile " & LogFileName
     Exit Function
+
+   On Error GoTo 0
+   Exit Function
+
+StartSetting_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure StartSetting of Form AutofocusForm at line " & Erl & " "
 End Function
 
 
@@ -2182,7 +2285,6 @@ End Function
   
 
 '''''
-'   AutoFindTracks()
 '   Set the names of the tracks and find possible tracks
 '''''
 Public Sub AutoFindTracks()
@@ -2201,9 +2303,9 @@ Public Sub AutoFindTracks()
     For Each Name In JobNames
         ReDim Active(3)
         For i = 1 To 4
-            Active(i - 1) = Me.Controls(Name + "Track" + CStr(i)).Value
+            Active(i - 1) = Me.Controls(Name + "Track" + CStr(i)).value
             Me.Controls(Name + "Track" + CStr(i)).Visible = False
-            Me.Controls(Name + "Track" + CStr(i)).Value = False
+            Me.Controls(Name + "Track" + CStr(i)).value = False
         Next i
         ActiveJobTracks.Add Active, Name
     Next Name
@@ -2237,7 +2339,7 @@ Public Sub AutoFindTracks()
             If ChannelOK And (Not Track.IsLambdaTrack) And (Not Track.IsBleachTrack) Then
                 For Each Name In JobNames
                     Me.Controls(Name + "Track" + CStr(iTrack)).Visible = True
-                    Me.Controls(Name + "Track" + CStr(iTrack)).Value = ActiveJobTracks(Name)(i)
+                    Me.Controls(Name + "Track" + CStr(iTrack)).value = ActiveJobTracks(Name)(i)
                     Me.Controls(Name + "Track" + CStr(iTrack)).Caption = Track.Name
                 Next Name
                 iTrack = iTrack + 1
@@ -2253,12 +2355,9 @@ Public Sub AutoFindTracks()
 End Sub
 
 
-
-
-
 Private Sub CloseButton_Click()
     RestoreAcquisitionParameters
-    Sleep (1000)
+    SleepWithEvents 1000
     End
 End Sub
 
@@ -2277,176 +2376,7 @@ Private Sub CreditButton_Click()
 End Sub
 
 
-
-
-
-
-Private Sub TextBoxFileName_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
-    If KeyCode = 13 Then 'this is the enter key
-        SetFileName
-    End If
-End Sub
-
-Private Sub SetFileName()
-    If TextBoxFileName.Value <> "" Then
-        If Right(TextBoxFileName.Value, 1) <> "_" Then
-            TextBoxFileName.Value = TextBoxFileName.Value & "_"
-        End If
-    End If
-End Sub
-
-Private Sub fileFormatlsm_Click()
-    imgFileFormat = eAimExportFormatLsm5
-    imgFileExtension = ".lsm"
-End Sub
-
-Private Sub fileFormatczi_Click()
-On Error GoTo fileFormatczi_Click_Error
-    If ZENv > 2010 Then
-        'imgFileFormat = eAimExportFormatCzi 'this format does not exist below ZEN2011
-        imgFileFormat = 42 'this format does not exist below ZEN2011
-        imgFileExtension = ".czi"
-    Else
-        imgFileFormat = eAimExportFormatLsm5
-        imgFileExtension = ".lsm"
-    End If
-    On Error GoTo 0
-   Exit Sub
-
-fileFormatczi_Click_Error:
-
-    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-    ") in procedure fileFormatczi_Click of Form AutofocusForm at line " & Erl & " "
-    
-    imgFileFormat = eAimExportFormatLsm5
-    imgFileExtension = ".lsm"
-End Sub
- 
-'''''''
-
-' TODO a long does it wait
-'Wait time in sec?
-Sub wait(PauseTime As Single)
-    Dim Start As Single
-    Start = Timer   ' Set start time.
-    Do While Timer < Start + PauseTime
-       DoEvents    ' Yield to other processes.
-       'Lsm5.DsRecording.StartScanTriggerIn
-    Loop
-End Sub
-
-
-
-
-Private Function TimeDisplay(Value As Double) As String         'Calculates the String to display in a "user frindly format". Value is in seconds
-    Dim Hour, MIN As Integer
-    Dim Sec As Double
-
-    Hour = Int(Value / 3600)                                        'calculates number of full hours                           '
-    MIN = Int(Value / 60) - (60 * Hour)                             'calculates number of left minutes
-    Sec = (Fix((Value - (60 * MIN) - (3600 * Hour)) * 100)) / 100   'calculates the number of left seconds
-    If (Hour = 0) And (MIN = 0) Then                                'Defines a "user friendly" string to display the time
-        TimeDisplay = Sec & " sec"
-    ElseIf (Hour = 0) And (Sec = 0) Then
-        TimeDisplay = MIN & " min"
-    ElseIf (Hour = 0) Then
-        TimeDisplay = MIN & " min " & Sec
-    Else
-        TimeDisplay = Hour & " h " & MIN
-    End If
-End Function
-
-
-Public Function AcquisitionTime() As Double
-    Dim Track As DsTrack
-    Dim Success As Integer
-    Dim Track1Speed, Track2Speed, Track3Speed, Track4Speed As Double
-    Dim Pixels As Long
-    Dim FrameNumber As Integer
-    Dim ScanDirection As Integer
-    Dim i As Integer
-   
-    Track1Speed = 0
-    Track2Speed = 0
-    Track3Speed = 0
-    Track4Speed = 0
-    If AcquisitionTrack1.Value = True Then
-        Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, Success)
-        Track1Speed = Track.SampleObservationTime
-    End If
-    If AcquisitionTrack2.Value = True Then
-        Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(1, Success)
-        Track2Speed = Track.SampleObservationTime
-    End If
-    If AcquisitionTrack3.Value = True Then
-        Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(2, Success)
-        Track3Speed = Track.SampleObservationTime
-    End If
-    If AcquisitionTrack4.Value = True Then
-        Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(3, Success)
-        Track4Speed = Track.SampleObservationTime
-    End If
-    Pixels = Lsm5.DsRecording.LinesPerFrame * Lsm5.DsRecording.SamplesPerLine
-    FrameNumber = Lsm5.DsRecording.framesPerStack
-    If Lsm5.DsRecording.ScanDirection = 0 Then
-        ScanDirection = 1
-    Else
-        ScanDirection = 2
-    End If
-    AcquisitionTime = (Track1Speed + Track2Speed + Track3Speed + Track4Speed) * Pixels * FrameNumber / ScanDirection * 3.3485
-End Function
-
-
-
-
-
-
-
-
-''''''
-'    CheckAutofocusTrack( SelectedTrack As Integer )
-'    Checks whether the track that was selected for autofocusing only contains a single channel (alternetivly defines one of the checked channels)
-'    and finds the name of the autofocusing channel
-'       [SelectedTrack] In - Number of selected track
-''''''
-Private Sub CheckAutofocusTrack(SelectedTrack As Integer)
-    Dim Success As Integer
-    Dim Track As DsTrack 'a new track is defined
-    Dim DataChannel As DsDataChannel    'a new interface to a data channel is defined
-                                        'contains channel dependend parameters of the
-                                        'scan memory/display/calculation of scan data during scan operation
-    Dim ActiveChannelNumber As Integer
-    Dim AutofocusChannel As String
-    Dim j As Integer
-    
-    Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(SelectedTrack - 1, Success)
-        'gets the track object by multiplexorder which starts with 0
-        'since selected track starts with 1 (see CheckAutofocusTrack (n)), 1 has to be substracted
-        
-    'the following loop will count the number of activated channels in the track chosen for autofocusing
-    ActiveChannelNumber = 0
-    
-    For j = 0 To Track.DataChannelCount - 1 'gets number of channels that are potentially activatable in track
-        Set DataChannel = Track.DataChannelObjectByIndex(j, Success) 'data channel corresponding to loop index is analysed
-        If DataChannel.Acquire = True Then  'checks whether the data channel corresponding to loop index is activated
-            ActiveChannelNumber = ActiveChannelNumber + 1 'counts the number of activated channels
-            If ActiveChannelNumber = 1 Then AutofocusChannel = DataChannel.Name 'Gets the name of the first activated channel
-        End If
-    Next
-    
-    If ActiveChannelNumber > 1 Then 'if more than one channel is activated...
-        MsgBox ("The track you selected has more than one active Channel. " & AutofocusChannel & " will be used to calculate autofocus parameters.")
-    End If
-End Sub
-
-
-
-
-
-
-
 '''''
-'   ChangeButtonStatus(Enable As Boolean)
 '   Reset status of buttons on rightside of form
 '''''
 Private Sub ChangeButtonStatus(Enable As Boolean)
@@ -2456,81 +2386,122 @@ Private Sub ChangeButtonStatus(Enable As Boolean)
     GetCurrentPositionOffsetButton.Enabled = Enable
     CloseButton.Enabled = Enable
     ReinitializeButton.Enabled = Enable
+    PumpForm.Start_Imaging.Enabled = Enable
+End Sub
+
+
+Public Function ControlTipText()
+    Dim i As Integer
+    AutofocusForm.StartButton.ControlTipText = "Start imaging workflow"
+    AutofocusForm.Start_With_Pump.ControlTipText = "Start imaging workflow and use water pump (specific for waterimmersion objective!!)"
+    AutofocusForm.GridMarkedZPosition.ControlTipText = "Initial ZPositions for first repetition are set by the marked ZPositions"
+    AutofocusForm.GridCurrentZposition.ControlTipText = "Initial ZPositions for first repetition are set by the current ZPositions"
+    AutofocusForm.FocusMap.ControlTipText = "Run Job autofocus for all positiob and save results in focusMap.csv. This will be used for the next Pipeline"
+    
+    For i = 0 To UBound(JobNames)
+        JobControlTipText JobNames(i)
+    Next i
+End Function
+
+'''
+' Sets tip text for all pages
+'''
+Private Sub JobControlTipText(JobName As String)
+    On Error GoTo ErrorHandle:
+    
+    AutofocusForm.Controls(JobName + "Period").ControlTipText = "Perform job " & JobName & " every xx repetitions"
+
+
+    AutofocusForm.Controls(JobName + "ZOffset").ControlTipText = "Add xx to Z from previous imaging Job"
+    AutofocusForm.Controls(JobName + "TrackZ").ControlTipText = "Update Z of current point with computed position"
+    AutofocusForm.Controls(JobName + "TrackXY").ControlTipText = "Update XY of current point with computed position"
+    AutofocusForm.Controls(JobName + "LabelMethod").ControlTipText = "Compute new position within VBA macro from one of the listed methods. Center of Mass (thr): threshold image to keep 20% brightestpart and compute center of mass" & _
+    ". Peak: use maximal value." & " Center of Mass: compute center of mass using the whole image"
+    AutofocusForm.Controls(JobName + "LabelMethod").ControlTipText = "Compute new position within VBA macro from one of the listed methods. Center of Mass (thr): threshold image to keep 20% brightestpart and compute center of mass" & _
+    ". Peak: use maximal value." & " Center of Mass: compute center of mass using the whole image"
+    AutofocusForm.Controls(JobName + "LabelChannel").ControlTipText = "Channel used to compute position"
+    AutofocusForm.Controls(JobName + "OiaActive").ControlTipText = "If active macro listens to online image analysis"
+    AutofocusForm.Controls(JobName + "OiaSequential").ControlTipText = "Macro waits for image analysis to finish. Acquire image -> OnlineImage analysis -> perform task"
+    AutofocusForm.Controls(JobName + "OiaParallel").ControlTipText = "Imaging and analysis run in parallel."
+    AutofocusForm.Controls(JobName + "TimeOut").ControlTipText = "Uses to overcome crashes in FCS. If on system will move to next image/fcs after certain time is exceeded. The time is estimated from the first round"
+    If JobName = "Trigger1" Or JobName = "Trigger2" Then
+        AutofocusForm.Controls(JobName + "Active").ControlTipText = "Job " & JobName & " is performed only after online image analysis command"
+        AutofocusForm.Controls(JobName + "OptimalPtNumber").ControlTipText = "Wait to find up to xxx positions before starting job " & JobName
+        AutofocusForm.Controls(JobName + "maxWait").ControlTipText = "Wait up to xxx seconds before starting job " & JobName
+        AutofocusForm.Controls(JobName + "Autofocus").ControlTipText = "Before acquiring " & JobName & " perform Job Autofocus"
+        AutofocusForm.Controls(JobName + "KeepParent").ControlTipText = "If on revisit parent position from which " & JobName & " has been triggered"
+    End If
+
+    AutofocusForm.Controls(JobName + "PutJob").ControlTipText = "Put Macro acquisition settings into ZEN. Not all settings are shown in the  ZEN GUI!"
+    AutofocusForm.Controls(JobName + "SetJob").ControlTipText = "Load settings from ZEN into Macro. Not all settings are shown in the  Macro GUI!"
+    AutofocusForm.Controls(JobName + "Acquire").ControlTipText = "Acquire one image with settings of Job " & JobName
+    Exit Sub
+ErrorHandle:
+    MsgBox "Error in JobControlTipText " + JobName + " " + Err.Description
 End Sub
 
 
 
 
-
-
-
-Private Sub CreateAlterImageDatabase(AlterDatabaseName, MyPath)
-        Dim Start As Integer
-        Dim bslash As String
-        Dim pos As Long
-        Dim NameLength As Long
-        Dim Myname As String
-
-         Start = 1
-         bslash = "\"
-         pos = Start
-         Do While pos > 0
-             pos = InStr(Start, DatabaseTextbox.Value, bslash)
-             If pos > 0 Then
-                 Start = pos + 1
-             End If
-         Loop
-         MyPath = Strings.Left(DatabaseTextbox.Value, Start - 1)
-         NameLength = Len(DatabaseTextbox.Value)
-         Myname = Strings.Right(DatabaseTextbox.Value, NameLength - Start + 1)
-         NameLength = Len(Myname)
-         ' Myname = Strings.Left(Myname, NameLength - 4)
-         AlterDatabaseName = MyPath & Myname & "_additionalTracks"
-        ' Lsm5.NewDatabase (AlterDatabaseName)
-        '  AlterDatabaseName = AlterDatabaseName & "\" & Myname & "_additionalTracks"
-         
-End Sub
-
-
-
-
-
-
-
-
-
-
-
-
 ''''''
-''   CheckZRanges()
-''   Check if Z movements are in agreement with range of microscope
-''''''
-'Public Function CheckZRanges() As Boolean
-'    If ScanStop Then
-'        Exit Function
-'    End If
+'' These functions are not used anymore
+'Private Function TimeDisplay(value As Double) As String         'Calculates the String to display in a "user frindly format". Value is in seconds
+'    Dim Hour, MIN As Integer
+'    Dim Sec As Double
 '
-'    If Range() = 0 Then
-'        MsgBox "Objective's working distance not defined! Cannot Autofocus!"
-'        CheckZRanges = False
-'        Exit Function
+'    Hour = Int(value / 3600)                                        'calculates number of full hours                           '
+'    MIN = Int(value / 60) - (60 * Hour)                             'calculates number of left minutes
+'    Sec = (Fix((value - (60 * MIN) - (3600 * Hour)) * 100)) / 100   'calculates the number of left seconds
+'    If (Hour = 0) And (MIN = 0) Then                                'Defines a "user friendly" string to display the time
+'        TimeDisplay = Sec & " sec"
+'    ElseIf (Hour = 0) And (Sec = 0) Then
+'        TimeDisplay = MIN & " min"
+'    ElseIf (Hour = 0) Then
+'        TimeDisplay = MIN & " min " & Sec
 '    Else
-'        CheckZRanges = True
+'        TimeDisplay = Hour & " h " & MIN
 '    End If
-'
-'    If AutofocusZRange.Value > Range() * 0.9 Then 'this is already tested in the slider could be removed
-'        AutofocusForm.AutofocusZRange.Value = Range() * 0.9
-'        MsgBox "Autofocus range is too large! Has been reduced to " + Str(AutofocusForm.AutofocusZRange.Value)
-'    End If
-'
-''    If Abs(AcquisitionZOffset.Value) > Range() * 0.9 Then 'this is already tested in the slider could be removed
-''        AutofocusForm.AcquisitionZOffset = 0
-''        MsgBox "ZOffset has to be less than the working distance of the objective: " + CStr(Range) + " um. Has been put back to " + Str(AutofocusForm.AutofocusZOffset)
-''    End If
-'
 'End Function
-  
+'
+'
+'Public Function AcquisitionTime() As Double
+'    Dim Track As DsTrack
+'    Dim Success As Integer
+'    Dim Track1Speed, Track2Speed, Track3Speed, Track4Speed As Double
+'    Dim Pixels As Long
+'    Dim FrameNumber As Integer
+'    Dim ScanDirection As Integer
+'    Dim i As Integer
+'
+'    Track1Speed = 0
+'    Track2Speed = 0
+'    Track3Speed = 0
+'    Track4Speed = 0
+'    If AcquisitionTrack1.value = True Then
+'        Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, Success)
+'        Track1Speed = Track.SampleObservationTime
+'    End If
+'    If AcquisitionTrack2.value = True Then
+'        Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(1, Success)
+'        Track2Speed = Track.SampleObservationTime
+'    End If
+'    If AcquisitionTrack3.value = True Then
+'        Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(2, Success)
+'        Track3Speed = Track.SampleObservationTime
+'    End If
+'    If AcquisitionTrack4.value = True Then
+'        Set Track = Lsm5.DsRecording.TrackObjectByMultiplexOrder(3, Success)
+'        Track4Speed = Track.SampleObservationTime
+'    End If
+'    Pixels = Lsm5.DsRecording.LinesPerFrame * Lsm5.DsRecording.SamplesPerLine
+'    FrameNumber = Lsm5.DsRecording.framesPerStack
+'    If Lsm5.DsRecording.ScanDirection = 0 Then
+'        ScanDirection = 1
+'    Else
+'        ScanDirection = 2
+'    End If
+'    AcquisitionTime = (Track1Speed + Track2Speed + Track3Speed + Track4Speed) * Pixels * FrameNumber / ScanDirection * 3.3485
+'End Function
 
 
 

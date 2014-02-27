@@ -16,6 +16,10 @@ Public FileSystem As FileSystemObject
 Public Log     As Boolean          'If true we log data during the macro
 
 
+'''
+' Separates different part of file name
+'''
+Public Const FNSep = "_"
 '''''
 ' Variables that are set to build the name of the files
 '''''
@@ -98,17 +102,17 @@ FileIsNotAccessible:
 End Function
 
 
-''''
-'   LogMessage(ByVal Msg As String, ByVal Log As Boolean, ByVal PathName As String, ByRef File As TextStream, ByVal FileSystem As FileSystemObject)
-'   Write Msg to a File if Log is on otherwise it does nothing
-''''
-Public Function LogMessage(ByVal Msg As String, ByVal Log As Boolean, ByVal PathName As String, ByRef File As TextStream, ByVal FileSystem As FileSystemObject)
-    If Log Then
-        If SafeOpenTextFile(PathName, File, FileSystem) Then
-            File.WriteLine (Msg)
-        End If
-    End If
-End Function
+'''''
+''   LogMessage(ByVal Msg As String, ByVal Log As Boolean, ByVal PathName As String, ByRef File As TextStream, ByVal FileSystem As FileSystemObject)
+''   Write Msg to a File if Log is on otherwise it does nothing
+'''''
+'Public Function LogMessage(ByVal msg As String, ByVal Log As Boolean, ByVal PathName As String, ByRef File As TextStream, ByVal FileSystem As FileSystemObject)
+'    If Log Then
+'        If SafeOpenTextFile(PathName, File, FileSystem) Then
+'            File.WriteLine (msg)
+'        End If
+'    End If
+'End Function
 
 
 ''''''
