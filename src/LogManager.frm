@@ -14,8 +14,13 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-
 Const MaxSizeLog = 10000
+
+Public Sub UserForm_Initialize()
+    FormatUserForm (Me.Caption)
+End Sub
+
+
 
 Public Function UpdateErrorLog(Text As String)
     Dim iFileNum

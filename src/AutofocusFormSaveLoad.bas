@@ -6,13 +6,10 @@ Attribute VB_Name = "AutofocusFormSaveLoad"
 Option Explicit
 
 
-
-
-'''''
-'   SaveSettings(FileName As String)
+''''
 '   SaveSettings of the UserForm AutofocusForm in file name FileName.
 '   Name should correspond exactly to name used in Form
-'''''
+''''
 Public Sub SaveFormSettings(FileName As String)
     Dim i As Integer
     Dim iFileNum As Integer
@@ -98,7 +95,6 @@ End Sub
 
 
 ''''
-' SavePage(JobName As String, iFileNum As Integer)
 '   Save page of specific JobName using a file specified by iFuleNum
 '   TODO: Control that indeed iFileNum is a file
 ''''
@@ -151,49 +147,6 @@ SaveFormPage_Error:
     ") in procedure SaveFormPage of Module AutofocusFormSaveLoad at line " & Erl & " "
 End Sub
 
-Public Function ControlTipText()
-    Dim i As Integer
-    For i = 0 To UBound(JobNames)
-        JobControlTipText JobNames(i)
-    Next i
-End Function
-
-'''
-' Sets tip text for all pages
-'''
-Private Sub JobControlTipText(JobName As String)
-    On Error GoTo ErrorHandle:
-
-    AutofocusForm.Controls(JobName + "Period").ControlTipText = "Perform job " & JobName & " every xx repetitions"
-
-
-    AutofocusForm.Controls(JobName + "ZOffset").ControlTipText = "Add xx to Z from previous imaging Job"
-    AutofocusForm.Controls(JobName + "TrackZ").ControlTipText = "Update Z of current point with computed position"
-    AutofocusForm.Controls(JobName + "TrackXY").ControlTipText = "Update XY of current point with computed position"
-    AutofocusForm.Controls(JobName + "LabelMethod").ControlTipText = "Compute new position within VBA macro from one of the listed methods. Center of Mass (thr): threshold image to keep 20% brightestpart and compute center of mass" & _
-    ". Peak: use maximal value." & " Center of Mass: compute center of mass using the whole image"
-    AutofocusForm.Controls(JobName + "LabelMethod").ControlTipText = "Compute new position within VBA macro from one of the listed methods. Center of Mass (thr): threshold image to keep 20% brightestpart and compute center of mass" & _
-    ". Peak: use maximal value." & " Center of Mass: compute center of mass using the whole image"
-    AutofocusForm.Controls(JobName + "LabelChannel").ControlTipText = "Channel used to compute position"
-    AutofocusForm.Controls(JobName + "OiaActive").ControlTipText = "If active macro listens to online image analysis"
-    AutofocusForm.Controls(JobName + "OiaSequential").ControlTipText = "Macro waits for image analysis to finish. Acquire image -> OnlineImage analysis -> perform task"
-    AutofocusForm.Controls(JobName + "OiaParallel").ControlTipText = "Imaging and analysis run in parallel."
-    AutofocusForm.Controls(JobName + "TimeOut").ControlTipText = "Uses to overcome crashes in FCS. If on system will move to next image/fcs after certain time is exceeded. The time is estimated from the first round"
-    If JobName = "Trigger1" Or JobName = "Trigger2" Then
-        AutofocusForm.Controls(JobName + "Active").ControlTipText = "Job " & JobName & " is performed only after online image analysis command"
-        AutofocusForm.Controls(JobName + "OptimalPtNumber").ControlTipText = "Wait to find up to xxx positions before starting job " & JobName
-        AutofocusForm.Controls(JobName + "maxWait").ControlTipText = "Wait up to xxx seconds before starting job " & JobName
-        AutofocusForm.Controls(JobName + "Autofocus").ControlTipText = "Before acquiring " & JobName & " perform Job Autofocus"
-        AutofocusForm.Controls(JobName + "KeepParent").ControlTipText = "If on revisit parent position from which " & JobName & " has been triggered"
-    End If
-
-    AutofocusForm.Controls(JobName + "PutJob").ControlTipText = "Put Macro acquisition settings into ZEN. Not all settings are shown in the  ZEN GUI!"
-    AutofocusForm.Controls(JobName + "SetJob").ControlTipText = "Load settings from ZEN into Macro. Not all settings are shown in the  Macro GUI!"
-    AutofocusForm.Controls(JobName + "Acquire").ControlTipText = "Acquire one image with settings of Job " & JobName
-    Exit Sub
-ErrorHandle:
-    MsgBox "Error in JobControlTipText " + JobName + " " + Err.Description
-End Sub
 
 ''''
 '   Save page of specific JobFcs using a file specified by iFuleNum

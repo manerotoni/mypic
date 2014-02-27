@@ -481,6 +481,7 @@ On Error GoTo ExecuteJobAndTrack_Error
         Time = Timer
         StgPos = TrackOffLine(JobName, RecordingDoc, StgPos)
         
+        
         Debug.Print "Time to TrackOffLine " & Timer - Time
         If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
             OiaSettings.writeKeyToRegistry "codeOia", "newImage"

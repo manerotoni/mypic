@@ -85,7 +85,7 @@ Public Sub initializeDefault()
     Keys_HowTo.Add Keys(11), "type of roi. Multiple rois: roiType1; roiTyp2"
     Keys_HowTo.Add Keys(12), "aim of roi. Multiple rois: roiAim1; roiAim2"
     Keys_HowTo.Add Keys(13), "X positions for roi. Multiple rois: X1roi1, X2roi1; X1roi1, X2roi2 ..."
-    Keys_HowTo.Add Keys(14), "Y positions for roi. Multiple rois: X1roi1, X2roi1; X1roi1, X2roi2 ..."
+    Keys_HowTo.Add Keys(14), "Y positions for roi. Multiple rois: Y1roi1, Y2roi1; Y1roi1, Y2roi2 ..."
     Keys_HowTo.Add Keys(15), "main directory where images are stored"
     Keys_HowTo.Add Keys(16), "error message coming from Oia"
     Keys_HowTo.Add Keys(17), "time (ms) to activate water pump"

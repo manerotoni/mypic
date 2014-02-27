@@ -581,7 +581,7 @@ Option Explicit
 '    While TestRepeats < MaxTestRepeats + 1
 '        DisplayProgress "Running Test " & FileName & ". Repeat " & TestRepeats & "/" & MaxTestRepeats & ".......", RGB(0, &HC0, 0)
 '
-'        FilePath = GlobalDataBaseName & "\" & FileName & "_" & TestRepeats
+'        FilePath = GlobalDataBaseName & "\" & FileName & FNSep & TestRepeats
 '        If Log Then
 '            SafeOpenTextFile LogFileName, LogFile, FileSystem
 '            LogFile.WriteLine " "
@@ -606,7 +606,7 @@ Option Explicit
 '                DoEvents
 '            Wend
 '        End If
-'        If Not AutofocusButtonRun(RecordingDoc, GlobalDataBaseName & "\AFimg_" & FileName & "_" & TestRepeats & ".lsm") Then
+'        If Not AutofocusButtonRun(RecordingDoc, GlobalDataBaseName & "\AFimg_" & FileName & FNSep & TestRepeats & ".lsm") Then
 '            Exit Function
 '        End If
 '        'save file
@@ -650,7 +650,7 @@ Option Explicit
 '
 '    While TestRepeats < MaxTestRepeats + 1
 '        DisplayProgress "Running Test " & TestNr & ". Repeat " & TestRepeats & "/" & MaxTestRepeats & ".......", RGB(0, &HC0, 0)
-'        FilePath = GlobalDataBaseName & "\" & FileName & TestNr & "_" & TestRepeats
+'        FilePath = GlobalDataBaseName & "\" & FileName & TestNr & FNSep & TestRepeats
 '        If Log Then
 '            SafeOpenTextFile LogFileName, LogFile, FileSystem
 '            LogFile.WriteLine " "

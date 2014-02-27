@@ -753,13 +753,21 @@ End Function
 '   Format is Me.numRow numCol numRowSub numColSub
 '   X Y Z X Y Z X Y Z etc
 ''''''''
+'---------------------------------------------------------------------------------------
+' Procedure : loadPositionGridFile
+' Author    : LSM User
+' Date      : 02/11/2014
+' Purpose   :
+'---------------------------------------------------------------------------------------
+'
 Public Function loadPositionGridFile(ByVal sFile As String) As Boolean
     Dim iRow As Integer
     Dim iCol As Integer
     Dim iRowSub As Integer
     Dim iColSub As Integer
+   On Error GoTo loadPositionGridFile_Error
+
     Close
-    On Error GoTo ErrorPosFile:
     Dim iFileNum As Integer
     Dim Fields As String
     Dim FieldEntries() As String
@@ -793,14 +801,17 @@ Public Function loadPositionGridFile(ByVal sFile As String) As Boolean
     setAllValid True
     Close #iFileNum
     loadPositionGridFile = True
-    Exit Function
-ErrorPosFile:
+
+   On Error GoTo 0
+   Exit Function
+
+loadPositionGridFile_Error:
     If Err.number = 70 Then
-        MsgBox ("LoadPosFile: Was not able to load position file " & sFile & ". File is open by another program.")
+        MsgBox ("loadPositionGridFile: Was not able to load position file " & sFile & ". File is open by another program.")
     Else
-        MsgBox ("LoadPosFile: Was not able to load position file " & sFile)
+        MsgBox ("loadPositionGridFile: Was not able to load position file " & sFile)
     End If
-    MsgBox ("Was not able to load position file " & sFile)
+
 End Function
     
  
