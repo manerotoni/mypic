@@ -470,8 +470,14 @@ Private Sub FocusMap_Click()
     
     If Not AutofocusActive Then
         MsgBox ("Autofocus job must be set to do a FocusMap")
+        Exit Sub
     End If
-
+    
+    If SingleLocationToggle And Not GridScanActive Then
+        MsgBox ("FocusMap is acquired only for several points")
+        Exit Sub
+    End If
+    
     SetDatabase
     GridScanPositionFile.value = ""
     AcqAct = AcquisitionActive
@@ -483,8 +489,10 @@ Private Sub FocusMap_Click()
     'change values
     GlobalRepetitionNumber.value = 1
     StartButton_Click
-    Grids.writePositionGridFile "Global", GlobalDataBaseName & "focusMap.csv"
-    GridScanPositionFile.value = GlobalDataBaseName & "focusMap.csv"
+    If Grids.getNrPts("Global") > 1 Then
+        Grids.writePositionGridFile "Global", GlobalDataBaseName & "focusMap.csv"
+        GridScanPositionFile.value = GlobalDataBaseName & "focusMap.csv"
+    End If
 '    'Return to original values for the
     GlobalRepetitionNumber.value = RepValue
     AcquisitionActive = AcqAct
