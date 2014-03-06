@@ -319,7 +319,7 @@
 </Property>
 <Property>
 <Name>Revision</Name>
-<Value>15351</Value>
+<Value>15459</Value>
 </Property>
 <Property>
 <Name>Created</Name>
@@ -327,7 +327,7 @@
 </Property>
 <Property>
 <Name>Modified</Name>
-<Value>27/02/2014 10:41:45</Value>
+<Value>27/02/2014 17:06:18</Value>
 </Property>
 <Property>
 <Name>ModifiedAuthor</Name>
@@ -859,47 +859,6 @@
 </Parameter>
 <Parameter>
 <Name>Key</Name>
-<Type>String</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-</Parameters>
-<ReturnType>Boolean</ReturnType>
-</Procedure>
-<Procedure>
-<Name>FServerFromDescription</Name>
-<Scope></Scope>
-<Type>Function</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>55</CountOfLines>
-<CommentLines>
-<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   FServerFromDescription(strName As String, StrPath As String, ExecName As String) As Boolean</CommentLine>
-<CommentLine>   TODO: What is this?</CommentLine>
-<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-</CommentLines>
-<Declaration>Function FServerFromDescription(strName As String, StrPath As String, ExecName As String) As Boolean</Declaration>
-<Parameters>
-<Parameter>
-<Name>strName</Name>
-<Type>String</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>StrPath</Name>
-<Type>String</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>ExecName</Name>
 <Type>String</Type>
 <IsByVal>False</IsByVal>
 <IsOptional>False</IsOptional>
@@ -1525,7 +1484,7 @@
 </Procedures>
 <CommentLines>
 <CommentLine>&apos;&apos;</CommentLine>
-<CommentLine> Module with functions to control the stage</CommentLine>
+<CommentLine> Module with functions to control the stage not really used may be obsolete?</CommentLine>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 </CodeModule>
@@ -1982,63 +1941,6 @@
 </Parameters>
 <ReturnType>Boolean</ReturnType>
 </Procedure>
-<Procedure>
-<Name>LogMessage</Name>
-<Scope>Public</Scope>
-<Type>Function</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>13</CountOfLines>
-<CommentLines>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine>   LogMessage(ByVal Msg As String, ByVal Log As Boolean, ByVal PathName As String, ByRef File As TextStream, ByVal FileSystem As FileSystemObject)</CommentLine>
-<CommentLine>   Write Msg to a File if Log is on otherwise it does nothing</CommentLine>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
-</CommentLines>
-<Declaration>Public Function LogMessage(ByVal msg As String, ByVal Log As Boolean, ByVal PathName As String, ByRef File As TextStream, ByVal FileSystem As FileSystemObject)</Declaration>
-<Parameters>
-<Parameter>
-<Name>msg</Name>
-<Type>String</Type>
-<IsByVal>True</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>Log</Name>
-<Type>Boolean</Type>
-<IsByVal>True</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>PathName</Name>
-<Type>String</Type>
-<IsByVal>True</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>File</Name>
-<Type>TextStream</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>FileSystem</Name>
-<Type>FileSystemObject</Type>
-<IsByVal>True</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-</Parameters>
-<ReturnType></ReturnType>
-</Procedure>
 </Procedures>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
@@ -2059,8 +1961,8 @@
 </Property>
 </Properties>
 <CodeModule>
-<CountOfDeclarationLines>14</CountOfDeclarationLines>
-<CountOfLines>105</CountOfLines>
+<CountOfDeclarationLines>9</CountOfDeclarationLines>
+<CountOfLines>98</CountOfLines>
 <Interfaces>
 </Interfaces>
 <Events>
@@ -2071,7 +1973,7 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>22</CountOfLines>
+<CountOfLines>20</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>   GetFcsPosition(PosX As Double, PosY As Double, PosZ As Double)</CommentLine>
@@ -2116,62 +2018,11 @@
 <ReturnType></ReturnType>
 </Procedure>
 <Procedure>
-<Name>SetFcsPosition</Name>
-<Scope>Public</Scope>
-<Type>Function</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>18</CountOfLines>
-<CommentLines>
-<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   SetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Pos As Long)</CommentLine>
-<CommentLine>   Create a new position if Pos &gt; FcsPositions.PositionListSize</CommentLine>
-<CommentLine>   then all positions inbetween are set to 0</CommentLine>
-<CommentLine></CommentLine>
-<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-</CommentLines>
-<Declaration>Public Function SetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Pos As Long) As Boolean</Declaration>
-<Parameters>
-<Parameter>
-<Name>PosX</Name>
-<Type>Double</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>PosY</Name>
-<Type>Double</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>PosZ</Name>
-<Type>Double</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>Pos</Name>
-<Type>Long</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-</Parameters>
-<ReturnType>Boolean</ReturnType>
-</Procedure>
-<Procedure>
 <Name>setFcsPositions</Name>
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>19</CountOfLines>
+<CountOfLines>22</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>   SetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Pos As Long)</CommentLine>
@@ -2229,7 +2080,7 @@
 </Procedures>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine> Module contains Functions used during Fcs not totally up to date</CommentLine>
+<CommentLine> Module contains Functions used during Fcs</CommentLine>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 </CodeModule>
@@ -2247,7 +2098,7 @@
 </Properties>
 <CodeModule>
 <CountOfDeclarationLines>5</CountOfDeclarationLines>
-<CountOfLines>299</CountOfLines>
+<CountOfLines>252</CountOfLines>
 <Interfaces>
 </Interfaces>
 <Events>
@@ -2258,13 +2109,12 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>91</CountOfLines>
+<CountOfLines>88</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   SaveSettings(FileName As String)</CommentLine>
+<CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine>   SaveSettings of the UserForm AutofocusForm in file name FileName.</CommentLine>
 <CommentLine>   Name should correspond exactly to name used in Form</CommentLine>
-<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
+<CommentLine>&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Public Sub SaveFormSettings(FileName As String)</Declaration>
 <Parameters>
@@ -2284,10 +2134,9 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>55</CountOfLines>
+<CountOfLines>54</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine> SavePage(JobName As String, iFileNum As Integer)</CommentLine>
 <CommentLine>   Save page of specific JobName using a file specified by iFuleNum</CommentLine>
 <CommentLine>   TODO: Control that indeed iFileNum is a file</CommentLine>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
@@ -2314,48 +2163,11 @@
 <ReturnType></ReturnType>
 </Procedure>
 <Procedure>
-<Name>ControlTipText</Name>
-<Scope>Public</Scope>
-<Type>Function</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>7</CountOfLines>
-<CommentLines>
-</CommentLines>
-<Declaration>Public Function ControlTipText()</Declaration>
-<Parameters>
-</Parameters>
-<ReturnType></ReturnType>
-</Procedure>
-<Procedure>
-<Name>JobControlTipText</Name>
-<Scope>Private</Scope>
-<Type>Subroutine</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>37</CountOfLines>
-<CommentLines>
-<CommentLine>&apos;&apos;</CommentLine>
-<CommentLine> Sets tip text for all pages</CommentLine>
-<CommentLine>&apos;&apos;</CommentLine>
-</CommentLines>
-<Declaration>Private Sub JobControlTipText(JobName As String)</Declaration>
-<Parameters>
-<Parameter>
-<Name>JobName</Name>
-<Type>String</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-</Parameters>
-<ReturnType></ReturnType>
-</Procedure>
-<Procedure>
 <Name>SaveFormFcsPage</Name>
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>26</CountOfLines>
+<CountOfLines>27</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine>   Save page of specific JobFcs using a file specified by iFuleNum</CommentLine>
@@ -2411,7 +2223,7 @@
 </Procedures>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine> Module contains functions to save and load Form settings from file</CommentLine>
+<CommentLine>  Module contains functions to save and load Form settings from file</CommentLine>
 <CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
 </CodeModule>
@@ -7456,30 +7268,6 @@
 </CodeModule>
 </File>
 <File>
-<Name>TestFocus</Name>
-<FileName></FileName>
-<PathFileName></PathFileName>
-<Type>StdModule</Type>
-<Properties>
-<Property>
-<Name>Name</Name>
-<Value>TestFocus</Value>
-</Property>
-</Properties>
-<CodeModule>
-<CountOfDeclarationLines>719</CountOfDeclarationLines>
-<CountOfLines>719</CountOfLines>
-<Interfaces>
-</Interfaces>
-<Events>
-</Events>
-<Procedures>
-</Procedures>
-<CommentLines>
-</CommentLines>
-</CodeModule>
-</File>
-<File>
 <Name>AFcsJob</Name>
 <FileName></FileName>
 <PathFileName></PathFileName>
@@ -8596,106 +8384,6 @@
 </CodeModule>
 </File>
 <File>
-<Name>TestFcs</Name>
-<FileName></FileName>
-<PathFileName></PathFileName>
-<Type>StdModule</Type>
-<Properties>
-<Property>
-<Name>Name</Name>
-<Value>TestFcs</Value>
-</Property>
-</Properties>
-<CodeModule>
-<CountOfDeclarationLines>76</CountOfDeclarationLines>
-<CountOfLines>76</CountOfLines>
-<Interfaces>
-</Interfaces>
-<Events>
-</Events>
-<Procedures>
-</Procedures>
-<CommentLines>
-<CommentLine>Public FcsJob As AFcsJob</CommentLine>
-<CommentLine>Public Type FcsJobType</CommentLine>
-<CommentLine>    Name As String</CommentLine>
-<CommentLine>    LaserActive() As Boolean</CommentLine>
-<CommentLine>    BleachActive() As Boolean</CommentLine>
-<CommentLine>    LaserTransmission() As Double</CommentLine>
-<CommentLine>    BleachTransmission() As Double</CommentLine>
-<CommentLine>End Type</CommentLine>
-<CommentLine></CommentLine>
-<CommentLine></CommentLine>
-<CommentLine>Public Sub TestFcsClass()</CommentLine>
-<CommentLine>    Set ZEN = Lsm5.CreateObject(&quot;Zeiss.Micro.AIM.ApplicationInterface.ApplicationInterface&quot;)</CommentLine>
-<CommentLine>    Dim FcsControl As AimFcsController</CommentLine>
-<CommentLine>    Set FcsControl = Fcs</CommentLine>
-<CommentLine>    Debug.Print &quot;Channels &quot; &amp; FcsControl.AcquisitionParameters.Channels &apos;.ChannelDetectorA(0)</CommentLine>
-<CommentLine>    Debug.Print &quot;Active &quot; &amp; FcsControl.AcquisitionParameters.ChannelEnabled(16) &apos;.ChannelDetectorA(0)</CommentLine>
-<CommentLine>    Debug.Print &quot;Category &quot; &amp; FcsControl.AcquisitionParameters.ChannelDetectorA(4)</CommentLine>
-<CommentLine>    If FcsJob Is Nothing Then</CommentLine>
-<CommentLine>        Set FcsJob = New AFcsJob</CommentLine>
-<CommentLine>        FcsJob.setJobNoAi &quot;current&quot;</CommentLine>
-<CommentLine>    End If</CommentLine>
-<CommentLine>    FcsJob.setJobNoAi &quot;current&quot;</CommentLine>
-<CommentLine>    If Not FcsJob.putJobNoAi Then</CommentLine>
-<CommentLine>        FcsJob.setJobNoAi &quot;current&quot;</CommentLine>
-<CommentLine>    End If</CommentLine>
-<CommentLine>    Debug.Print FcsJob.jobDescriptor</CommentLine>
-<CommentLine>    &apos;FcsJob.setLightPath</CommentLine>
-<CommentLine></CommentLine>
-<CommentLine>End Sub</CommentLine>
-<CommentLine>Public Sub loadAFcsJob()</CommentLine>
-<CommentLine></CommentLine>
-<CommentLine>&apos;ZEN2011 or up</CommentLine>
-<CommentLine>    Dim FcsData As AimFcsData</CommentLine>
-<CommentLine>    Dim ZEN As Zeiss_Micro_AIM_ApplicationInterface.ApplicationInterface</CommentLine>
-<CommentLine>    Set ZEN = Application.ApplicationInterface</CommentLine>
-<CommentLine>    ZEN.gui.Fcs.LightPath.Lasers.ByIndex = 1 &apos;set 458</CommentLine>
-<CommentLine>    ZEN.gui.Fcs.LightPath.Lasers.On.Value = True</CommentLine>
-<CommentLine>    &apos;ZEN.gui.Fcs.LightPath.BleachLasers.IsEnabled = True</CommentLine>
-<CommentLine>    &apos;ZEN.gui.Fcs.SaveMethod.Save.Execute</CommentLine>
-<CommentLine>    NewFcsRecord GlobalFcsRecordingDoc, FcsData, &quot;Test&quot;</CommentLine>
-<CommentLine>    Debug.Print ZEN.gui.Fcs.LightPath.Config.CurrentItem</CommentLine>
-<CommentLine>    &apos;ZEN.CommandExecute &quot;Fcs.BeamPath.Save&quot;</CommentLine>
-<CommentLine>    &apos;ZEN.CommandExecute &quot;SimpleInput.Ok&quot;</CommentLine>
-<CommentLine>    Dim FcsControl As AimFcsController</CommentLine>
-<CommentLine>    Set FcsControl = Fcs</CommentLine>
-<CommentLine>    FcsControl.BeamPathParameters.AttenuatorOn(1) = False</CommentLine>
-<CommentLine>    FcsData.DataSet(0).AcquisitionParameters.Copy FcsControl.AcquisitionParameters</CommentLine>
-<CommentLine>    FcsData.DataSet(0).AcquisitionParameters.MeasurementTime = 10</CommentLine>
-<CommentLine>    &apos;FcsControl.AcquisitionParameters.MeasurementTime = 2</CommentLine>
-<CommentLine>    Dim AqPar As AimFcsAcquisitionParameters</CommentLine>
-<CommentLine></CommentLine>
-<CommentLine>    AqPar.MeasurementTime = 0.1</CommentLine>
-<CommentLine></CommentLine>
-<CommentLine></CommentLine>
-<CommentLine>    &apos;ZEN.gui.Fcs.method.Load &quot;fcs1&quot;</CommentLine>
-<CommentLine>    &apos;ZEN.gui.Fcs.BeamPath.Save</CommentLine>
-<CommentLine></CommentLine>
-<CommentLine>&apos;    starts with 1 this is the acquisition power</CommentLine>
-<CommentLine>&apos;    Power = FcsControl.BeamPathParameters.AttenuatorPower(2)</CommentLine>
-<CommentLine>&apos;    Power = FcsControl.BeamPathParameters.BleachAttenuatorPower(1)</CommentLine>
-<CommentLine>&apos;    FcsControl.BeamPathParameters.AttenuatorOn(1) = False</CommentLine>
-<CommentLine>&apos;    Dim FcsControl As AimFcsController</CommentLine>
-<CommentLine>&apos;    Set FcsControl = Fcs</CommentLine>
-<CommentLine>&apos;    ZEN.GUI.Fcs.LightPath.BleachLasers.ByIndex = 1</CommentLine>
-<CommentLine>&apos;    ZEN.GUI.Fcs.LightPath.BleachLasers.Transmission.Value = 0.1</CommentLine>
-<CommentLine></CommentLine>
-<CommentLine>End Sub</CommentLine>
-<CommentLine>&apos;    starts with 1 this is the acquisition power</CommentLine>
-<CommentLine>&apos;    Power = FcsControl.BeamPathParameters.AttenuatorPower(2)</CommentLine>
-<CommentLine>&apos;    Power = FcsControl.BeamPathParameters.BleachAttenuatorPower(1)</CommentLine>
-<CommentLine>&apos;    FcsControl.BeamPathParameters.AttenuatorOn(1) = False</CommentLine>
-<CommentLine>&apos;    Dim FcsControl As AimFcsController</CommentLine>
-<CommentLine>&apos;    Set FcsControl = Fcs</CommentLine>
-<CommentLine>&apos;    ZEN.GUI.Fcs.LightPath.BleachLasers.ByIndex = 1</CommentLine>
-<CommentLine>&apos;    ZEN.GUI.Fcs.LightPath.BleachLasers.Transmission.Value = 0.1</CommentLine>
-<CommentLine></CommentLine>
-</CommentLines>
-</CodeModule>
-</File>
-<File>
 <Name>FcsJobs</Name>
 <FileName></FileName>
 <PathFileName></PathFileName>
@@ -9124,17 +8812,215 @@
 <Type>MSForm</Type>
 <Properties>
 <Property>
+<Name>ActiveControl</Name>
 <Value></Value>
+</Property>
+<Property>
+<Name>BackColor</Name>
+<Value>-2147483633</Value>
+</Property>
+<Property>
+<Name>BorderColor</Name>
+<Value>-2147483630</Value>
+</Property>
+<Property>
+<Name>BorderStyle</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>CanPaste</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>CanRedo</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>CanUndo</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>Cycle</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>_Font_Reserved</Name>
+<Value></Value>
+</Property>
+<Property>
+<Name>ForeColor</Name>
+<Value>-2147483630</Value>
+</Property>
+<Property>
+<Name>InsideHeight</Name>
+<Value>564</Value>
+</Property>
+<Property>
+<Name>InsideWidth</Name>
+<Value>441</Value>
+</Property>
+<Property>
+<Name>KeepScrollBarsVisible</Name>
+<Value>3</Value>
+</Property>
+<Property>
+<Name>MousePointer</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>PictureAlignment</Name>
+<Value>2</Value>
+</Property>
+<Property>
+<Name>Picture</Name>
+<Value></Value>
+</Property>
+<Property>
+<Name>PictureSizeMode</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>PictureTiling</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>ScrollBars</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ScrollHeight</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ScrollLeft</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ScrollTop</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ScrollWidth</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>SpecialEffect</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>VerticalScrollBarSide</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>Zoom</Name>
+<Value>100</Value>
+</Property>
+<Property>
+<Name>DesignMode</Name>
+<Value>-2</Value>
+</Property>
+<Property>
+<Name>ShowToolbox</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ShowGridDots</Name>
+<Value>-2</Value>
+</Property>
+<Property>
+<Name>SnapToGrid</Name>
+<Value>-2</Value>
+</Property>
+<Property>
+<Name>GridX</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>GridY</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>DrawBuffer</Name>
+<Value>32000</Value>
+</Property>
+<Property>
+<Name>Name</Name>
+<Value>KeyReport</Value>
+</Property>
+<Property>
+<Name>Caption</Name>
+<Value>Online Image Analysis Windows Registry Keys</Value>
+</Property>
+<Property>
+<Name>Left</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>Top</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>Width</Name>
+<Value>445.5</Value>
+</Property>
+<Property>
+<Name>Height</Name>
+<Value>585</Value>
+</Property>
+<Property>
+<Name>Enabled</Name>
+<Value>True</Value>
+</Property>
+<Property>
+<Name>Tag</Name>
+<Value></Value>
+</Property>
+<Property>
+<Name>HelpContextID</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>WhatsThisButton</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>WhatsThisHelp</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>RightToLeft</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>StartUpPosition</Name>
+<Value>1</Value>
+</Property>
+<Property>
+<Name>ShowModal</Name>
+<Value>False</Value>
 </Property>
 </Properties>
 <CodeModule>
 <CountOfDeclarationLines>0</CountOfDeclarationLines>
-<CountOfLines>0</CountOfLines>
+<CountOfLines>3</CountOfLines>
 <Interfaces>
 </Interfaces>
 <Events>
 </Events>
 <Procedures>
+<Procedure>
+<Name>UserForm_Initialize</Name>
+<Scope>Public</Scope>
+<Type>Subroutine</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>3</CountOfLines>
+<CommentLines>
+</CommentLines>
+<Declaration>Public Sub UserForm_Initialize()</Declaration>
+<Parameters>
+</Parameters>
+<ReturnType></ReturnType>
+</Procedure>
 </Procedures>
 <CommentLines>
 </CommentLines>
@@ -9192,18 +9078,31 @@
 </Properties>
 <CodeModule>
 <CountOfDeclarationLines>0</CountOfDeclarationLines>
-<CountOfLines>13</CountOfLines>
+<CountOfLines>17</CountOfLines>
 <Interfaces>
 </Interfaces>
 <Events>
 </Events>
 <Procedures>
 <Procedure>
+<Name>UserForm_Initialize</Name>
+<Scope>Public</Scope>
+<Type>Subroutine</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>3</CountOfLines>
+<CommentLines>
+</CommentLines>
+<Declaration>Public Sub UserForm_Initialize()</Declaration>
+<Parameters>
+</Parameters>
+<ReturnType></ReturnType>
+</Procedure>
+<Procedure>
 <Name>Change_Settings_Click</Name>
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>5</CountOfLines>
+<CountOfLines>6</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub Change_Settings_Click()</Declaration>
@@ -9351,220 +9250,30 @@
 <Type>MSForm</Type>
 <Properties>
 <Property>
-<Name>ActiveControl</Name>
 <Value></Value>
-</Property>
-<Property>
-<Name>BackColor</Name>
-<Value>-2147483645</Value>
-</Property>
-<Property>
-<Name>BorderColor</Name>
-<Value>-2147483630</Value>
-</Property>
-<Property>
-<Name>BorderStyle</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>CanPaste</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>CanRedo</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>CanUndo</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>Cycle</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>_Font_Reserved</Name>
-<Value></Value>
-</Property>
-<Property>
-<Name>ForeColor</Name>
-<Value>8421504</Value>
-</Property>
-<Property>
-<Name>InsideHeight</Name>
-<Value>676.5</Value>
-</Property>
-<Property>
-<Name>InsideWidth</Name>
-<Value>383.25</Value>
-</Property>
-<Property>
-<Name>KeepScrollBarsVisible</Name>
-<Value>3</Value>
-</Property>
-<Property>
-<Name>MousePointer</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>PictureAlignment</Name>
-<Value>2</Value>
-</Property>
-<Property>
-<Name>Picture</Name>
-<Value></Value>
-</Property>
-<Property>
-<Name>PictureSizeMode</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>PictureTiling</Name>
-<Value>True</Value>
-</Property>
-<Property>
-<Name>ScrollBars</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>ScrollHeight</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>ScrollLeft</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>ScrollTop</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>ScrollWidth</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>SpecialEffect</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>VerticalScrollBarSide</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>Zoom</Name>
-<Value>100</Value>
-</Property>
-<Property>
-<Name>DesignMode</Name>
-<Value>-2</Value>
-</Property>
-<Property>
-<Name>ShowToolbox</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>ShowGridDots</Name>
-<Value>-2</Value>
-</Property>
-<Property>
-<Name>SnapToGrid</Name>
-<Value>-2</Value>
-</Property>
-<Property>
-<Name>GridX</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>GridY</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>DrawBuffer</Name>
-<Value>32000</Value>
-</Property>
-<Property>
-<Name>Name</Name>
-<Value>AutofocusForm</Value>
-</Property>
-<Property>
-<Name>Caption</Name>
-<Value>AutofocusScreen</Value>
-</Property>
-<Property>
-<Name>Left</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>Top</Name>
-<Value>-2.25</Value>
-</Property>
-<Property>
-<Name>Width</Name>
-<Value>387.75</Value>
-</Property>
-<Property>
-<Name>Height</Name>
-<Value>697.5</Value>
-</Property>
-<Property>
-<Name>Enabled</Name>
-<Value>True</Value>
-</Property>
-<Property>
-<Name>Tag</Name>
-<Value></Value>
-</Property>
-<Property>
-<Name>HelpContextID</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>WhatsThisButton</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>WhatsThisHelp</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>RightToLeft</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>StartUpPosition</Name>
-<Value>3</Value>
-</Property>
-<Property>
-<Name>ShowModal</Name>
-<Value>False</Value>
 </Property>
 </Properties>
 <CodeModule>
 <CountOfDeclarationLines>27</CountOfDeclarationLines>
-<CountOfLines>2974</CountOfLines>
+<CountOfLines>2846</CountOfLines>
 <Interfaces>
 </Interfaces>
 <Events>
 </Events>
 <Procedures>
 <Procedure>
-<Name>ShowOiaKeys_Click</Name>
-<Scope>Private</Scope>
+<Name>UserForm_Initialize</Name>
+<Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>19</CountOfLines>
+<CountOfLines>140</CountOfLines>
 <CommentLines>
-<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
-<CommentLine> Procedure : ShowOiaKeys_Click</CommentLine>
-<CommentLine> Purpose   :</CommentLine>
-<CommentLine> Variables :</CommentLine>
-<CommentLine></CommentLine>
-<CommentLine></CommentLine>
-<CommentLine></CommentLine>
-<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
-<CommentLine></CommentLine>
+<CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
+<CommentLine>   Function called from e.g. AutoFocusForm.Show</CommentLine>
+<CommentLine>   Load and initialize form. Initialize many of the standard settins</CommentLine>
+<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 </CommentLines>
-<Declaration>Private Sub ShowOiaKeys_Click()</Declaration>
+<Declaration>Public Sub UserForm_Initialize()</Declaration>
 <Parameters>
 </Parameters>
 <ReturnType></ReturnType>
@@ -9574,42 +9283,11 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>16</CountOfLines>
+<CountOfLines>15</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;commodity function to recognize which job is ob top</CommentLine>
+<CommentLine>commodity function to recognize which job is on top and change color of Form</CommentLine>
 </CommentLines>
 <Declaration>Private Sub MultiPage1_Change()</Declaration>
-<Parameters>
-</Parameters>
-<ReturnType></ReturnType>
-</Procedure>
-<Procedure>
-<Name>Start_With_Pump_Click</Name>
-<Scope>Private</Scope>
-<Type>Subroutine</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>6</CountOfLines>
-<CommentLines>
-</CommentLines>
-<Declaration>Private Sub Start_With_Pump_Click()</Declaration>
-<Parameters>
-</Parameters>
-<ReturnType></ReturnType>
-</Procedure>
-<Procedure>
-<Name>UserForm_Initialize</Name>
-<Scope>Public</Scope>
-<Type>Subroutine</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>137</CountOfLines>
-<CommentLines>
-<CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine> UserForm_Initialize()</CommentLine>
-<CommentLine>   Function called from e.g. AutoFocusForm.Show</CommentLine>
-<CommentLine>   Load and initialize form</CommentLine>
-<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-</CommentLines>
-<Declaration>Public Sub UserForm_Initialize()</Declaration>
 <Parameters>
 </Parameters>
 <ReturnType></ReturnType>
@@ -9619,7 +9297,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>125</CountOfLines>
+<CountOfLines>114</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine> Re_Start()</CommentLine>
@@ -9636,7 +9314,7 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>61</CountOfLines>
+<CountOfLines>58</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>   Re_Initialize()</CommentLine>
@@ -9653,10 +9331,9 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>26</CountOfLines>
+<CountOfLines>25</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine>   ButtonSaveSettings_Click()</CommentLine>
 <CommentLine>   Open a dialog to save setting of the macro</CommentLine>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 </CommentLines>
@@ -9670,11 +9347,10 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>25</CountOfLines>
+<CountOfLines>24</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine>   ButtonSaveSettings_Click()</CommentLine>
-<CommentLine>   Open a dialog to save setting of the macro</CommentLine>
+<CommentLine>   Open a dialog to load setting of the macro</CommentLine>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub ButtonLoadSettings_Click()</Declaration>
@@ -9687,10 +9363,9 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>26</CountOfLines>
+<CountOfLines>25</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   MultipleLocationToggle_Change()</CommentLine>
 <CommentLine>   Activate MultipleLocation and deactivate SingleLocation</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
 </CommentLines>
@@ -9721,7 +9396,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>39</CountOfLines>
+<CountOfLines>47</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine>   FocusMap_Click()</CommentLine>
@@ -9773,7 +9448,7 @@
 <CountOfLines>22</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine> Enable/disable a general set of functions common to all pages</CommentLine>
+<CommentLine> Enable/disable a general set of functions common to all pages for Job with name JobName</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub SwitchEnableFcsPage(JobName As String, Enable As Boolean)</Declaration>
@@ -9804,8 +9479,9 @@
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
 <CountOfLines>33</CountOfLines>
 <CommentLines>
-<CommentLine>fills popup menu for chosing a track for post-acquisition tracking</CommentLine>
-<CommentLine> TODO: move in form</CommentLine>
+<CommentLine>&apos;&apos;&apos;</CommentLine>
+<CommentLine>   fills popup menu for chosing a track for post-acquisition tracking for Job with JobName</CommentLine>
+<CommentLine>&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Public Sub FillTrackingChannelList(JobName As String)</Declaration>
 <Parameters>
@@ -9825,12 +9501,11 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>23</CountOfLines>
+<CountOfLines>22</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;</CommentLine>
-<CommentLine>   TrackClick(JobName As String, thisTrack As Integer, Exclusive As Boolean)</CommentLine>
-<CommentLine>       Activate iTrack-th track for a specific JobName</CommentLine>
-<CommentLine>       If Exclusive all other tracks are inactivated</CommentLine>
+<CommentLine>   Activate iTrack-th track for Job with Name JobName</CommentLine>
+<CommentLine>   If Exclusive all other tracks are inactivated (obsolete now)</CommentLine>
 <CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub TrackClick(JobName As String, iTrack As Integer, Optional Exclusive As Boolean = False)</Declaration>
@@ -9867,12 +9542,11 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>9</CountOfLines>
+<CountOfLines>8</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine> JobActive_Click</CommentLine>
-<CommentLine> Enables the corresponding page</CommentLine>
-<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
+<CommentLine>   Enables the corresponding page</CommentLine>
+<CommentLine>&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub AutofocusActive_Click()</Declaration>
 <Parameters>
@@ -9936,12 +9610,8 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>10</CountOfLines>
+<CountOfLines>4</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine> JobActive_Click</CommentLine>
-<CommentLine> Enables the corresponding page</CommentLine>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub Fcs1Active_Click()</Declaration>
 <Parameters>
@@ -9956,7 +9626,7 @@
 <CountOfLines>7</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   Activte Tracks for Jobs (For Autofocus need to be Click as the tracks are exclusive)</CommentLine>
+<CommentLine>   Activte Tracks for Jobs (this is kind of redundant)</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub AutofocusTrack1_Click()</Declaration>
@@ -10216,11 +9886,11 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>9</CountOfLines>
+<CountOfLines>10</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;</CommentLine>
 <CommentLine> ZOffset: This is offset added to current central slice position. This position depends on previous history</CommentLine>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub JobZOffsetChange(JobName As String)</Declaration>
 <Parameters>
@@ -10294,9 +9964,9 @@
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
 <CountOfLines>11</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine> TrackZ: If on the Z position will be updated to the latest Z position</CommentLine>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
+<CommentLine>   TrackZ: If on the Z position will be updated to the latest Z position</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub JobTrackXYZChange(JobName As String)</Declaration>
 <Parameters>
@@ -10627,8 +10297,11 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>12</CountOfLines>
+<CountOfLines>14</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos;</CommentLine>
+<CommentLine>   maxWait is the maximal time macro waits between added positions until maxial number of positions are reached</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub TriggermaxWait(JobName As String)</Declaration>
 <Parameters>
@@ -10699,6 +10372,19 @@
 <ReturnType></ReturnType>
 </Procedure>
 <Procedure>
+<Name>AlterAcquisitionOiaSequential_Change</Name>
+<Scope>Private</Scope>
+<Type>Subroutine</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>4</CountOfLines>
+<CommentLines>
+</CommentLines>
+<Declaration>Private Sub AlterAcquisitionOiaSequential_Change()</Declaration>
+<Parameters>
+</Parameters>
+<ReturnType></ReturnType>
+</Procedure>
+<Procedure>
 <Name>Trigger1OiaSequential_Change</Name>
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
@@ -10729,10 +10415,10 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>11</CountOfLines>
+<CountOfLines>9</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine> Parallel online image analysis. VBA Macro reads before starting job in a text file with name of image file chopped of &quot;_Txxx.lsm&quot;</CommentLine>
+<CommentLine> Parallel online image analysis. Not implemented yet</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub ButtonOiaParallel(JobName As String)</Declaration>
@@ -10792,7 +10478,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>5</CountOfLines>
+<CountOfLines>4</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub Trigger1OiaParallel_Change()</Declaration>
@@ -10821,7 +10507,7 @@
 <CountOfLines>24</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine> Standard settings for Autofocus</CommentLine>
+<CommentLine> Standard settings for Autofocus without Piezo</CommentLine>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub AutofocusDefault_Click()</Declaration>
@@ -10834,8 +10520,11 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>24</CountOfLines>
+<CountOfLines>29</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos;&apos;</CommentLine>
+<CommentLine> Standard settings for Autofocus with Piezo</CommentLine>
+<CommentLine>&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub AutofocusDefaultPiezo_Click()</Declaration>
 <Parameters>
@@ -10854,6 +10543,27 @@
 <CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub setJob(JobName As String)</Declaration>
+<Parameters>
+<Parameter>
+<Name>JobName</Name>
+<Type>String</Type>
+<IsByVal>False</IsByVal>
+<IsOptional>False</IsOptional>
+<IsParamArray>False</IsParamArray>
+<DefaultValue></DefaultValue>
+</Parameter>
+</Parameters>
+<ReturnType></ReturnType>
+</Procedure>
+<Procedure>
+<Name>FcsSetJob</Name>
+<Scope>Private</Scope>
+<Type>Subroutine</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>13</CountOfLines>
+<CommentLines>
+</CommentLines>
+<Declaration>Private Sub FcsSetJob(JobName As String)</Declaration>
 <Parameters>
 <Parameter>
 <Name>JobName</Name>
@@ -10932,30 +10642,6 @@
 <ReturnType></ReturnType>
 </Procedure>
 <Procedure>
-<Name>FcsSetJob</Name>
-<Scope>Private</Scope>
-<Type>Subroutine</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>17</CountOfLines>
-<CommentLines>
-<CommentLine>&apos;&apos;</CommentLine>
-<CommentLine> Load Settings from ZEN into Form for using it later</CommentLine>
-<CommentLine>&apos;&apos;</CommentLine>
-</CommentLines>
-<Declaration>Private Sub FcsSetJob(JobName As String)</Declaration>
-<Parameters>
-<Parameter>
-<Name>JobName</Name>
-<Type>String</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-</Parameters>
-<ReturnType></ReturnType>
-</Procedure>
-<Procedure>
 <Name>Fcs1SetJob_Click</Name>
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
@@ -10969,17 +10655,17 @@
 <ReturnType></ReturnType>
 </Procedure>
 <Procedure>
-<Name>FcsPutJob</Name>
+<Name>putJob</Name>
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>7</CountOfLines>
+<CountOfLines>29</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;</CommentLine>
-<CommentLine> Put Fcs settings from Fcs Job into ZEN</CommentLine>
+<CommentLine> Put job JobName from Settings into ZEN</CommentLine>
 <CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
-<Declaration>Private Sub FcsPutJob(JobName As String)</Declaration>
+<Declaration>Private Sub putJob(JobName As String)</Declaration>
 <Parameters>
 <Parameter>
 <Name>JobName</Name>
@@ -10993,33 +10679,14 @@
 <ReturnType></ReturnType>
 </Procedure>
 <Procedure>
-<Name>Fcs1PutJob_Click</Name>
+<Name>FcsPutJob</Name>
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>7</CountOfLines>
+<CountOfLines>4</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;</CommentLine>
-<CommentLine> Put Fcs settings from Fcs Job into ZEN</CommentLine>
-<CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
-<Declaration>Private Sub Fcs1PutJob_Click()</Declaration>
-<Parameters>
-</Parameters>
-<ReturnType></ReturnType>
-</Procedure>
-<Procedure>
-<Name>putJob</Name>
-<Scope>Private</Scope>
-<Type>Subroutine</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>30</CountOfLines>
-<CommentLines>
-<CommentLine>&apos;&apos;</CommentLine>
-<CommentLine> Put Fcs settings from Fcs Job into ZEN</CommentLine>
-<CommentLine>&apos;&apos;</CommentLine>
-</CommentLines>
-<Declaration>Private Sub putJob(JobName As String)</Declaration>
+<Declaration>Private Sub FcsPutJob(JobName As String)</Declaration>
 <Parameters>
 <Parameter>
 <Name>JobName</Name>
@@ -11098,15 +10765,54 @@
 <ReturnType></ReturnType>
 </Procedure>
 <Procedure>
+<Name>Fcs1PutJob_Click</Name>
+<Scope>Private</Scope>
+<Type>Subroutine</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>4</CountOfLines>
+<CommentLines>
+</CommentLines>
+<Declaration>Private Sub Fcs1PutJob_Click()</Declaration>
+<Parameters>
+</Parameters>
+<ReturnType></ReturnType>
+</Procedure>
+<Procedure>
 <Name>JobAcquire</Name>
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>38</CountOfLines>
+<CountOfLines>51</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;Acquire one image for a job</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
+<CommentLine>   Acquire one image for a job</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub JobAcquire(JobName As String)</Declaration>
+<Parameters>
+<Parameter>
+<Name>JobName</Name>
+<Type>String</Type>
+<IsByVal>False</IsByVal>
+<IsOptional>False</IsOptional>
+<IsParamArray>False</IsParamArray>
+<DefaultValue></DefaultValue>
+</Parameter>
+</Parameters>
+<ReturnType></ReturnType>
+</Procedure>
+<Procedure>
+<Name>JobFcsAcquire</Name>
+<Scope>Private</Scope>
+<Type>Subroutine</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>31</CountOfLines>
+<CommentLines>
+<CommentLine>&apos;&apos;&apos;</CommentLine>
+<CommentLine> Acquire a Fcs measurments according to settings</CommentLine>
+<CommentLine>&apos;&apos;&apos;</CommentLine>
+</CommentLines>
+<Declaration>Private Sub JobFcsAcquire(JobName As String)</Declaration>
 <Parameters>
 <Parameter>
 <Name>JobName</Name>
@@ -11185,32 +10891,11 @@
 <ReturnType></ReturnType>
 </Procedure>
 <Procedure>
-<Name>JobFcsAcquire</Name>
-<Scope>Private</Scope>
-<Type>Subroutine</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>27</CountOfLines>
-<CommentLines>
-</CommentLines>
-<Declaration>Private Sub JobFcsAcquire(JobName As String)</Declaration>
-<Parameters>
-<Parameter>
-<Name>JobName</Name>
-<Type>String</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-</Parameters>
-<ReturnType></ReturnType>
-</Procedure>
-<Procedure>
 <Name>Fcs1Acquire_Click</Name>
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>6</CountOfLines>
+<CountOfLines>4</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub Fcs1Acquire_Click()</Declaration>
@@ -11333,7 +11018,7 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>5</CountOfLines>
+<CountOfLines>4</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Public Sub GlobalRepetitionMin_Change()</Declaration>
@@ -11346,7 +11031,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>5</CountOfLines>
+<CountOfLines>4</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub Trigger1RepetitionMin_Change()</Declaration>
@@ -11573,8 +11258,11 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>12</CountOfLines>
+<CountOfLines>14</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos;</CommentLine>
+<CommentLine> Update all repetition times at once</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Public Sub UpdateRepetitionTimes()</Declaration>
 <Parameters>
@@ -11582,47 +11270,13 @@
 <ReturnType></ReturnType>
 </Procedure>
 <Procedure>
-<Name>AcquisitionTracksOn</Name>
-<Scope>Private</Scope>
-<Type>Function</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>20</CountOfLines>
-<CommentLines>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine>  AcquisitionTracksOn()</CommentLine>
-<CommentLine>  Checks if at least one track for acquisition is on</CommentLine>
-<CommentLine>&apos;&apos;</CommentLine>
-</CommentLines>
-<Declaration>Private Function AcquisitionTracksOn() As Boolean</Declaration>
-<Parameters>
-</Parameters>
-<ReturnType>Boolean</ReturnType>
-</Procedure>
-<Procedure>
-<Name>AcquisitionTracksSetOff</Name>
-<Scope>Private</Scope>
-<Type>Function</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>10</CountOfLines>
-<CommentLines>
-<CommentLine>&apos;&apos;</CommentLine>
-<CommentLine> Sets all acquisitions to off</CommentLine>
-<CommentLine>&apos;&apos;</CommentLine>
-</CommentLines>
-<Declaration>Private Function AcquisitionTracksSetOff() As Boolean</Declaration>
-<Parameters>
-</Parameters>
-<ReturnType>Boolean</ReturnType>
-</Procedure>
-<Procedure>
 <Name>GridScanActive_Click</Name>
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>16</CountOfLines>
+<CountOfLines>14</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine> GridScanActive_Click()</CommentLine>
 <CommentLine>   Set the grid scan on or off. Changes also</CommentLine>
 <CommentLine>&apos;</CommentLine>
 </CommentLines>
@@ -11636,7 +11290,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>5</CountOfLines>
+<CountOfLines>4</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub GridScan_nRow_Click()</Declaration>
@@ -11733,7 +11387,7 @@
 <CountOfLines>20</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   Open a dialog to set filename where positions of grid are stored</CommentLine>
+<CommentLine> Open a dialog to set filename where positions of grid are stored</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub GridScanPositionFileButton_Click()</Declaration>
@@ -11746,10 +11400,11 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>16</CountOfLines>
+<CountOfLines>17</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine> Stop all jobs after current repetition of current job</CommentLine>
+<CommentLine> In other routines it is checked if this is true</CommentLine>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub StopAfterRepetition_Click()</Declaration>
@@ -11762,14 +11417,13 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>21</CountOfLines>
+<CountOfLines>23</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   StopButton_Click()</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
 <CommentLine>   ScanStop is used to tell different functions to stop execution and acquisition</CommentLine>
 <CommentLine>   A second routine is called to stop the processes</CommentLine>
 <CommentLine>       [ScanStop] Global/Out - Set to true</CommentLine>
-<CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub StopButton_Change()</Declaration>
 <Parameters>
@@ -11781,13 +11435,29 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>27</CountOfLines>
+<CountOfLines>23</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;</CommentLine>
-<CommentLine> Pause a job</CommentLine>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
+<CommentLine> Pause a job resume if reclicked</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub PauseButton_Click()</Declaration>
+<Parameters>
+</Parameters>
+<ReturnType></ReturnType>
+</Procedure>
+<Procedure>
+<Name>ShowOiaKeys_Click</Name>
+<Scope>Private</Scope>
+<Type>Subroutine</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>11</CountOfLines>
+<CommentLines>
+<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
+<CommentLine> Display Keys used for Online image analysis</CommentLine>
+<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
+</CommentLines>
+<Declaration>Private Sub ShowOiaKeys_Click()</Declaration>
 <Parameters>
 </Parameters>
 <ReturnType></ReturnType>
@@ -11797,10 +11467,9 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>27</CountOfLines>
+<CountOfLines>22</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   CommandButtonNewDataBase_Click()</CommentLine>
 <CommentLine>   Open a Dialog to set output folder where to save the results. then cal SetDatabase to set global variables</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 </CommentLines>
@@ -11814,14 +11483,42 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>10</CountOfLines>
+<CountOfLines>9</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   DatabaseTextbox_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)</CommentLine>
-<CommentLine>   Only update the outputfolder when enter is pressed. This avoids creating a folded at every keystroke</CommentLine>
+<CommentLine>   Only update the outputfolder when enter is pressed. This avoids creating a folder at every keystroke</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub DatabaseTextbox_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)</Declaration>
+<Parameters>
+<Parameter>
+<Name>KeyCode</Name>
+<Type>MSForms.ReturnInteger</Type>
+<IsByVal>True</IsByVal>
+<IsOptional>False</IsOptional>
+<IsParamArray>False</IsParamArray>
+<DefaultValue></DefaultValue>
+</Parameter>
+<Parameter>
+<Name>Shift</Name>
+<Type>Integer</Type>
+<IsByVal>True</IsByVal>
+<IsOptional>False</IsOptional>
+<IsParamArray>False</IsParamArray>
+<DefaultValue></DefaultValue>
+</Parameter>
+</Parameters>
+<ReturnType></ReturnType>
+</Procedure>
+<Procedure>
+<Name>TextBoxFileName_KeyDown</Name>
+<Scope>Private</Scope>
+<Type>Subroutine</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>6</CountOfLines>
+<CommentLines>
+</CommentLines>
+<Declaration>Private Sub TextBoxFileName_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)</Declaration>
 <Parameters>
 <Parameter>
 <Name>KeyCode</Name>
@@ -11847,17 +11544,55 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>53</CountOfLines>
+<CountOfLines>52</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   SetDatabase()</CommentLine>
+<CommentLine>   Set global variables for files and check if we can create Outputfolder</CommentLine>
 <CommentLine>       [GlobalDataBaseName] Out/Global - The name of Outputfolder</CommentLine>
 <CommentLine>       [LogFileNameBase]    Out/Global - The name of the LogfileName</CommentLine>
-<CommentLine>       [Log]                Out/Global - If yes results are logged</CommentLine>
-<CommentLine>       Set global variables and check if we can create Outputfolder</CommentLine>
+<CommentLine>       Log]                Out/Global - If yes results are logged</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub SetDatabase()</Declaration>
+<Parameters>
+</Parameters>
+<ReturnType></ReturnType>
+</Procedure>
+<Procedure>
+<Name>SetFileName</Name>
+<Scope>Private</Scope>
+<Type>Subroutine</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>10</CountOfLines>
+<CommentLines>
+</CommentLines>
+<Declaration>Private Sub SetFileName()</Declaration>
+<Parameters>
+</Parameters>
+<ReturnType></ReturnType>
+</Procedure>
+<Procedure>
+<Name>fileFormatlsm_Click</Name>
+<Scope>Private</Scope>
+<Type>Subroutine</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>5</CountOfLines>
+<CommentLines>
+</CommentLines>
+<Declaration>Private Sub fileFormatlsm_Click()</Declaration>
+<Parameters>
+</Parameters>
+<ReturnType></ReturnType>
+</Procedure>
+<Procedure>
+<Name>fileFormatczi_Click</Name>
+<Scope>Private</Scope>
+<Type>Subroutine</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>22</CountOfLines>
+<CommentLines>
+</CommentLines>
+<Declaration>Private Sub fileFormatczi_Click()</Declaration>
 <Parameters>
 </Parameters>
 <ReturnType></ReturnType>
@@ -11867,14 +11602,11 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>42</CountOfLines>
+<CountOfLines>40</CountOfLines>
 <CommentLines>
-<CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   RestoreAcquisitionParameters()</CommentLine>
-<CommentLine>   Restores the image acquisition recording parameters from GlobalBackupRecording</CommentLine>
-<CommentLine>   recenter acquisition</CommentLine>
-<CommentLine>   Lsm5.DsRecording Out - Recording settings</CommentLine>
-<CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
+<CommentLine>   Restores some settings of the form</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Public Sub RestoreAcquisitionParameters()</Declaration>
 <Parameters>
@@ -11932,10 +11664,9 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>29</CountOfLines>
+<CountOfLines>28</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   AutofocusButton_Click()</CommentLine>
 <CommentLine>   calls AutofocusButtonRun</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
 </CommentLines>
@@ -11949,7 +11680,7 @@
 <Scope>Private</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>127</CountOfLines>
+<CountOfLines>124</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>   AutofocusButtonRun (Optional AutofocusDoc As DsRecordingDoc = Nothing) As Boolean</CommentLine>
@@ -11962,6 +11693,7 @@
 <CommentLine>                        Lots of test to check that focus returned to workingposition. Lsm5.Hardware.CpFocus.Position</CommentLine>
 <CommentLine>                        does not give actual position when stage is moving after acquisition.</CommentLine>
 <CommentLine>                        Lsm5.DsRecording.Sample0Z provides the actual shift to the central slice</CommentLine>
+<CommentLine>                       This function should just be a version with single position</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Function AutofocusButtonRun(Optional AutofocusDoc As DsRecordingDoc = Nothing, Optional FilePath As String = &quot;&quot;) As Boolean</Declaration>
@@ -11993,10 +11725,26 @@
 <CountOfLines>11</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   StartButton_Click()</CommentLine>
+<CommentLine>   Run the pipeline</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub StartButton_Click()</Declaration>
+<Parameters>
+</Parameters>
+<ReturnType></ReturnType>
+</Procedure>
+<Procedure>
+<Name>Start_With_Pump_Click</Name>
+<Scope>Private</Scope>
+<Type>Subroutine</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>7</CountOfLines>
+<CommentLines>
+<CommentLine>&apos;&apos;&apos;</CommentLine>
+<CommentLine>   Run the pipeline and use the waterpump</CommentLine>
+<CommentLine>&apos;&apos;&apos;</CommentLine>
+</CommentLines>
+<Declaration>Private Sub Start_With_Pump_Click()</Declaration>
 <Parameters>
 </Parameters>
 <ReturnType></ReturnType>
@@ -12006,7 +11754,7 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>49</CountOfLines>
+<CountOfLines>59</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Public Sub Execute_StartButton()</Declaration>
@@ -12019,7 +11767,7 @@
 <Scope>Private</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>195</CountOfLines>
+<CountOfLines>203</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>   StartSetting()</CommentLine>
@@ -12055,10 +11803,9 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>77</CountOfLines>
+<CountOfLines>76</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   AutoFindTracks()</CommentLine>
 <CommentLine>   Set the names of the tracks and find possible tracks</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 </CommentLines>
@@ -12072,7 +11819,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>10</CountOfLines>
+<CountOfLines>7</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub CloseButton_Click()</Declaration>
@@ -12107,167 +11854,13 @@
 <ReturnType></ReturnType>
 </Procedure>
 <Procedure>
-<Name>TextBoxFileName_KeyDown</Name>
-<Scope>Private</Scope>
-<Type>Subroutine</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>11</CountOfLines>
-<CommentLines>
-</CommentLines>
-<Declaration>Private Sub TextBoxFileName_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)</Declaration>
-<Parameters>
-<Parameter>
-<Name>KeyCode</Name>
-<Type>MSForms.ReturnInteger</Type>
-<IsByVal>True</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>Shift</Name>
-<Type>Integer</Type>
-<IsByVal>True</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-</Parameters>
-<ReturnType></ReturnType>
-</Procedure>
-<Procedure>
-<Name>SetFileName</Name>
-<Scope>Private</Scope>
-<Type>Subroutine</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>8</CountOfLines>
-<CommentLines>
-</CommentLines>
-<Declaration>Private Sub SetFileName()</Declaration>
-<Parameters>
-</Parameters>
-<ReturnType></ReturnType>
-</Procedure>
-<Procedure>
-<Name>fileFormatlsm_Click</Name>
-<Scope>Private</Scope>
-<Type>Subroutine</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>5</CountOfLines>
-<CommentLines>
-</CommentLines>
-<Declaration>Private Sub fileFormatlsm_Click()</Declaration>
-<Parameters>
-</Parameters>
-<ReturnType></ReturnType>
-</Procedure>
-<Procedure>
-<Name>fileFormatczi_Click</Name>
-<Scope>Private</Scope>
-<Type>Subroutine</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>22</CountOfLines>
-<CommentLines>
-</CommentLines>
-<Declaration>Private Sub fileFormatczi_Click()</Declaration>
-<Parameters>
-</Parameters>
-<ReturnType></ReturnType>
-</Procedure>
-<Procedure>
-<Name>wait</Name>
-<Scope></Scope>
-<Type>Subroutine</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>13</CountOfLines>
-<CommentLines>
-<CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine> TODO a long does it wait</CommentLine>
-<CommentLine>Wait time in sec?</CommentLine>
-</CommentLines>
-<Declaration>Sub wait(PauseTime As Single)</Declaration>
-<Parameters>
-<Parameter>
-<Name>PauseTime</Name>
-<Type>Single</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-</Parameters>
-<ReturnType></ReturnType>
-</Procedure>
-<Procedure>
-<Name>TimeDisplay</Name>
-<Scope>Private</Scope>
-<Type>Function</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>21</CountOfLines>
-<CommentLines>
-</CommentLines>
-<Declaration>Private Function TimeDisplay(value As Double) As String</Declaration>
-<Parameters>
-<Parameter>
-<Name>value</Name>
-<Type>Double</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-</Parameters>
-<ReturnType>String</ReturnType>
-</Procedure>
-<Procedure>
-<Name>AcquisitionTime</Name>
-<Scope>Public</Scope>
-<Type>Function</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>40</CountOfLines>
-<CommentLines>
-</CommentLines>
-<Declaration>Public Function AcquisitionTime() As Double</Declaration>
-<Parameters>
-</Parameters>
-<ReturnType>Double</ReturnType>
-</Procedure>
-<Procedure>
-<Name>CheckAutofocusTrack</Name>
-<Scope>Private</Scope>
-<Type>Subroutine</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>43</CountOfLines>
-<CommentLines>
-<CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>    CheckAutofocusTrack( SelectedTrack As Integer )</CommentLine>
-<CommentLine>    Checks whether the track that was selected for autofocusing only contains a single channel (alternetivly defines one of the checked channels)</CommentLine>
-<CommentLine>    and finds the name of the autofocusing channel</CommentLine>
-<CommentLine>       [SelectedTrack] In - Number of selected track</CommentLine>
-<CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
-</CommentLines>
-<Declaration>Private Sub CheckAutofocusTrack(SelectedTrack As Integer)</Declaration>
-<Parameters>
-<Parameter>
-<Name>SelectedTrack</Name>
-<Type>Integer</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-</Parameters>
-<ReturnType></ReturnType>
-</Procedure>
-<Procedure>
 <Name>ChangeButtonStatus</Name>
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>20</CountOfLines>
+<CountOfLines>14</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine>   ChangeButtonStatus(Enable As Boolean)</CommentLine>
 <CommentLine>   Reset status of buttons on rightside of form</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 </CommentLines>
@@ -12285,26 +11878,34 @@
 <ReturnType></ReturnType>
 </Procedure>
 <Procedure>
-<Name>CreateAlterImageDatabase</Name>
+<Name>ControlTipText</Name>
+<Scope>Public</Scope>
+<Type>Function</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>14</CountOfLines>
+<CommentLines>
+</CommentLines>
+<Declaration>Public Function ControlTipText()</Declaration>
+<Parameters>
+</Parameters>
+<ReturnType></ReturnType>
+</Procedure>
+<Procedure>
+<Name>JobControlTipText</Name>
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>33</CountOfLines>
+<CountOfLines>37</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos;</CommentLine>
+<CommentLine> Sets tip text for all pages</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
-<Declaration>Private Sub CreateAlterImageDatabase(AlterDatabaseName, MyPath)</Declaration>
+<Declaration>Private Sub JobControlTipText(JobName As String)</Declaration>
 <Parameters>
 <Parameter>
-<Name>AlterDatabaseName</Name>
-<Type></Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>MyPath</Name>
-<Type></Type>
+<Name>JobName</Name>
+<Type>String</Type>
 <IsByVal>False</IsByVal>
 <IsOptional>False</IsOptional>
 <IsParamArray>False</IsParamArray>
@@ -12318,8 +11919,8 @@
 <CommentLine>---------------------------------------------------------------------------------------</CommentLine>
 <CommentLine> Module    : AutofocusForm</CommentLine>
 <CommentLine> Author    : Antonio Politi</CommentLine>
-<CommentLine> Version   : 3.0.21</CommentLine>
-<CommentLine> Purpose   : Form to manage Imagingd Fcs Jobs</CommentLine>
+<CommentLine> Version   : 3.0.22</CommentLine>
+<CommentLine> Purpose   : Form to manage Imaging and Fcs Jobs</CommentLine>
 <CommentLine> WARNING ZEN does not use spatial units in a consistent way. Switches between um and meter and pixel WARNING&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine> for imaging and moving the stage</CommentLine>
 <CommentLine> Lsm5.Hardware.Cpstages.PositionX: Absolute coordinate in um</CommentLine>
@@ -15603,23 +15204,221 @@
 <Type>MSForm</Type>
 <Properties>
 <Property>
+<Name>ActiveControl</Name>
 <Value></Value>
+</Property>
+<Property>
+<Name>BackColor</Name>
+<Value>-2147483633</Value>
+</Property>
+<Property>
+<Name>BorderColor</Name>
+<Value>-2147483630</Value>
+</Property>
+<Property>
+<Name>BorderStyle</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>CanPaste</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>CanRedo</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>CanUndo</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>Cycle</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>_Font_Reserved</Name>
+<Value></Value>
+</Property>
+<Property>
+<Name>ForeColor</Name>
+<Value>-2147483630</Value>
+</Property>
+<Property>
+<Name>InsideHeight</Name>
+<Value>405</Value>
+</Property>
+<Property>
+<Name>InsideWidth</Name>
+<Value>374.25</Value>
+</Property>
+<Property>
+<Name>KeepScrollBarsVisible</Name>
+<Value>3</Value>
+</Property>
+<Property>
+<Name>MousePointer</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>PictureAlignment</Name>
+<Value>2</Value>
+</Property>
+<Property>
+<Name>Picture</Name>
+<Value></Value>
+</Property>
+<Property>
+<Name>PictureSizeMode</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>PictureTiling</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>ScrollBars</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ScrollHeight</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ScrollLeft</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ScrollTop</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ScrollWidth</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>SpecialEffect</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>VerticalScrollBarSide</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>Zoom</Name>
+<Value>100</Value>
+</Property>
+<Property>
+<Name>DesignMode</Name>
+<Value>-2</Value>
+</Property>
+<Property>
+<Name>ShowToolbox</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ShowGridDots</Name>
+<Value>-2</Value>
+</Property>
+<Property>
+<Name>SnapToGrid</Name>
+<Value>-2</Value>
+</Property>
+<Property>
+<Name>GridX</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>GridY</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>DrawBuffer</Name>
+<Value>32000</Value>
+</Property>
+<Property>
+<Name>Name</Name>
+<Value>LogManager</Value>
+</Property>
+<Property>
+<Name>Caption</Name>
+<Value>ErrorLog</Value>
+</Property>
+<Property>
+<Name>Left</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>Top</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>Width</Name>
+<Value>378.75</Value>
+</Property>
+<Property>
+<Name>Height</Name>
+<Value>426</Value>
+</Property>
+<Property>
+<Name>Enabled</Name>
+<Value>True</Value>
+</Property>
+<Property>
+<Name>Tag</Name>
+<Value></Value>
+</Property>
+<Property>
+<Name>HelpContextID</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>WhatsThisButton</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>WhatsThisHelp</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>RightToLeft</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>StartUpPosition</Name>
+<Value>1</Value>
+</Property>
+<Property>
+<Name>ShowModal</Name>
+<Value>False</Value>
 </Property>
 </Properties>
 <CodeModule>
-<CountOfDeclarationLines>2</CountOfDeclarationLines>
-<CountOfLines>40</CountOfLines>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>45</CountOfLines>
 <Interfaces>
 </Interfaces>
 <Events>
 </Events>
 <Procedures>
 <Procedure>
+<Name>UserForm_Initialize</Name>
+<Scope>Public</Scope>
+<Type>Subroutine</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>4</CountOfLines>
+<CommentLines>
+</CommentLines>
+<Declaration>Public Sub UserForm_Initialize()</Declaration>
+<Parameters>
+</Parameters>
+<ReturnType></ReturnType>
+</Procedure>
+<Procedure>
 <Name>UpdateErrorLog</Name>
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>17</CountOfLines>
+<CountOfLines>19</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Public Function UpdateErrorLog(Text As String)</Declaration>
@@ -15688,120 +15487,198 @@
 </Controls>
 </File>
 <File>
-<Name>RoiControl</Name>
-<FileName></FileName>
-<PathFileName></PathFileName>
-<Type>StdModule</Type>
-<Properties>
-<Property>
-<Name>Name</Name>
-<Value>RoiControl</Value>
-</Property>
-</Properties>
-<CodeModule>
-<CountOfDeclarationLines>6</CountOfDeclarationLines>
-<CountOfLines>130</CountOfLines>
-<Interfaces>
-</Interfaces>
-<Events>
-</Events>
-<Procedures>
-<Procedure>
-<Name>ClearVectorElements</Name>
-<Scope>Public</Scope>
-<Type>Function</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>12</CountOfLines>
-<CommentLines>
-<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-<CommentLine> remove all vector elements</CommentLine>
-<CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
-</CommentLines>
-<Declaration>Public Function ClearVectorElements() As Boolean</Declaration>
-<Parameters>
-</Parameters>
-<ReturnType>Boolean</ReturnType>
-</Procedure>
-<Procedure>
-<Name>MakeVectorElement</Name>
-<Scope>Public</Scope>
-<Type>Function</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>66</CountOfLines>
-<CommentLines>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine> Make a Vectorelement (a ROI) to be used for bleaching or imaging</CommentLine>
-<CommentLine>   TypeVectorOverlay (In) - speifies type of ROI. &quot;circle&quot;, &quot;reactangle&quot;, &quot;polyline&quot;, &quot;ellipse&quot;</CommentLine>
-<CommentLine>   X, Y              (In) - X and Y coordinates in pixel!! Upper left corner of image is 0, 0</CommentLine>
-<CommentLine>   Aim               (In) - Either &quot;acquisition&quot;, &quot;bleaching&quot; (also includes analysis) or &quot;analysis&quot;</CommentLine>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
-</CommentLines>
-<Declaration>Public Function MakeVectorElement(ByVal TypeVectorOverlay As String, X() As Double, Y() As Double, ByVal aim As String) As Boolean</Declaration>
-<Parameters>
-<Parameter>
-<Name>TypeVectorOverlay</Name>
-<Type>String</Type>
-<IsByVal>True</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>X()</Name>
-<Type>Double</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>Y()</Name>
-<Type>Double</Type>
-<IsByVal>False</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-<Parameter>
-<Name>aim</Name>
-<Type>String</Type>
-<IsByVal>True</IsByVal>
-<IsOptional>False</IsOptional>
-<IsParamArray>False</IsParamArray>
-<DefaultValue></DefaultValue>
-</Parameter>
-</Parameters>
-<ReturnType>Boolean</ReturnType>
-</Procedure>
-<Procedure>
-<Name>TestMakeVectorElement</Name>
-<Scope>Private</Scope>
-<Type>Subroutine</Type>
-<CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>44</CountOfLines>
-<CommentLines>
-</CommentLines>
-<Declaration>Private Sub TestMakeVectorElement()</Declaration>
-<Parameters>
-</Parameters>
-<ReturnType></ReturnType>
-</Procedure>
-</Procedures>
-<CommentLines>
-<CommentLine>&apos;&apos;</CommentLine>
-<CommentLine> Module for Roi control. Due to roi class this module is close to become obsolete</CommentLine>
-<CommentLine>&apos;&apos;&apos;</CommentLine>
-</CommentLines>
-</CodeModule>
-</File>
-<File>
 <Name>CreditForm</Name>
 <FileName></FileName>
 <PathFileName></PathFileName>
 <Type>MSForm</Type>
 <Properties>
 <Property>
+<Name>ActiveControl</Name>
 <Value></Value>
+</Property>
+<Property>
+<Name>BackColor</Name>
+<Value>-2147483633</Value>
+</Property>
+<Property>
+<Name>BorderColor</Name>
+<Value>-2147483630</Value>
+</Property>
+<Property>
+<Name>BorderStyle</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>CanPaste</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>CanRedo</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>CanUndo</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>Cycle</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>_Font_Reserved</Name>
+<Value></Value>
+</Property>
+<Property>
+<Name>ForeColor</Name>
+<Value>-2147483630</Value>
+</Property>
+<Property>
+<Name>InsideHeight</Name>
+<Value>195.75</Value>
+</Property>
+<Property>
+<Name>InsideWidth</Name>
+<Value>182.25</Value>
+</Property>
+<Property>
+<Name>KeepScrollBarsVisible</Name>
+<Value>3</Value>
+</Property>
+<Property>
+<Name>MousePointer</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>PictureAlignment</Name>
+<Value>2</Value>
+</Property>
+<Property>
+<Name>Picture</Name>
+<Value></Value>
+</Property>
+<Property>
+<Name>PictureSizeMode</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>PictureTiling</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>ScrollBars</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ScrollHeight</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ScrollLeft</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ScrollTop</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ScrollWidth</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>SpecialEffect</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>VerticalScrollBarSide</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>Zoom</Name>
+<Value>100</Value>
+</Property>
+<Property>
+<Name>DesignMode</Name>
+<Value>-2</Value>
+</Property>
+<Property>
+<Name>ShowToolbox</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ShowGridDots</Name>
+<Value>-2</Value>
+</Property>
+<Property>
+<Name>SnapToGrid</Name>
+<Value>-2</Value>
+</Property>
+<Property>
+<Name>GridX</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>GridY</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>DrawBuffer</Name>
+<Value>32000</Value>
+</Property>
+<Property>
+<Name>Name</Name>
+<Value>CreditForm</Value>
+</Property>
+<Property>
+<Name>Caption</Name>
+<Value>Credit</Value>
+</Property>
+<Property>
+<Name>Left</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>Top</Name>
+<Value>-2.25</Value>
+</Property>
+<Property>
+<Name>Width</Name>
+<Value>186.75</Value>
+</Property>
+<Property>
+<Name>Height</Name>
+<Value>216.75</Value>
+</Property>
+<Property>
+<Name>Enabled</Name>
+<Value>True</Value>
+</Property>
+<Property>
+<Name>Tag</Name>
+<Value></Value>
+</Property>
+<Property>
+<Name>HelpContextID</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>WhatsThisButton</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>WhatsThisHelp</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>RightToLeft</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>StartUpPosition</Name>
+<Value>1</Value>
+</Property>
+<Property>
+<Name>ShowModal</Name>
+<Value>True</Value>
 </Property>
 </Properties>
 <CodeModule>
@@ -18770,8 +18647,8 @@
 </Property>
 </Properties>
 <CodeModule>
-<CountOfDeclarationLines>74</CountOfDeclarationLines>
-<CountOfLines>1375</CountOfLines>
+<CountOfDeclarationLines>71</CountOfDeclarationLines>
+<CountOfLines>1384</CountOfLines>
 <Interfaces>
 </Interfaces>
 <Events>
@@ -18782,7 +18659,7 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>19</CountOfLines>
+<CountOfLines>20</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;</CommentLine>
 <CommentLine> Returns version number (ZEN2010, etc.)</CommentLine>
@@ -18827,11 +18704,27 @@
 <ReturnType></ReturnType>
 </Procedure>
 <Procedure>
+<Name>ClearVectorElements</Name>
+<Scope>Public</Scope>
+<Type>Function</Type>
+<CountOfDeclarationLines>1</CountOfDeclarationLines>
+<CountOfLines>10</CountOfLines>
+<CommentLines>
+<CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
+<CommentLine>&apos;   remove all vector elements</CommentLine>
+<CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
+</CommentLines>
+<Declaration>Public Function ClearVectorElements() As Boolean</Declaration>
+<Parameters>
+</Parameters>
+<ReturnType>Boolean</ReturnType>
+</Procedure>
+<Procedure>
 <Name>isReady</Name>
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>18</CountOfLines>
+<CountOfLines>19</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine> Check if system is busy in some of its actions</CommentLine>
@@ -19897,7 +19790,7 @@
 </Procedures>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
-<CommentLine> Module with functions for controlling stage, starts and stop scan</CommentLine>
+<CommentLine> Module with functions for controlling stage, starts and stop scan, creating documents and saving images</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 </CommentLines>
 </CodeModule>
