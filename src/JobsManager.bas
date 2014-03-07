@@ -362,7 +362,7 @@ On Error GoTo TrackOffLine_Error
     newPosition(0) = currentPosition
     TrackOffLine = currentPosition
     
-    If method <> 0 And method <> FocusMethods.count - 1 Then
+    If method <> 0 And method <> FocusMethods.Count - 1 Then
         ''compute center of mass in pixel
         TrackingChannel = AutofocusForm.Controls(JobName & "CenterOfMassChannel").value
 

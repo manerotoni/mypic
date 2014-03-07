@@ -1,6 +1,6 @@
 Attribute VB_Name = "MicroscopeIO"
 ''''
-' Module with functions for controlling stage, starts and stop scan
+' Module with functions for controlling stage, starts and stop scan, creating documents and saving images
 '''''
 
 Option Explicit
@@ -8,7 +8,6 @@ Option Base 0
 Public SystemVersion As String
 
 Public Declare Function GetInputState Lib "user32" () As Long ' Check if mouse or keyboard has been pushed
-
 Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
 Public Declare Function GetKeyState Lib "user32" (ByVal nVirtKey As Long) As Integer
 Declare Function RegOpenKeyEx _
@@ -52,8 +51,6 @@ Public Running As Boolean       'TRUE when system is running (e.g. after start)
 Public GlobalDataBaseName As String   'Name of output folder
 Public TrackNumber As Integer    'number of available tracks
 
-Public OverwriteFiles As Boolean  'if TRUE we do not overwrite files (not active anymore)
-Public FocusMapPresent As Boolean 'if TRUE we have a focus map (not active anymore)
 Public GlobalCorrectionOffset As Double 'not anymore used
 
 '''
@@ -72,7 +69,8 @@ Public GlobalFcsRecordingDoc As DsRecordingDoc
 
 
 Public Const PauseGrabbing = 50 'pause for polling the whether scan/fcscontroller are acquiring. A high value makes more errors!
-Public PauseEndAcquisition As Double
+Public PauseEndAcquisition As Double 'A workaround to avoid errors in FCS/imaging. Does not seem to work. Disabled
+
 '''
 ' Returns version number (ZEN2010, etc.)
 '''
@@ -123,6 +121,17 @@ Public Function StopAcquisition()
     DoEvents
 End Function
 
+
+''''''
+''   remove all vector elements
+''''''
+Public Function ClearVectorElements() As Boolean
+    Dim vo As AimImageVectorOverlay
+    Set vo = Lsm5.ExternalDsObject.ScanController.AcquisitionRegions
+    vo.Cleanup
+End Function
+
+
 ''''
 ' Check if system is busy in some of its actions
 ''''
@@ -130,7 +139,7 @@ Public Function isReady(Optional Time As Double = 0.1) As Boolean
     Dim BusyFcs As Boolean
     Dim message As String
     Dim AimScanCalibration As AimScanCalibration
-    Set AimScanCalibration = Lsm5.ExternalDsObject.Scancontroller
+    Set AimScanCalibration = Lsm5.ExternalDsObject.ScanController
 
     If Lsm5.Info.IsFCS Then
         Dim FcsControl As AimFcsController
@@ -171,13 +180,13 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc, Optional TimeOut As 
     End If
     Set treenode = RecordingDoc.RecordingDocument.image(0, True)
     'Set treenode = Lsm5.NewDocument this will create a new document we want to use the same document
-    Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
+    Set AcquisitionController = Lsm5.ExternalDsObject.ScanController
     AcquisitionController.DestinationImage(0) = treenode 'EngelImageToHechtImage(GlobalSingleImage).Image(0, True)
     AcquisitionController.DestinationImage(1) = Nothing
     Set ProgressFifo = AcquisitionController.DestinationImage(0)
     Lsm5.tools.CheckLockControllers True
     AcquisitionController.StartGrab eGrabModeSingle
-    Time = CDbl(GetTickCount) * 0.001
+    Time = Timer
     'Set RecordingDoc = Lsm5.StartScan this does not overwrite
     If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
     'Debug.Print "ScanToImage part1 " & Round(Timer - Time, 3)
@@ -188,7 +197,7 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc, Optional TimeOut As 
         If ScanStop Then
               Exit Function
         End If
-        If TimeOut > 0 And (CDbl(GetTickCount) * 0.001 - Time > TimeOut) Then
+        If TimeOut > 0 And (Timer - Time > TimeOut) Then
             LogManager.UpdateErrorLog "TimeOut of image acquisition  after " & TimeOut & " sec"
             Lsm5.StopAcquisition
             GoTo ExitWhile
@@ -222,14 +231,14 @@ Public Function ScanToFcs(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData,
 '           Exit Function
 '        End If
 '    Wend
-    Time = CDbl(GetTickCount) * 0.001
+    Time = Timer
     While FcsControl.IsAcquisitionRunning(1)
         Sleep (PauseGrabbing)
         If ScanStop Then
             Exit Function
         End If
         DoEvents
-        If TimeOut > 0 And (CDbl(GetTickCount) * 0.001 - Time > TimeOut) Then
+        If TimeOut > 0 And (Timer - Time > TimeOut) Then
             LogManager.UpdateErrorLog "TimeOut of Fcs acquisition  after " & TimeOut & " sec"
             FcsControl.StopAcquisitionAndWait
             GoTo ExitWhile
@@ -550,68 +559,121 @@ End Sub
 
 
 
-''''' ' this should move to function
-'   FailSafeMoveStage(Optional Mark As Integer = 0)
-'   Moves stage and wait till it is finished
+'''''
+'   Moves stage and wait till it is finished. Repeat the process twice if precision is not achieved
 '       [x] In - x-position
 '       [y] In - y-position
 '''''
 Public Function FailSafeMoveStageXY(X As Double, Y As Double) As Boolean
+    Dim CurrentX As Double
+    Dim CurrentY As Double
+    Dim WaitTime As Integer
+    Dim Prec As Double
+    Prec = 1 'um (Thorsten Lenser uses 1 um)
     
-    FailSafeMoveStageXY = False
-
-
+    WaitTime = 0
+    Lsm5.Hardware.CpStages.GetXYPosition CurrentX, CurrentY
     Lsm5.Hardware.CpStages.SetXYPosition X, Y
-    'TODO Check this
-    Do While Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
-        Sleep (200)
-        If GetInputState() <> 0 Then
-            DoEvents
+    
+    Do While (Abs(CurrentX - X) > Prec) Or (Abs(CurrentY - Y) > Prec) Or Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
+        SleepWithEvents (20)
+        Lsm5.Hardware.CpStages.GetXYPosition CurrentX, CurrentY
+        WaitTime = WaitTime + 1
+        If ScanStop Then
+            ScanStop = True
+            Exit Function
+        End If
+        If WaitTime > 250 Then
+            LogManager.UpdateErrorLog "Warning: StageMovement did not reach the precision of " & Prec _
+            & "um  within 5000 ms. Goal position is " & X & " " & Y & " reached " & CurrentX _
+            & " " & CurrentY
+        End If
+    Loop
+    
+    '''Try a second time if it failed
+    If (Abs(CurrentX - X) > Prec) Or (Abs(CurrentY - Y) > Prec) Then
+        WaitTime = 0
+        Lsm5.Hardware.CpStages.GetXYPosition CurrentX, CurrentY
+        Lsm5.Hardware.CpStages.SetXYPosition X, Y
+        Do While (Abs(CurrentX - X) > Prec) Or (Abs(CurrentY - Y) > Prec) Or Lsm5.Hardware.CpStages.IsBusy Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
+            SleepWithEvents (20)
+            Lsm5.Hardware.CpStages.GetXYPosition CurrentX, CurrentY
+            WaitTime = WaitTime + 1
             If ScanStop Then
                 ScanStop = True
                 Exit Function
             End If
-        End If
-    Loop
-    
+            If WaitTime > 250 Then
+                LogManager.UpdateErrorLog "Warning: StageMovement did not reach the precision of " & Prec _
+                & "um  within 5000 ms/2nd round. Goal position is " & X & " " & Y & " reached " & CurrentX _
+                & " " & CurrentY
+            End If
+        Loop
+    End If
     FailSafeMoveStageXY = True
-    
 End Function
 
 
 '''''
-'   FailSafeMoveStageZ(z As Double)
-'   Moves focus and wait till it is finished
-'       [z] In - z-position )
+'   Wrapper to run with ZBacklash (generally ZBacklash is zero) or not
 '''''
 Public Function FailSafeMoveStageZ(Z As Double) As Boolean
-    FailSafeMoveStageZ = False
     If ZBacklash <> 0 Then
-        Lsm5.Hardware.CpFocus.position = Z - ZBacklash ' move at a position with some offset off (this should improve the precision)
-        Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy Or Lsm5.Hardware.CpFocus.IsBusy
-            Sleep (20)
-            If GetInputState() <> 0 Then
-                DoEvents
-                If ScanStop Then
-                    FailSafeMoveStageZ = False
-                    Exit Function
-                End If
+        If Not FailSafeMoveStageZExec(Z - ZBacklash) Then
+            Exit Function
+        End If
+    End If
+    FailSafeMoveStageZ = FailSafeMoveStageZExec(Z)
+End Function
+
+
+'''''
+'   Moves focus and wait till it is finished
+'       [z] In - z-position in um
+'''''
+Public Function FailSafeMoveStageZExec(Z As Double) As Boolean
+    Dim CurrentZ As Double
+    Dim WaitTime As Integer
+    Dim Prec As Double
+    Prec = 0.2 'Used in MultitimeZEN2012 Thoresten Lenser
+    
+    WaitTime = 0
+    CurrentZ = Lsm5.Hardware.CpFocus.position
+    Lsm5.Hardware.CpFocus.position = Z
+
+    Do While (Abs(CurrentZ - Z) > Prec) Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
+        SleepWithEvents (20)
+        CurrentZ = Lsm5.Hardware.CpFocus.position
+        WaitTime = WaitTime + 1
+        If ScanStop Then
+            Exit Function
+        End If
+        If WaitTime > 250 Then
+            LogManager.UpdateErrorLog "Warning: FocusZMovement did not reach the precision of " & Prec _
+            & "um  within 5000 ms. Goal position is " & Z & " reached " & CurrentZ
+        End If
+
+    Loop
+    ''second round
+    If (Abs(CurrentZ - Z) > Prec) Then
+        WaitTime = 0
+        CurrentZ = Lsm5.Hardware.CpFocus.position
+        Lsm5.Hardware.CpFocus.position = Z
+        Do While (Abs(CurrentZ - Z) > Prec) Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
+            SleepWithEvents (20)
+            CurrentZ = Lsm5.Hardware.CpFocus.position
+            WaitTime = WaitTime + 1
+            If ScanStop Then
+                Exit Function
+            End If
+            If WaitTime > 250 Then
+                LogManager.UpdateErrorLog "Warning: FocusZMovement did not reach the precision of " & Prec _
+                & "um  within 5000 ms/2nd round. Goal position is " & Z & " reached " & CurrentZ
             End If
         Loop
     End If
-    Lsm5.Hardware.CpFocus.position = Z  ' move at correct position
-    Do While Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy Or Lsm5.Hardware.CpFocus.IsBusy
-        Sleep (20)
-        If GetInputState() <> 0 Then
-            DoEvents
-            If ScanStop Then
-                FailSafeMoveStageZ = False
-                Exit Function
-            End If
-        End If
-    Loop
-    'Sleep (100)
-    FailSafeMoveStageZ = True
+    SleepWithEvents (500)
+    FailSafeMoveStageZExec = True
 End Function
 
 
@@ -623,7 +685,7 @@ End Function
 '''''
 Public Function MoveToNextLocation(Optional Mark As Integer = 0) As Boolean
         Dim MarkCount As Long
-        Dim count As Long
+        Dim Count As Long
         Dim idx As Long
         Dim dX As Double
         Dim dY As Double
@@ -737,10 +799,10 @@ End Function
 '   Lsm5.DsRecording.Sample0Z keeps track correctly of the position
 '''
 Public Function WaitForRecentering2010(Z As Double, Optional Success As Boolean = False) As Boolean
-    Dim Cnt As Integer
+    Dim cnt As Integer
     Dim MaxCnt As Integer
     MaxCnt = 6
-    Cnt = 0
+    cnt = 0
     ' Wait up to 4 sec for centering
     ' position central slice is Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + Lsm5.Hardware.CpFocus.Position (or the real actual position)
     ' this waits for central slice at Z
@@ -749,15 +811,15 @@ Public Function WaitForRecentering2010(Z As Double, Optional Success As Boolean 
     Pos = Lsm5.Hardware.CpFocus.position
     'in this case stage has bene moved
     If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then
-        While Round(Pos, 1) <> Round(Z, 1) And Cnt < MaxCnt
+        While Round(Pos, 1) <> Round(Z, 1) And cnt < MaxCnt
             Sleep (400)
             DoEvents
-            Cnt = Cnt + 1
+            cnt = cnt + 1
             If ScanStop Then
                 Exit Function
             End If
         Wend
-        If Cnt = MaxCnt Then
+        If cnt = MaxCnt Then
             Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.framesPerStack - 1) / 2 + Pos - Z
             If Not FailSafeMoveStageZ(Z) Then
                 Exit Function
@@ -775,15 +837,15 @@ Public Function WaitForRecentering2010(Z As Double, Optional Success As Boolean 
 '        Wend
     Else
         While Round(Lsm5.DsRecording.Sample0Z, 1) <> Round(Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.framesPerStack - 1) / 2 + _
-            Pos - Z, 1) And Cnt < MaxCnt
+            Pos - Z, 1) And cnt < MaxCnt
             Sleep (400)
             DoEvents
-            Cnt = Cnt + 1
+            cnt = cnt + 1
             If ScanStop Then
                 Exit Function
             End If
         Wend
-        If Cnt = MaxCnt Then
+        If cnt = MaxCnt Then
             Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.framesPerStack - 1) / 2 + Pos - Z
             GoTo FailedWaiting
         End If
@@ -806,10 +868,10 @@ End Function
 '   Lsm5.DsRecording.Sample0Z keeps track correctly of the position
 '''
 Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean = False) As Boolean
-    Dim Cnt As Integer
+    Dim cnt As Integer
     Dim MaxCnt As Integer
     MaxCnt = 6
-    Cnt = 0
+    cnt = 0
     ' Wait up to 4 sec for centering
     ' Note pculiarity of centering
     ' position central slice is Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + Lsm5.Hardware.CpFocus.Position (or the real actual position)
@@ -818,16 +880,16 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
     Dim Sample0Z As Double
     Pos = Lsm5.Hardware.CpFocus.position
     If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then
-        While Round(Pos, 1) <> Round(Z, 1) And Cnt < MaxCnt
+        While Round(Pos, 1) <> Round(Z, 1) And cnt < MaxCnt
             Sleep (400)
             DoEvents
-            Cnt = Cnt + 1
+            cnt = cnt + 1
             If ScanStop Then
                 Exit Function
             End If
         Wend
         
-        If Cnt = MaxCnt Then
+        If cnt = MaxCnt Then
             Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.framesPerStack - 1) / 2 + Pos - Z
             If Not FailSafeMoveStageZ(Z) Then
                 Exit Function
@@ -838,16 +900,16 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
     Else
     
         While Round(Lsm5.DsRecording.Sample0Z, 1) <> Round(Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.framesPerStack - 1) / 2 + _
-            Pos - Z, 1) And Cnt < MaxCnt
+            Pos - Z, 1) And cnt < MaxCnt
             Sleep (400)
             DoEvents
-            Cnt = Cnt + 1
+            cnt = cnt + 1
             If ScanStop Then
                 Exit Function
             End If
         Wend
         
-        If Cnt = MaxCnt Then
+        If cnt = MaxCnt Then
             Success = False
             Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.framesPerStack - 1) / 2 + Pos - Z
             GoTo FailedWaiting
@@ -873,18 +935,18 @@ Public Function Recenter_pre(Z As Double, Optional Success As Boolean = False, O
     If Not Recenter(Z, ZENv) Then
         Exit Function
     End If
-    If Not WaitForRecentering(Z, Success, ZENv) Then
-        Exit Function
-    End If
+'    If Not WaitForRecentering(Z, Success, ZENv) Then
+'        Exit Function
+'    End If
     If Not ScanStop Then
         Recenter_pre = True
     End If
 End Function
 
 Public Function Recenter_post(Z As Double, Optional Success As Boolean = False, Optional ZENv As Integer = 2011) As Boolean
-    If Not WaitForRecentering(Z, Success, ZENv) Then
-        Exit Function
-    End If
+'    If Not WaitForRecentering(Z, Success, ZENv) Then
+'        Exit Function
+'    End If
     
     If Not ScanStop Then
         Recenter_post = True
@@ -936,32 +998,51 @@ Public Function Recenter2010(Z As Double) As Boolean
 End Function
 
 Public Function Recenter2011(Z As Double) As Boolean
-    Dim MoveStage As Boolean
-    Dim framesPerStack As Integer
+    Dim ScanController As AimScanController
     Dim Pos As Double
-    Pos = Lsm5.Hardware.CpFocus.position
-    MoveStage = False 'only move stage when required
+    Dim ZOffset As Double
+    Dim Prec As Double
+    Dim Count As Integer
+    Set ScanController = Lsm5.ExternalDsObject.ScanController
+    Count = 0
+    Prec = 0.001
     
-    If (Lsm5.DsRecording.ScanMode <> "Stack" And Lsm5.DsRecording.ScanMode <> "ZScan") Or Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then
-        MoveStage = True
+    ZOffset = Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.framesPerStack - 1) / 2
+    
+    ScanController.LockAll True
+    Pos = Lsm5.Hardware.CpFocus.position
+    ScanController.LockAll False
+    If Round(Pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
+        If Not FailSafeMoveStageZ(Z) Then
+            Exit Function
+        End If
     End If
-        
-    'Center slide
-    Lsm5.DsRecording.Sample0Z = Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.framesPerStack - 1) / 2 + Pos - Z
-    Sleep (100)
-    DoEvents
-    If MoveStage Then
-        If Round(Pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
-            If Not FailSafeMoveStageZ(Z) Then
+    
+    ''Only recenter central slice if we have a ZStack
+    If isZStack(Lsm5.DsRecording) Then
+        While Count < 3 And Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec
+            ScanController.LockAll True
+            Lsm5.DsRecording.Sample0Z = ZOffset
+            Lsm5.DsRecording.ReferenceZ = Z 'this may not exist for previous Zen versions
+            While Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec
+                ScanController.LockAll False
+                Lsm5.DsRecording.Sample0Z = ZOffset
+                Lsm5.DsRecording.ReferenceZ = Z
+                ScanController.LockAll True
+                SleepWithEvents (20)
+            Wend
+            ScanController.LockAll False
+            SleepWithEvents (500)
+            If ScanStop Then
                 Exit Function
             End If
+            Count = Count + 1
+        Wend
+        If Count = 3 Then
+            LogManager.UpdateErrorLog "Warning: Centerslice has not been set correctly goal " & Round(ZOffset, PrecZ) & " is " & Round(Lsm5.DsRecording.Sample0Z, PrecZ)
         End If
-        
     End If
-    DoEvents
-    'this messes around with the slice number. Don't use it
-    'ZEN.gui.Acquisition.ZStack.CenterPositionZ.Value = Z
-
+    
     Recenter2011 = True
 End Function
 
@@ -1174,6 +1255,17 @@ SaveDsRecordingDoc_Error:
     ") in procedure SaveDsRecordingDoc of Module MicroscopeIO at line " & Erl & " "
 End Function
 
+'''
+' Check if we have a ZStack
+''''
+Public Function isZStack(ARecording As DsRecording) As Boolean
+    Dim ScanMode As String
+    ScanMode = ARecording.ScanMode
+    If ScanMode = "ZScan" Or ScanMode = "Stack" Then
+        isZStack = True
+    End If
+End Function
+
 
 
 '''''
@@ -1184,7 +1276,7 @@ End Function
 '       [bCamera] In/Out - True if Camera is used
 ''''
 Public Sub UsedDevices40(bLSM As Boolean, bLIVE As Boolean, bCamera As Boolean)
-    Dim Scancontroller As AimScanController
+    Dim ScanController As AimScanController
     Dim TrackParameters As AimTrackParameters
     Dim Size As Long
     Dim lTrack As Long
@@ -1193,8 +1285,8 @@ Public Sub UsedDevices40(bLSM As Boolean, bLIVE As Boolean, bCamera As Boolean)
     bLSM = False
     bLIVE = False
     bCamera = False
-    Set Scancontroller = Lsm5.ExternalDsObject.Scancontroller
-    Set TrackParameters = Scancontroller.TrackParameters
+    Set ScanController = Lsm5.ExternalDsObject.ScanController
+    Set TrackParameters = ScanController.TrackParameters
     If TrackParameters Is Nothing Then Exit Sub
     Size = TrackParameters.GetTrackArraySize
     For lTrack = 0 To Size - 1
