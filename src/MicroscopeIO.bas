@@ -5,6 +5,7 @@ Attribute VB_Name = "MicroscopeIO"
 
 Option Explicit
 Option Base 0
+Public Const DebugCode = True
 Public SystemVersion As String
 
 Public Declare Function GetInputState Lib "user32" () As Long ' Check if mouse or keyboard has been pushed
@@ -672,7 +673,7 @@ Public Function FailSafeMoveStageZExec(Z As Double) As Boolean
             End If
         Loop
     End If
-    SleepWithEvents (500)
+    SleepWithEvents (200) 'With 500 it works
     FailSafeMoveStageZExec = True
 End Function
 
@@ -749,9 +750,11 @@ Public Sub setMarkedStagePosition(Pos() As Vector)
     If UBound(Pos) >= 0 Then
 On Error GoTo getMarkedStagePosition_Error
         Lsm5.Hardware.CpStages.MarkClearAll
+        SleepWithEvents (500)
         For i = 0 To UBound(Pos)
                 Lsm5.Hardware.CpStages.MarkAddZ Pos(i).X, Pos(i).Y, Pos(i).Z
         Next i
+        Application.ThrowEvent ePropertyEventStage, 0 'normally not recquired maybe it helps for the update
         Debug.Print Lsm5.Hardware.CpStages.MarkCount
         If UBound(Pos) + 1 > Lsm5.Hardware.CpStages.MarkCount Then
             For i = 0 To UBound(Pos)
@@ -759,6 +762,7 @@ On Error GoTo getMarkedStagePosition_Error
             Next i
         End If
     End If
+    Application.ThrowEvent ePropertyEventStage, 0 'normally not recquired maybe it helps for the update
    On Error GoTo 0
    Exit Sub
 
@@ -1007,9 +1011,8 @@ Public Function Recenter2011(Z As Double) As Boolean
     Count = 0
     Prec = 0.001
     
-    ZOffset = Lsm5.DsRecording.frameSpacing * (Lsm5.DsRecording.framesPerStack - 1) / 2
-    
-    ScanController.LockAll True
+
+    ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
     Pos = Lsm5.Hardware.CpFocus.position
     ScanController.LockAll False
     If Round(Pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
@@ -1017,32 +1020,41 @@ Public Function Recenter2011(Z As Double) As Boolean
             Exit Function
         End If
     End If
-    
     ''Only recenter central slice if we have a ZStack
     If isZStack(Lsm5.DsRecording) Then
-        While Count < 3 And Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec
-            ScanController.LockAll True
-            Lsm5.DsRecording.Sample0Z = ZOffset
-            Lsm5.DsRecording.ReferenceZ = Z 'this may not exist for previous Zen versions
-            While Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec
-                ScanController.LockAll False
-                Lsm5.DsRecording.Sample0Z = ZOffset
-                Lsm5.DsRecording.ReferenceZ = Z
-                ScanController.LockAll True
-                SleepWithEvents (20)
-            Wend
+        ZOffset = getHalfZRange(Lsm5.DsRecording)
+        Debug.Print "Recenter at start " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z) & " " & Lsm5.DsRecording.ReferenceZ - Z
+
+        If (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec) Or (Abs(Lsm5.DsRecording.ReferenceZ - Z) > Prec) Then
             ScanController.LockAll False
-            SleepWithEvents (500)
-            If ScanStop Then
-                Exit Function
+            Lsm5.DsRecording.Sample0Z = ZOffset
+            Lsm5.DsRecording.ReferenceZ = Z  'this may not exist for previous Zen versions for ZEN2012 this is absolutely recquired
+            ScanController.LockAll True
+            SleepWithEvents (500) 'with 500 it works
+            Debug.Print "Recenter Offset " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
+            While Count < 3 And Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec Or Abs(Lsm5.DsRecording.ReferenceZ - Z > Prec)
+                If Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec Then
+                    LogManager.UpdateLog "Warning Recenter2011: On round " & Count + 1 & " centerslice has not been set correctly. Goal " & Round(ZOffset, PrecZ) & " is " & Round(Lsm5.DsRecording.Sample0Z, PrecZ)
+                End If
+                While Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec Or Abs(Lsm5.DsRecording.ReferenceZ - Z > Prec)
+                    ScanController.LockAll False
+                    Lsm5.DsRecording.Sample0Z = ZOffset
+                    Lsm5.DsRecording.ReferenceZ = Z
+                    ScanController.LockAll True
+                    SleepWithEvents (100)
+                Wend
+                ScanController.LockAll False
+                SleepWithEvents (200)
+                If ScanStop Then
+                    Exit Function
+                End If
+                Count = Count + 1
+            Wend
+            If (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec) Or (Abs(Lsm5.DsRecording.ReferenceZ - Z) > Prec) Then
+                LogManager.UpdateErrorLog "Warning: Centerslice has not been set correctly goal " & Round(ZOffset, PrecZ) & " is " & Round(Lsm5.DsRecording.Sample0Z, PrecZ)
             End If
-            Count = Count + 1
-        Wend
-        If Count = 3 Then
-            LogManager.UpdateErrorLog "Warning: Centerslice has not been set correctly goal " & Round(ZOffset, PrecZ) & " is " & Round(Lsm5.DsRecording.Sample0Z, PrecZ)
         End If
     End If
-    
     Recenter2011 = True
 End Function
 
@@ -1266,6 +1278,17 @@ Public Function isZStack(ARecording As DsRecording) As Boolean
     End If
 End Function
 
+
+'''
+' Compute half the size of the ZRange
+'''
+Public Function getHalfZRange(ARecording As DsRecording) As Double
+    If isZStack(ARecording) Then
+        getHalfZRange = ARecording.frameSpacing * (ARecording.framesPerStack - 1) / 2
+    Else
+        getHalfZRange = 0
+    End If
+End Function
 
 
 '''''

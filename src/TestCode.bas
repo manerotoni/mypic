@@ -1,5 +1,22 @@
 Attribute VB_Name = "TestCode"
 Option Explicit
+Private Sub TestStageMarkedPosition()
+    Dim n As Integer
+    Lsm5.Hardware.CpStages.MarkClearAll
+'    For n = 1 To 10
+'        Lsm5.Hardware.CpStages.MarkAddZ 0 + 10 * n, 0 + 10 * n, 0 + 10 * n
+'    Next n
+    SleepWithEvents (1000)
+    'Application.ThrowEvent eEventDataChanged, 0
+    Application.ThrowEvent ePropertyEventStage, 0
+    Application.ThrowEvent eEventUpdate, 0
+    DoEvents
+    
+End Sub
+Private Sub TestComboBox()
+    Debug.Print AutofocusForm.AutofocusFocusMethod.value
+End Sub
+
 Private Sub TestOia()
     Dim codeMic As String
     Dim Oia As OnlineIASettings
@@ -47,7 +64,7 @@ End Sub
 Private Sub test()
   
     Dim vo As AimImageVectorOverlay
-    Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
+    Set vo = Lsm5.ExternalDsObject.ScanController.AcquisitionRegions
     
     Debug.Print vo.GetNumberElements
     Debug.Print vo.ElementAcquisitionFlags(0)

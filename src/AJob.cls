@@ -62,7 +62,7 @@ End Property
 Public Function setJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
     On Error GoTo ErrorHandle:
     Dim AcquisitionController As AimAcquisitionController40.AimScanController
-    Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
+    Set AcquisitionController = Lsm5.ExternalDsObject.ScanController
     Dim AcquisitionParameters As AimAcquisitionController40.AimAcquisitionParameters
     Set AcquisitionParameters = AcquisitionController.AcquisitionParameters
     Dim iTrack As Integer
@@ -79,7 +79,7 @@ Public Function setJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
         'Debug.Print "nr Lasers " & ZEN.gui.Acquisition.Channels.Track.LaserLine.ItemCount
         
     End If
-    
+    Recording.Sample0Z = Recording.frameSpacing * (Recording.framesPerStack - 1) / 2
     Me.pixelDwell = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
     Me.SamplingNumber = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingNumber
     Me.SamplingMethod = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingMethod
@@ -103,7 +103,7 @@ End Function
 Public Function putJob(ZEN As Object, Optional Extensive As Boolean)
     On Error GoTo ErrorHandle:
     Dim AcquisitionController As AimAcquisitionController40.AimScanController
-    Set AcquisitionController = Lsm5.ExternalDsObject.Scancontroller
+    Set AcquisitionController = Lsm5.ExternalDsObject.ScanController
     Dim AcquisitionParameters As AimAcquisitionController40.AimAcquisitionParameters
     Set AcquisitionParameters = AcquisitionController.AcquisitionParameters
     Dim iTrack As Integer
@@ -294,7 +294,7 @@ Public Function setRoiFromZen() As Boolean
     On Error GoTo ErrorHandle:
     Dim i As Integer
     Dim vo As AimImageVectorOverlay
-    Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
+    Set vo = Lsm5.ExternalDsObject.ScanController.AcquisitionRegions
     'there are Rois already defined
     'Debug.Print "nr Elements " & vo.GetNumberElements
     setRoiMaxNr vo.GetNumberElements

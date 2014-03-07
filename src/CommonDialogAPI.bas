@@ -8,7 +8,7 @@ Option Explicit
 Private Declare Function FindWindowA Lib "user32" _
 (ByVal lpClassName As String, _
 ByVal lpWindowName As String) As Long
-  
+   
 Private Declare Function GetWindowLongA Lib "user32" _
 (ByVal hWnd As Long, _
 ByVal nIndex As Long) As Long

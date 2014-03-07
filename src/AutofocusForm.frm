@@ -38,7 +38,6 @@ Option Explicit 'force to declare all variables
 
 Public Version As String
 
-Private Const DebugCode = False             ' this is should be disabled for the moment
 Private Const ReleaseName = True            ' this adds the ZEN version
 Private Const LogCode = True                ' sets key to run tests visible or not
 
@@ -125,7 +124,7 @@ NoError:
             Me.Controls(Name + "TrackXY").Enabled = True
         End If
             
-        For i = 0 To FocusMethods.count - 1
+        For i = 0 To FocusMethods.Count - 1
             Me.Controls(Name + "FocusMethod").AddItem FocusMethods.item(i), i
         Next i
         Me.Controls(Name + "FocusMethod").ListIndex = 0
@@ -321,7 +320,7 @@ Public Sub Re_Initialize()
     Dim Name As Variant
     Dim Delay As Single
     Dim standType As String
-    Dim count As Long
+    Dim Count As Long
     Dim SuccessRecenter As Boolean
     Dim posTempZ As Double
     AutoFindTracks
@@ -411,8 +410,12 @@ Private Sub ButtonLoadSettings_Click()
     DisplayProgress "Load Settings...", RGB(&HC0, &HC0, 0)
     If FileName <> "" Then
         Pos = getMarkedStagePosition
+        SleepWithEvents (500)
         LoadFormSettings FileName
+        SleepWithEvents (500)
         setMarkedStagePosition Pos
+        
+
     End If
     DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
     
@@ -803,7 +806,7 @@ Private Sub JobTrackXYZChange(JobName As String)
     Dim method As Integer
     method = Me.Controls(JobName + "FocusMethod").ListIndex
     Me.Controls(JobName + "CenterOfMassChannel").Enabled = (Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")) _
-    And method <> 0 And method <> (FocusMethods.count - 1)
+    And method <> 0 And method <> (FocusMethods.Count - 1)
     Me.Controls(JobName + "FocusMethod").Enabled = Me.Controls(JobName + "TrackZ") Or Me.Controls(JobName + "TrackXY")
 End Sub
 
@@ -855,7 +858,7 @@ End Sub
 '''
 Private Sub FocusMethodChange(JobName As String)
     Me.Controls(JobName + "CenterOfMassChannel").Enabled = Me.Controls(JobName + "FocusMethod") <> "None" And Me.Controls(JobName + "FocusMethod") <> "Online img. analysis"
-    If Me.Controls(JobName + "FocusMethod").ListIndex = (FocusMethods.count - 1) Then
+    If Me.Controls(JobName + "FocusMethod").ListIndex = (FocusMethods.Count - 1) Then
         Me.Controls(JobName + "OiaActive") = True
     End If
 End Sub
@@ -1095,9 +1098,10 @@ Private Sub putJob(JobName As String)
     'this is a work around for a bug in ZEN that deletes all positions after updated of recording
     Pos = getMarkedStagePosition
     
+    DisplayProgress "Load Settings of " & JobName & " into ZEN ... ", RGB(&HC0, &HC0, 0)
     If ZENv > 2010 And Not ZEN Is Nothing Then
         Dim vo As AimImageVectorOverlay
-        Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
+        Set vo = Lsm5.ExternalDsObject.ScanController.AcquisitionRegions
         If vo.GetNumberElements > 0 Then
             ZEN.gui.Acquisition.Regions.Delete.Execute
         End If
@@ -1106,12 +1110,8 @@ Private Sub putJob(JobName As String)
     Jobs.putJob JobName, ZEN
     'This is just for visualising the job in the Gui
     UpdateGuiFromJob Jobs, JobName, ZEN
-    'Need a break as the Gui is updated quite slowly
-    DoEvents
-    Sleep (1000)
-    DoEvents
-    Sleep (1000)
     setMarkedStagePosition Pos
+    DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
 End Sub
 
 Private Sub FcsPutJob(JobName As String)
@@ -1156,7 +1156,7 @@ On Error GoTo JobAcquire_Error
     
     If ZENv > 2010 And Not ZEN Is Nothing Then
         Dim vo As AimImageVectorOverlay
-        Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
+        Set vo = Lsm5.ExternalDsObject.ScanController.AcquisitionRegions
         If vo.GetNumberElements > 0 Then
             ZEN.gui.Acquisition.Regions.Delete.Execute
         End If
@@ -2122,7 +2122,7 @@ On Error GoTo StartSetting_Error
                 MsgBox ("For Job " & Job & ". To TrackZ and/or TrackXY Focus Method must be different then None!")
                 Exit Function
             End If
-            If Me.Controls(Job + "FocusMethod").ListIndex = FocusMethods.count - 1 Then
+            If Me.Controls(Job + "FocusMethod").ListIndex = FocusMethods.Count - 1 Then
                 Me.Controls(Job + "OiaActive") = True
             End If
         End If

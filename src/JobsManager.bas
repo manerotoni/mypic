@@ -94,7 +94,7 @@ On Error GoTo AcquireJob_Error
     
 
         
-    'Time = Timer
+    Time = Timer
     'Change settings for new Job if it is different from currentJob (global variable)
     If JobName <> CurrentJob Then
         Jobs.putJob JobName, ZEN
@@ -114,8 +114,15 @@ On Error GoTo AcquireJob_Error
     If Not Recenter_pre(position.Z, SuccessRecenter, ZENv) Then
         Exit Function
     End If
-    'Debug.Print "Time to recenter pre " & Round(Timer - Time, 3)
-
+    Debug.Print "Time to put job and recenter pre " & Round(Timer - Time, 3)
+    ''''This is only for debug purposes!
+    If DebugCode Then
+        SleepWithEvents (1000)
+        If (Abs(Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording)) > 0.001) Or (Abs(Lsm5.DsRecording.ReferenceZ - position.Z) > 0.001) Then
+            LogManager.UpdateErrorLog "Warning image " & RecordingName & " has wrong central slice by " _
+            & Round(Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording), PrecZ) & " um  ref slice is off by " & Round(Abs(Lsm5.DsRecording.ReferenceZ - position.Z), PrecZ)
+        End If
+    End If
     'Time = Timer
     'checks if any of the track is on
     If Jobs.isAcquiring(JobName) Then
@@ -126,6 +133,7 @@ On Error GoTo AcquireJob_Error
         GoTo ErrorTrack
     End If
     'Debug.Print "Time to scan image " & Round(Timer - Time, 3)
+     Application.ThrowEvent tag_Events.eEventScanStop, 0
     
     'wait that slice recentered after acquisition
     'Time = Timer
