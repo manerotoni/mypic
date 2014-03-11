@@ -121,7 +121,7 @@ On Error GoTo AcquireJob_Error
 #If ZENvC = 2012 Then
         If (Abs(Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z)) > 0.01) Or (Abs(Lsm5.DsRecording.ReferenceZ - position.Z) > 0.01) Then
             LogManager.UpdateErrorLog "Warning: before imaging " & RecordingName & " has wrong central slice by " _
-            & Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z) & " um  ref slice is off by " & Lsm5.DsRecording.ReferenceZ - position.Z
+            & Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z) & " um  ref slice is off by " & Lsm5.DsRecording.ReferenceZ - position.Z & " um"
         End If
 #Else
         If (Abs(Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z)) > 0.01) Then

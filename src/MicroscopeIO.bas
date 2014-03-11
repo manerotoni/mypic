@@ -730,11 +730,13 @@ Public Sub setMarkedStagePosition(Pos() As Vector)
 On Error GoTo getMarkedStagePosition_Error
         Lsm5.Hardware.CpStages.MarkClearAll
         SleepWithEvents (500)
-        For i = 0 To UBound(Pos)
-                Lsm5.Hardware.CpStages.MarkAddZ Pos(i).X, Pos(i).Y, Pos(i).Z
-        Next i
         Application.ThrowEvent ePropertyEventStage, 0 'normally not recquired maybe it helps for the update
-        Debug.Print Lsm5.Hardware.CpStages.MarkCount
+        For i = 0 To UBound(Pos)
+            Lsm5.Hardware.CpStages.MarkAddZ Pos(i).X, Pos(i).Y, Pos(i).Z
+            SleepWithEvents (100)
+        Next i
+        SleepWithEvents (500)
+        Debug.Print "Marked Positions " & Lsm5.Hardware.CpStages.MarkCount
         If UBound(Pos) + 1 > Lsm5.Hardware.CpStages.MarkCount Then
             For i = 0 To UBound(Pos)
                 Lsm5.Hardware.CpStages.MarkAddZ Pos(i).X, Pos(i).Y, Pos(i).Z
@@ -837,7 +839,7 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
     Dim ZOffset As Double
     Dim Prec As Double
     Dim ScanController As AimScanController
-    Set ScanController = Lsm5.ExternalDsObject.ScanController
+    'Set ScanController = Lsm5.ExternalDsObject.ScanController
         
     Prec = 0.01
     MaxCnt = 6
@@ -848,7 +850,7 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
     ' this waits for central slice at Z
 
     
-    ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
+    'ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
     Pos = Lsm5.Hardware.CpFocus.position
     ZOffset = getHalfZRange(Lsm5.DsRecording) + Pos - Z
     
@@ -856,9 +858,9 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
         Debug.Print "WaitForRecentering ZOffset start " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
         While Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec And cnt < MaxCnt
             If Reset Then
-                ScanController.LockAll False
+                'ScanController.LockAll False
                 Lsm5.DsRecording.Sample0Z = ZOffset
-                ScanController.LockAll True
+                'ScanController.LockAll True
             End If
             SleepWithEvents (400)
             cnt = cnt + 1
@@ -870,13 +872,13 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
         If cnt > 0 And DebugCode Then
             LogManager.UpdateWarningLog " Warning: waitForRecentering recquired " & cnt & " rounds. Reset = " & Reset & ". If False warning at end of imaging"
         End If
-        ScanController.LockAll False
+        'ScanController.LockAll False
         If cnt = MaxCnt And Reset Then
             Lsm5.DsRecording.Sample0Z = ZOffset
             GoTo FailedWaiting
         End If
     End If
-    ScanController.LockAll False
+    'ScanController.LockAll False
     DoEvents
     Success = True
     WaitForRecentering2011 = True
@@ -898,22 +900,22 @@ Public Function Recenter_pre(Z As Double, Optional Success As Boolean = False, O
     If Not Recenter(Z, ZENv) Then
         Exit Function
     End If
-    If ZENv < 2012 Then
+   ' If ZENv < 2012 Then
         If Not WaitForRecentering(Z, Success, ZENv) Then
             Exit Function
         End If
-    End If
+    'End If
     If Not ScanStop Then
         Recenter_pre = True
     End If
 End Function
 
 Public Function Recenter_post(Z As Double, Optional Success As Boolean = False, Optional ZENv As Integer = 2011, Optional Reset As Boolean = True) As Boolean
-    If ZENv < 2012 Then
-        If Not WaitForRecentering(Z, Success, ZENv, Reset) Then
-            Exit Function
-        End If
+    'If ZENv < 2012 Then
+    If Not WaitForRecentering(Z, Success, ZENv, Reset) Then
+        Exit Function
     End If
+    'End If
     
     If Not ScanStop Then
         Recenter_post = True
@@ -973,25 +975,25 @@ Public Function Recenter2011(Z As Double) As Boolean
     Prec = 0.001
     
 
-    ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
+    'ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
     Pos = Lsm5.Hardware.CpFocus.position
-    ScanController.LockAll False
-    If Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then 'Move at the start alwayes if piezo
-        If Round(Pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
-            If Not FailSafeMoveStageZ(Z) Then
-                Exit Function
-            End If
+    'ScanController.LockAll False
+    'If Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then 'Move at the start alwayes if piezo, for ZEN 2012 the best strategy is always to move at the start
+    If Round(Pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
+        If Not FailSafeMoveStageZ(Z) Then
+            GoTo EndOfFun
         End If
-        Pos = Z
     End If
+    Pos = Z
+    'End If
     ''Only recenter central slice if we have a ZStack
     If isZStack(Lsm5.DsRecording) Then
         ZOffset = getHalfZRange(Lsm5.DsRecording) + Pos - Z
         Debug.Print "Recenter at start " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z) & " " & Lsm5.DsRecording.ReferenceZ - Z
-        ScanController.LockAll False
+        'ScanController.LockAll False
         Lsm5.DsRecording.Sample0Z = ZOffset
         Lsm5.DsRecording.ReferenceZ = Z  'this may not exist for previous Zen versions for ZEN2012 this is absolutely recquired
-        ScanController.LockAll True
+        'ScanController.LockAll True
         SleepWithEvents (500) 'with 500 it works
         Debug.Print "Recenter Offset after 500 ms " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
         While Count < 3 And Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec Or Abs(Lsm5.DsRecording.ReferenceZ - Z > Prec)
@@ -999,16 +1001,16 @@ Public Function Recenter2011(Z As Double) As Boolean
                 LogManager.UpdateLog "Warning Recenter2011: On round " & Count + 1 & " centerslice has not been set correctly. Goal " & Round(ZOffset, PrecZ) & " is " & Round(Lsm5.DsRecording.Sample0Z, PrecZ)
             End If
             While Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec Or Abs(Lsm5.DsRecording.ReferenceZ - Z > Prec)
-                ScanController.LockAll False
+                'ScanController.LockAll False
                 Lsm5.DsRecording.Sample0Z = ZOffset
                 Lsm5.DsRecording.ReferenceZ = Z
-                ScanController.LockAll True
+                'ScanController.LockAll True
                 SleepWithEvents (100)
             Wend
-            ScanController.LockAll False
+            'ScanController.LockAll False
             SleepWithEvents (200)
             If ScanStop Then
-                Exit Function
+                GoTo EndOfFun
             End If
             Count = Count + 1
         Wend
@@ -1016,10 +1018,14 @@ Public Function Recenter2011(Z As Double) As Boolean
             LogManager.UpdateWarningLog "Warning from Recenter2011: Centerslice has not been set correctly goal " & Round(ZOffset, PrecZ) & " is " & Round(Lsm5.DsRecording.Sample0Z, PrecZ)
         End If
     End If
-    ScanController.LockAll False
+    'ScanController.LockAll False
     
 
     Recenter2011 = True
+    Exit Function
+EndOfFun:
+    'ScanController.LockAll False
+    
 End Function
 
 #Else
@@ -1035,9 +1041,9 @@ Public Function Recenter2011(Z As Double) As Boolean
     Prec = 0.001
     
 
-    ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
+    'ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
     Pos = Lsm5.Hardware.CpFocus.position
-    ScanController.LockAll False ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
+    'ScanController.LockAll False ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
     
     If Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then 'Move at the start alwayes if piezo
         If Round(Pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
@@ -1053,20 +1059,20 @@ Public Function Recenter2011(Z As Double) As Boolean
         ZOffset = getHalfZRange(Lsm5.DsRecording) + Pos - Z
         Debug.Print "Recenter at start " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
         'Not clear if this is recquired
-        ScanController.LockAll False
+        'ScanController.LockAll False
         Lsm5.DsRecording.Sample0Z = ZOffset
-        ScanController.LockAll True
+        'ScanController.LockAll True
         SleepWithEvents (500) 'with 500 it works
         Debug.Print "Recenter Offset after 500 ms " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
         While Count < 3 And Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec
             LogManager.UpdateLog "Warning Recenter2011: On round " & Count + 1 & " centerslice has not been set correctly. Goal " & Round(ZOffset + Pos - Z, PrecZ) & " is " & Round(Lsm5.DsRecording.Sample0Z, PrecZ)
             While Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec
-                ScanController.LockAll False
+                'ScanController.LockAll False
                 Lsm5.DsRecording.Sample0Z = ZOffset
-                ScanController.LockAll True
+                'ScanController.LockAll True
                 SleepWithEvents (100)
             Wend
-            ScanController.LockAll False
+            'ScanController.LockAll False
             SleepWithEvents (200)
             If ScanStop Then
                 Exit Function
@@ -1078,7 +1084,7 @@ Public Function Recenter2011(Z As Double) As Boolean
             LogManager.UpdateWarningLog "Warning: Centerslice has not been set correctly goal " & Round(ZOffset, PrecZ) & " is " & Round(Lsm5.DsRecording.Sample0Z, PrecZ)
         End If
     End If
-    ScanController.LockAll False
+    'ScanController.LockAll False
     'Always move at the end if we did not move before
     If Round(Pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
         If Not FailSafeMoveStageZ(Z) Then

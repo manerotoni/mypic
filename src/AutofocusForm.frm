@@ -48,7 +48,7 @@ Private Const LogCode = True                ' sets key to run tests visible or n
 '''''
 Public Sub UserForm_Initialize()
     DisplayProgress "Initializing Macro ...", RGB(&HC0, &HC0, 0)
-    Version = " v3.0.22"
+    Version = " v3.0.23"
     Dim i As Integer
     Dim Name As Variant
     ZENv = getVersionNr
@@ -1109,6 +1109,7 @@ Private Sub putJob(JobName As String)
     
     Jobs.putJob JobName, ZEN
     'This is just for visualising the job in the Gui
+
     UpdateGuiFromJob Jobs, JobName, ZEN
     setMarkedStagePosition Pos
     DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
