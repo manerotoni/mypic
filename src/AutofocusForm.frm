@@ -53,6 +53,7 @@ Public Sub UserForm_Initialize()
     Dim Name As Variant
     ZENv = getVersionNr
     'find the version of the software
+
     If ZENv > 2010 Then
         On Error GoTo errorMsg
         'in some cases this does not register properly

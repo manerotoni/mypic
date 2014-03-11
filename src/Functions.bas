@@ -52,7 +52,22 @@ End Function
 
 '''Starts the form
 Public Sub Autofocus_Setup()
-        AutofocusForm.Show
+    ZENv = getVersionNr
+    'find the version of the software
+#If (ZENvC >= 2012) Then
+    If ZENv < 2012 Then
+        MsgBox "ZENvC Compiler constant is set to 2012 but your ZEN version is below ZEN2012." & vbCrLf & _
+        "Edit project properties in the VBA editor by right clicking on project name and modify conditional compiler arguments ZENvC to your ZEN version"
+        Exit Sub
+    End If
+#Else
+    If ZENv >= 2012 Then
+        MsgBox "ZENvC Compiler constant is not to 2012 or higher but your ZEN version is 2012 or higher." & vbCrLf & _
+        "Edit project properties in the VBA editor by right clicking on project name and modify conditional compiler arguments ZENvC to your ZEN version"
+        Exit Sub
+    End If
+#End If
+    AutofocusForm.Show
 End Sub
 '''
 '   Display progress in bottom labal of AutofocusForm

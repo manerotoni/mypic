@@ -289,6 +289,9 @@ Public Function NewRecord(RecordingDoc As DsRecordingDoc, Name As String, Option
         Wend
     End If
     RecordingDoc.SetTitle Name
+    'this does not help in ZEN2010
+    ' Application.ThrowEvent tag_Events. .eEventRecordingNameChanged, 0
+    
     NewRecord = True
     Exit Function
     
@@ -963,7 +966,7 @@ Public Function Recenter2010(Z As Double) As Boolean
 '    Recenter2010 = True
 End Function
 
-#If ZENvC = 2012 Then 'because of DsRecording.RecenterZ
+#If ZENvC >= 2012 Then 'because of DsRecording.RecenterZ
 Public Function Recenter2011(Z As Double) As Boolean
     Dim ScanController As AimScanController
     Dim Pos As Double
@@ -1045,7 +1048,7 @@ Public Function Recenter2011(Z As Double) As Boolean
     Pos = Lsm5.Hardware.CpFocus.position
     'ScanController.LockAll False ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
     
-    If Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then 'Move at the start alwayes if piezo
+    If Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then 'Move at the start always if piezo
         If Round(Pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
             If Not FailSafeMoveStageZ(Z) Then
                 Exit Function
