@@ -115,20 +115,21 @@ On Error GoTo AcquireJob_Error
         Exit Function
     End If
     Debug.Print "Time to put job and recenter pre " & Round(Timer - Time, 3)
-    
+    If DebugCode Then
+        SleepWithEvents (1000)
+        cStgPos.Z = Lsm5.Hardware.CpFocus.position
 #If ZENvC = 2012 Then
-    SleepWithEvents (1000)
-    If (Abs(Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording)) > 0.01) Or (Abs(Lsm5.DsRecording.ReferenceZ - position.Z) > 0.01) Then
-        LogManager.UpdateErrorLog "Warning image " & RecordingName & " has wrong central slice by " _
-        & Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording) & " um  ref slice is off by " & Lsm5.DsRecording.ReferenceZ - position.Z
-    End If
+        If (Abs(Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z)) > 0.01) Or (Abs(Lsm5.DsRecording.ReferenceZ - position.Z) > 0.01) Then
+            LogManager.UpdateErrorLog "Warning: before imaging " & RecordingName & " has wrong central slice by " _
+            & Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z) & " um  ref slice is off by " & Lsm5.DsRecording.ReferenceZ - position.Z
+        End If
 #Else
-    If (Abs(Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording)) > 0.01) Then
-        LogManager.UpdateErrorLog "Warning image " & RecordingName & " has wrong central slice by " _
-        & Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording) & " um"
-    End If
+        If (Abs(Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z)) > 0.01) Then
+            LogManager.UpdateErrorLog "Warning: before imaging " & RecordingName & " has wrong central slice by " _
+            & Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z) & " um"
+        End If
 #End If
-
+    End If
     'Time = Timer
     'checks if any of the track is on
     If Jobs.isAcquiring(JobName) Then
@@ -139,26 +140,28 @@ On Error GoTo AcquireJob_Error
         GoTo ErrorTrack
     End If
     'Debug.Print "Time to scan image " & Round(Timer - Time, 3)
-     Application.ThrowEvent tag_Events.eEventScanStop, 0
+     'Application.ThrowEvent tag_Events.eEventScanStop, 0
      'Warning if there are any issues with the central slice
-
-#If ZENvC = 2012 Then
-    If (Abs(Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording)) > 0.01) Or (Abs(Lsm5.DsRecording.ReferenceZ - position.Z) > 0.01) Then
-        LogManager.UpdateErrorLog "Warning image " & RecordingName & " has wrong central slice by " _
-        & Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording) & " um  ref slice is off by " & Lsm5.DsRecording.ReferenceZ - position.Z
-    End If
-#Else
-    If (Abs(Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording)) > 0.01) Then
-        LogManager.UpdateErrorLog "Warning image " & RecordingName & " has wrong central slice by " _
-        & Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording) & " um"
-    End If
-#End If
 
     'wait that slice recentered after acquisition
     'Time = Timer
-    If Not Recenter_post(position.Z, SuccessRecenter, ZENv) Then
+    If Not Recenter_post(position.Z, SuccessRecenter, ZENv, False) Then
        Exit Function
     End If
+    
+    cStgPos.Z = Lsm5.Hardware.CpFocus.position
+#If ZENvC = 2012 Then
+    If (Abs(Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z)) > 0.01) Or (Abs(Lsm5.DsRecording.ReferenceZ - position.Z) > 0.01) Then
+        LogManager.UpdateWarningLog " Warning: after imaging " & RecordingName & " has wrong central slice by " _
+        & Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z) & " um  ref slice is off by " & Lsm5.DsRecording.ReferenceZ - position.Z
+    End If
+#Else
+    If (Abs(Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z)) > 0.01) Then
+        LogManager.UpdateWarningLog " Warning: after imaging " & RecordingName & " has wrong central slice by " _
+        & Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z) & " um"
+    End If
+#End If
+
     AcquireJob = True
     Debug.Print "Time to put put/acquire Job " & JobName & " " & Round(Timer - Time, 3)
     LogManager.UpdateLog " Acquire job " & JobName & " " & RecordingName & " at X = " & position.X & ", Y =  " & position.Y & _
@@ -1115,8 +1118,11 @@ On Error GoTo UpdateGuiFromJob_Error
 
     'Success = Application.ThrowEvent(tag_Events.eEventDataChanged, 0)
     'not really sure what the second parameter does?
-    Success = Application.ThrowEvent(tag_Events.eEventDsActiveRecChanged, 0)
-    
+    If ZENv > 2010 Then 'On 2010 it is extremely slow and the command does not wait for finishing
+        Success = Application.ThrowEvent(tag_Events.eEventDsActiveRecChanged, 0)
+        DoEvents
+    End If
+
     If ZENv > 2010 Then
        If Jobs.isZStack(JobName) Then
             'ZEN.gui.Acquisition.ZStack.UsePiezo.Value = (Jobs.getSpecialScanMode(JobName) = "ZScanner")
