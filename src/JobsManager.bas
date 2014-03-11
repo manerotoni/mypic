@@ -115,14 +115,20 @@ On Error GoTo AcquireJob_Error
         Exit Function
     End If
     Debug.Print "Time to put job and recenter pre " & Round(Timer - Time, 3)
-    ''''This is only for debug purposes!
-    If DebugCode Then
-        SleepWithEvents (1000)
-        If (Abs(Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording)) > 0.001) Or (Abs(Lsm5.DsRecording.ReferenceZ - position.Z) > 0.001) Then
-            LogManager.UpdateErrorLog "Warning image " & RecordingName & " has wrong central slice by " _
-            & Round(Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording), PrecZ) & " um  ref slice is off by " & Round(Abs(Lsm5.DsRecording.ReferenceZ - position.Z), PrecZ)
-        End If
+    
+#If ZENvC = 2012 Then
+    SleepWithEvents (1000)
+    If (Abs(Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording)) > 0.01) Or (Abs(Lsm5.DsRecording.ReferenceZ - position.Z) > 0.01) Then
+        LogManager.UpdateErrorLog "Warning image " & RecordingName & " has wrong central slice by " _
+        & Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording) & " um  ref slice is off by " & Lsm5.DsRecording.ReferenceZ - position.Z
     End If
+#Else
+    If (Abs(Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording)) > 0.01) Then
+        LogManager.UpdateErrorLog "Warning image " & RecordingName & " has wrong central slice by " _
+        & Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording) & " um"
+    End If
+#End If
+
     'Time = Timer
     'checks if any of the track is on
     If Jobs.isAcquiring(JobName) Then
@@ -134,18 +140,25 @@ On Error GoTo AcquireJob_Error
     End If
     'Debug.Print "Time to scan image " & Round(Timer - Time, 3)
      Application.ThrowEvent tag_Events.eEventScanStop, 0
-    
+     'Warning if there are any issues with the central slice
+
+#If ZENvC = 2012 Then
+    If (Abs(Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording)) > 0.01) Or (Abs(Lsm5.DsRecording.ReferenceZ - position.Z) > 0.01) Then
+        LogManager.UpdateErrorLog "Warning image " & RecordingName & " has wrong central slice by " _
+        & Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording) & " um  ref slice is off by " & Lsm5.DsRecording.ReferenceZ - position.Z
+    End If
+#Else
+    If (Abs(Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording)) > 0.01) Then
+        LogManager.UpdateErrorLog "Warning image " & RecordingName & " has wrong central slice by " _
+        & Lsm5.DsRecording.Sample0Z - getHalfZRange(Lsm5.DsRecording) & " um"
+    End If
+#End If
+
     'wait that slice recentered after acquisition
     'Time = Timer
     If Not Recenter_post(position.Z, SuccessRecenter, ZENv) Then
        Exit Function
     End If
-    'While Not isReady(5)
-    '    SleepWithEvents (500)
-    'Wend
-    ''workaround to avoid Fcs crashes
-    'SleepWithEvents (PauseEndAcquisition)
-    'Debug.Print "Time to recenter post " & Round(Timer - Time, 3)
     AcquireJob = True
     Debug.Print "Time to put put/acquire Job " & JobName & " " & Round(Timer - Time, 3)
     LogManager.UpdateLog " Acquire job " & JobName & " " & RecordingName & " at X = " & position.X & ", Y =  " & position.Y & _
@@ -488,7 +501,6 @@ On Error GoTo ExecuteJobAndTrack_Error
         'do any recquired computation
         Time = Timer
         StgPos = TrackOffLine(JobName, RecordingDoc, StgPos)
-        
         
         Debug.Print "Time to TrackOffLine " & Timer - Time
         If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
