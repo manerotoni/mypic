@@ -42,9 +42,9 @@ End Function
 Public Function UpdateWarningLog(Text As String)
     Dim iFileNum
     Dim ErrText As String
-    ErrText = Left(ErrorLogLabel.Caption, MaxSizeLog)
-    ErrorLogLabel.Caption = Now & " " & Text & vbCrLf & ErrText
-    LogManager.Show
+'    ErrText = Left(ErrorLogLabel.Caption, MaxSizeLog)
+'    ErrorLogLabel.Caption = Now & " " & Text & vbCrLf & ErrText
+'    LogManager.Show
 
     'write to ErrorFile
     If Log Then

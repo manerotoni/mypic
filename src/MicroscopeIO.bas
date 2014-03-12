@@ -582,16 +582,16 @@ SetPosition:
     Lsm5.Hardware.CpStages.GetXYPosition CurrentX, CurrentY
     Lsm5.Hardware.CpStages.SetXYPosition X, Y
     Do While (Abs(CurrentX - X) > Prec) Or (Abs(CurrentY - Y) > Prec) Or Lsm5.Hardware.CpStages.IsBusy
-        SleepWithEvents (50)
+        SleepWithEvents (100)
         Lsm5.Hardware.CpStages.GetXYPosition CurrentX, CurrentY
         WaitTime = WaitTime + 1
         If ScanStop Then
             ScanStop = True
             Exit Function
         End If
-        If WaitTime > 50 Then
+        If WaitTime > 50 And Not Lsm5.Hardware.CpStages.IsBusy Then
             LogManager.UpdateWarningLog "Warning: StageMovement did not reach the precision of " & Prec _
-            & "um  within 2500 ms on trial " & Trial & ". Goal position is XY: " & X & " " & Y & " reached XY: " & CurrentX _
+            & "um  within " & WaitTime * 100 & " ms on trial " & Trial & ". Goal position is XY: " & X & " " & Y & " reached XY: " & CurrentX _
             & " " & CurrentY
             Exit Do
         End If
@@ -635,17 +635,17 @@ SetPosition:
     WaitTime = 0
     CurrentZ = Lsm5.Hardware.CpFocus.position
     Lsm5.Hardware.CpFocus.position = Z
-
-    Do While (Abs(CurrentZ - Z) > Prec) Or Lsm5.ExternalCpObject.pHardwareObjects.pFocus.pItem(0).bIsBusy
-        SleepWithEvents (50)
+    
+    Do While (Abs(CurrentZ - Z) > Prec) Or Lsm5.Hardware.CpFocus.IsBusy
+        SleepWithEvents (100)
         CurrentZ = Lsm5.Hardware.CpFocus.position
         WaitTime = WaitTime + 1
         If ScanStop Then
             Exit Function
         End If
-        If WaitTime > 50 Then
+        If WaitTime > 50 And Not Lsm5.Hardware.CpFocus.IsBusy Then
             LogManager.UpdateErrorLog "Warning: FocusZMovement did not reach the precision of " & Prec _
-            & "um  within 2500 ms on trial  " & Trial & ". Goal position is " & Z & " reached " & CurrentZ
+            & "um  within " & WaitTime * 100 & " ms on trial  " & Trial & ". Goal position is " & Z & " reached " & CurrentZ
             Exit Do
         End If
     Loop
