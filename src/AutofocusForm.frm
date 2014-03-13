@@ -415,8 +415,6 @@ Private Sub ButtonLoadSettings_Click()
         LoadFormSettings FileName
         SleepWithEvents (500)
         setMarkedStagePosition Pos
-        
-
     End If
     DisplayProgress "Ready", RGB(&HC0, &HC0, 0)
     

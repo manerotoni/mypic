@@ -37,7 +37,8 @@ Public JobFcsNames() As String
 Public JobFcsShortNames As Collection
 'the name of the Fcsjob that is currently loaded
 Public CurrentJobFcs As String
-
+'Name of file to be saved (used as reference for other functions)
+Public CurrentFileName As String
 
 ''' The grid for tasks
 Public Grids As ImagingGrids
@@ -333,6 +334,7 @@ On Error GoTo ExecuteJob_Error
     If Not AcquireJob(JobName, RecordingDoc, FileName, StgPos) Then
         Exit Function
     End If
+    CurrentFileName = FileName
     If Jobs.getTimeToAcquire(JobName) = 0 And AutofocusForm.Controls(JobName + "TimeOut") Then
         Jobs.setTimeToAcquire JobName, Timer - Time + TimeOutOverHead
     End If

@@ -515,6 +515,7 @@ Public Sub SaveFcsPositionList(sFile As String, positionsPx() As Vector)
     Close
     Exit Sub
 ErrorHandle:
+    Close
     LogManager.UpdateErrorLog "SaveFcsPositionList Can't write " & sFile & " for the FcsPositions"
     Exit Sub
 ErrorHandle2:
@@ -788,45 +789,74 @@ End Function
 '''
 Public Function WaitForRecentering2010(Z As Double, Optional Success As Boolean = False, Optional Reset As Boolean = True) As Boolean
     WaitForRecentering2010 = WaitForRecentering2011(Z, Success, Reset)
-'    Dim cnt As Integer
-'    Dim MaxCnt As Integer
-'    Dim ZOffset As Double
-'    MaxCnt = 6
-'    cnt = 0
-'    ' Wait up to 4 sec for centering
-'    ' position central slice is Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + Lsm5.Hardware.CpFocus.Position (or the real actual position)
-'    ' this waits for central slice at Z
-'    Dim Pos As Double
-'    Dim Sample0Z As Double
-'    Pos = Lsm5.Hardware.CpFocus.position
-'    ZOffset = getHalfZRange(Lsm5.DsRecording) + Pos - Z
-'
-'    'in this case stage has bene moved
-'    If isZStack(Lsm5.DsRecording) Then
-'        While Round(Lsm5.DsRecording.Sample0Z, 1) <> Round(getHalfZRange(Lsm5.DsRecording) + _
-'            Pos - Z, 1) And cnt < MaxCnt
-'            Sleep (400)
-'            DoEvents
-'            cnt = cnt + 1
-'            If ScanStop Then
-'                Exit Function
-'            End If
-'        Wend
-'        If cnt = MaxCnt Then
-'            Lsm5.DsRecording.Sample0Z = getHalfZRange(Lsm5.DsRecording) + Pos - Z
-'            GoTo FailedWaiting
-'        End If
-'    End If
-'    Success = True
-'    WaitForRecentering2010 = True
-'    Exit Function
-'FailedWaiting:
-'    DoEvents
-'    Success = False
-'    LogManager.UpdateErrorLog "Warning: waitForRecentering failed"
-'    WaitForRecentering2010 = True
 End Function
 
+#If (ZENvC >= 2012) Then
+''''
+'   WaitForRecentering2011(Z As Double, Success As Boolean) As Boolean
+'   Helping function to check if after acquisition focus returns to its correct position
+'       [Z] - is value where the central slice should be.
+'       [Success] - Tells if central slide has been found before maximal number of iterations
+'   Additional remarks: Lsm5.Hardware.CpFocus.Position is not updated correctly after acquisition (CpFocus needs to return to working position) on the other hand
+'   Lsm5.DsRecording.Sample0Z keeps track correctly of the position
+'''
+Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean = False, Optional Reset As Boolean = False) As Boolean
+    Dim cnt As Integer
+    Dim MaxCnt As Integer
+    Dim Pos As Double
+    Dim ZOffset As Double
+    Dim ReferenceZ As Double
+    Dim Prec As Double
+    'Dim ScanController As AimScanController
+    'Set ScanController = Lsm5.ExternalDsObject.ScanController
+        
+    Prec = 0.01
+    MaxCnt = 6
+    cnt = 0
+    
+    'ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too, leave it out for the moment)'''
+    Pos = Lsm5.Hardware.CpFocus.position
+    ZOffset = getHalfZRange(Lsm5.DsRecording) + Pos - Z
+    ReferenceZ = Lsm5.DsRecording.ReferenceZ
+    
+    If isZStack(Lsm5.DsRecording) Then
+        Debug.Print "WaitForRecentering ZOffset start " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
+        While (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec Or Abs(Z - Lsm5.DsRecording.ReferenceZ) > Prec) And cnt < MaxCnt
+            If Reset Then
+                'ScanController.LockAll False
+                Lsm5.DsRecording.Sample0Z = ZOffset
+                Lsm5.DsRecording.ReferenceZ = Z
+                'ScanController.LockAll True
+            End If
+            SleepWithEvents (400)
+            cnt = cnt + 1
+            If ScanStop Then
+                Exit Function
+            End If
+        Wend
+        Debug.Print "WaitForRecentering ZOffset " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
+        If cnt > 0 Then
+            LogManager.UpdateWarningLog " Warning " & CurrentFileName & " waitForRecentering recquired " & cnt & " rounds. Reset = " & Reset & ". If False warning happened at end of imaging"
+        End If
+        'ScanController.LockAll False
+        If cnt = MaxCnt And Reset Then
+            Lsm5.DsRecording.Sample0Z = ZOffset
+            Lsm5.DsRecording.ReferenceZ = Z
+            GoTo FailedWaiting
+        End If
+    End If
+    'ScanController.LockAll False
+    DoEvents
+    Success = True
+    WaitForRecentering2011 = True
+    Exit Function
+FailedWaiting:
+    DoEvents
+    Success = False
+    LogManager.UpdateWarningLog " Warning: " & CurrentFileName & " waitForRecentering forced recentering of the stack"
+    WaitForRecentering2011 = True
+End Function
+#Else
 ''''
 '   WaitForRecentering2011(Z As Double, Success As Boolean) As Boolean
 '   Helping function to check if after acquisition focus returns to its correct position
@@ -841,19 +871,14 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
     Dim Pos As Double
     Dim ZOffset As Double
     Dim Prec As Double
-    Dim ScanController As AimScanController
+    'Dim ScanController As AimScanController
     'Set ScanController = Lsm5.ExternalDsObject.ScanController
         
     Prec = 0.01
     MaxCnt = 6
     cnt = 0
-    ' Wait up to 4 sec for centering
-    ' Note pculiarity of centering
-    ' position central slice is Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + Lsm5.Hardware.CpFocus.Position (or the real actual position)
-    ' this waits for central slice at Z
-
     
-    'ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
+    'ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too, leave it out for the moment)'''
     Pos = Lsm5.Hardware.CpFocus.position
     ZOffset = getHalfZRange(Lsm5.DsRecording) + Pos - Z
     
@@ -872,8 +897,8 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
             End If
         Wend
         Debug.Print "WaitForRecentering ZOffset " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
-        If cnt > 0 And DebugCode Then
-            LogManager.UpdateWarningLog " Warning: waitForRecentering recquired " & cnt & " rounds. Reset = " & Reset & ". If False warning at end of imaging"
+        If cnt > 0 Then
+            LogManager.UpdateWarningLog " Warning " & CurrentFileName & " waitForRecentering recquired " & cnt & " rounds. Reset = " & Reset & ". If False warning happened at end of imaging"
         End If
         'ScanController.LockAll False
         If cnt = MaxCnt And Reset Then
@@ -889,9 +914,11 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
 FailedWaiting:
     DoEvents
     Success = False
-    LogManager.UpdateWarningLog " Warning: waitForRecentering forced recentering of the slice "
+    LogManager.UpdateWarningLog " Warning: " & CurrentFileName & " waitForRecentering forced recentering of the stack"
     WaitForRecentering2011 = True
 End Function
+#End If
+
 
 ''''
 '   Recenter(Z As Double)
@@ -903,22 +930,18 @@ Public Function Recenter_pre(Z As Double, Optional Success As Boolean = False, O
     If Not Recenter(Z, ZENv) Then
         Exit Function
     End If
-   ' If ZENv < 2012 Then
-        If Not WaitForRecentering(Z, Success, ZENv) Then
-            Exit Function
-        End If
-    'End If
+    If Not WaitForRecentering(Z, Success, ZENv) Then
+        Exit Function
+    End If
     If Not ScanStop Then
         Recenter_pre = True
     End If
 End Function
 
 Public Function Recenter_post(Z As Double, Optional Success As Boolean = False, Optional ZENv As Integer = 2011, Optional Reset As Boolean = True) As Boolean
-    'If ZENv < 2012 Then
     If Not WaitForRecentering(Z, Success, ZENv, Reset) Then
         Exit Function
     End If
-    'End If
     
     If Not ScanStop Then
         Recenter_post = True
@@ -945,35 +968,16 @@ End Function
 
 Public Function Recenter2010(Z As Double) As Boolean
     Recenter2010 = Recenter2011(Z)
-'    Dim Pos As Double
-'    Dim ScanController As AimScanController
-'    Set ScanController = Lsm5.ExternalDsObject.ScanController
-'
-'
-'    ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
-'    Pos = Lsm5.Hardware.CpFocus.position
-'    ScanController.LockAll False
-'
-'    Lsm5.DsRecording.Sample0Z = getHalfZRange(Lsm5.DsRecording) + Pos - Z
-'    Sleep (100)
-'    DoEvents
-'    If Round(Pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
-'        If Not FailSafeMoveStageZ(Z) Then
-'            Exit Function
-'        End If
-'    End If
-'    DoEvents
-'    Recenter2010 = True
 End Function
 
 #If ZENvC >= 2012 Then 'because of DsRecording.RecenterZ
 Public Function Recenter2011(Z As Double) As Boolean
-    Dim ScanController As AimScanController
     Dim Pos As Double
     Dim ZOffset As Double
     Dim Prec As Double
     Dim Count As Integer
-    Set ScanController = Lsm5.ExternalDsObject.ScanController
+    'Dim ScanController As AimScanController
+    'Set ScanController = Lsm5.ExternalDsObject.ScanController
     Count = 0
     Prec = 0.001
     
@@ -999,10 +1003,9 @@ Public Function Recenter2011(Z As Double) As Boolean
         'ScanController.LockAll True
         SleepWithEvents (500) 'with 500 it works
         Debug.Print "Recenter Offset after 500 ms " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
-        While Count < 3 And Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec Or Abs(Lsm5.DsRecording.ReferenceZ - Z > Prec)
-            If Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec Then
-                LogManager.UpdateLog "Warning Recenter2011: On round " & Count + 1 & " centerslice has not been set correctly. Goal " & Round(ZOffset, PrecZ) & " is " & Round(Lsm5.DsRecording.Sample0Z, PrecZ)
-            End If
+        While Count < 3 And (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec Or Abs(Lsm5.DsRecording.ReferenceZ - Z > Prec))
+            LogManager.UpdateLog " Warning: " & CurrentFileName & " Recenter. Problem in settings ZStack on round " & Count + 1 & _
+            ".  Sample0Z_diff: " & ZOffset - Lsm5.DsRecording.Sample0Z & " ReferenceZ_diff: " & Z - Lsm5.DsRecording.ReferenceZ
             While Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec Or Abs(Lsm5.DsRecording.ReferenceZ - Z > Prec)
                 'ScanController.LockAll False
                 Lsm5.DsRecording.Sample0Z = ZOffset
@@ -1018,7 +1021,7 @@ Public Function Recenter2011(Z As Double) As Boolean
             Count = Count + 1
         Wend
         If (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec) Or (Abs(Lsm5.DsRecording.ReferenceZ - Z) > Prec) Then
-            LogManager.UpdateWarningLog "Warning from Recenter2011: Centerslice has not been set correctly goal " & Round(ZOffset, PrecZ) & " is " & Round(Lsm5.DsRecording.Sample0Z, PrecZ)
+            LogManager.UpdateWarningLog " Warning: " & CurrentFileName & " Recenter. Problem in settings ZStack. Sample0Z_diff: " & ZOffset - Lsm5.DsRecording.Sample0Z & " ReferenceZ_diff: " & Z - Lsm5.DsRecording.ReferenceZ
         End If
     End If
     'ScanController.LockAll False
@@ -1032,14 +1035,14 @@ EndOfFun:
 End Function
 
 #Else
-
 Public Function Recenter2011(Z As Double) As Boolean
-    Dim ScanController As AimScanController
+    
     Dim Pos As Double
     Dim ZOffset As Double
     Dim Prec As Double
     Dim Count As Integer
-    Set ScanController = Lsm5.ExternalDsObject.ScanController
+    'Dim ScanController As AimScanController
+    'Set ScanController = Lsm5.ExternalDsObject.ScanController
     Count = 0
     Prec = 0.001
     
@@ -1068,7 +1071,8 @@ Public Function Recenter2011(Z As Double) As Boolean
         SleepWithEvents (500) 'with 500 it works
         Debug.Print "Recenter Offset after 500 ms " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
         While Count < 3 And Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec
-            LogManager.UpdateLog "Warning Recenter2011: On round " & Count + 1 & " centerslice has not been set correctly. Goal " & Round(ZOffset + Pos - Z, PrecZ) & " is " & Round(Lsm5.DsRecording.Sample0Z, PrecZ)
+            LogManager.UpdateLog " Warning: " & CurrentFileName & " Recenter2011. Problem in settings ZStack on round " & Count + 1 & _
+            ".  Sample0Z_diff: " & ZOffset - Lsm5.DsRecording.Sample0Z
             While Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec
                 'ScanController.LockAll False
                 Lsm5.DsRecording.Sample0Z = ZOffset
@@ -1084,7 +1088,7 @@ Public Function Recenter2011(Z As Double) As Boolean
         Wend
         
         If (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec) Then
-            LogManager.UpdateWarningLog "Warning: Centerslice has not been set correctly goal " & Round(ZOffset, PrecZ) & " is " & Round(Lsm5.DsRecording.Sample0Z, PrecZ)
+            LogManager.UpdateWarningLog " Warning: " & CurrentFileName & " Recenter2011. Problem in settings ZStack. Sample0Z_diff: " & ZOffset - Lsm5.DsRecording.Sample0Z
         End If
     End If
     'ScanController.LockAll False
