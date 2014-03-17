@@ -238,7 +238,7 @@ Public Sub LoadFormSettings(FileName As String)
                     AutofocusForm.Controls(FieldEntries(0)).value = FieldEntries(1)
                 End If
                 If Err Then
-                    LogManager.UpdateErrorLog "Warning " & FieldEntries(0) & " does not exist as parameter"
+                    LogManager.UpdateWarningLog " LoadParameters " & FieldEntries(0) & " does not exist as parameter"
                     On Error GoTo 0
                 End If
             End If

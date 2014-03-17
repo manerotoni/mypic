@@ -104,7 +104,7 @@ Public Sub setRoiFomZen(roiNr As Integer)
     Dim i As Long
     Dim X() As Double
     Dim Y() As Double
-    Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
+    Set vo = Lsm5.ExternalDsObject.ScanController.AcquisitionRegions
     'Debug.Print "nr Elements "; vo.GetNumberElements
     If roiNr <= vo.GetNumberElements Then
         If createRoiTxt(vo.ElementType(roiNr), vo.ElementAcquisitionFlags(roiNr)) Then
@@ -142,7 +142,7 @@ End Sub
 '''''
 Public Function ClearVectorElements() As Boolean
     Dim vo As AimImageVectorOverlay
-    Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
+    Set vo = Lsm5.ExternalDsObject.ScanController.AcquisitionRegions
     vo.Cleanup
 End Function
 
@@ -219,7 +219,7 @@ Public Function MakeVectorElement() As Boolean
     End If
     
     Dim vo As AimImageVectorOverlay
-    Set vo = Lsm5.ExternalDsObject.Scancontroller.AcquisitionRegions
+    Set vo = Lsm5.ExternalDsObject.ScanController.AcquisitionRegions
 
     Dim i As Integer
     Dim ElementNumber As Long

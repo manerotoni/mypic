@@ -121,12 +121,12 @@ On Error GoTo AcquireJob_Error
         cStgPos.Z = Lsm5.Hardware.CpFocus.position
 #If ZENvC >= 2012 Then
         If (Abs(Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z)) > 0.01) Or (Abs(Lsm5.DsRecording.ReferenceZ - position.Z) > 0.01) Then
-            LogManager.UpdateErrorLog "Warning: before imaging " & RecordingName & " has wrong central slice by " _
-            & Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z) & " um  ref slice is off by " & Lsm5.DsRecording.ReferenceZ - position.Z & " um"
+            LogManager.UpdateWarningLog " Problems in settings ZStack before imaging. Sample0Z_diff " _
+            & Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z) & " um , ReferenceZ_diff " & Lsm5.DsRecording.ReferenceZ - position.Z & " um"
         End If
 #Else
         If (Abs(Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z)) > 0.01) Then
-            LogManager.UpdateErrorLog "Warning: before imaging " & RecordingName & " has wrong central slice by " _
+            LogManager.UpdateWarningLog " Problems in settings ZStack before imaging. Sample0Z_diff " _
             & Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z) & " um"
         End If
 #End If
@@ -154,12 +154,12 @@ On Error GoTo AcquireJob_Error
         cStgPos.Z = Lsm5.Hardware.CpFocus.position
 #If ZENvC >= 2012 Then
         If (Abs(Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z)) > 0.01) Or (Abs(Lsm5.DsRecording.ReferenceZ - position.Z) > 0.01) Then
-            LogManager.UpdateWarningLog " Warning: after imaging " & RecordingName & " has wrong central slice by " _
-            & Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z) & " um  ref slice is off by " & Lsm5.DsRecording.ReferenceZ - position.Z
+            LogManager.UpdateWarningLog " Problems returning to rest position after imaging. Sample0Z_diff " _
+            & Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z) & " um , ReferenceZ_diff " & Lsm5.DsRecording.ReferenceZ - position.Z & " um"
         End If
 #Else
         If (Abs(Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z)) > 0.01) Then
-            LogManager.UpdateWarningLog " Warning: after imaging " & RecordingName & " has wrong central slice by " _
+            LogManager.UpdateWarningLog " Problems returning to rest position after imaging. Sample0Z_diff " _
             & Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z) & " um"
         End If
 #End If

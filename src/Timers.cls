@@ -34,7 +34,7 @@ Public Sub addTimer(Name As String)
         Exit Sub
     End If
     
-    If TimerNames.count = 0 Then
+    If TimerNames.Count = 0 Then
         ReDim Timers(0)
     Else
         ReDim Preserve Timers(0 To UBound(Timers) + 1)

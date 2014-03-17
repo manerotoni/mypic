@@ -591,8 +591,8 @@ SetPosition:
             Exit Function
         End If
         If WaitTime > 50 And Not Lsm5.Hardware.CpStages.IsBusy Then
-            LogManager.UpdateWarningLog "Warning: StageMovement did not reach the precision of " & Prec _
-            & "um  within " & WaitTime * 100 & " ms on trial " & Trial & ". Goal position is XY: " & X & " " & Y & " reached XY: " & CurrentX _
+            LogManager.UpdateWarningLog " FailSafeMoveStageXY did not reach the precision of " & Prec _
+            & " um  within " & WaitTime * 100 & " ms on trial " & Trial & ". Goal position is XY: " & X & " " & Y & " reached XY: " & CurrentX _
             & " " & CurrentY
             Exit Do
         End If

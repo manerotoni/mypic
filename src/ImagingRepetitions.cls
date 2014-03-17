@@ -80,7 +80,7 @@ End Function
 '''
 '   Reset everything to new values
 '''
-Public Function reset(Name As String, RepetitionTime As Double, RepetitionNumber As Integer, RepetitionInterval As Boolean)
+Public Function Reset(Name As String, RepetitionTime As Double, RepetitionNumber As Integer, RepetitionInterval As Boolean)
     Repetitions(Name).index = 0
     Repetitions(Name).update RepetitionTime, RepetitionNumber, RepetitionInterval
 End Function

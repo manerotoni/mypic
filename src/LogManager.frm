@@ -49,7 +49,7 @@ Public Function UpdateWarningLog(Text As String)
     'write to ErrorFile
     If Log Then
         If SafeOpenTextFile(ErrFileName, ErrFile, FileSystem) Then
-            ErrFile.WriteLine Now & " " & Text
+            ErrFile.WriteLine Now & " " & " Warning: " & CurrentFileName & " " & Text
             ErrFile.Close
         Else
             Log = False
