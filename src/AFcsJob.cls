@@ -136,8 +136,9 @@ Public Function setJobAi(ZEN As Object) As Boolean
         BleachTime = FcsControl.AcquisitionParameters.BleachTime
         PositionsEnabled = ZEN.gui.Fcs.EnablePositions.value
         TimeSeriesEnabled = ZEN.gui.Fcs.EnableTimeSeries.value
+        Me.timeToAcquire = 0
         setJobAi = True
-
+        
     Else
         Exit Function
     End If

@@ -265,6 +265,9 @@ End Function
 '
 Public Function ExecuteFcsJob(JobName As String, RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, FilePath As String, FileName As String, _
 Positions() As Vector, positionsPx() As Vector) As Boolean
+    Dim OiaSettings As OnlineIASettings
+    Set OiaSettings = New OnlineIASettings
+    OiaSettings.initializeDefault
 On Error GoTo ExecuteFcsJob_Error
     
     Dim i As Integer
@@ -281,14 +284,19 @@ On Error GoTo ExecuteFcsJob_Error
     If Not AcquireFcsJob(JobName, RecordingDoc, FcsData, FileName, Positions) Then
         Exit Function
     End If
-    If JobsFcs.getTimeToAcquire(JobName) = 0 And AutofocusForm.Controls(JobName + "TimeOut") Then
-        JobsFcs.setTimeToAcquire JobName, Timer - Time + TimeOutOverHead
-    End If
     
-    'this is a dummy variable used for consistencey except for autofocus the default is saving of all images
-    Dim OiaSettings As OnlineIASettings
-    Set OiaSettings = New OnlineIASettings
-    OiaSettings.initializeDefault
+    CurrentFileName = FileName
+    
+    If AutofocusForm.Controls(JobName + "TimeOut") Then
+        If JobsFcs.getTimeToAcquire(JobName) <= 0 Then
+            JobsFcs.setTimeToAcquire JobName, Timer - Time + TimeOutOverHead
+        End If
+    Else
+        JobsFcs.setTimeToAcquire JobName, 0
+    End If
+        
+    
+
     Sleep (500)
     If Not SaveFcsMeasurement(FcsData, FilePath & FileName & ".fcs") Then
          Exit Function
@@ -330,18 +338,24 @@ Public Function ExecuteJob(JobName As String, RecordingDoc As DsRecordingDoc, Fi
 StgPos As Vector, Optional deltaZ As Integer = -1) As Boolean
 On Error GoTo ExecuteJob_Error
     Dim Time As Double
+    Dim OiaSettings As OnlineIASettings
+    Set OiaSettings = New OnlineIASettings
+    OiaSettings.initializeDefault
+
     Time = Timer
     If Not AcquireJob(JobName, RecordingDoc, FileName, StgPos) Then
         Exit Function
     End If
+    
     CurrentFileName = FileName
-    If Jobs.getTimeToAcquire(JobName) = 0 And AutofocusForm.Controls(JobName + "TimeOut") Then
-        Jobs.setTimeToAcquire JobName, Timer - Time + TimeOutOverHead
+    If AutofocusForm.Controls(JobName + "TimeOut") Then
+        If Jobs.getTimeToAcquire(JobName) <= 0 Then
+            Jobs.setTimeToAcquire JobName, Timer - Time + TimeOutOverHead
+        End If
+    Else
+        Jobs.setTimeToAcquire JobName, 0
     End If
-    'this is a dummy variable used for consistencey except for autofocus the default is saving of all images
-    Dim OiaSettings As OnlineIASettings
-    Set OiaSettings = New OnlineIASettings
-    OiaSettings.initializeDefault
+    
     
     If AutofocusForm.Controls(JobName & "SaveImage") Then
         If Not SaveDsRecordingDoc(RecordingDoc, FilePath & FileName & imgFileExtension, imgFileFormat) Then

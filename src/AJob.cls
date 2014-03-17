@@ -85,6 +85,7 @@ Public Function setJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
     Me.SamplingMethod = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingMethod
     Me.SamplingMode = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingMode
     Me.BitDepth = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).DataChannelObjectByIndex(0, 1).BitsPerSample
+    Me.timeToAcquire = 0
     ReDim pAcquireTrack(TrackNumber - 1)
     For iTrack = 0 To TrackNumber - 1
         pAcquireTrack(iTrack) = Recording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire
