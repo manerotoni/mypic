@@ -958,18 +958,41 @@ On Error GoTo checkForMaximalDisplacementPixels_Error
     Else
         MaxZ = 0
     End If
-    If newPos.X < 0 Or newPos.Y < 0 Or newPos.Z < 0 Then
+    If newPos.X < 0 Then
         LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned negative pixel values " & _
-        "X, Y, Z = " & newPos.X & ", " & newPos.Y & ", " & newPos.Z & vbCrLf
-        Exit Function
+        "X = " & newPos.X & ". VBA macro will set this to 0"
+        newPos.X = 0
     End If
-    If newPos.X > MaxX Or newPos.Y > MaxY Or newPos.Z > MaxZ Then
-        LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
-        "X, Y, Z = " & newPos.X & ", " & newPos.Y & ", " & newPos.Z & vbCrLf & _
-        "accepted range is X = " & 0 & "-" & MaxX & ", Y = " & 0 & "-" & MaxY & ", Z = " & 0 & "-" & MaxZ
-        Exit Function
+    
+    If newPos.Y < 0 Then
+        LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned negative pixel values " & _
+        "Y = " & newPos.Y & ". VBA macro will set this to 0"
+        newPos.Y = 0
+    End If
+    
+    If newPos.Z < 0 Then
+        LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned negative pixel values " & _
+        "Z = " & newPos.Z & ". VBA macro will set this to 0"
+        newPos.Z = 0
     End If
 
+    If newPos.X > MaxX Then
+        LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
+        "X = " & newPos.X & " accepted range is X = " & 0 & "-" & MaxX & ". VBA macro sets value to half center of image"
+        newPos.X = MaxX / 2
+    End If
+    
+    If newPos.Y > MaxY Then
+        LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
+        "Y = " & newPos.Y & " accepted range is Y = " & 0 & "-" & MaxY & ". VBA macro sets value to half center of image"
+        newPos.Y = MaxY / 2
+    End If
+    
+    If newPos.Z > MaxZ Then
+        LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
+        "Z = " & newPos.Z & " accepted range is Z = " & 0 & "-" & MaxZ & ". VBA macro sets value to half center of image"
+        newPos.Z = MaxZ / 2
+    End If
     checkForMaximalDisplacementPixels = True
 
    On Error GoTo 0
@@ -1514,6 +1537,9 @@ On Error GoTo ComputeJobSequential_Error
                     newPositions = computeCoordinatesImaging(parentJob, parentPosition, newPositionsPx)
                     If UBound(newPositions) > 0 Then
                         LogManager.UpdateErrorLog " ComputeJobSequential: for Job focus " & ParentPath & parentFile & " passed only one point to X, Y, and Z of regisrty instead of " & UBound(newPositions) + 1 & ". Using the first point!"
+                    End If
+                    If Not checkForMaximalDisplacementVec(parentJob, parentPosition, newPositions) Then
+                        GoTo ExitThis
                     End If
                     ComputeJobSequential = newPositions(0)
                 Else
