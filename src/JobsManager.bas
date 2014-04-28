@@ -60,6 +60,7 @@ Private Const TimeOutOverHead = 1
 
 Public Function AcquireJob(JobName As String, RecordingDoc As DsRecordingDoc, RecordingName As String, position As Vector) As Boolean
 On Error GoTo AcquireJob_Error
+    Dim SuccessImage As Boolean
     Dim SuccessRecenter As Boolean
     Dim Time As Double
     Dim cStgPos As Vector 'current stage position
@@ -199,13 +200,10 @@ On Error GoTo AcquireFcsJob_Error
    
     'Stop Fcs acquisition
     StopAcquisition
-    FcsControl.StopAcquisitionAndWait
     Time = Timer
     If Not NewFcsRecord(RecordingDoc, FcsData, FileName, 0) Then
         GoTo WarningHandle
     End If
-    
-    FcsControl.StopAcquisitionAndWait
 
     
     'Use position list mode
