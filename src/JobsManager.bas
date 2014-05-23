@@ -407,6 +407,7 @@ On Error GoTo TrackOffLine_Error
 
         newPosition(0) = MassCenter(RecordingDoc, TrackingChannel, AutofocusForm.Controls(JobName & "FocusMethod").value)
         If Not checkForMaximalDisplacementVecPixels(JobName, newPosition) Then
+            LogManager.UpdateWarningLog "TrackOffline " & JobName & " computed position differes from possible range. Use current position!"
             GoTo Abort
         End If
         'transform it in um
@@ -426,10 +427,9 @@ On Error GoTo TrackOffLine_Error
         TrackOffLine = currentPosition
     End If
     
-    Debug.Print "X = " & currentPosition.X & ", " & newPosition(0).X & ", Y = " & currentPosition.Y & ", " & newPosition(0).Y & ", Z = " & currentPosition.Z & ", " & newPosition(0).Z
     Exit Function
 Abort:
-    ScanStop = True
+    
     Exit Function
 
    On Error GoTo 0
@@ -956,18 +956,41 @@ On Error GoTo checkForMaximalDisplacementPixels_Error
     Else
         MaxZ = 0
     End If
-    If newPos.X < 0 Or newPos.Y < 0 Or newPos.Z < 0 Then
+    If newPos.X + TolPx < 0 Then
         LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned negative pixel values " & _
-        "X, Y, Z = " & newPos.X & ", " & newPos.Y & ", " & newPos.Z & vbCrLf
-        Exit Function
+        "X = " & newPos.X & ". VBA macro will set this to 0"
+        newPos.X = 0
     End If
-    If newPos.X > MaxX Or newPos.Y > MaxY Or newPos.Z > MaxZ Then
+    
+    If newPos.Y + TolPx < 0 Then
+        LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned negative pixel values " & _
+        "Y = " & newPos.Y & ". VBA macro will set this to 0"
+        newPos.Y = 0
+    End If
+    
+    If newPos.Z + TolPx < 0 Then
+        LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned negative pixel values " & _
+        "Z = " & newPos.Z & ". VBA macro will set this to 0"
+        newPos.Z = 0
+    End If
+    
+    If newPos.X - MaxX > TolPx Then
         LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
-        "X, Y, Z = " & newPos.X & ", " & newPos.Y & ", " & newPos.Z & vbCrLf & _
-        "accepted range is X = " & 0 & "-" & MaxX & ", Y = " & 0 & "-" & MaxY & ", Z = " & 0 & "-" & MaxZ
-        Exit Function
+        "X = " & newPos.X & " accepted range is X = " & 0 & "-" & MaxX & ". VBA macro sets value to half center of image"
+        newPos.X = MaxX / 2
     End If
-
+    
+    If newPos.Y - MaxY > TolPx Then
+        LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
+        "Y = " & newPos.Y & " accepted range is Y = " & 0 & "-" & MaxY & ". VBA macro sets value to half center of image"
+        newPos.Y = MaxY / 2
+    End If
+    
+    If newPos.Z - MaxZ > TolPx Then
+        LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
+        "Z = " & newPos.Z & " accepted range is Z = " & 0 & "-" & MaxZ & ". VBA macro sets value to half center of image"
+        newPos.Z = MaxZ / 2
+    End If
     checkForMaximalDisplacementPixels = True
 
    On Error GoTo 0
@@ -1512,6 +1535,9 @@ On Error GoTo ComputeJobSequential_Error
                     newPositions = computeCoordinatesImaging(parentJob, parentPosition, newPositionsPx)
                     If UBound(newPositions) > 0 Then
                         LogManager.UpdateErrorLog " ComputeJobSequential: for Job focus " & ParentPath & parentFile & " passed only one point to X, Y, and Z of regisrty instead of " & UBound(newPositions) + 1 & ". Using the first point!"
+                    End If
+                    If Not checkForMaximalDisplacementVec(parentJob, parentPosition, newPositions) Then
+                        GoTo ExitThis
                     End If
                     ComputeJobSequential = newPositions(0)
                 Else

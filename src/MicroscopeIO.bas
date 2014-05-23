@@ -34,6 +34,7 @@ Public imgFileExtension As String
 
 Public Const PrecZ = 2                     'precision of Z passed for stage movements i.e. Z = Round(Z, PrecZ)
 Public Const PrecXY = 2                    'precision of X and Y passed for stage movements
+Public Const TolPx = 0.0001                'Tolerance for computed img px value
 
 Public ZBacklash  As Double           'ToDo: is it still recquired?.
                                            'Has to do with the movements of the focus wheel that are "better"
