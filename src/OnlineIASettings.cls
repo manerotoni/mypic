@@ -30,7 +30,7 @@ Private subKey_roiType_HowTo As Dictionary
 ''''
 
 ''''
-' Set Registry to default values and initiate correct dictionary for standard key values
+' initiate dictionary for standard key values
 '''
 Public Sub initializeDefault()
     On Error GoTo errMsg
