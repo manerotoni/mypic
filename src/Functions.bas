@@ -49,6 +49,41 @@ Public Function normVector3D(vec As Vector) As Double
     normVector3D = Sqr(vec.X ^ 2 + vec.Y ^ 2 + vec.Z ^ 2)
 End Function
 
+Public Function scaleVector(vec As Vector, alpha As Double) As Vector
+    scaleVector.X = vec.X * alpha
+    scaleVector.Y = vec.Y * alpha
+    scaleVector.Z = vec.Z * alpha
+End Function
+
+
+Public Function scaleVectorList(vec() As Vector, alpha As Double) As Vector()
+    Dim outVec() As Vector
+    ReDim outVec(0 To UBound(vec))
+    Dim i As Integer
+    For i = 0 To UBound(vec)
+        outVec(i) = scaleVector(vec(i), alpha)
+    Next i
+    scaleVectorList = outVec
+End Function
+
+'''
+' Create a ; separated string of the elements in a vector list
+'''
+Public Function VectorList2String(vec() As Vector, Optional Rnd = 2) As String()
+    Dim i As Integer
+    Dim OutString(0 To 2) As String
+    OutString(0) = "" & Round(vec(0).X, Rnd)
+    OutString(1) = "" & Round(vec(0).Y, Rnd)
+    OutString(2) = "" & Round(vec(0).Z, Rnd)
+    If UBound(vec) > 0 Then
+        For i = 1 To UBound(vec)
+            OutString(0) = OutString(0) & "; " & Round(vec(i).X, Rnd)
+            OutString(1) = OutString(1) & "; " & Round(vec(i).Y, Rnd)
+            OutString(2) = OutString(2) & "; " & Round(vec(i).Z, Rnd)
+        Next i
+    End If
+    VectorList2String = OutString
+End Function
 
 '''Starts the form
 Public Sub Autofocus_Setup()
