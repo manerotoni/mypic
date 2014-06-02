@@ -199,14 +199,10 @@ On Error GoTo AcquireFcsJob_Error
    
     'Stop Fcs acquisition
     StopAcquisition
-    FcsControl.StopAcquisitionAndWait
     Time = Timer
     If Not NewFcsRecord(RecordingDoc, FcsData, FileName, 0) Then
         GoTo WarningHandle
     End If
-    
-    FcsControl.StopAcquisitionAndWait
-
     
     'Use position list mode
     FcsControl.SamplePositionParameters.SamplePositionMode = eFcsSamplePositionModeList
@@ -407,6 +403,7 @@ On Error GoTo TrackOffLine_Error
 
         newPosition(0) = MassCenter(RecordingDoc, TrackingChannel, AutofocusForm.Controls(JobName & "FocusMethod").value)
         If Not checkForMaximalDisplacementVecPixels(JobName, newPosition) Then
+            LogManager.UpdateWarningLog "TrackOffline " & JobName & " computed position differs from possible range. Use current position!"
             GoTo Abort
         End If
         'transform it in um
@@ -426,11 +423,9 @@ On Error GoTo TrackOffLine_Error
         TrackOffLine = currentPosition
     End If
     
-    Debug.Print "X = " & currentPosition.X & ", " & newPosition(0).X & ", Y = " & currentPosition.Y & ", " & newPosition(0).Y & ", Z = " & currentPosition.Z & ", " & newPosition(0).Z
+    On Error GoTo 0
     Exit Function
 Abort:
-    ScanStop = True
-    Exit Function
 
    On Error GoTo 0
    Exit Function
@@ -439,7 +434,6 @@ TrackOffLine_Error:
     LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
     ") in procedure TrackOffLine of Module JobsManager at line " & Erl & " " & JobName
 End Function
-
 '---------------------------------------------------------------------------------------
 ' Procedure : TrackJob
 ' Purpose   : Update a position with new position according to task specified (either none, Z, XY, or XYZ)
@@ -944,7 +938,7 @@ On Error GoTo checkForMaximalDisplacementPixels_Error
     Dim MaxX As Long
     Dim MaxY As Long
     Dim MaxZ As Long
-    checkForMaximalDisplacementPixels = True
+ 
     MaxX = Jobs.getSamplesPerLine(JobName) - 1
     If Jobs.getScanMode(JobName) = "ZScan" Then
         MaxY = 0
@@ -956,47 +950,42 @@ On Error GoTo checkForMaximalDisplacementPixels_Error
     Else
         MaxZ = 0
     End If
-    If newPos.X < 0 Then
+    If newPos.X + TolPx < 0 Then
         LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned negative pixel values " & _
         "X = " & newPos.X & ". VBA macro will set this to 0"
         newPos.X = 0
-        checkForMaximalDisplacementPixels = False
     End If
     
-    If newPos.Y < 0 Then
+    If newPos.Y + TolPx < 0 Then
         LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned negative pixel values " & _
         "Y = " & newPos.Y & ". VBA macro will set this to 0"
         newPos.Y = 0
-        checkForMaximalDisplacementPixels = False
     End If
     
-    If newPos.Z < 0 Then
+    If newPos.Z + TolPx < 0 Then
         LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned negative pixel values " & _
         "Z = " & newPos.Z & ". VBA macro will set this to 0"
         newPos.Z = 0
-        checkForMaximalDisplacementPixels = False
     End If
-
-    If newPos.X > MaxX Then
+    
+    If newPos.X - MaxX > TolPx Then
         LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
-        "X = " & newPos.X & " accepted range is X = " & 0 & "-" & MaxX & ". VBA macro sets value to half center of image"
+        "X = " & newPos.X & " accepted range is X = " & 0 & "-" & MaxX & ". VBA macro sets value to center of image" & MaxX / 2
         newPos.X = MaxX / 2
-        checkForMaximalDisplacementPixels = False
     End If
     
-    If newPos.Y > MaxY Then
+    If newPos.Y - MaxY > TolPx Then
         LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
-        "Y = " & newPos.Y & " accepted range is Y = " & 0 & "-" & MaxY & ". VBA macro sets value to half center of image"
+        "Y = " & newPos.Y & " accepted range is Y = " & 0 & "-" & MaxY & ". VBA macro sets value to center of image" & MaxY / 2
         newPos.Y = MaxY / 2
-        checkForMaximalDisplacementPixels = False
     End If
     
-    If newPos.Z > MaxZ Then
+    If newPos.Z - MaxZ > TolPx Then
         LogManager.UpdateErrorLog "Job " & JobName & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
-        "Z = " & newPos.Z & " accepted range is Z = " & 0 & "-" & MaxZ & ". VBA macro sets value to half center of image"
+        "Z = " & newPos.Z & " accepted range is Z = " & 0 & "-" & MaxZ & ". VBA macro sets value to center of image" & MaxZ / 2
         newPos.Z = MaxZ / 2
-        checkForMaximalDisplacementPixels = False
     End If
+    checkForMaximalDisplacementPixels = True
 
    On Error GoTo 0
    Exit Function
@@ -1020,7 +1009,7 @@ On Error GoTo checkForMaximalDisplacementVecPixels_Error
     Dim MaxY As Long
     Dim MaxZ As Long
     Dim i As Integer
-    checkForMaximalDisplacementVecPixels = True
+
     MaxX = Jobs.getSamplesPerLine(JobName) - 1
     If Jobs.getScanMode(JobName) = "ZScan" Then
         MaxY = 0
@@ -1034,9 +1023,10 @@ On Error GoTo checkForMaximalDisplacementVecPixels_Error
     End If
     For i = 0 To UBound(newPos)
         If Not checkForMaximalDisplacementPixels(JobName, newPos(i)) Then
-            checkForMaximalDisplacementVecPixels = False
+            Exit Function
         End If
     Next i
+    checkForMaximalDisplacementVecPixels = True
 
    On Error GoTo 0
    Exit Function
@@ -1534,10 +1524,10 @@ On Error GoTo ComputeJobSequential_Error
                 OiaSettings.writeKeyToRegistry "codeMic", "nothing"
                 If OiaSettings.getPositions(newPositionsPx, Jobs.getCentralPointPx(parentJob)) Then
                     VectorString = VectorList2String(newPositionsPx)
-                    LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " position(s) " & _
+                    LogManager.UpdateLog " OnlineImageAnalysis from " & ParentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " position(s) (in px)" & _
                     " X = " & VectorString(0) & " Y = " & VectorString(1) & " Z = " & VectorString(2)
                     If Not checkForMaximalDisplacementVecPixels(parentJob, newPositionsPx) Then
-                        LogManager.UpdateLog " OnlineImageAnalysis position exceed boundaries and has been set to  X = " & newPositionsPx(0).X & " Y = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
+                        LogManager.UpdateErrorLog " OnlineImageAnalysis position exceed boundaries and has been set to  X = " & newPositionsPx(0).X & " Y = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
                     End If
                     newPositions = computeCoordinatesImaging(parentJob, parentPosition, newPositionsPx)
                     If UBound(newPositions) > 0 Then

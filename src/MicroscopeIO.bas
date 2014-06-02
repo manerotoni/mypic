@@ -34,6 +34,7 @@ Public imgFileExtension As String
 
 Public Const PrecZ = 2                     'precision of Z passed for stage movements i.e. Z = Round(Z, PrecZ)
 Public Const PrecXY = 2                    'precision of X and Y passed for stage movements
+Public Const TolPx = 0.0001                'Tolerance for computed img px value
 
 Public ZBacklash  As Double           'ToDo: is it still recquired?.
                                            'Has to do with the movements of the focus wheel that are "better"
@@ -169,11 +170,18 @@ End Sub
 '   scan overwrite the same image, even with several z-slices
 '''''
 Public Function ScanToImage(RecordingDoc As DsRecordingDoc, Optional TimeOut As Double = -1) As Boolean
-    On Error GoTo ErrorHandle:
+
+
     Dim Time As Double
     Dim ProgressFifo As IAimProgressFifo ' this shows how far you are with the acquisition image ( the blue bar at the bottom). The usage of it makes the macro quite slow
     Dim AcquisitionController As AimScanController
     Dim treenode As Object
+    Dim iTry
+
+    iTry = 1
+    'Procedure is completely executed 3 times in case of error. RecordingDoc.IsBusy is less (not at all?) error prone
+RepeatScanToImage:
+    On Error GoTo ErrorScanToImage
     'Dim gui As Object
     'Set gui = Lsm5.ViewerGuiServer not recquired anymore
     If RecordingDoc Is Nothing Then
@@ -186,39 +194,55 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc, Optional TimeOut As 
     AcquisitionController.DestinationImage(1) = Nothing
     Set ProgressFifo = AcquisitionController.DestinationImage(0)
     Lsm5.tools.CheckLockControllers True
+    
     AcquisitionController.StartGrab eGrabModeSingle
     Time = Timer
     'Set RecordingDoc = Lsm5.StartScan this does not overwrite
     If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
     'Debug.Print "ScanToImage part1 " & Round(Timer - Time, 3)
     Sleep (PauseGrabbing)
+    'While AcquisitionController.isGrabbing this command seems to hang quite frequently
     While RecordingDoc.IsBusy
         Sleep (PauseGrabbing)
         DoEvents
         If ScanStop Then
-              Exit Function
+            Exit Function
         End If
         If TimeOut > 0 And (Timer - Time > TimeOut) Then
             LogManager.UpdateErrorLog "TimeOut of image acquisition  after " & TimeOut & " sec"
-            Lsm5.StopAcquisition
+            StopAcquisition
             GoTo ExitWhile
         End If
     Wend
 ExitWhile:
     ScanToImage = True
+    On Error GoTo 0
     Exit Function
-ErrorHandle:
-    LogManager.UpdateErrorLog "Error in ScanToImage for image " _
-    & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " " & Err.Description
+ErrorScanToImage:
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure ScanToImage of Module MicroscopeIO at line " & Erl & ". Try " & iTry & "/3"
+    StopAcquisition
+    Sleep (500)
+    DoEvents
+    iTry = 1 + iTry
+    If iTry <= 3 Then
+        Err.Clear
+        Resume RepeatScanToImage
+    End If
 End Function
 
 ''''
 ' Start Fcs Measurment
 ''''
 Public Function ScanToFcs(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, Optional TimeOut As Double = -1) As Boolean
-    On Error GoTo ErrorHandle
+On Error GoTo ErrorScanToFcs
+    Dim iTry As Integer
     Dim FcsControl As AimFcsController
     Dim Time As Double
+
+    iTry = 1
+    'Procedure is completely executed 3 times in case of error. RecordingDoc.IsBusy is less (not at all?) error prone
+RepeatScanToFcs:
     Set FcsControl = Fcs
     If FcsData Is Nothing Then
       Exit Function
@@ -241,16 +265,26 @@ Public Function ScanToFcs(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData,
         DoEvents
         If TimeOut > 0 And (Timer - Time > TimeOut) Then
             LogManager.UpdateErrorLog "TimeOut of Fcs acquisition  after " & TimeOut & " sec"
-            FcsControl.StopAcquisitionAndWait
+            StopAcquisition
             GoTo ExitWhile
         End If
     Wend
 ExitWhile:
     ScanToFcs = True
     Exit Function
-ErrorHandle:
-    LogManager.UpdateErrorLog "Error in ScanToFcs from image " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & Err.Description
+ErrorScanToFcs:
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure ScanToFcs of Module MicroscopeIO at line " & Erl & ". Try " & iTry & "/3"
+    StopAcquisition
+    Sleep (500)
+    DoEvents
+    iTry = 1 + iTry
+    If iTry <= 3 Then
+        Err.Clear
+        Resume RepeatScanToFcs
+    End If
 End Function
+
 
 '''''
 '   Set the FCS controller and data stuff
