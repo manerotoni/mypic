@@ -176,7 +176,7 @@ Public Function ScanToImage(RecordingDoc As DsRecordingDoc, Optional TimeOut As 
     Dim ProgressFifo As IAimProgressFifo ' this shows how far you are with the acquisition image ( the blue bar at the bottom). The usage of it makes the macro quite slow
     Dim AcquisitionController As AimScanController
     Dim treenode As Object
-    Dim iTry
+    Dim iTry As Integer
 
     iTry = 1
     'Procedure is completely executed 3 times in case of error. RecordingDoc.IsBusy is less (not at all?) error prone
