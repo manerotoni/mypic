@@ -185,16 +185,16 @@ Public Function thisSubColumn(Name As String) As Integer
     End If
 End Function
 
-Public Function getThisPt(Name As String, Pos As Vector, Valid As Boolean)
+Public Function getThisPt(Name As String, pos As Vector, valid As Boolean)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).getThisPt Pos, Valid
+        Grids(GridNames.item(Name)).getThisPt pos, valid
     End If
 End Function
 
 
-Public Function setThisPt(Name As String, Pos As Vector, Valid As Boolean)
+Public Function setThisPt(Name As String, pos As Vector, valid As Boolean)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setThisPt Pos, Valid
+        Grids(GridNames.item(Name)).setThisPt pos, valid
     End If
 End Function
 
@@ -211,17 +211,17 @@ Public Function getNrValidPts(Name As String) As Long
     End If
 End Function
 
-Public Function getPt(Name As String, Pos As Vector, Valid As Boolean, _
+Public Function getPt(Name As String, pos As Vector, valid As Boolean, _
 Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).getPt Pos, Valid, Row, Col, RowSub, ColSub
+        Grids(GridNames.item(Name)).getPt pos, valid, Row, Col, RowSub, ColSub
     End If
 End Function
 
-Public Function setPt(Name As String, Pos As Vector, Valid As Boolean, _
+Public Function setPt(Name As String, pos As Vector, valid As Boolean, _
 Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setPt Pos, Valid, Row, Col, RowSub, ColSub
+        Grids(GridNames.item(Name)).setPt pos, valid, Row, Col, RowSub, ColSub
     End If
 End Function
 
@@ -340,17 +340,17 @@ End Function
 
 
 '''TODO: These two functions should be fused into one'''
-Public Sub makeGridFromOnePt(Name As String, Pos As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, dRow As Double, dCol As Double, _
+Public Sub makeGridFromOnePt(Name As String, pos As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, dRow As Double, dCol As Double, _
 dRowSub As Double, dColSub As Double, Optional refRow As Integer = 1, Optional refCol As Integer = 1)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).makeGridFromOnePt Pos, Row, Col, RowSub, ColSub, dRow, dCol, dRowSub, dColSub, refRow, refCol
+        Grids(GridNames.item(Name)).makeGridFromOnePt pos, Row, Col, RowSub, ColSub, dRow, dCol, dRowSub, dColSub, refRow, refCol
     End If
 End Sub
 
-Public Sub makeGridFromManyPts(Name As String, Pos() As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, _
+Public Sub makeGridFromManyPts(Name As String, pos() As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long, _
 dRowSub As Double, dColSub As Double)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).makeGridFromManyPts Pos, Row, Col, RowSub, ColSub, dRowSub, dColSub
+        Grids(GridNames.item(Name)).makeGridFromManyPts pos, Row, Col, RowSub, ColSub, dRowSub, dColSub
     End If
 End Sub
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''

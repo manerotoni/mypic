@@ -1,5 +1,10 @@
 Attribute VB_Name = "TestCode"
 Option Explicit
+
+Public Type FcsPoint
+    pos() As Vector
+End Type
+
 Private Sub TestStageMarkedPosition()
     Dim n As Integer
     Lsm5.Hardware.CpStages.MarkClearAll
@@ -13,8 +18,73 @@ Private Sub TestStageMarkedPosition()
     DoEvents
     
 End Sub
+Private Sub TestFcsPt()
+    Dim i As Integer
+    i = 32767
+    
+    
+End Sub
+Private Sub TestExecuteTask()
+    If Not PipelineConstructor.Visible Then
+        PipelineConstructor.Show
+    End If
+    Dim Tsk As Task
+    Dim stgPos As Vector
+    Dim fcsPos() As Vector
+    Erase ImgJobs
+    ReDim ImgJobs(0)
+    Set ImgJobs(0) = New AJob
+    ImgJobs(0).SetJob Lsm5.DsRecording, ZEN
+    NewRecordGui GlobalRecordingDoc, Pipelines(0).Grid.NameGrid, ZEN, ZenV
+    
+    Lsm5.Hardware.CpStages.GetXYPosition stgPos.x, stgPos.y
+    Tsk.jobNr = 0
+    Tsk.jobType = 0
+    stgPos.Z = Lsm5.Hardware.CpFocus.position
+    Pipelines(0).Grid.initialize 1, 1, 1, 1
+    Pipelines(0).Grid.setPt stgPos, True, 1, 1, 1, 1
+    Pipelines(0).Grid.setAllParentPath "C:\Antonio\"
+    Pipelines(0).addTask Tsk
+    ExecuteTask 0, 0, GlobalRecordingDoc, GlobalFcsRecordingDoc, GlobalFcsData, "C:\Antonio", stgPos, fcsPos, True
+    DisplayProgress PipelineConstructor.ProgressLabel, "Ready", RGB(&HC0, &HC0, 0)
+    
+End Sub
+
+Private Sub TestStartPipeline()
+    If Not PipelineConstructor.Visible Then
+        PipelineConstructor.Show
+    End If
+    Dim Tsk As Task
+    Dim stgPos As Vector
+    Dim fcsPos() As Vector
+    Erase ImgJobs
+    ReDim ImgJobs(0)
+    Set ImgJobs(0) = New AJob
+    ImgJobs(0).SetJob Lsm5.DsRecording, ZEN
+    NewRecordGui GlobalRecordingDoc, Pipelines(0).Grid.NameGrid, ZEN, ZenV
+    
+    Lsm5.Hardware.CpStages.GetXYPosition stgPos.x, stgPos.y
+    Tsk.jobNr = 0
+    Tsk.jobType = 0
+    stgPos.Z = Lsm5.Hardware.CpFocus.position
+    Pipelines(0).Grid.initialize 1, 1, 1, 1
+    Pipelines(0).Grid.setPt stgPos, True, 1, 1, 1, 1
+    Pipelines(0).Grid.setAllParentPath "C:\Antonio\"
+    Pipelines(0).delAllTasks
+    Pipelines(0).addTask Tsk
+    Pipelines(0).addTask Tsk
+    
+    Pipelines(0).Repetition.number = 1
+    StartPipeline 0, GlobalRecordingDoc, GlobalFcsRecordingDoc, GlobalFcsData, "C:\Antonio"
+    DisplayProgress PipelineConstructor.ProgressLabel, "Ready", RGB(&HC0, &HC0, 0)
+    
+End Sub
 Private Sub TestComboBox()
     Debug.Print AutofocusForm.AutofocusFocusMethod.value
+End Sub
+Public Sub TestPipelineType()
+    Debug.Print "" & UBound(ImgJobs)
+    
 End Sub
 
 Private Sub TestOia()
@@ -61,7 +131,7 @@ Private Sub test1()
 '    Set viewerGuiServer = Lsm5.viewerGuiServer
 End Sub
 
-Private Sub test()
+Private Sub Test()
   
     Dim vo As AimImageVectorOverlay
     Set vo = Lsm5.ExternalDsObject.ScanController.AcquisitionRegions

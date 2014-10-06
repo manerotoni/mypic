@@ -16,7 +16,7 @@ Option Explicit
 Private Jobs() As AFcsJob
 Private JobNames As Dictionary
 Private ZoomPixelSlice(1 To 9, 1 To 3) As Double
-Public ZENv As Integer
+Public ZenV As Integer
 
 
 Private Function checkJobName(Name As String) As Boolean
@@ -52,7 +52,7 @@ End Function
 '''
 Public Sub initialize(Names() As String, ZEN As Object)
     Dim i As Integer
-    ZENv = getVersionNr
+    ZenV = getVersionNr
     For i = 0 To UBound(Names)
         AddJob CStr(Names(i)), ZEN
     Next i
@@ -76,10 +76,10 @@ Public Sub AddJob(Name As String, ZEN As Object)
         JobNames.Add Name, UBound(Jobs)
     End If
     Dim i As Integer
-    Dim iJob As Integer
-    iJob = JobNames.item(Name)
-    Set Jobs(iJob) = New AFcsJob
-    Jobs(iJob).Name = Name
+    Dim IJob As Integer
+    IJob = JobNames.item(Name)
+    Set Jobs(IJob) = New AFcsJob
+    Jobs(IJob).Name = Name
     'Jobs(iJob).setJob ZEN, ZENv
     Exit Sub
 ErrorHandle:
@@ -91,13 +91,13 @@ End Sub
 '''
 '   Set the job with Name from ZEN
 '''
-Public Function setJob(Name As String, ZEN As Object) As Boolean
+Public Function SetJob(Name As String, ZEN As Object) As Boolean
     On Error GoTo ErrorHandle:
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    If Jobs(JobNames.item(Name)).setJob(ZEN, ZENv) Then
-        setJob = True
+    If Jobs(JobNames.item(Name)).SetJob(ZEN, ZenV) Then
+        SetJob = True
     End If
     Exit Function
 ErrorHandle:
@@ -123,14 +123,14 @@ End Function
 '''
 '   Put the job with Name from Macro into ZEN
 '''
-Public Function putJob(Name As String, ZEN As Object) As Boolean
+Public Function PutJob(Name As String, ZEN As Object) As Boolean
     On Error GoTo ErrorHandle:
-    Dim iJob As Integer
+    Dim IJob As Integer
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    If Jobs(JobNames.item(Name)).putJob(ZEN, ZENv) Then
-        putJob = True
+    If Jobs(JobNames.item(Name)).PutJob(ZEN, ZenV) Then
+        PutJob = True
     End If
     Exit Function
 ErrorHandle:

@@ -40,7 +40,7 @@ Public ZBacklash  As Double           'ToDo: is it still recquired?.
                                            'Has to do with the movements of the focus wheel that are "better"
                                             'if they are long enough. For amoment a test did not gave significant differences This is required for ZEN2010
 Public ZSafeDown As Double
-Public ZENv As Integer            'String variable indicating the version of ZEN used 2010 ir 2011 (2012)
+Public ZenV As Integer            'String variable indicating the version of ZEN used 2010 ir 2011 (2012)
 Public ZEN As Object             'Object containing Zeiss.Micro.AIM.ApplicationInterface.ApplicationInterface (for ZEN > 2011)
 
 ''''''''''''''''''''''
@@ -78,7 +78,7 @@ Public PauseEndAcquisition As Double 'A workaround to avoid errors in FCS/imagin
 '''
 Public Function getVersionNr() As Integer
     Dim VersionNr As Long
-    VersionNr = CLng(Left(Lsm5.Info.VersionIs, 1))
+    VersionNr = CLng(VBA.Left(Lsm5.Info.VersionIs, 1))
     Select Case VersionNr
         Case Is <= 6:
             getVersionNr = 2010
@@ -200,8 +200,8 @@ RepeatScanToImage:
     'Set RecordingDoc = Lsm5.StartScan this does not overwrite
     If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
     'Debug.Print "ScanToImage part1 " & Round(Timer - Time, 3)
-    Sleep (PauseGrabbing)
-    'While AcquisitionController.isGrabbing this command seems to hang quite frequently
+'    Sleep (PauseGrabbing)
+'    'While AcquisitionController.isGrabbing this command seems to hang quite frequently
     While RecordingDoc.IsBusy
         Sleep (PauseGrabbing)
         DoEvents
@@ -339,9 +339,9 @@ End Function
 ''
 ' Check if document exists and if it is loaded in the GUI. Otherwise creates a new one.
 ''
-Public Function NewRecordGui(RecordingDoc As DsRecordingDoc, Name As String, ZEN As Object, ZENv As Integer) As Boolean
+Public Function NewRecordGui(RecordingDoc As DsRecordingDoc, Name As String, ZEN As Object, ZenV As Integer) As Boolean
 
-    If ZENv > 2010 Then
+    If ZenV > 2010 Then
         NewRecordGui = NewRecordGuiAi(RecordingDoc, Name, ZEN)
     Else
         NewRecordGui = NewRecord(RecordingDoc, Name, False) ' no idea how to check the name of documents in ZENv < 2011
@@ -446,9 +446,9 @@ End Function
 ''
 ' Check if document exists and if it is loaded in the GUI. Otherwise creates a new one.
 ''
-Public Function NewFcsRecordGui(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, Name As String, ZEN As Object, ZENv As Integer) As Boolean
+Public Function NewFcsRecordGui(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, Name As String, ZEN As Object, ZenV As Integer) As Boolean
 
-    If ZENv > 2010 Then
+    If ZenV > 2010 Then
         NewFcsRecordGui = NewFcsRecordGuiAi(RecordingDoc, FcsData, Name, ZEN)
     Else
         NewFcsRecordGui = NewFcsRecord(RecordingDoc, FcsData, Name, False)  ' no idea how to check the name of documents in ZENv < 2011
@@ -537,13 +537,13 @@ Public Sub SaveFcsPositionList(sFile As String, positionsPx() As Vector)
     Open sFile For Output As iFileNum
     Print #iFileNum, "%X Y Z (um): ZEN Fcs position convention 0, 0  is center of image, Z is absolute coordinate"
     For i = 0 To GetFcsPositionListLength - 1
-        GetFcsPosition PosX, PosY, PosZ, i
+        getFcsPosition PosX, PosY, PosZ, i
         Print #iFileNum, Round(PosX * 1000000, PrecXY) & " " & Round(PosY * 1000000, PrecXY) & " " & Round(PosZ * 1000000, PrecXY)
     Next i
     On Error GoTo ErrorHandle2:
     Print #iFileNum, "%X Y Z (px). Imaging convention 0,0,0 is upper left corner bottom slice"
     For i = 0 To UBound(positionsPx)
-        Print #iFileNum, positionsPx(i).X & " " & positionsPx(i).Y & " " & positionsPx(i).Z
+        Print #iFileNum, positionsPx(i).x & " " & positionsPx(i).y & " " & positionsPx(i).Z
     Next i
 
     Close
@@ -603,7 +603,7 @@ End Sub
 '       [x] In - x-position
 '       [y] In - y-position
 '''''
-Public Function FailSafeMoveStageXY(X As Double, Y As Double) As Boolean
+Public Function FailSafeMoveStageXY(x As Double, y As Double) As Boolean
     Dim CurrentX As Double
     Dim CurrentY As Double
     Dim WaitTime As Integer
@@ -615,8 +615,8 @@ Public Function FailSafeMoveStageXY(X As Double, Y As Double) As Boolean
 SetPosition:
     WaitTime = 0
     Lsm5.Hardware.CpStages.GetXYPosition CurrentX, CurrentY
-    Lsm5.Hardware.CpStages.SetXYPosition X, Y
-    Do While (Abs(CurrentX - X) > Prec) Or (Abs(CurrentY - Y) > Prec) Or Lsm5.Hardware.CpStages.IsBusy
+    Lsm5.Hardware.CpStages.SetXYPosition x, y
+    Do While (Abs(CurrentX - x) > Prec) Or (Abs(CurrentY - y) > Prec) Or Lsm5.Hardware.CpStages.IsBusy
         SleepWithEvents (100)
         Lsm5.Hardware.CpStages.GetXYPosition CurrentX, CurrentY
         WaitTime = WaitTime + 1
@@ -626,14 +626,14 @@ SetPosition:
         End If
         If WaitTime > 50 And Not Lsm5.Hardware.CpStages.IsBusy Then
             LogManager.UpdateWarningLog " FailSafeMoveStageXY did not reach the precision of " & Prec _
-            & " um  within " & WaitTime * 100 & " ms on trial " & Trial & ". Goal position is XY: " & X & " " & Y & " reached XY: " & CurrentX _
+            & " um  within " & WaitTime * 100 & " ms on trial " & Trial & ". Goal position is XY: " & x & " " & y & " reached XY: " & CurrentX _
             & " " & CurrentY
             Exit Do
         End If
     Loop
     
     '''Try a second time if it failed
-    If (Abs(CurrentX - X) > Prec) Or (Abs(CurrentY - Y) > Prec) And Trial < 2 Then
+    If (Abs(CurrentX - x) > Prec) Or (Abs(CurrentY - y) > Prec) And Trial < 2 Then
         Trial = Trial + 1
         GoTo SetPosition
     End If
@@ -703,7 +703,7 @@ End Function
 '''''
 Public Function MoveToNextLocation(Optional Mark As Integer = 0) As Boolean
         Dim MarkCount As Long
-        Dim Count As Long
+        Dim count As Long
         Dim idx As Long
         Dim dX As Double
         Dim dY As Double
@@ -733,18 +733,18 @@ End Function
 '
 Public Function getMarkedStagePosition() As Vector()
     Dim MarkCount As Long
-    Dim Pos() As Vector
+    Dim pos() As Vector
     Dim i As Long
 On Error GoTo getMarkedStagePosition_Error
 
     MarkCount = Lsm5.Hardware.CpStages.MarkCount
     If MarkCount >= 1 Then
-        ReDim Pos(MarkCount - 1)
+        ReDim pos(MarkCount - 1)
         For i = 0 To MarkCount - 1
-            Lsm5.Hardware.CpStages.MarkGetZ i, Pos(i).X, Pos(i).Y, Pos(i).Z
+            Lsm5.Hardware.CpStages.MarkGetZ i, pos(i).x, pos(i).y, pos(i).Z
         Next i
     End If
-    getMarkedStagePosition = Pos
+    getMarkedStagePosition = pos
    On Error GoTo 0
    Exit Function
 
@@ -760,24 +760,24 @@ End Function
 ' Purpose   : set positions in marked stage gui from Vector pos
 '---------------------------------------------------------------------------------------
 '
-Public Sub setMarkedStagePosition(Pos() As Vector)
+Public Sub setMarkedStagePosition(pos() As Vector)
     Dim MarkCount As Long
     Dim i As Long
     On Error GoTo noPos
-    If UBound(Pos) >= 0 Then
+    If UBound(pos) >= 0 Then
 On Error GoTo getMarkedStagePosition_Error
         Lsm5.Hardware.CpStages.MarkClearAll
         SleepWithEvents (500)
         Application.ThrowEvent ePropertyEventStage, 0 'normally not recquired maybe it helps for the update
-        For i = 0 To UBound(Pos)
-            Lsm5.Hardware.CpStages.MarkAddZ Pos(i).X, Pos(i).Y, Pos(i).Z
+        For i = 0 To UBound(pos)
+            Lsm5.Hardware.CpStages.MarkAddZ pos(i).x, pos(i).y, pos(i).Z
             SleepWithEvents (100)
         Next i
         SleepWithEvents (500)
         Debug.Print "Marked Positions " & Lsm5.Hardware.CpStages.MarkCount
-        If UBound(Pos) + 1 > Lsm5.Hardware.CpStages.MarkCount Then
-            For i = 0 To UBound(Pos)
-                Lsm5.Hardware.CpStages.MarkAddZ Pos(i).X, Pos(i).Y, Pos(i).Z
+        If UBound(pos) + 1 > Lsm5.Hardware.CpStages.MarkCount Then
+            For i = 0 To UBound(pos)
+                Lsm5.Hardware.CpStages.MarkAddZ pos(i).x, pos(i).y, pos(i).Z
             Next i
         End If
     End If
@@ -798,13 +798,13 @@ End Sub
 '   WaitForRecentering(Z As Double, Success As Boolean) As Boolean
 '   calls the microscope specific WaitForRecentering
 '''
-Public Function WaitForRecentering(Z As Double, Optional Success As Boolean = False, Optional ZENv As Integer = 2011, Optional Reset As Boolean) As Boolean
-    If ZENv = 2010 Then
+Public Function WaitForRecentering(Z As Double, Optional Success As Boolean = False, Optional ZenV As Integer = 2011, Optional Reset As Boolean) As Boolean
+    If ZenV = 2010 Then
         If Not WaitForRecentering2010(Z, Success, Reset) Then
             Exit Function
         End If
     End If
-    If ZENv > 2010 Then
+    If ZenV > 2010 Then
         If Not WaitForRecentering2011(Z, Success, Reset) Then
             Exit Function
         End If
@@ -837,7 +837,7 @@ End Function
 Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean = False, Optional Reset As Boolean = False) As Boolean
     Dim cnt As Integer
     Dim MaxCnt As Integer
-    Dim Pos As Double
+    Dim pos As Double
     Dim ZOffset As Double
     Dim ReferenceZ As Double
     Dim Prec As Double
@@ -849,8 +849,8 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
     cnt = 0
     
     'ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too, leave it out for the moment)'''
-    Pos = Lsm5.Hardware.CpFocus.position
-    ZOffset = getHalfZRange(Lsm5.DsRecording) + Pos - Z
+    pos = Lsm5.Hardware.CpFocus.position
+    ZOffset = getHalfZRange(Lsm5.DsRecording) + pos - Z
     ReferenceZ = Lsm5.DsRecording.ReferenceZ
     
     If isZStack(Lsm5.DsRecording) Then
@@ -902,7 +902,7 @@ End Function
 Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean = False, Optional Reset As Boolean = False) As Boolean
     Dim cnt As Integer
     Dim MaxCnt As Integer
-    Dim Pos As Double
+    Dim pos As Double
     Dim ZOffset As Double
     Dim Prec As Double
     'Dim ScanController As AimScanController
@@ -913,8 +913,8 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
     cnt = 0
     
     'ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too, leave it out for the moment)'''
-    Pos = Lsm5.Hardware.CpFocus.position
-    ZOffset = getHalfZRange(Lsm5.DsRecording) + Pos - Z
+    pos = Lsm5.Hardware.CpFocus.position
+    ZOffset = getHalfZRange(Lsm5.DsRecording) + pos - Z
     
     If isZStack(Lsm5.DsRecording) Then
         Debug.Print "WaitForRecentering ZOffset start " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
@@ -960,11 +960,11 @@ End Function
 '       [Z]     - Absolute position of central slice
 '   position central slice is Z = Lsm5.DsRecording.FrameSpacing * (Lsm5.DsRecording.FramesPerStack - 1) / 2 - Lsm5.DsRecording.Sample0Z + Lsm5.Hardware.CpFocus.Position
 ''''
-Public Function Recenter_pre(Z As Double, Optional Success As Boolean = False, Optional ZENv As Integer = 2011) As Boolean
-    If Not Recenter(Z, ZENv) Then
+Public Function Recenter_pre(Z As Double, Optional Success As Boolean = False, Optional ZenV As Integer = 2011) As Boolean
+    If Not Recenter(Z, ZenV) Then
         Exit Function
     End If
-    If Not WaitForRecentering(Z, Success, ZENv) Then
+    If Not WaitForRecentering(Z, Success, ZenV) Then
         Exit Function
     End If
     If Not ScanStop Then
@@ -972,8 +972,8 @@ Public Function Recenter_pre(Z As Double, Optional Success As Boolean = False, O
     End If
 End Function
 
-Public Function Recenter_post(Z As Double, Optional Success As Boolean = False, Optional ZENv As Integer = 2011, Optional Reset As Boolean = True) As Boolean
-    If Not WaitForRecentering(Z, Success, ZENv, Reset) Then
+Public Function Recenter_post(Z As Double, Optional Success As Boolean = False, Optional ZenV As Integer = 2011, Optional Reset As Boolean = True) As Boolean
+    If Not WaitForRecentering(Z, Success, ZenV, Reset) Then
         Exit Function
     End If
     
@@ -982,9 +982,9 @@ Public Function Recenter_post(Z As Double, Optional Success As Boolean = False, 
     End If
 End Function
 
-Public Function Recenter(Z As Double, Optional ZENv As Integer = 2011) As Boolean
+Public Function Recenter(Z As Double, Optional ZenV As Integer = 2011) As Boolean
     Dim i As Integer
-    If ZENv = 2010 Then
+    If ZenV = 2010 Then
         For i = 1 To 1
             If Not Recenter2010(Z) Then
                 Exit Function
@@ -992,7 +992,7 @@ Public Function Recenter(Z As Double, Optional ZENv As Integer = 2011) As Boolea
             Sleep (200)
         Next i
     End If
-    If ZENv > 2010 Then
+    If ZenV > 2010 Then
         If Not Recenter2011(Z) Then
             Exit Function
         End If
@@ -1006,39 +1006,39 @@ End Function
 
 #If ZENvC >= 2012 Then 'because of DsRecording.RecenterZ
 Public Function Recenter2011(Z As Double) As Boolean
-    Dim Pos As Double
+    Dim pos As Double
     Dim ZOffset As Double
     Dim Prec As Double
-    Dim Count As Integer
+    Dim count As Integer
     'Dim ScanController As AimScanController
     'Set ScanController = Lsm5.ExternalDsObject.ScanController
-    Count = 0
+    count = 0
     Prec = 0.001
     
 
     'ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
-    Pos = Lsm5.Hardware.CpFocus.position
+    pos = Lsm5.Hardware.CpFocus.position
     'ScanController.LockAll False
     'If Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then 'Move at the start alwayes if piezo, for ZEN 2012 the best strategy is always to move at the start
-    If Round(Pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
+    If Round(pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
         If Not FailSafeMoveStageZ(Z) Then
             GoTo EndOfFun
         End If
     End If
-    Pos = Z
+    pos = Z
     'End If
     ''Only recenter central slice if we have a ZStack
     If isZStack(Lsm5.DsRecording) Then
-        ZOffset = getHalfZRange(Lsm5.DsRecording) + Pos - Z
+        ZOffset = getHalfZRange(Lsm5.DsRecording) + pos - Z
         Debug.Print "Recenter at start " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z) & " " & Lsm5.DsRecording.ReferenceZ - Z
         'ScanController.LockAll False
         Lsm5.DsRecording.Sample0Z = ZOffset
-        Lsm5.DsRecording.ReferenceZ = Z  'this may not exist for previous Zen versions for ZEN2012 this is absolutely recquired
+        Lsm5.DsRecording.ReferenceZ = Z  'this does not exist for previous Zen versions for ZEN2012 this is absolutely recquired
         'ScanController.LockAll True
-        SleepWithEvents (500) 'with 500 it works
+        SleepWithEvents (500) 'with 500 it works this makes the imaging slower but more reliable
         Debug.Print "Recenter Offset after 500 ms " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
-        While Count < 3 And (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec Or Abs(Lsm5.DsRecording.ReferenceZ - Z > Prec))
-            LogManager.UpdateLog " Warning: " & CurrentFileName & " Recenter. Problem in settings ZStack on round " & Count + 1 & _
+        While count < 3 And (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec Or Abs(Lsm5.DsRecording.ReferenceZ - Z > Prec))
+            LogManager.UpdateLog " Warning: " & CurrentFileName & " Recenter. Problem in settings ZStack on round " & count + 1 & _
             ".  Sample0Z_diff: " & ZOffset - Lsm5.DsRecording.Sample0Z & " ReferenceZ_diff: " & Z - Lsm5.DsRecording.ReferenceZ
             While Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec Or Abs(Lsm5.DsRecording.ReferenceZ - Z > Prec)
                 'ScanController.LockAll False
@@ -1052,51 +1052,48 @@ Public Function Recenter2011(Z As Double) As Boolean
             If ScanStop Then
                 GoTo EndOfFun
             End If
-            Count = Count + 1
+            count = count + 1
         Wend
         If (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec) Or (Abs(Lsm5.DsRecording.ReferenceZ - Z) > Prec) Then
             LogManager.UpdateWarningLog " Warning: " & CurrentFileName & " Recenter. Problem in settings ZStack. Sample0Z_diff: " & ZOffset - Lsm5.DsRecording.Sample0Z & " ReferenceZ_diff: " & Z - Lsm5.DsRecording.ReferenceZ
         End If
     End If
     'ScanController.LockAll False
-    
-
     Recenter2011 = True
     Exit Function
 EndOfFun:
     'ScanController.LockAll False
-    
 End Function
 
 #Else
 Public Function Recenter2011(Z As Double) As Boolean
     
-    Dim Pos As Double
+    Dim pos As Double
     Dim ZOffset As Double
     Dim Prec As Double
-    Dim Count As Integer
+    Dim count As Integer
     'Dim ScanController As AimScanController
     'Set ScanController = Lsm5.ExternalDsObject.ScanController
-    Count = 0
+    count = 0
     Prec = 0.001
     
 
     'ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
-    Pos = Lsm5.Hardware.CpFocus.position
+    pos = Lsm5.Hardware.CpFocus.position
     'ScanController.LockAll False ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
     
     If Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then 'Move at the start always if piezo
-        If Round(Pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
+        If Round(pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
             If Not FailSafeMoveStageZ(Z) Then
                 Exit Function
             End If
         End If
-        Pos = Z
+        pos = Z
     End If
 
     ''Only recenter central slice if we have a ZStack
     If isZStack(Lsm5.DsRecording) Then
-        ZOffset = getHalfZRange(Lsm5.DsRecording) + Pos - Z
+        ZOffset = getHalfZRange(Lsm5.DsRecording) + pos - Z
         Debug.Print "Recenter at start " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
         'Not clear if this is recquired
         'ScanController.LockAll False
@@ -1104,8 +1101,8 @@ Public Function Recenter2011(Z As Double) As Boolean
         'ScanController.LockAll True
         SleepWithEvents (500) 'with 500 it works
         Debug.Print "Recenter Offset after 500 ms " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
-        While Count < 3 And Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec
-            LogManager.UpdateLog " Warning: " & CurrentFileName & " Recenter2011. Problem in settings ZStack on round " & Count + 1 & _
+        While count < 3 And Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec
+            LogManager.UpdateLog " Warning: " & CurrentFileName & " Recenter2011. Problem in settings ZStack on round " & count + 1 & _
             ".  Sample0Z_diff: " & ZOffset - Lsm5.DsRecording.Sample0Z
             While Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec
                 'ScanController.LockAll False
@@ -1118,7 +1115,7 @@ Public Function Recenter2011(Z As Double) As Boolean
             If ScanStop Then
                 Exit Function
             End If
-            Count = Count + 1
+            count = count + 1
         Wend
         
         If (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec) Then
@@ -1127,7 +1124,7 @@ Public Function Recenter2011(Z As Double) As Boolean
     End If
     'ScanController.LockAll False
     'Always move at the end if we did not move before
-    If Round(Pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
+    If Round(pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
         If Not FailSafeMoveStageZ(Z) Then
             Exit Function
         End If
@@ -1143,7 +1140,7 @@ End Function
 ' Compute the centerofmass of image stored in RecordingDoc return values according
 '   Use channel with name TrackingChannel
 ''''
-Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As String, method As String) As Vector
+Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As Integer, method As Integer) As Vector
 
     On Error GoTo ErrorHandle:
     Dim RegEx As VBScript_RegExp_55.RegExp
@@ -1161,7 +1158,6 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
     Dim IntCol() As Variant
     Dim IntFrame() As Variant
     
-    Dim channel As Integer
     Dim Frame As Long
     Dim Line As Long
     Dim Col As Long
@@ -1172,34 +1168,11 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
     DoEvents
        
     'Find the channel to track
-    Dim FoundChannel As Boolean
-    FoundChannel = False
-    RegEx.Pattern = "(\w+) (\w+\d+-\w+\d+)"
-    Dim name_channel As String
-    If RegEx.test(TrackingChannel) Then
-        Set Match = RegEx.Execute(TrackingChannel)
-        name_channel = Match.item(0).SubMatches.item(1)
-    End If
-    Dim name_channelA() As String
-    name_channelA = Split(name_channel, "-")
-    For channel = 0 To RecordingDoc.GetDimensionChannels - 1
-        Debug.Print "Channel Names " & RecordingDoc.ChannelName(channel)
-        If RecordingDoc.ChannelName(channel) = name_channelA(0) & "-" & name_channelA(1) Then ' old Code: Left(TrackingChannel,4)
-            FoundChannel = True
-            Exit For
-        End If
-    Next channel
+
+    Debug.Print RecordingDoc.ChannelName(TrackingChannel)
     
-    If Not FoundChannel Then
-        For channel = 0 To RecordingDoc.GetDimensionChannels - 1 ' this is true when only one track is acquired
-            If RecordingDoc.ChannelName(channel) = name_channelA(0) Then ' old Code: Left(TrackingChannel,4)
-                FoundChannel = True
-                Exit For
-            End If
-        Next channel
-    End If
-    
-    If Not FoundChannel Then
+   
+    If TrackingChannel > RecordingDoc.GetDimensionChannels - 1 Or TrackingChannel < -1 Then
         LogManager.UpdateErrorLog " MassCenter Was not able to find channel: " & TrackingChannel & " for tracking in " & _
         GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath")
         Exit Function
@@ -1237,7 +1210,7 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
         For Line = 0 To LineMax - 1
             bpp = 0 ' bytes per pixel (this will be changed by ScanLine
             ' spl samples per line (will be changed by scal line)
-            scrline = RecordingDoc.ScanLine(channel, 0, Frame, Line, spl, bpp)  'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
+            scrline = RecordingDoc.ScanLine(TrackingChannel, 0, Frame, Line, spl, bpp)  'this is the lsm function how to read pixel values. It basically reads all the values in one X line. scrline is a variant but acts as an array with all those values stored
             For Col = 0 To ColMax - 1             'Now I'm scanning all the pixels in the line
                 IntLine(Line) = IntLine(Line) + scrline(Col)
                 IntCol(Col) = IntCol(Col) + scrline(Col)
@@ -1246,11 +1219,11 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
         Next Line
     Next Frame
     Select Case method
-        Case "Center of Mass (thr)"
+        Case 1 'Center of mass (thr)
             thresh = 0.8
-        Case "Center of Mass"
+        Case 2 'Center of mass
             thresh = 0
-        Case "Peak"
+        Case 3 'Peak
             thresh = 0
         Case Else
             GoTo WrongMethod
@@ -1258,12 +1231,12 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As St
             
             
     'compute center of mass, threshold by 80% the image
-    MassCenter.X = weightedMean(IntCol, XMinMax(0), XMinMax(1), thresh)
-    MassCenter.Y = weightedMean(IntLine, YMinMax(0), YMinMax(1), thresh)
+    MassCenter.x = weightedMean(IntCol, XMinMax(0), XMinMax(1), thresh)
+    MassCenter.y = weightedMean(IntLine, YMinMax(0), YMinMax(1), thresh)
     MassCenter.Z = weightedMean(IntFrame, ZMinMax(0), ZMinMax(1), thresh)
-    If method = "Peak" Then
-        MassCenter.X = XMinMax(1)
-        MassCenter.Y = YMinMax(1)
+    If method = 3 Then
+        MassCenter.x = XMinMax(1)
+        MassCenter.y = YMinMax(1)
         MassCenter.Z = ZMinMax(1)
     End If
     On Error GoTo 0

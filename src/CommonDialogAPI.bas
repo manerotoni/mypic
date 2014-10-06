@@ -98,7 +98,7 @@ Public Function ShowOpen(Filter As String, Flags As Long, Optional FileName As S
     Result = GetOpenFileName(ComDlgOpenFileName)
     
     If Result <> 0 Then
-        ShowOpen = Left$(ComDlgOpenFileName.lpstrFile, _
+        ShowOpen = VBA.Left$(ComDlgOpenFileName.lpstrFile, _
                    InStr(ComDlgOpenFileName.lpstrFile, _
                    Chr$(0)) - 1)
     End If
@@ -126,7 +126,7 @@ Public Function ShowSave(Filter As String, Flags As Long, FileName As String, Op
     Result = GetSaveFileName(ComDlgOpenFileName)
     
     If Result <> 0 Then
-        ShowSave = Left$(ComDlgOpenFileName.lpstrFile, _
+        ShowSave = VBA.Left$(ComDlgOpenFileName.lpstrFile, _
                    InStr(ComDlgOpenFileName.lpstrFile, _
                    Chr$(0)) - 1)
     End If

@@ -12,6 +12,7 @@ Public LogFileName As String
 Public ErrFileName As String
 Public LogFileNameBase As String
 Public ErrFileNameBase As String
+Public LogFileBuffer As String
 Public FileSystem As FileSystemObject
 Public Log     As Boolean          'If true we log data during the macro
 
@@ -65,8 +66,8 @@ End Function
 ''''
 Public Function CheckDir(ByVal PathName As String) As Boolean
     On Error GoTo ErrorDir
-    If Dir(GlobalDataBaseName, vbDirectory) = "" Then
-        MkDir GlobalDataBaseName
+    If Dir(PathName, vbDirectory) = "" Then
+        MkDir PathName
     End If
     CheckDir = True
     Exit Function

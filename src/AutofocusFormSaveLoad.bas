@@ -19,7 +19,7 @@ On Error GoTo SaveFormSettings_Error
     iFileNum = FreeFile()
     Open FileName For Output As iFileNum
     
-    Print #iFileNum, "% Settings for AutofocusMacro for ZEN " & ZENv & "  " & AutofocusForm.Version
+    Print #iFileNum, "% Settings for AutofocusMacro for ZEN " & ZenV & "  " & AutofocusForm.Version
 
     'Single MultipelocationToggle
     Print #iFileNum, "% Single Multiple "
@@ -190,7 +190,7 @@ Public Sub LoadFormSettings(FileName As String)
     
     Do While Not EOF(iFileNum)
             Line Input #iFileNum, Fields
-            While Left(Fields, 1) = "%"
+            While VBA.Left(Fields, 1) = "%"
                 Line Input #iFileNum, Fields
             Wend
             
@@ -206,9 +206,9 @@ Public Sub LoadFormSettings(FileName As String)
                         FieldEntries = Split(Fields, " ", 2)
                     Wend
                     'put once the job and reload it to get all the proper pixelSize according to the zoom etc
-                    Jobs.putJob JobName, ZEN, True
+                    Jobs.PutJob JobName, ZEN, True
                     'UpdateGuiFromJob Jobs, JobName, ZEN
-                    Jobs.setJob JobName, Lsm5.DsRecording, ZEN
+                    Jobs.SetJob JobName, Lsm5.DsRecording, ZEN
                     UpdateFormFromJob Jobs, JobName
                     UpdateJobFromForm Jobs, JobName
                 End If
@@ -223,17 +223,17 @@ Public Sub LoadFormSettings(FileName As String)
                     Wend
                     If JobsFcs.getLightPathConfig(JobName) <> "" Then
                         'put once the job and reload it to get all the proper pixelSize according to the zoom etc
-                        JobsFcs.putJob JobName, ZEN
+                        JobsFcs.PutJob JobName, ZEN
                         JobsFcs.setJobNoAi JobName, JobsFcs.getLightPathConfig(JobName)
                         'JobsFcs.setJob JobName, ZEN
                     End If
                         UpdateFormFromJobFcs JobsFcs, JobName
                         'UpdateJobFromForm Jobs, JobName
                 End If
-                If Left(FieldEntries(0), 4) = "Pump" Then
+                If VBA.Left(FieldEntries(0), 4) = "Pump" Then
                     On Error Resume Next
                     PumpForm.Controls(FieldEntries(0)).value = FieldEntries(1)
-                ElseIf Left(FieldEntries(0), 6) <> "EndJob" Then
+                ElseIf VBA.Left(FieldEntries(0), 6) <> "EndJob" Then
                     On Error Resume Next
                     AutofocusForm.Controls(FieldEntries(0)).value = FieldEntries(1)
                 End If

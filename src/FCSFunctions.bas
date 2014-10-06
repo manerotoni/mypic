@@ -15,17 +15,17 @@ Public FcsPositions As AimFcsSamplePositionParameters
 '   GetFcsPosition(PosX As Double, PosY As Double, PosZ As Double)
 '   reads position of small crosshair
 '''''
-Public Sub GetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Optional Pos As Long = -1)
-    If Pos = -1 Then
+Public Sub getFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Optional pos As Long = -1)
+    If pos = -1 Then
         'read actual position of crosshair
         Set viewerGuiServer = Lsm5.viewerGuiServer
         viewerGuiServer.FcsGetLsmCoordinates PosX, PosY, PosZ
     Else
         Set FcsControl = Fcs
         Set FcsPositions = FcsControl.SamplePositionParameters
-        PosX = FcsPositions.PositionX(Pos)
-        PosY = FcsPositions.PositionY(Pos)
-        PosZ = FcsPositions.PositionZ(Pos)
+        PosX = FcsPositions.PositionX(pos)
+        PosY = FcsPositions.PositionY(pos)
+        PosZ = FcsPositions.PositionZ(pos)
     End If
 End Sub
 
@@ -38,14 +38,14 @@ End Sub
 '   then all positions inbetween are set to 0
 '''''
 Public Function setFcsPositions(Positions() As Vector) As Boolean
-    Dim Pos As Integer
+    Dim pos As Integer
     Set FcsControl = Fcs
     Set FcsPositions = FcsControl.SamplePositionParameters
-    For Pos = 0 To UBound(Positions)
-        FcsPositions.PositionX(Pos) = Positions(Pos).X
-        FcsPositions.PositionY(Pos) = Positions(Pos).Y
-        FcsPositions.PositionZ(Pos) = Positions(Pos).Z
-    Next Pos
+    For pos = 0 To UBound(Positions)
+        FcsPositions.PositionX(pos) = Positions(pos).x
+        FcsPositions.PositionY(pos) = Positions(pos).y
+        FcsPositions.PositionZ(pos) = Positions(pos).Z
+    Next pos
     Debug.Print FcsPositions.PositionZ(0)
     'this shows the small crosshair
     viewerGuiServer.UpdateFcsPositions

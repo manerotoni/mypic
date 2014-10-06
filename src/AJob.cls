@@ -14,6 +14,7 @@ Attribute VB_Exposed = False
 Option Explicit
 
 Public Name As String
+
 Public Recording As DsRecording
 Private pAcquireTrack() As Boolean 'must be private for no obvious reasons of VBA
 Public pixelDwell As Double      'pixelDwell of acquisition
@@ -59,7 +60,7 @@ End Property
 ''''
 ' setJob load settings from recording/ZEN into macro
 ''''
-Public Function setJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
+Public Function SetJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
     On Error GoTo ErrorHandle:
     Dim AcquisitionController As AimAcquisitionController40.AimScanController
     Set AcquisitionController = Lsm5.ExternalDsObject.ScanController
@@ -71,7 +72,7 @@ Public Function setJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
     TrackNumber = RecordingLoc.GetNormalTrackCount
     TimeBetweenStacks = RecordingLoc.TrackObjectByMultiplexOrder(0, 1).TimeBetweenStacks
     
-    If ZENv > 2010 Then
+    If ZenV > 2010 Then
         If Recording.ScanDirection = 1 Then
             CorrX = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.value
             CorrY = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.value
@@ -92,7 +93,7 @@ Public Function setJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
     Next iTrack
     UseRoi = AcquisitionParameters.UseROIs
     setRoiFromZen
-    setJob = True
+    SetJob = True
     Exit Function
 ErrorHandle:
     MsgBox "Error in AJob.setJob " + Err.Description
@@ -101,7 +102,7 @@ End Function
 ''''
 ' putJob put settings from Me.recording into ZEN
 ''''
-Public Function putJob(ZEN As Object, Optional Extensive As Boolean)
+Public Function PutJob(ZEN As Object, Optional Extensive As Boolean)
     On Error GoTo ErrorHandle:
     Dim AcquisitionController As AimAcquisitionController40.AimScanController
     Set AcquisitionController = Lsm5.ExternalDsObject.ScanController
@@ -160,7 +161,7 @@ Public Function putJob(ZEN As Object, Optional Extensive As Boolean)
     Time = Timer
  
 '   the correction is not saved in the DsRecording
-    If ZENv > 2010 Then
+    If ZenV > 2010 Then
          If Recording.ScanDirection Then
              If ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.value <> CorrX Then
                 ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.value = CorrX
@@ -172,7 +173,7 @@ Public Function putJob(ZEN As Object, Optional Extensive As Boolean)
      End If
 '    Debug.Print "Time update Corr.X " & Round(Timer - Time, 3)
     createRois
-    putJob = True
+    PutJob = True
     Exit Function
 ErrorHandle:
     MsgBox "Error in AJob.putJob " + Name + " " + Err.Description
@@ -214,6 +215,19 @@ Public Sub SetRecording(value As DsRecording)
    Recording.Copy value
    TrackNumber = Recording.GetNormalTrackCount
 End Sub
+
+''
+' returns position of central point for a Job
+''''
+Public Function getCentralPointPx() As Vector
+    getCentralPointPx.x = (Recording.SamplesPerLine - 1) / 2
+    getCentralPointPx.y = (Recording.LinesPerFrame - 1) / 2
+    If isZStack Then
+        getCentralPointPx.Z = (Recording.framesPerStack - 1) / 2
+    Else
+        getCentralPointPx.Z = 0
+    End If
+End Function
 
 Public Function isBleaching() As Boolean
     Dim Success As Integer
@@ -337,21 +351,25 @@ Public Function jobDescriptor() As String
     Dim ScanMode As String
     ScanMode = Recording.ScanMode
     If ScanMode = "Line" Or ScanMode = "ZScan" Then
-        Description = Description & "ScanMode = Line" & vbCrLf
-        Description = Description & "       X = " & Recording.SamplesPerLine & ", Y = 1" & vbCrLf
+        'Description = Description & "ScanMode = Line" & vbCrLf
+        Description = Description & "X = " & Recording.SamplesPerLine & ", Y = 1" & vbCrLf
+        Description = Description & "LineStep = " & Recording.LineStepNumber & vbCrLf
     End If
     If ScanMode = "Frame" Or ScanMode = "Stack" Or ScanMode = "Plane" Then
-        Description = Description & "ScanMode = Frame" & vbCrLf
-        Description = Description & "       X = " & Recording.SamplesPerLine & ", Y = " & Recording.LinesPerFrame & vbCrLf
+        'Description = Description & "ScanMode = Frame" & vbCrLf
+        Description = Description & "X = " & Recording.SamplesPerLine & ", Y = " & Recording.LinesPerFrame & vbCrLf
         Description = Description & "LineStep = " & Recording.LineStepNumber & vbCrLf
     End If
     If ScanMode = "Point" Then
-        Description = Description & "ScanMode = Spot" & vbCrLf
-        Description = Description & "       X =  1, Y = 1 " & vbCrLf
+        Description = Description & "X =  1, Y = 1 " & vbCrLf
+        Description = Description & "LineStep = " & Recording.LineStepNumber & vbCrLf
     End If
-   
-    Description = Description & "Bleaching = " & isBleaching & vbCrLf
-    Description = Description & "Regions = " & Me.UseRoi & vbCrLf
+    If isBleaching Then
+        Description = Description & "Bleaching = " & isBleaching & vbCrLf
+    End If
+    If Me.UseRoi Then
+        Description = Description & "Regions = " & Me.UseRoi & vbCrLf
+    End If
     Description = Description & "PixelDwell = " & Round(Me.pixelDwell * 1000000#, 2) & " us" & vbCrLf
     Description = Description & "Zoom = " & Recording.ZoomX & vbCrLf
     Description = Description & "pixelSize = " & Round(Recording.SampleSpacing, 3) & " um" & vbCrLf
@@ -363,17 +381,14 @@ Public Function jobDescriptor() As String
     
     If Recording.SpecialScanMode = "OnTheFly" Then
         Description = Description & "Fast-Z-Line = True" & vbCrLf
-    Else
-        Description = Description & "Fast-Z-Line = False" & vbCrLf
     End If
     
     If isZStack Then
-        Description = Description & "Z-Stack = True" & vbCrLf
-        Description = Description & "       Z-Slices    = " & Recording.framesPerStack & vbCrLf
-        Description = Description & "       Z-Interval  = " & Round(Recording.frameSpacing, 2) & " um" & vbCrLf
-        Description = Description & "       Z-Range   = " & Round(Recording.frameSpacing, 2) * (Recording.framesPerStack - 1) & " um" & vbCrLf
+        Description = Description & "Z-Slices    = " & Recording.framesPerStack & vbCrLf
+        Description = Description & "Z-Interval  = " & Round(Recording.frameSpacing, 2) & " um" & vbCrLf
+        Description = Description & "Z-Range     = " & Round(Recording.frameSpacing, 2) * (Recording.framesPerStack - 1) & " um" & vbCrLf
     Else
-        Description = Description & "Z-Stack = False" & vbCrLf
+        Description = Description & "Z-Slices = " & 1 & vbCrLf
     End If
 
      If Recording.TimeSeries Then

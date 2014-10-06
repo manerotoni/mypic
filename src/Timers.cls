@@ -34,7 +34,7 @@ Public Sub addTimer(Name As String)
         Exit Sub
     End If
     
-    If TimerNames.Count = 0 Then
+    If TimerNames.count = 0 Then
         ReDim Timers(0)
     Else
         ReDim Preserve Timers(0 To UBound(Timers) + 1)
@@ -49,8 +49,6 @@ End Sub
 Public Function checkTimerName(Name As String) As Boolean
     If TimerNames.Exists(Name) Then
        checkTimerName = True
-    Else
-        MsgNoTimer Name
     End If
 End Function
 

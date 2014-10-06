@@ -53,11 +53,11 @@ End Property
 ' setJob(ZEN As Object, ZENv As Integer)
 '   loads FCSJob from ZEN into Macro. Calls respective function
 '''
-Public Function setJob(ZEN As Object, ZENv As Integer) As Boolean
-    If ZENv > 2010 Then
-       setJobAi ZEN
+Public Function SetJob(ZEN As Object, ZenV As Integer) As Boolean
+    If ZenV > 2010 Then
+       SetJob = setJobAi(ZEN)
     Else
-       setJobNoAi "current"
+       SetJob = setJobNoAi("current")
     End If
 End Function
 
@@ -90,7 +90,7 @@ Public Function setJobNoAi(ConfigName As String) As Boolean
     MeasurementTime = FcsControl.AcquisitionParameters.MeasurementTime
     Repetitions = FcsControl.AcquisitionParameters.MeasurementRepeat
     BleachTime = FcsControl.AcquisitionParameters.BleachTime
-
+    setJobNoAi = True
 End Function
 
 
@@ -153,11 +153,11 @@ End Function
 ' putJob(ZEN As Object, ZENv As Integer)
 '   put stored settings from Macro back into ZEN. Calls respective function depending on ZEN version
 '''
-Public Function putJob(ZEN As Object, ZENv As Integer) As Boolean
-    If ZENv > 2010 Then
-        putJob = putJobAi(ZEN)
+Public Function PutJob(ZEN As Object, ZenV As Integer) As Boolean
+    If ZenV > 2010 Then
+        PutJob = putJobAi(ZEN)
     Else
-        putJob = putJobNoAi
+        PutJob = putJobNoAi
     End If
 End Function
 

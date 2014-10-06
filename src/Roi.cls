@@ -79,13 +79,13 @@ Private Function createRoiTxt(roiTypeI As Integer, roiAimI As Integer) As Boolea
 End Function
 
 
-Public Sub setX(X() As Double)
-    roiX = X
+Public Sub setX(x() As Double)
+    roiX = x
 End Sub
 
 
-Public Sub setY(Y() As Double)
-    roiY = Y
+Public Sub setY(y() As Double)
+    roiY = y
 End Sub
 
 
@@ -102,19 +102,19 @@ Public Sub setRoiFomZen(roiNr As Integer)
     On Error GoTo ErrorHandle
     Dim vo As AimImageVectorOverlay
     Dim i As Long
-    Dim X() As Double
-    Dim Y() As Double
+    Dim x() As Double
+    Dim y() As Double
     Set vo = Lsm5.ExternalDsObject.ScanController.AcquisitionRegions
     'Debug.Print "nr Elements "; vo.GetNumberElements
     If roiNr <= vo.GetNumberElements Then
         If createRoiTxt(vo.ElementType(roiNr), vo.ElementAcquisitionFlags(roiNr)) Then
-            ReDim X(0 To vo.GetElementNumberKnots(roiNr) - 1)
-            ReDim Y(0 To vo.GetElementNumberKnots(roiNr) - 1)
+            ReDim x(0 To vo.GetElementNumberKnots(roiNr) - 1)
+            ReDim y(0 To vo.GetElementNumberKnots(roiNr) - 1)
             For i = 0 To vo.GetElementNumberKnots(roiNr) - 1
-                vo.GetElementKnot roiNr, i, X(i), Y(i), 0, 0
+                vo.GetElementKnot roiNr, i, x(i), y(i), 0, 0
             Next i
-            Me.setX X
-            Me.setY Y
+            Me.setX x
+            Me.setY y
         Else
              MsgBox "Roi.setRoiFromZen: problems in generating Roi"
         End If
@@ -126,11 +126,11 @@ ErrorHandle:
    MsgBox "Error in Roi.setRoiFromZen " & Err.Description
 End Sub
 
-Public Sub setRoi(roiType As String, roiAim As String, X() As Double, Y() As Double)
+Public Sub setRoi(roiType As String, roiAim As String, x() As Double, y() As Double)
     Me.roiType = roiType
     Me.roiAim = roiAim
-    roiX = X
-    roiY = Y
+    roiX = x
+    roiY = y
     If Not roiConsistency Then
         MsgBox "Wrong dimensions/type/aim for  roi " + roiType + " " + roiAim
     End If

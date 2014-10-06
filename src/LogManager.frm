@@ -25,7 +25,7 @@ End Sub
 Public Function UpdateErrorLog(Text As String)
     Dim iFileNum
     Dim ErrText As String
-    ErrText = Left(ErrorLogLabel.Caption, MaxSizeLog)
+    ErrText = VBA.Left(ErrorLogLabel.Caption, MaxSizeLog)
     ErrorLogLabel.Caption = Now & " " & Text & vbCrLf & ErrText
     LogManager.Show
     'write to ErrorFile
@@ -42,7 +42,7 @@ End Function
 Public Function UpdateWarningLog(Text As String)
     Dim iFileNum
     Dim ErrText As String
-'    ErrText = Left(ErrorLogLabel.Caption, MaxSizeLog)
+'    ErrText = VBA.Left(ErrorLogLabel.Caption, MaxSizeLog)
 '    ErrorLogLabel.Caption = Now & " " & Text & vbCrLf & ErrText
 '    LogManager.Show
 
@@ -58,17 +58,33 @@ Public Function UpdateWarningLog(Text As String)
 End Function
 
 
-Public Function UpdateLog(Text As String)
+Public Function UpdateLog(Text As String, Optional Level As Integer = 0)
     Dim iFileNum
     Dim ErrText As String
     'write to Logfile
     If Log Then
-        If SafeOpenTextFile(LogFileName, LogFile, FileSystem) Then
-            LogFile.WriteLine Now & " " & Text
-            LogFile.Close
-        Else
-            Log = False
+        If Level <= LogLevel Then
+            LogFileBuffer = LogFileBuffer & Now & " " & Text
+        
+            If Len(LogFileBuffer) > 10000 Then
+                If SafeOpenTextFile(LogFileName, LogFile, FileSystem) Then
+                    LogFile.WriteLine LogFileBuffer
+                    LogFile.Close
+                Else
+                    Log = False
+                End If
+                LogFileBuffer = ""
+            Else
+                LogFileBuffer = LogFileBuffer & vbCrLf
+            End If
         End If
+        'force output
+        If Level = -1 Then
+            If SafeOpenTextFile(LogFileName, LogFile, FileSystem) Then
+                LogFile.WriteLine LogFileBuffer
+            End If
+        End If
+
     End If
 End Function
 

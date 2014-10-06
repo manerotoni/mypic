@@ -15,7 +15,7 @@ Option Explicit
 '''' We can use number or a dictionary to find a Job in Jobs
 Private Jobs() As AJob
 Private JobNames As Dictionary
-Private ZENv As Integer
+Private ZenV As Integer
 Private ZoomPixelSlice(1 To 9, 1 To 3) As Double
 
 Private Sub MsgNoJob(Name As String)
@@ -49,11 +49,11 @@ Public Sub initialize(Names() As String, Recording As DsRecording, ZEN As Object
 End Sub
 
 Public Function getZENv() As Integer
-    getZENv = ZENv
+    getZENv = ZenV
 End Function
 
 Public Function setZENv(value As Integer)
-    ZENv = value
+    ZenV = value
 End Function
 
 Public Sub resetJobs()
@@ -78,25 +78,42 @@ Public Sub AddJob(Name As String, Recording As DsRecording, ZEN As Object)
         JobNames.Add Name, UBound(Jobs)
     End If
     Dim i As Integer
-    Dim iJob As Integer
-    iJob = JobNames.item(Name)
-    Set Jobs(iJob) = New AJob
-    Jobs(iJob).Name = Name
-    Jobs(iJob).setJob Lsm5.DsRecording, ZEN
+    Dim IJob As Integer
+    IJob = JobNames.item(Name)
+    Set Jobs(IJob) = New AJob
+    Jobs(IJob).Name = Name
+    Jobs(IJob).SetJob Lsm5.DsRecording, ZEN
 End Sub
 
 
 '''
+' DeleteJob
+'   Delete Job and decrease number of Jobs
+'''
+Public Sub DeleteJob(Name As String)
+    Dim i As Integer
+    Dim IJob As Integer
+    If JobNames.Exists(Name) Then
+        IJob = JobNames.item(Name)
+        JobNames.Remove Name
+        For i = IJob To UBound(Jobs) - 1
+            Set Jobs(i) = Jobs(i + 1)
+        Next i
+        ReDim Preserve Jobs(0 To UBound(Jobs) - 1)
+     End If
+End Sub
+
+'''
 '   Set the job with Name from ZEN using a given recording
 '''
-Public Function setJob(Name As String, Recording As DsRecording, ZEN As Object) As Boolean
+Public Function SetJob(Name As String, Recording As DsRecording, ZEN As Object) As Boolean
     On Error GoTo ErrorHandle:
-    Dim iJob As Integer
+    Dim IJob As Integer
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    If Jobs(JobNames.item(Name)).setJob(Recording, ZEN) Then
-        setJob = True
+    If Jobs(JobNames.item(Name)).SetJob(Recording, ZEN) Then
+        SetJob = True
     End If
     Exit Function
 ErrorHandle:
@@ -123,14 +140,14 @@ End Function
 '''
 '   Put the job with Name from Macro into ZEN
 '''
-Public Function putJob(Name As String, ZEN As Object, Optional Extensive As Boolean) As Boolean
+Public Function PutJob(Name As String, ZEN As Object, Optional Extensive As Boolean) As Boolean
     On Error GoTo ErrorHandle:
-    Dim iJob As Integer
+    Dim IJob As Integer
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    If Jobs(JobNames.item(Name)).putJob(ZEN, Extensive) Then
-        putJob = True
+    If Jobs(JobNames.item(Name)).PutJob(ZEN, Extensive) Then
+        PutJob = True
     End If
     Exit Function
 ErrorHandle:
@@ -243,8 +260,8 @@ Public Function getCentralPointPx(Name As String) As Vector
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    getCentralPointPx.X = (Jobs(JobNames.item(Name)).Recording.SamplesPerLine - 1) / 2
-    getCentralPointPx.Y = (Jobs(JobNames.item(Name)).Recording.LinesPerFrame - 1) / 2
+    getCentralPointPx.x = (Jobs(JobNames.item(Name)).Recording.SamplesPerLine - 1) / 2
+    getCentralPointPx.y = (Jobs(JobNames.item(Name)).Recording.LinesPerFrame - 1) / 2
     If isZStack(Name) Then
         getCentralPointPx.Z = (Jobs(JobNames.item(Name)).Recording.framesPerStack - 1) / 2
     Else
@@ -419,8 +436,8 @@ Public Function getCentralPtPx(Name As String) As Vector
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    getCentralPtPx.X = (Jobs(JobNames.item(Name)).Recording.SamplesPerLine - 1) / 2
-    getCentralPtPx.Y = (Jobs(JobNames.item(Name)).Recording.LinesPerFrame - 1) / 2
+    getCentralPtPx.x = (Jobs(JobNames.item(Name)).Recording.SamplesPerLine - 1) / 2
+    getCentralPtPx.y = (Jobs(JobNames.item(Name)).Recording.LinesPerFrame - 1) / 2
     If Jobs(JobNames.item(Name)).isZStack Then
         getCentralPtPx.Z = (Jobs(JobNames.item(Name)).Recording.framesPerStack - 1) / 2
     Else

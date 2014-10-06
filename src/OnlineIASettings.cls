@@ -340,7 +340,7 @@ Public Sub readFromFile(FileName As String)
     Open FileName For Input As iFileNum
     Do While Not EOF(iFileNum)
             Line Input #iFileNum, Fields
-            While Left(Fields, 1) = "%" 'this are comments
+            While VBA.Left(Fields, 1) = "%" 'this are comments
                 Line Input #iFileNum, Fields
             Wend
             FieldEntries = Split(Fields, " ", 2)
@@ -379,7 +379,7 @@ End Sub
 '   ToDO: better parsing
 '''
 Public Function settingsFileName(FileName As String) As String
-    settingsFileName = Left(FileName, Len(FileName) - 9) & "_oia.txt"
+    settingsFileName = VBA.Left(FileName, Len(FileName) - 9) & "_oia.txt"
 End Function
 
 
@@ -391,8 +391,8 @@ Public Function getRois(Rois() As Roi) As Boolean
     Dim RoiOut() As Roi
     Dim XRois()  As String 'the string containinig all X-positions of a ROI
     Dim YRois()  As String 'the string containinig all Y-positions of a ROI
-    Dim X() As String ' string containing X pos of a single ROI
-    Dim Y() As String ' String containing y pos of a single ROI
+    Dim x() As String ' string containing X pos of a single ROI
+    Dim y() As String ' String containing y pos of a single ROI
     Dim XD()  As Double 'the double array containinig the X-positions
     Dim YD()  As Double 'the double array containinig the Y-positions
     Dim i As Integer
@@ -420,17 +420,17 @@ Public Function getRois(Rois() As Roi) As Boolean
     End If
     ReDim Rois(0 To UBound(roiType))
     For iRoi = 0 To UBound(roiType)
-        X() = Split(XRois(iRoi), ",")
-        Y() = Split(YRois(iRoi), ",")
-        If isArrayEmpty(X) Or isArrayEmpty(Y) Then
+        x() = Split(XRois(iRoi), ",")
+        y() = Split(YRois(iRoi), ",")
+        If isArrayEmpty(x) Or isArrayEmpty(y) Then
             MsgBox "GetRoisFromRegistry: No coordinates found in registry foir roix and roiy (in pixel)"
             Exit Function
         End If
-        ReDim XD(UBound(X))
-        ReDim YD(UBound(Y))
-        For i = 0 To UBound(X)
-            XD(i) = CDbl(X(i))
-            YD(i) = CDbl(Y(i))
+        ReDim XD(UBound(x))
+        ReDim YD(UBound(y))
+        For i = 0 To UBound(x)
+            XD(i) = CDbl(x(i))
+            YD(i) = CDbl(y(i))
         Next i
         Set Rois(iRoi) = New Roi
         Rois(iRoi).setRoi roiType(iRoi), roiAim(iRoi), XD, YD
@@ -450,7 +450,7 @@ End Function
 '   StgPos.Z: defined 0 for first slice
 '   units are converted afterwards as it depends on the type of Job (default input unit is px)
 ''''
-Public Function getPositions(StgPos() As Vector, currentPosition As Vector) As Boolean
+Public Function getPositions(stgPos() As Vector, currentPosition As Vector) As Boolean
     checkExistKeys
     ' store postion from windows registry in array
     Dim locX()  As String 'the string containinig the X-positions
@@ -514,11 +514,11 @@ Public Function getPositions(StgPos() As Vector, currentPosition As Vector) As B
 '    End If
     
     ' Convert values to Double
-    ReDim StgPos(0 To UBound(locX))
+    ReDim stgPos(0 To UBound(locX))
     For i = 0 To UBound(locX)
-        StgPos(i).X = CDbl(locX(i))
-        StgPos(i).Y = CDbl(locY(i))
-        StgPos(i).Z = CDbl(locZ(i))
+        stgPos(i).x = CDbl(locX(i))
+        stgPos(i).y = CDbl(locY(i))
+        stgPos(i).Z = CDbl(locZ(i))
     Next i
     getPositions = True
 End Function
@@ -531,7 +531,7 @@ End Function
 '   StgPos.Z: defined 0 for the central slice
 '   units are converted afterwards as it depends on the type of Job (default unit is px)
 ''''
-Public Function getFcsPositions(StgPos() As Vector, currentPosition As Vector) As Boolean
+Public Function getFcsPositions(stgPos() As Vector, currentPosition As Vector) As Boolean
     checkExistKeys
     ' store postion from windows registry in array
     Dim locX()  As String 'the string containinig the X-positions
@@ -579,11 +579,11 @@ Public Function getFcsPositions(StgPos() As Vector, currentPosition As Vector) A
     End If
     
     ' Convert values to Double
-    ReDim StgPos(0 To UBound(locX))
+    ReDim stgPos(0 To UBound(locX))
     For i = 0 To UBound(locX)
-        StgPos(i).X = CDbl(locX(i))
-        StgPos(i).Y = CDbl(locY(i))
-        StgPos(i).Z = CDbl(locZ(i))
+        stgPos(i).x = CDbl(locX(i))
+        stgPos(i).y = CDbl(locY(i))
+        stgPos(i).Z = CDbl(locZ(i))
     Next i
     getFcsPositions = True
 End Function

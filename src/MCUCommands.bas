@@ -178,7 +178,7 @@ Private Function StageMoveToPositionX(PositionMetre As Double, CANN As Boolean)
         position = "0" + position
     Wend
     If Len(position) > 6 Then
-        position = Strings.Right(position, 6)
+        position = VBA.Right(position, 6)
     End If
     If CANN Then
         SendStageCommand ("XT" + position + Strings.Chr(13))
@@ -194,7 +194,7 @@ Private Function StageMoveToPositionY(PositionMetre As Double, CANN As Boolean)
         position = "0" + position
     Wend
     If Len(position) > 6 Then
-        position = Strings.Right(position, 6)
+        position = VBA.Right(position, 6)
     End If
     If CANN Then
         SendStageCommand ("YT" + position + Strings.Chr(13))
@@ -234,7 +234,7 @@ On Error GoTo ErrorExit
     If Not Interface Is Nothing Then
         Interface.bSendCmdWait4Answer command, Answer
         If Answer <> "" Then
-            SendStageCommandWaitForAnswer = CLng(Strings.Right(Answer, Len(Answer) - 2))
+            SendStageCommandWaitForAnswer = CLng(VBA.Right(Answer, Len(Answer) - 2))
         End If
     End If
 ErrorExit:
@@ -248,7 +248,7 @@ On Error GoTo ErrorExit
     If Not Interface Is Nothing Then
         Interface.bSendCmdWait4Answer command, Answer
         If Answer <> "" Then
-            SendStageCommandWaitForHexAnswer = Val("&H" + Strings.Right(Answer, Len(Answer) - 2))
+            SendStageCommandWaitForHexAnswer = Val("&H" + VBA.Right(Answer, Len(Answer) - 2))
             If SendStageCommandWaitForHexAnswer < 0 Then
             SendStageCommandWaitForHexAnswer = SendStageCommandWaitForHexAnswer + &H10000
             End If
