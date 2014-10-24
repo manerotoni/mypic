@@ -40,11 +40,11 @@ End Function
 '''
 '   Initialize a series of Jobs with given name
 '''
-Public Sub initialize(Names() As String, Recording As DsRecording, ZEN As Object)
+Public Sub initialize(names() As String, Recording As DsRecording, ZEN As Object)
     Dim i As Integer
    ' Set Jobs = New AJob
-    For i = 0 To UBound(Names)
-        AddJob CStr(Names(i)), Lsm5.DsRecording, ZEN
+    For i = 0 To UBound(names)
+        AddJob CStr(names(i)), Lsm5.DsRecording, ZEN
     Next i
 End Sub
 
@@ -260,8 +260,8 @@ Public Function getCentralPointPx(Name As String) As Vector
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    getCentralPointPx.x = (Jobs(JobNames.item(Name)).Recording.SamplesPerLine - 1) / 2
-    getCentralPointPx.y = (Jobs(JobNames.item(Name)).Recording.LinesPerFrame - 1) / 2
+    getCentralPointPx.X = (Jobs(JobNames.item(Name)).Recording.SamplesPerLine - 1) / 2
+    getCentralPointPx.Y = (Jobs(JobNames.item(Name)).Recording.LinesPerFrame - 1) / 2
     If isZStack(Name) Then
         getCentralPointPx.Z = (Jobs(JobNames.item(Name)).Recording.framesPerStack - 1) / 2
     Else
@@ -436,8 +436,8 @@ Public Function getCentralPtPx(Name As String) As Vector
     If Not checkJobName(Name) Then
         Exit Function
     End If
-    getCentralPtPx.x = (Jobs(JobNames.item(Name)).Recording.SamplesPerLine - 1) / 2
-    getCentralPtPx.y = (Jobs(JobNames.item(Name)).Recording.LinesPerFrame - 1) / 2
+    getCentralPtPx.X = (Jobs(JobNames.item(Name)).Recording.SamplesPerLine - 1) / 2
+    getCentralPtPx.Y = (Jobs(JobNames.item(Name)).Recording.LinesPerFrame - 1) / 2
     If Jobs(JobNames.item(Name)).isZStack Then
         getCentralPtPx.Z = (Jobs(JobNames.item(Name)).Recording.framesPerStack - 1) / 2
     Else

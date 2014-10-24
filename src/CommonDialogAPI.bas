@@ -77,12 +77,12 @@ Public Const OFN_SHOWHELP As Long = &H10&
 
 
 
-Public Function ShowOpen(Filter As String, Flags As Long, Optional FileName As String = "", Optional initDir As String = "", Optional DialogTitle As String = "Open") As String
+Public Function ShowOpen(Filter As String, Flags As Long, Optional fileName As String = "", Optional initDir As String = "", Optional DialogTitle As String = "Open") As String
     Dim Buffer As String
     Dim Result As Long
     Dim ComDlgOpenFileName As OPENFILENAME
     
-    Buffer = FileName & String$(128 - Len(FileName), 0)
+    Buffer = fileName & String$(600 - Len(fileName), 0)
     
     With ComDlgOpenFileName
         .lStructSize = Len(ComDlgOpenFileName)
@@ -90,27 +90,29 @@ Public Function ShowOpen(Filter As String, Flags As Long, Optional FileName As S
         .nFilterIndex = 1&
         .nMaxFile = Len(Buffer)
         .lpstrFile = Buffer
-        .lpstrFilter = Filter
+        .lpstrFilter = Filter & Chr$(0) & Chr$(0)
         .lpstrInitialDir = initDir
         .lpstrTitle = DialogTitle
     End With
     
     Result = GetOpenFileName(ComDlgOpenFileName)
-    
+    Debug.Print ComDlgOpenFileName.lpstrFile
     If Result <> 0 Then
+        'remove bland characters to the right
         ShowOpen = VBA.Left$(ComDlgOpenFileName.lpstrFile, _
                    InStr(ComDlgOpenFileName.lpstrFile, _
-                   Chr$(0)) - 1)
+                   Chr$(0) & Chr$(0)) - 1)
     End If
+    
 End Function
 
-Public Function ShowSave(Filter As String, Flags As Long, FileName As String, Optional initDir As String = "", Optional DialogTitle As String = "Save As") As String
+Public Function ShowSave(Filter As String, Flags As Long, fileName As String, Optional initDir As String = "", Optional DialogTitle As String = "Save As") As String
                            
     Dim Buffer As String
     Dim Result As Long
     Dim ComDlgOpenFileName As OPENFILENAME
     
-    Buffer = FileName & String$(128 - Len(FileName), 0)
+    Buffer = fileName & String$(128 - Len(fileName), 0)
     
     With ComDlgOpenFileName
         .lStructSize = Len(ComDlgOpenFileName)

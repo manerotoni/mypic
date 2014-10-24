@@ -50,11 +50,11 @@ End Function
 '''
 '   Initialize a series of Jobs with given name
 '''
-Public Sub initialize(Names() As String, ZEN As Object)
+Public Sub initialize(names() As String, ZEN As Object)
     Dim i As Integer
     ZenV = getVersionNr
-    For i = 0 To UBound(Names)
-        AddJob CStr(Names(i)), ZEN
+    For i = 0 To UBound(names)
+        AddJob CStr(names(i)), ZEN
     Next i
 End Sub
 

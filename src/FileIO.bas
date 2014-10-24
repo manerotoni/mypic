@@ -15,7 +15,7 @@ Public ErrFileNameBase As String
 Public LogFileBuffer As String
 Public FileSystem As FileSystemObject
 Public Log     As Boolean          'If true we log data during the macro
-
+Public WorkingDir As String
 
 '''
 ' Separates different part of file name
@@ -52,7 +52,7 @@ End Function
 '   Check if file is present or not
 '''''
 Public Function FileExist(ByVal PathName As String) As Boolean
-    If (Dir(PathName) = "") Then
+    If (Dir(PathName) = "") Or PathName = "" Then
         FileExist = False
      Else
         FileExist = True
@@ -81,27 +81,44 @@ End Function
 ' Tries to open a file. If already open resume to next command
 ''''
 Public Function SafeOpenTextFile(ByVal PathName As String, ByRef File As TextStream, ByVal FileSystem As FileSystemObject) As Boolean
+    Const ForAppending = 8
     If FileExist(PathName) Then
         ' file exist we try to open it
-        On Error Resume Next
-        Set File = FileSystem.OpenTextFile(PathName, 8, True)
-        On Error GoTo FileIsOpen
+        On Error GoTo FileIsNotAccessible
+        Set File = FileSystem.OpenTextFile(PathName, ForAppending, True)
         SafeOpenTextFile = True
         Exit Function
     Else
-        On Error Resume Next
-        Set File = FileSystem.OpenTextFile(PathName, 8, True)
         On Error GoTo FileIsNotAccessible
+        Set File = FileSystem.OpenTextFile(PathName, ForAppending, True)
         SafeOpenTextFile = True
         Exit Function
     End If
-FileIsOpen:
-    SafeOpenTextFile = True 'file is already open
     Exit Function
 FileIsNotAccessible:
     SafeOpenTextFile = False
 End Function
 
+
+Public Function getRecordingFromImageFile(PathName As String, ZEN As Object) As DsRecording
+ 
+    Dim ViewerGuiServer As AimViewerGuiServer40.AimViewerGuiServer
+    Dim Node As AimExperiment40.AimExperimentTreeNode
+    Set ViewerGuiServer = Lsm5.ViewerGuiServer
+    
+    Set Node = ViewerGuiServer.LoadFile(PathName, False)
+    SleepWithEvents (500)
+    Lsm5.DsRecording.Copy Lsm5.DsRecordingActiveDocObject.Recording
+    Application.ThrowEvent tag_Events.eEventDsActiveRecChanged, 0
+    SleepWithEvents (500)
+    Set getRecordingFromImageFile = Lsm5.DsRecording
+    getRecordingFromImageFile.Copy Lsm5.DsRecording
+    SleepWithEvents (500)
+    ViewerGuiServer.Close Node
+    While Lsm5.DsRecordingActiveDocObject.IsBusy
+        SleepWithEvents (200)
+    Wend
+End Function
 
 '''''
 ''   LogMessage(ByVal Msg As String, ByVal Log As Boolean, ByVal PathName As String, ByRef File As TextStream, ByVal FileSystem As FileSystemObject)

@@ -61,8 +61,10 @@ End Property
 ' setJob load settings from recording/ZEN into macro
 ''''
 Public Function SetJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
-    On Error GoTo ErrorHandle:
+
     Dim AcquisitionController As AimAcquisitionController40.AimScanController
+On Error GoTo SetJob_Error
+
     Set AcquisitionController = Lsm5.ExternalDsObject.ScanController
     Dim AcquisitionParameters As AimAcquisitionController40.AimAcquisitionParameters
     Set AcquisitionParameters = AcquisitionController.AcquisitionParameters
@@ -74,8 +76,8 @@ Public Function SetJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
     
     If ZenV > 2010 Then
         If Recording.ScanDirection = 1 Then
-            CorrX = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.value
-            CorrY = ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.value
+            CorrX = ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.CorrX.value
+            CorrY = ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.CorrY.value
         End If
         'Debug.Print "nr Lasers " & ZEN.gui.Acquisition.Channels.Track.LaserLine.ItemCount
         
@@ -94,9 +96,15 @@ Public Function SetJob(RecordingLoc As DsRecording, ZEN As Object) As Boolean
     UseRoi = AcquisitionParameters.UseROIs
     setRoiFromZen
     SetJob = True
-    Exit Function
-ErrorHandle:
-    MsgBox "Error in AJob.setJob " + Err.Description
+
+   On Error GoTo 0
+   Exit Function
+
+SetJob_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure SetJob of Class Module AJob at line " & Erl & " "
+
 End Function
 
 ''''
@@ -111,10 +119,6 @@ Public Function PutJob(ZEN As Object, Optional Extensive As Boolean)
     Dim iTrack As Integer
     Dim iLaser As Integer
     Dim Time As Double
-    If TrackNumber <> Lsm5.DsRecording.GetNormalTrackCount Then
-        MsgBox "Nr of Tracks of  Job " + Name + " is " + CStr(TrackNumber) + ". Available tracks " + CStr(Lsm5.DsRecording.GetNormalTrackCount) + vbCrLf + "This may cause problems"
-        'Exit Function
-    End If
     
     Time = Timer
     If Not Recording Is Nothing Then
@@ -140,20 +144,6 @@ Public Function PutJob(ZEN As Object, Optional Extensive As Boolean)
         
     For iTrack = 0 To TrackNumber - 1
         Lsm5.DsRecording.TrackObjectByMultiplexOrder(iTrack, 1).Acquire = pAcquireTrack(iTrack)
-
-'        If ZENv > 2010 Then
-'            'this is experimental
-'            If SwitchLaserLines Then
-'                If Not isArrayEmpty(LaserOnOff) And pAcquireTrack(iTrack) Then
-'                    For iLaser = 0 To UBound(LaserOnOff, 2)
-'                        ZEN.gui.Acquisition.Channels.Track.LaserLine.ByIndex = iLaser
-'                        If LaserOnOff(iTrack, iLaser) <> ZEN.gui.Acquisition.Channels.Track.LaserLine.Acquire.Value Then
-'                            ZEN.gui.Acquisition.Channels.Track.LaserLine.Acquire.Value = LaserOnOff(iTrack, iLaser)
-'                        End If
-'                    Next iLaser
-'                End If
-'            End If
-'        End If
     Next iTrack
     Debug.Print "Times set tracks " & Round(Timer - Time, 3)
     
@@ -163,11 +153,11 @@ Public Function PutJob(ZEN As Object, Optional Extensive As Boolean)
 '   the correction is not saved in the DsRecording
     If ZenV > 2010 Then
          If Recording.ScanDirection Then
-             If ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.value <> CorrX Then
-                ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrX.value = CorrX
+             If ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.CorrX.value <> CorrX Then
+                ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.CorrX.value = CorrX
              End If
-             If ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.value <> CorrY Then
-                 ZEN.gui.Acquisition.AcquisitionMode.Bidirectional.CorrY.value = CorrY
+             If ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.CorrY.value <> CorrY Then
+                 ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.CorrY.value = CorrY
              End If
          End If
      End If
@@ -220,8 +210,8 @@ End Sub
 ' returns position of central point for a Job
 ''''
 Public Function getCentralPointPx() As Vector
-    getCentralPointPx.x = (Recording.SamplesPerLine - 1) / 2
-    getCentralPointPx.y = (Recording.LinesPerFrame - 1) / 2
+    getCentralPointPx.X = (Recording.SamplesPerLine - 1) / 2
+    getCentralPointPx.Y = (Recording.LinesPerFrame - 1) / 2
     If isZStack Then
         getCentralPointPx.Z = (Recording.framesPerStack - 1) / 2
     Else
@@ -230,8 +220,10 @@ Public Function getCentralPointPx() As Vector
 End Function
 
 Public Function isBleaching() As Boolean
+    'On Error GoTo ExitFun
     Dim Success As Integer
     isBleaching = Recording.TrackObjectBleach(Success).Acquire And Recording.TrackObjectBleach(Success).UseBleachParameters
+ExitFun:
 End Function
 
 Public Function isZStack() As Boolean

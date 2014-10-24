@@ -340,12 +340,12 @@ Public Function getThisPosition() As Vector
 End Function
 
 Public Function getThisX() As Double
-    getThisX = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).stgPos.x
+    getThisX = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).stgPos.X
 End Function
 
 
 Public Function getThisY() As Double
-    getThisY = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).stgPos.y
+    getThisY = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).stgPos.Y
 End Function
 
 
@@ -370,11 +370,11 @@ Public Sub setThisPosition(pos As Vector)
 End Sub
 
 Public Sub setThisX(value As Double)
-    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).stgPos.x = value
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).stgPos.X = value
 End Sub
 
 Public Sub setThisY(value As Double)
-    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).stgPos.y = value
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).stgPos.Y = value
 End Sub
 
 Public Sub setThisZ(value As Double)
@@ -456,13 +456,13 @@ End Function
 
 Public Function getX(Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Double
     If correctIndeces(Row, Col, RowSub, ColSub) Then
-        getX = GridArray(Row, Col, RowSub, ColSub).stgPos.x
+        getX = GridArray(Row, Col, RowSub, ColSub).stgPos.X
     End If
 End Function
 
 Public Function getY(Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Double
     If correctIndeces(Row, Col, RowSub, ColSub) Then
-        getY = GridArray(Row, Col, RowSub, ColSub).stgPos.y
+        getY = GridArray(Row, Col, RowSub, ColSub).stgPos.Y
     End If
 End Function
 
@@ -485,15 +485,15 @@ Public Sub setPt(pos As Vector, valid As Boolean, Row As Long, Col As Long, RowS
     End If
 End Sub
 
-Public Sub setX(x As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
+Public Sub setX(X As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If correctIndeces(Row, Col, RowSub, ColSub) Then
-        GridArray(Row, Col, RowSub, ColSub).stgPos.x = x
+        GridArray(Row, Col, RowSub, ColSub).stgPos.X = X
     End If
 End Sub
 
-Public Sub setY(y As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
+Public Sub setY(Y As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If correctIndeces(Row, Col, RowSub, ColSub) Then
-        GridArray(Row, Col, RowSub, ColSub).stgPos.y = y
+        GridArray(Row, Col, RowSub, ColSub).stgPos.Y = Y
     End If
 End Sub
 
@@ -650,8 +650,8 @@ dRowSub As Double, dColSub As Double, Optional refRow As Integer = 1, Optional r
             For iCol = 1 To Me.numCol
                 For iRowSub = 1 To Me.numRowSub
                     For iColSub = 1 To Me.numColSub
-                        GridArray(iRow, iCol, iRowSub, iColSub).stgPos.x = Round(pos.x + (1 - refCol) * dCol + (iCol - 1) * dCol + (iColSub - 1) * dColSub, PrecXY)
-                        GridArray(iRow, iCol, iRowSub, iColSub).stgPos.y = Round(pos.y + (1 - refRow) * dRow + (iRow - 1) * dRow + (iRowSub - 1) * dRowSub, PrecXY)
+                        GridArray(iRow, iCol, iRowSub, iColSub).stgPos.X = Round(pos.X + (1 - refCol) * dCol + (iCol - 1) * dCol + (iColSub - 1) * dColSub, PrecXY)
+                        GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Y = Round(pos.Y + (1 - refRow) * dRow + (iRow - 1) * dRow + (iRowSub - 1) * dRowSub, PrecXY)
                         GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Z = Round(pos.Z, PrecZ)
                     Next iColSub
                 Next iRowSub
@@ -684,8 +684,8 @@ Public Sub makeGridFromManyPts(pos() As Vector, Row As Long, Col As Long, RowSub
         For iCol = 1 To Me.numCol
             For iRowSub = 1 To Me.numRowSub
                 For iColSub = 1 To Me.numColSub
-                    GridArray(1, iCol, iRowSub, iColSub).stgPos.x = Round(pos(iCol - 1).x + (iColSub - 1 - (Me.numColSub - 1) / 2) * dColSub, PrecXY)
-                    GridArray(1, iCol, iRowSub, iColSub).stgPos.y = Round(pos(iCol - 1).y + (iRowSub - 1 - (Me.numRowSub - 1) / 2) * dRowSub, PrecXY)
+                    GridArray(1, iCol, iRowSub, iColSub).stgPos.X = Round(pos(iCol - 1).X + (iColSub - 1 - (Me.numColSub - 1) / 2) * dColSub, PrecXY)
+                    GridArray(1, iCol, iRowSub, iColSub).stgPos.Y = Round(pos(iCol - 1).Y + (iRowSub - 1 - (Me.numRowSub - 1) / 2) * dRowSub, PrecXY)
                     GridArray(1, iCol, iRowSub, iColSub).stgPos.Z = Round(pos(iCol - 1).Z, PrecZ)
                 Next iColSub
             Next iRowSub
@@ -827,8 +827,8 @@ Public Function loadPositionGridFile(ByVal sFile As String) As Boolean
           For iRowSub = 1 To Me.numRowSub
             'needs to check this
               For iColSub = 1 To Me.numColSub
-                   GridArray(iRow, iCol, iRowSub, iColSub).stgPos.x = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * Me.numColSub * 3))
-                   GridArray(iRow, iCol, iRowSub, iColSub).stgPos.y = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * Me.numColSub * 3 + 1))
+                   GridArray(iRow, iCol, iRowSub, iColSub).stgPos.X = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * Me.numColSub * 3))
+                   GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Y = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * Me.numColSub * 3 + 1))
                    GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Z = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * Me.numColSub * 3 + 2))
               Next iColSub
           Next iRowSub
@@ -845,7 +845,7 @@ loadPositionGridFile_Error:
     If Err.number = 70 Then
         MsgBox ("loadPositionGridFile: Was not able to load position file " & sFile & ". File is open by another program.")
     Else
-        MsgBox ("loadPositionGridFile: Was not able to load position file " & sFile)
+        MsgBox ("loadPositionGridFile: Not valid file. Was not able to load position file " & sFile)
     End If
 
 End Function
@@ -884,7 +884,7 @@ Public Function writePositionGridFile(ByVal sFile As String) As Boolean
           For iRowSub = 1 To Me.numRowSub
               For iColSub = 1 To Me.numColSub
                  LineComm = LineComm & iRowSub & " " & iColSub & ", "
-                 Line = Line & GridArray(iRow, iCol, iRowSub, iColSub).stgPos.x & " " & GridArray(iRow, iCol, iRowSub, iColSub).stgPos.y & " " _
+                 Line = Line & GridArray(iRow, iCol, iRowSub, iColSub).stgPos.X & " " & GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Y & " " _
                   & GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Z & " "
               Next iColSub
           Next iRowSub

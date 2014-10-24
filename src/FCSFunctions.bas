@@ -6,7 +6,7 @@ Attribute VB_Name = "FCSFunctions"
 Option Explicit 'force to declare all variables
 
 Public FcsControl As AimFcsController
-Public viewerGuiServer As AimViewerGuiServer
+Public ViewerGuiServer As AimViewerGuiServer
 Public FcsPositions As AimFcsSamplePositionParameters
 
 
@@ -18,8 +18,8 @@ Public FcsPositions As AimFcsSamplePositionParameters
 Public Sub getFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Optional pos As Long = -1)
     If pos = -1 Then
         'read actual position of crosshair
-        Set viewerGuiServer = Lsm5.viewerGuiServer
-        viewerGuiServer.FcsGetLsmCoordinates PosX, PosY, PosZ
+        Set ViewerGuiServer = Lsm5.ViewerGuiServer
+        ViewerGuiServer.FcsGetLsmCoordinates PosX, PosY, PosZ
     Else
         Set FcsControl = Fcs
         Set FcsPositions = FcsControl.SamplePositionParameters
@@ -42,13 +42,13 @@ Public Function setFcsPositions(Positions() As Vector) As Boolean
     Set FcsControl = Fcs
     Set FcsPositions = FcsControl.SamplePositionParameters
     For pos = 0 To UBound(Positions)
-        FcsPositions.PositionX(pos) = Positions(pos).x
-        FcsPositions.PositionY(pos) = Positions(pos).y
+        FcsPositions.PositionX(pos) = Positions(pos).X
+        FcsPositions.PositionY(pos) = Positions(pos).Y
         FcsPositions.PositionZ(pos) = Positions(pos).Z
     Next pos
     Debug.Print FcsPositions.PositionZ(0)
     'this shows the small crosshair
-    viewerGuiServer.UpdateFcsPositions
+    ViewerGuiServer.UpdateFcsPositions
 End Function
 
 ''''
@@ -68,11 +68,11 @@ End Function
 Public Function ClearFcsPositionList()
     'This clear the positions
     Set FcsControl = Fcs
-    Set viewerGuiServer = Lsm5.viewerGuiServer
+    Set ViewerGuiServer = Lsm5.ViewerGuiServer
     Set FcsPositions = FcsControl.SamplePositionParameters
 
     FcsPositions.PositionListSize = 0
-    viewerGuiServer.UpdateFcsPositions
+    ViewerGuiServer.UpdateFcsPositions
 End Function
 
 

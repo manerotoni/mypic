@@ -69,7 +69,7 @@ Public GlobalFcsData As AimFcsData
 '''
 Public GlobalFcsRecordingDoc As DsRecordingDoc
 
-
+Public Const fcsTimeOverhead = 5000 'This is roughly the time for switching from imaging GaSP to FCS_APD (could be longer or shorter depending on the protocol)
 Public Const PauseGrabbing = 50 'pause for polling the whether scan/fcscontroller are acquiring. A high value makes more errors!
 Public PauseEndAcquisition As Double 'A workaround to avoid errors in FCS/imaging. Does not seem to work. Disabled
 
@@ -248,21 +248,21 @@ RepeatScanToFcs:
       Exit Function
     End If
     FcsControl.StartMeasurement FcsData
-    Sleep (PauseGrabbing)
-    
-'    While RecordingDoc.IsBusy ' this does not wait
-'        Sleep (PauseGrabbing)
-'        If ScanStop Then
-'           Exit Function
-'        End If
-'    Wend
     Time = Timer
+    'this is the minimal time it takes + some extra time for the hardware to switch
+    With FcsControl.AcquisitionParameters
+        If FcsControl.SamplePositionParameters.PositionListSize = 0 Then
+            SleepWithEvents (.MeasurementTime * .MeasurementRepeat * 1000 + fcsTimeOverhead)
+        Else
+            SleepWithEvents (.MeasurementTime * .MeasurementRepeat * FcsControl.SamplePositionParameters.PositionListSize * 1000 + fcsTimeOverhead)
+        End If
+    End With
+    'check if for sure we are finished
     While FcsControl.IsAcquisitionRunning(1)
-        Sleep (PauseGrabbing)
+        SleepWithEvents (PauseGrabbing)
         If ScanStop Then
             Exit Function
         End If
-        DoEvents
         If TimeOut > 0 And (Timer - Time > TimeOut) Then
             LogManager.UpdateErrorLog "TimeOut of Fcs acquisition  after " & TimeOut & " sec"
             StopAcquisition
@@ -270,6 +270,7 @@ RepeatScanToFcs:
         End If
     Wend
 ExitWhile:
+    StopAcquisition
     ScanToFcs = True
     Exit Function
 ErrorScanToFcs:
@@ -283,6 +284,12 @@ ErrorScanToFcs:
         Err.Clear
         Resume RepeatScanToFcs
     End If
+    '    While RecordingDoc.IsBusy ' this does not wait so it is useless
+'        Sleep (PauseGrabbing)
+'        If ScanStop Then
+'           Exit Function
+'        End If
+'    Wend
 End Function
 
 
@@ -291,9 +298,9 @@ End Function
 '''''
 Private Sub Initialize_Controller()
     Set FcsControl = Fcs 'member of Lsm5VBAProject
-    Set viewerGuiServer = Lsm5.viewerGuiServer
+    Set ViewerGuiServer = Lsm5.ViewerGuiServer
     Set FcsPositions = FcsControl.SamplePositionParameters
-    viewerGuiServer.FcsSelectLsmImagePositions = True
+    ViewerGuiServer.FcsSelectLsmImagePositions = True
 End Sub
 
 '''''''''''''''''''''''''''''''''''''''''''
@@ -309,14 +316,14 @@ End Sub
 Public Function NewRecord(RecordingDoc As DsRecordingDoc, Name As String, Optional ForceCreation As Boolean = False) As Boolean
     
     On Error GoTo ErrorHandle:
-    Dim node As AimExperimentTreeNode
+    Dim Node As AimExperimentTreeNode
     If RecordingDoc Is Nothing Or ForceCreation Then
         'for version > 2011 you could also specify containers this is not used here
         'Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
         'node.type = eExperimentTeeeNodeTypeLsm
         'viewerGuiServer.InsertExperimentTreeNode node, True, Container (this last option does not exist for ZEN<2011)
-        Set node = Lsm5.NewDocument
-        node.Type = eExperimentTeeeNodeTypeLsm
+        Set Node = Lsm5.NewDocument
+        Node.Type = eExperimentTeeeNodeTypeLsm
         Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
         While RecordingDoc.IsBusy
             SleepWithEvents (100)
@@ -363,14 +370,14 @@ Public Function NewRecordGuiAi(RecordingDoc As DsRecordingDoc, Name As String, Z
             Exit Function
         End If
         'leave some time to set the name
-        Sleep (1000)
-        If ZEN.gui.Document.ItemCount > 0 Then
-            ZEN.gui.Document.ByName = Name
-            If ZEN.gui.Document.Name.value <> Name Then
+        SleepWithEvents (1000)
+        If ZEN.GUI.Document.ItemCount > 0 Then
+            ZEN.GUI.Document.ByName = Name
+            If ZEN.GUI.Document.Name.value <> Name Then
                 If Not NewRecord(RecordingDoc, Name, True) Then
                     Exit Function
                 End If
-                ZEN.gui.Document.ByName = Name
+                ZEN.GUI.Document.ByName = Name
             End If
         Else
             If Not NewRecord(RecordingDoc, Name, True) Then
@@ -396,16 +403,17 @@ Public Function NewFcsRecord(RecordingDoc As DsRecordingDoc, FcsData As AimFcsDa
     Dim MaxDataSets As Integer
     Dim i As Integer
     On Error GoTo ErrorHandle:
-    Dim node As AimExperimentTreeNode
+    Dim Node As AimExperimentTreeNode
     If FcsData Is Nothing Or RecordingDoc Is Nothing Or ForceCreation Then
         'for version > 2011 you could also specify containers this is not used here
         'Set viewerGuiServer = Lsm5.viewerGuiServer
         'Set node = Lsm5.CreateObject("AimExperiment.TreeNode")
         'node.type = eExperimentTeeeNodeTypeConfoCor
         'viewerGuiServer.InsertExperimentTreeNode node, True, Container (this last option does not exist for ZEN<2011)
-        Set node = Lsm5.NewDocument
-        node.Type = eExperimentTeeeNodeTypeConfoCor
-        Set FcsData = node.FcsData
+        Set Node = Lsm5.NewDocument
+        Node.Type = eExperimentTeeeNodeTypeConfoCor
+        Set FcsData = Node.FcsData
+        Set FcsData = New AimFcsData
         FcsData.Name = Name
         Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
         While RecordingDoc.IsBusy
@@ -470,14 +478,14 @@ Public Function NewFcsRecordGuiAi(RecordingDoc As DsRecordingDoc, FcsData As Aim
             Exit Function
         End If
         'leave some time to set the name
-        Sleep (1000)
-        If ZEN.gui.Document.ItemCount > 0 Then
-            ZEN.gui.Document.ByName = Name
-            If ZEN.gui.Document.Name.value <> Name Then
+        SleepWithEvents (1000)
+        If ZEN.GUI.Document.ItemCount > 0 Then
+            ZEN.GUI.Document.ByName = Name
+            If ZEN.GUI.Document.Name.value <> Name Then
                 If Not NewFcsRecord(RecordingDoc, FcsData, Name, True) Then
                     Exit Function
                 End If
-                ZEN.gui.Document.ByName = Name
+                ZEN.GUI.Document.ByName = Name
             End If
         Else
             If Not NewFcsRecord(RecordingDoc, FcsData, Name, True) Then
@@ -497,7 +505,7 @@ End Function
 ''''
 ' SaveFcsMeasurment to File
 ''''
-Public Function SaveFcsMeasurement(FcsData As AimFcsData, FileName As String) As Boolean
+Public Function SaveFcsMeasurement(FcsData As AimFcsData, fileName As String) As Boolean
     
     If FcsData Is Nothing Then
         MsgBox "No Fcs Recording to Save"
@@ -506,15 +514,15 @@ Public Function SaveFcsMeasurement(FcsData As AimFcsData, FileName As String) As
     ' Write to file
     Dim writer As AimFcsFileWrite
     Set writer = Lsm5.CreateObject("AimFcsFile.Write")
-    writer.FileName = FileName
+    writer.fileName = fileName
     writer.FileWriteType = eFcsFileWriteTypeAll
     writer.format = eFcsFileFormatConfoCor3WithRawData
     writer.Source = FcsData
     writer.Run
     Sleep (1000)
     'write twice to be sure
-    If Not writer.DestinationFilesExist(FileName) Then
-        writer.FileName = FileName
+    If Not writer.DestinationFilesExist(fileName) Then
+        writer.fileName = fileName
         writer.FileWriteType = eFcsFileWriteTypeAll
         writer.format = eFcsFileFormatConfoCor3WithRawData
         writer.Source = FcsData
@@ -543,7 +551,7 @@ Public Sub SaveFcsPositionList(sFile As String, positionsPx() As Vector)
     On Error GoTo ErrorHandle2:
     Print #iFileNum, "%X Y Z (px). Imaging convention 0,0,0 is upper left corner bottom slice"
     For i = 0 To UBound(positionsPx)
-        Print #iFileNum, positionsPx(i).x & " " & positionsPx(i).y & " " & positionsPx(i).Z
+        Print #iFileNum, positionsPx(i).X & " " & positionsPx(i).Y & " " & positionsPx(i).Z
     Next i
 
     Close
@@ -603,7 +611,7 @@ End Sub
 '       [x] In - x-position
 '       [y] In - y-position
 '''''
-Public Function FailSafeMoveStageXY(x As Double, y As Double) As Boolean
+Public Function FailSafeMoveStageXY(X As Double, Y As Double) As Boolean
     Dim CurrentX As Double
     Dim CurrentY As Double
     Dim WaitTime As Integer
@@ -615,8 +623,8 @@ Public Function FailSafeMoveStageXY(x As Double, y As Double) As Boolean
 SetPosition:
     WaitTime = 0
     Lsm5.Hardware.CpStages.GetXYPosition CurrentX, CurrentY
-    Lsm5.Hardware.CpStages.SetXYPosition x, y
-    Do While (Abs(CurrentX - x) > Prec) Or (Abs(CurrentY - y) > Prec) Or Lsm5.Hardware.CpStages.IsBusy
+    Lsm5.Hardware.CpStages.SetXYPosition X, Y
+    Do While (Abs(CurrentX - X) > Prec) Or (Abs(CurrentY - Y) > Prec) Or Lsm5.Hardware.CpStages.IsBusy
         SleepWithEvents (100)
         Lsm5.Hardware.CpStages.GetXYPosition CurrentX, CurrentY
         WaitTime = WaitTime + 1
@@ -626,14 +634,14 @@ SetPosition:
         End If
         If WaitTime > 50 And Not Lsm5.Hardware.CpStages.IsBusy Then
             LogManager.UpdateWarningLog " FailSafeMoveStageXY did not reach the precision of " & Prec _
-            & " um  within " & WaitTime * 100 & " ms on trial " & Trial & ". Goal position is XY: " & x & " " & y & " reached XY: " & CurrentX _
+            & " um  within " & WaitTime * 100 & " ms on trial " & Trial & ". Goal position is XY: " & X & " " & Y & " reached XY: " & CurrentX _
             & " " & CurrentY
             Exit Do
         End If
     Loop
     
     '''Try a second time if it failed
-    If (Abs(CurrentX - x) > Prec) Or (Abs(CurrentY - y) > Prec) And Trial < 2 Then
+    If (Abs(CurrentX - X) > Prec) Or (Abs(CurrentY - Y) > Prec) And Trial < 2 Then
         Trial = Trial + 1
         GoTo SetPosition
     End If
@@ -741,7 +749,7 @@ On Error GoTo getMarkedStagePosition_Error
     If MarkCount >= 1 Then
         ReDim pos(MarkCount - 1)
         For i = 0 To MarkCount - 1
-            Lsm5.Hardware.CpStages.MarkGetZ i, pos(i).x, pos(i).y, pos(i).Z
+            Lsm5.Hardware.CpStages.MarkGetZ i, pos(i).X, pos(i).Y, pos(i).Z
         Next i
     End If
     getMarkedStagePosition = pos
@@ -770,14 +778,14 @@ On Error GoTo getMarkedStagePosition_Error
         SleepWithEvents (500)
         Application.ThrowEvent ePropertyEventStage, 0 'normally not recquired maybe it helps for the update
         For i = 0 To UBound(pos)
-            Lsm5.Hardware.CpStages.MarkAddZ pos(i).x, pos(i).y, pos(i).Z
+            Lsm5.Hardware.CpStages.MarkAddZ pos(i).X, pos(i).Y, pos(i).Z
             SleepWithEvents (100)
         Next i
         SleepWithEvents (500)
         Debug.Print "Marked Positions " & Lsm5.Hardware.CpStages.MarkCount
         If UBound(pos) + 1 > Lsm5.Hardware.CpStages.MarkCount Then
             For i = 0 To UBound(pos)
-                Lsm5.Hardware.CpStages.MarkAddZ pos(i).x, pos(i).y, pos(i).Z
+                Lsm5.Hardware.CpStages.MarkAddZ pos(i).X, pos(i).Y, pos(i).Z
             Next i
         End If
     End If
@@ -1231,12 +1239,12 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As In
             
             
     'compute center of mass, threshold by 80% the image
-    MassCenter.x = weightedMean(IntCol, XMinMax(0), XMinMax(1), thresh)
-    MassCenter.y = weightedMean(IntLine, YMinMax(0), YMinMax(1), thresh)
+    MassCenter.X = weightedMean(IntCol, XMinMax(0), XMinMax(1), thresh)
+    MassCenter.Y = weightedMean(IntLine, YMinMax(0), YMinMax(1), thresh)
     MassCenter.Z = weightedMean(IntFrame, ZMinMax(0), ZMinMax(1), thresh)
     If method = 3 Then
-        MassCenter.x = XMinMax(1)
-        MassCenter.y = YMinMax(1)
+        MassCenter.X = XMinMax(1)
+        MassCenter.Y = YMinMax(1)
         MassCenter.Z = ZMinMax(1)
     End If
     On Error GoTo 0
@@ -1256,7 +1264,7 @@ End Function
 ' SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As String) As Boolean
 ' Copied and adapted from MultiTimeSeries macro
 ''''''
-Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As String, FileFormat As enumAimExportFormat) As Boolean
+Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, fileName As String, FileFormat As enumAimExportFormat) As Boolean
     Dim Export As AimImageExport
     Dim image As AimImageMemory
     Dim error As AimError
@@ -1274,7 +1282,7 @@ On Error GoTo SaveDsRecordingDoc_Error
     
     Set Export = Lsm5.CreateObject("AimImageImportExport.Export.4.5")
     'Set Export = New AimImageExport
-    Export.FileName = FileName
+    Export.fileName = fileName
     Export.format = FileFormat
     Export.StartExport image, image
     Set error = Export

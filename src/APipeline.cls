@@ -102,6 +102,8 @@ Public Function getTask(index As Integer) As Task
     getTask = TaskArray(index)
 End Function
 
+
+
 Public Function isEmpty() As Boolean
     
     On Error GoTo isTrue

@@ -25,17 +25,14 @@ Private Lett() As Variant
 Public Version As String
 
 
-
-
-Private Sub StopExpButton_Click()
-    StopAcquisition
-    ScanStop = True
-End Sub
-
-
-
 Public Sub UserForm_Initialize()
     Dim i As Integer
+    'Contains name of the Grids two letter code
+    Dim GridNames(2) As String
+    GridNames(0) = "DE"
+    GridNames(1) = "TR1"
+    GridNames(2) = "TR2"
+    
     ZenV = getVersionNr
     'find the version of the software and load ZEN object
     If ZenV > 2010 Then
@@ -46,20 +43,19 @@ Public Sub UserForm_Initialize()
         Set ZEN = Application.ApplicationInterface
         Dim TestBool As Boolean
         'Check if it works
-        TestBool = ZEN.gui.Acquisition.EnableTimeSeries.value
-        ZEN.gui.Acquisition.EnableTimeSeries.value = Not TestBool
-        ZEN.gui.Acquisition.EnableTimeSeries.value = TestBool
+        TestBool = ZEN.GUI.Acquisition.EnableTimeSeries.value
+        ZEN.GUI.Acquisition.EnableTimeSeries.value = Not TestBool
+        ZEN.GUI.Acquisition.EnableTimeSeries.value = TestBool
         GoTo NoError
 errorMsg:
-        MsgBox "Version is ZEN" & ZenV & " but can't find Zeiss.Micro.AIM.ApplicationInterface." & vbCrLf _
-        & "Using ZEN2010 settings instead." & vbCrLf _
-        & "Check if Zeiss.Micro.AIM.ApplicationInterface.dll is registered?" _
-        & "See also the manual how to register a dll into windows."
+        MsgBox "Version is ZEN" & ZenV & " but can't find Zeiss.Micro.AIM.ApplicationInterface." & vbCrLf & "Using ZEN2010 settings instead." & vbCrLf & "Check if Zeiss.Micro.AIM.ApplicationInterface.dll is registered?" & "See also the manual how to register a dll into windows."
         ZenV = 2010
 NoError:
     End If
-    Version = "v0.1"
+    
+    Version = "v0.2"
     Me.Caption = Me.Caption + " " + Version
+    FormatUserForm Me.Caption
     Set EventMng = New EventAdmin
     EventMng.initialize
         
@@ -69,10 +65,10 @@ NoError:
         Set Pipelines(i) = New APipeline
         Set Pipelines(i).Repetition = New ARepetition
         Set Pipelines(i).Grid = New AGrid
+        Pipelines(i).Repetition.interval = True
+        Pipelines(i).Grid.NameGrid = GridNames(i)
+        Pipelines(i).keepParent = True
     Next i
-    Pipelines(0).Grid.NameGrid = "DE"
-    Pipelines(1).Grid.NameGrid = "TR1"
-    Pipelines(2).Grid.NameGrid = "TR2"
     PipelineCaption(0) = "Default"
     PipelineCaption(1) = "Trigger1"
     PipelineCaption(2) = "Trigger2"
@@ -86,19 +82,19 @@ NoError:
     ''Form layout
 
     CurrentPipelineList.ColumnCount = 3
-    CurrentPipelineList.ColumnWidths = "20;30;50"
+    CurrentPipelineList.ColumnWidths = "20;30;200"
     JobChoiceList.ColumnCount = 2
-    JobChoiceList.ColumnWidths = "30;60"
+    JobChoiceList.ColumnWidths = "30;200"
     JobChoiceFrame.Visible = False
     PositionsList.ColumnCount = 5
-    PositionsList.ColumnWidths = "20;25;35;35;35"
+    PositionsList.ColumnWidths = "20;25;35;35;50"
 
     Set FocusMethods = New Dictionary
-    FocusMethods.Add 0, "None"
-    FocusMethods.Add 1, "Center of Mass (thr)"
-    FocusMethods.Add 2, "Peak"
-    FocusMethods.Add 3, "Center of Mass"
-    FocusMethods.Add 4, "Online img. analysis"
+    FocusMethods.Add NoAnalyse, "None"
+    FocusMethods.Add AnalyseCenterOfMassThr, "Center of Mass (thr)"
+    FocusMethods.Add AnalysePeak, "Peak"
+    FocusMethods.Add AnalyseCenterOfMass, "Center of Mass"
+    FocusMethods.Add AnalyseOnline, "Online img. analysis"
     For i = 0 To FocusMethods.count - 1
         FocusMethod.AddItem FocusMethods.item(i), i
     Next i
@@ -111,8 +107,7 @@ NoError:
     PlateType.AddItem "96 Wells (8x12)"
     PlateType.ListIndex = 0
     Lett = Array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J")
-    
-    TrackVisible False
+
     PositionButton2.value = True
     PositionButton1.value = True
     currentImgJob = -1
@@ -120,7 +115,177 @@ NoError:
     ToggleFrameButton (1)
     Me.Height = 465
     Me.Width = 430
+    Load JobSetter
 End Sub
+
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    Dim exitPipCon As Integer
+    exitPipCon = MsgBox("Exit PipelineConstructor?", VbOKCancel + VbQuestion, "PipCon exit")
+    If exitPipCon = vbOK Then
+        Unload JobSetter
+    Else
+        Cancel = True
+    End If
+End Sub
+
+
+Private Sub UserForm_Terminate()
+    
+       
+End Sub
+
+Private Sub GridScanPositionFileButton_Click()
+    Dim fso As New FileSystemObject
+    Dim Filter As String, fileName As String
+    Dim Flags As Long
+    Dim DefDir As String
+    Dim locGrid As AGrid
+    Dim gridDim() As Long
+    Set locGrid = New AGrid
+    
+    Flags = OFN_PATHMUSTEXIST Or OFN_HIDEREADONLY Or OFN_NOCHANGEDIR Or OFN_EXPLORER Or OFN_NOVALIDATE
+    Filter = "position files (*.pos)" & Chr$(0) & "*.pos" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
+    If WorkingDir = "" Then
+        DefDir = "C:\"
+    Else
+        DefDir = WorkingDir
+    End If
+    
+    fileName = CommonDialogAPI.ShowOpen(Filter, Flags, "", DefDir, "Select position file")
+    If fileName = "" Then
+        Exit Sub
+    End If
+    If Not FileExist(fileName) Then
+        MsgBox "Load positions from file failed. File " & fileName & " does not exist"
+        Exit Sub
+    End If
+    WorkingDir = fso.GetParentFolderName(fileName) & "\"
+    gridDim = locGrid.getGridDimFromFile(fileName)
+    If Not locGrid.loadPositionGridFile(fileName) Then
+        Exit Sub
+    End If
+    
+    GridScanPositionFile = fileName
+    UpdatePositionsListFromGrid locGrid
+End Sub
+
+Private Sub UpdatePositionsListFromGrid(locGrid As AGrid)
+    Dim index As Long
+    locGrid.setIndeces 1, 1, 1, 1
+    
+    PositionsList.Clear
+    If locGrid.getNrValidPts > 100 Then
+        MsgBox "Warning: Position file contains more than 100 positions!" & vbCrLf & _
+        "All positions will be loaded but only the first 100 are shown in list"
+    End If
+    Do ''Cycle all positions defined in grid
+        If locGrid.getThisValid Then
+            index = index + 1
+            AddPosition WellID.value, locGrid.getThisX, locGrid.getThisY, locGrid.getThisZ
+        End If
+    Loop While (locGrid.nextGridPt(False) And index < 100)
+End Sub
+
+
+
+
+
+Private Sub SavePositionsButton_Click()
+    Dim fso As New FileSystemObject
+    Dim Filter As String, fileName As String, DefDir As String
+    Dim Flags As Long
+    Dim locGrid As AGrid
+    Set locGrid = New AGrid
+    Flags = OFN_FILEMUSTEXIST Or OFN_HIDEREADONLY Or OFN_PATHMUSTEXIST
+    Filter = "Position file (*.pos)" & Chr$(0) & "*.pos" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
+    If WorkingDir = "" Then
+        DefDir = "C:\"
+    Else
+        DefDir = WorkingDir
+    End If
+    fileName = CommonDialogAPI.ShowSave(Filter, Flags, "*.pos", DefDir, "Save positions")
+    DisplayProgress Me.ProgressLabel, "Saving positions..", RGB(0, &HC0, 0)
+    
+    If fileName <> "" Then
+        If VBA.Right(fileName, 4) <> ".pos" Then
+            fileName = fileName & ".pos"
+        End If
+    Else
+        GoTo ExitSub
+    End If
+    WorkingDir = fso.GetParentFolderName(fileName) & "\"
+    If Not setGridFromPositionChoice(locGrid) Then
+        MsgBox "Saving of positions failed"
+    End If
+    If Not locGrid.writePositionGridFile(fileName) Then
+         MsgBox "Saving of positions failed"
+    End If
+ExitSub:
+    DisplayProgress Me.ProgressLabel, "Ready", RGB(&HC0, &HC0, 0)
+End Sub
+
+Private Sub SaveSettings_Click()
+    Dim fso As FileSystemObject
+    Dim Filter As String, fileName As String
+    Dim Flags As Long
+    Dim DefDir As String
+   
+    Flags = OFN_PATHMUSTEXIST Or OFN_HIDEREADONLY Or OFN_NOCHANGEDIR Or OFN_EXPLORER Or OFN_NOVALIDATE
+    Filter = "Images (*.ini)" & Chr$(0) & "*.ini" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
+    If WorkingDir = "" Then
+        DefDir = "C:\"
+    Else
+        DefDir = WorkingDir
+    End If
+    
+    fileName = CommonDialogAPI.ShowSave(Filter, Flags, "PipelineConstructor.ini", DefDir, "Save PipelineConstructor settings")
+    If fileName = "" Then
+        Exit Sub
+    End If
+    Set fso = New FileSystemObject
+    WorkingDir = fso.GetParentFolderName(fileName) & "\"
+    If Len(fileName) > 3 And VBA.Right(fileName, 4) <> ".ini" Then
+        fileName = fileName & ".ini"
+    End If
+    SaveFormSettings fileName
+End Sub
+
+Private Sub LoadSettings_Click()
+    Dim fso As FileSystemObject
+    Dim Filter As String, fileName As String
+    Dim Flags As Long
+    Dim DefDir As String
+
+    Flags = OFN_PATHMUSTEXIST Or OFN_HIDEREADONLY Or OFN_NOCHANGEDIR Or OFN_EXPLORER Or OFN_NOVALIDATE
+    Filter = "Images (*.ini)" & Chr$(0) & "*.ini" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
+    If WorkingDir = "" Then
+        DefDir = "C:\"
+    Else
+        DefDir = WorkingDir
+    End If
+    
+    fileName = CommonDialogAPI.ShowOpen(Filter, Flags, "", DefDir, "Load PipelineConstructor settings")
+    If fileName = "" Then
+        Exit Sub
+    End If
+    Set fso = New FileSystemObject
+    WorkingDir = fso.GetParentFolderName(fileName) & "\"
+    LoadFormSettings fileName
+End Sub
+
+Private Sub StopExpButton_Click()
+    ScanStop = True
+    StopAcquisition
+
+    If Pipelines(0).Grid.getNrPts > 1 And CheckDir(GlobalDataBaseName) And Pipelines(0).Grid.isRunning Then
+        Pipelines(0).Grid.writePositionGridFile (GlobalDataBaseName + "positionsAfterStop.pos")
+    End If
+    Pipelines(0).Grid.isRunning = False
+End Sub
+
+
+
+
 
 
 Private Sub StartExpButton_Click()
@@ -138,17 +303,17 @@ Private Function StartSetting() As Boolean
     Dim initPos As Boolean   'if False and gridsize correspond positions are taken from file positionsGrid.csv
     Dim SuccessRecenter As Boolean
     Dim Job As Variant
-
+    Dim gridDim() As Long
     Dim pos() As Vector
-    Dim PosCurr As Vector   'current position
+    Dim posCurr As Vector   'current position
     ScanStop = False
     StageSettings MirrorX, MirrorY, ExchangeXY
     If Not GlobalRecordingDoc Is Nothing Then
         GlobalRecordingDoc.BringToTop
     End If
     NewRecordGui GlobalRecordingDoc, Pipelines(currPipeline).Grid.NameGrid, ZEN, ZenV
-    Lsm5.Hardware.CpStages.GetXYPosition PosCurr.x, PosCurr.y
-    PosCurr.Z = Lsm5.Hardware.CpFocus.position
+    Lsm5.Hardware.CpStages.GetXYPosition posCurr.X, posCurr.Y
+    posCurr.Z = Lsm5.Hardware.CpFocus.position
     
 
     Set FileSystem = New FileSystemObject
@@ -194,28 +359,50 @@ Private Function StartSetting() As Boolean
     Next Job
     DisplayProgress Me.ProgressLabel, "Initialize all grid positions...", RGB(0, &HC0, 0)
     
+    
     ''Single position
     For i = 0 To UBound(Pipelines)
         Pipelines(i).Grid.initializeToZero
     Next i
     Set TimersGridCreation = Nothing
+    If Not setGridFromPositionChoice(Pipelines(0).Grid) Then
+        GoTo ExitStart
+    End If
+    Pipelines(0).Grid.writePositionGridFile GlobalDataBaseName & "PipelineConstructor.pos"
+    Pipelines(0).Grid.setAllParentPath GlobalDataBaseName
+    SaveFormSettings GlobalDataBaseName & "PipelineConstructor.ini"
+    StartPipeline 0, GlobalRecordingDoc, GlobalFcsRecordingDoc, GlobalFcsData, GlobalDataBaseName
+ExitStart:
+    LogManager.UpdateLog "End of Global pipeline", -1
+    DisplayProgress PipelineConstructor.ProgressLabel, "Ready", RGB(&HC0, &HC0, 0)
+
+
+End Function
+
+
+Function setGridFromPositionChoice(locGrid As AGrid) As Boolean
+    Dim posCurr As Vector
+    Dim i As Integer
+    posCurr.X = Lsm5.Hardware.CpStages.PositionX
+    posCurr.Y = Lsm5.Hardware.CpStages.PositionX
+    posCurr.Z = Lsm5.Hardware.CpFocus.position
     If PositionButton1 Then
-        Pipelines(0).Grid.initialize 1, 1, 1, 1
-        Pipelines(0).Grid.setPt PosCurr, True, 1, 1, 1, 1
+        locGrid.initialize 1, 1, 1, 1
+        locGrid.setPt posCurr, True, 1, 1, 1, 1
     End If
     
     ''Multiple positions
     If PositionButton2 Then
         If PositionsList.ListCount <= 0 Then
             MsgBox "No positions defined for multiple position! Add positions to default positions!"
-            GoTo ExitStart
+            Exit Function
         Else
-            Pipelines(0).Grid.initialize 1, PositionsList.ListCount, 1, 1
+            locGrid.initialize 1, PositionsList.ListCount, 1, 1
             For i = 0 To PositionsList.ListCount - 1
-                PosCurr.x = PositionsList.List(i, 2)
-                PosCurr.y = PositionsList.List(i, 3)
-                PosCurr.Z = PositionsList.List(i, 4)
-                Pipelines(0).Grid.setPt PosCurr, True, 1, i + 1, 1, 1
+                posCurr.X = PositionsList.List(i, 2)
+                posCurr.Y = PositionsList.List(i, 3)
+                posCurr.Z = PositionsList.List(i, 4)
+                locGrid.setPt posCurr, True, 1, i + 1, 1, 1
             Next i
         End If
     End If
@@ -224,12 +411,12 @@ Private Function StartSetting() As Boolean
     If PositionButton3 Then
         If PositionsList.ListCount <= 0 Then
             MsgBox "No positions defined for Grid! First position is used as reference!"
-            GoTo ExitStart
+            Exit Function
         Else
-            PosCurr.x = PositionsList.List(0, 2)
-            PosCurr.y = PositionsList.List(0, 3)
-            PosCurr.Z = PositionsList.List(0, 4)
-            Pipelines(0).Grid.makeGridFromOnePt PosCurr, GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub, GridScan_dRow, GridScan_dColumn, GridScan_dRowsub, GridScan_dColumnsub
+            posCurr.X = PositionsList.List(0, 2)
+            posCurr.Y = PositionsList.List(0, 3)
+            posCurr.Z = PositionsList.List(0, 4)
+            locGrid.makeGridFromOnePt posCurr, GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub, GridScan_dRow, GridScan_dColumn, GridScan_dRowsub, GridScan_dColumnsub
         End If
     End If
     
@@ -238,128 +425,30 @@ Private Function StartSetting() As Boolean
     If PositionButton4 Then
         If PositionsList.ListCount <= 0 Then
             MsgBox "No positions defined for multiple positions + grid! Main grid Positions are marked positions, subpositions are made accordingly!"
-            GoTo ExitStart
+            Exit Function
         Else
             Dim posVec() As Vector
             ReDim posVec(0 To PositionsList.ListCount - 1)
             For i = 0 To PositionsList.ListCount - 1
-                posVec(i).x = PositionsList.List(i, 2)
-                posVec(i).y = PositionsList.List(i, 3)
+                posVec(i).X = PositionsList.List(i, 2)
+                posVec(i).Y = PositionsList.List(i, 3)
                 posVec(i).Z = PositionsList.List(i, 4)
             Next i
-            Pipelines(0).Grid.makeGridFromManyPts posVec, 1, PositionsList.ListCount, GridScan_nRowsub, GridScan_nColumnsub, GridScan_dRowsub, GridScan_dColumnsub
+            locGrid.makeGridFromManyPts posVec, 1, PositionsList.ListCount, GridScan_nRowsub, GridScan_nColumnsub, GridScan_dRowsub, GridScan_dColumnsub
         End If
     End If
     
-    Pipelines(0).Grid.setAllParentPath GlobalDataBaseName
-    
-    StartPipeline 0, GlobalRecordingDoc, GlobalFcsRecordingDoc, GlobalFcsData, GlobalDataBaseName
-ExitStart:
-    LogManager.UpdateLog "End of Global pipeline", -1
-    DisplayProgress PipelineConstructor.ProgressLabel, "Ready", RGB(&HC0, &HC0, 0)
+    If PositionButton5 Then
+        If Not FileExist(GridScanPositionFile) Then
+            MsgBox "Load positions from file failed. Could not find " & GridScanPositionFile
+            Exit Function
+        End If
 
-'
-'    '''Get Marked positions''''
-'    pos = getMarkedStagePosition
-'    If GridCurrentZposition And MarkCount > 0 Then
-'        For i = 0 To MarkCount - 1
-'            pos(i).Z = PosCurr.Z
-'        Next i
-'    End If
-'
-'    '''Set Grid'''
-'    If GridScanActive Then
-'        If MarkCount = 0 Then  ' No marked position
-'            MsgBox "GridScan: Use stage to Mark at least the initial position "
-'            Exit Function
-'        End If
-'        '''regular spaced grid starting from Pos(0)'''
-'        If SingleLocationToggle Then
-'            Grids.makeGridFromOnePt "Global", pos(0), GridScan_nRow.value, GridScan_nColumn.value, _
-'            GridScan_nRowsub.value, GridScan_nColumnsub.value, GridScan_dRow.value, GridScan_dColumn.value, _
-'            GridScan_dRowsub.value, GridScan_dColumnsub.value, GridScan_refRow.value, GridScan_refColumn.value
-'        End If
-'        '''Grid based on marked positions with subgrid''''
-'        If MultipleLocationToggle Then
-'            GridScan_nColumn.value = MarkCount
-'            GridScan_nRow.value = 1
-'            Grids.makeGridFromManyPts "Global", pos, 1, MarkCount, GridScan_nRowsub, GridScan_nColumnsub, GridScan_dRowsub, GridScan_dColumnsub
-'        End If
-'    Else
-'        If SingleLocationToggle Then
-'            Grids.makeGridFromOnePt "Global", PosCurr, 1, 1, 1, 1, 0, 0, 0, 0
-'        End If
-'        '''Grid based on marked positions without subgrid'''
-'        If MultipleLocationToggle Then
-'            Grids.makeGridFromManyPts "Global", pos, 1, MarkCount, 1, 1, 0, 0
-'        End If
-'    End If
-'
-'
-'    '''Load positions and validity from file'''
-'    If GridScanPositionFile <> "" Then
-'        If Grids.loadPositionGridFile("Global", GridScanPositionFile) Then
-'            Dim GridDim() As Long
-'            DisplayProgress "Loading grid positions from file. " & GridScanPositionFile & "....", RGB(0, &HC0, 0)
-'            GridDim = Grids.getGridDimFromFile("Global", GridScanPositionFile)
-'            If UBound(GridDim) = 3 Then
-'                GridScan_nRow.value = GridDim(0)
-'                GridScan_nColumn.value = GridDim(1)
-'                GridScan_nRowsub.value = GridDim(2)
-'                GridScan_nColumnsub.value = GridDim(3)
-'            End If
-'        Else
-'           Exit Function
-'        End If
-'    End If
-'
-'    If GridScanValidFile <> "" Then
-'        Dim FormatValidFile As String
-'        FormatValidFile = Grids.isValidGridFile("Global", GridScanValidFile, GridScan_nRow, GridScan_nColumn, GridScan_nRowsub, GridScan_nColumnsub)
-'        If Not Grids.loadValidGridFile("Global", GridScanValidFile, FormatValidFile) Then
-'            MsgBox "Not able to use " & GridScanValidFile & " for loading valid positions."
-'            Exit Function
-'        End If
-'    End If
-'
-'    If GridScanPositionFile <> "" Or GridScanValidFile <> "" Then
-'        MsgBox "You are using position coordinates stored in " & GridScanPositionFile & vbCrLf & "and/or valid positions stored in " & GridScanValidFile & vbCrLf & _
-'        "If you don't want to use these defaults then Stop, remove the file names in the grid tab and Start again"
-'    End If
-'
-'    If GridScan_nColumn.value * GridScan_nRow.value * GridScan_nColumnsub.value * GridScan_nRowsub.value > 10000 Then
-'        MsgBox "GridScan: Maximal number of locations is 10000. Please change Numbers  X and/or Y."
-'        Exit Function
-'    End If
-'
-'    DisplayProgress "Initialize all grid positions...DONE", RGB(0, &HC0, 0)
-'
-'    Grids.writePositionGridFile "Global", GlobalDataBaseName & "positionsGrid.csv"
-'    Grids.writeValidGridFile "Global", GlobalDataBaseName & "validGrid.csv"
-'
-'    'SaveSettings
-'    If GlobalDataBaseName <> "" Then
-'        SetDatabase
-'        SaveFormSettings GlobalDataBaseName & "\AutofocusScreen.ini"
-'    End If
-'
-'    Grids.setAllParentPath "Global", GlobalDataBaseName
-'    StartSetting = True
-'    Exit Function
-'ErrorHandleDataBase:
-'    MsgBox "Could not create directory " & GlobalDataBaseName
-'    Exit Function
-'ErrorHandleLogFile:
-'    MsgBox "Could not create LogFile " & LogFileName
-'    Exit Function
-'
-'   On Error GoTo 0
-'   Exit Function
-'
-'StartSetting_Error:
-'
-'    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-'    ") in procedure StartSetting of Form AutofocusForm at line " & Erl & " "
+        If Not locGrid.loadPositionGridFile(GridScanPositionFile) Then
+            Exit Function
+        End If
+    End If
+    setGridFromPositionChoice = True
 End Function
 
 '''
@@ -374,7 +463,7 @@ Private Sub AcquirePipelineButton_Click()
             GlobalRecordingDoc.BringToTop
         End If
         NewRecordGui GlobalRecordingDoc, Pipelines(currPipeline).Grid.NameGrid, ZEN, ZenV
-        Lsm5.Hardware.CpStages.GetXYPosition stgPos.x, stgPos.y
+        Lsm5.Hardware.CpStages.GetXYPosition stgPos.X, stgPos.Y
         stgPos.Z = Lsm5.Hardware.CpFocus.position
         Pipelines(currPipeline).Grid.initialize 1, 1, 1, 1
         Pipelines(currPipeline).Grid.setPt stgPos, True, 1, 1, 1, 1
@@ -404,8 +493,13 @@ Private Sub StopPipelineButton_Click()
 End Sub
 
 Private Sub fileFormatczi_Click()
+#If ZENvC > 2010 Then
     imgFileFormat = eAimExportFormatCzi
     imgFileExtension = ".czi"
+#Else
+    MsgBox "Your ZEN version does not support czi files", VbInformation
+    fileFormatlsm.value = True
+#End If
 End Sub
 
 Private Sub fileFormatlsm_Click()
@@ -415,6 +509,8 @@ End Sub
 
 Private Sub JobSetterButton_Click()
     JobSetter.Show
+    JobSetter.Repaint
+    DoEvents
 End Sub
 
 Private Sub KeepParentButton_Click()
@@ -496,13 +592,18 @@ Private Sub PositionButton5_Click()
 End Sub
 
 Private Sub AddPositionButton_Click()
+    AddPosition WellID.value, Lsm5.Hardware.CpStages.PositionX, _
+    Lsm5.Hardware.CpStages.PositionY, Lsm5.Hardware.CpFocus.position
+End Sub
+
+Private Sub AddPosition(ID As String, X As Double, Y As Double, Z As Double)
     With PositionsList
         .AddItem
         .List(.ListCount - 1, 0) = .ListCount
         .List(.ListCount - 1, 1) = WellID.value
-        .List(.ListCount - 1, 2) = Lsm5.Hardware.CpStages.PositionX
-        .List(.ListCount - 1, 3) = Lsm5.Hardware.CpStages.PositionY
-        .List(.ListCount - 1, 4) = Lsm5.Hardware.CpFocus.position
+        .List(.ListCount - 1, 2) = X
+        .List(.ListCount - 1, 3) = Y
+        .List(.ListCount - 1, 4) = Z
         .ListIndex = .ListCount - 1
     End With
 End Sub
@@ -662,7 +763,7 @@ End Sub
 
 Private Sub UpdateFocusEnabled()
     Dim index As Integer
-    Debug.Print CurrentPipelineList.ListIndex
+    TrackingFrame.Visible = True
     index = CurrentPipelineList.ListIndex
     If index = -1 Then
         enableFrame TrackingFrame, False
@@ -673,12 +774,12 @@ Private Sub UpdateFocusEnabled()
     End If
     enableFrame TrackingFrame, True
     FocusMethod.Enabled = True
-    CenterOfMassChannel.Enabled = True And (FocusMethod.ListIndex > 0) And (FocusMethod.ListIndex < 4)
+    CenterOfMassChannel.Enabled = True And (FocusMethod.ListIndex > NoAnalyse) And (Not FocusMethod.ListIndex = AnalyseOnline)
     TrackZ.value = Pipelines(currPipeline).getTrackZ(index)
     TrackXY.value = Pipelines(currPipeline).getTrackXY(index)
     With ImgJobs(Pipelines(currPipeline).getTask(index).jobNr)
-        TrackZ.Enabled = .isZStack And (FocusMethod.ListIndex > 0)
-        TrackXY.Enabled = (FocusMethod.ListIndex > 0) And (.Recording.ScanMode <> "ZScan") And (.Recording.ScanMode <> "Line")
+        TrackZ.Enabled = .isZStack And (FocusMethod.ListIndex > NoAnalyse)
+        TrackXY.Enabled = (FocusMethod.ListIndex > NoAnalyse) And (.Recording.ScanMode <> "ZScan") And (.Recording.ScanMode <> "Line")
     End With
     
 End Sub
@@ -687,10 +788,17 @@ End Sub
 Private Sub FocusMethod_Click()
     Dim index As Integer
     index = CurrentPipelineList.ListIndex
-    If index > -1 Then
-        Pipelines(currPipeline).setAnalyse index, FocusMethod.ListIndex
+    If index < 0 Then
+        Exit Sub
     End If
+    Pipelines(currPipeline).setAnalyse index, FocusMethod.ListIndex
+
     UpdateFocusEnabled
+    If Pipelines(currPipeline).getAnalyse(index) = AnalyseOnline Then
+        SaveImage = True
+        Pipelines(currPipeline).setSaveImage index, True
+    End If
+    
 End Sub
 
 
@@ -707,7 +815,11 @@ Private Sub CurrentPipelineList_Click()
     Else
         CenterOfMassChannel.Clear
     End If
+    enableFrame FrameTaskOptions, True
+    enableFrame FramePipelineRepetitions, True
+    enableFrame FramePipelineTrigger, True
     UpdateFocusEnabled
+    
 End Sub
 
 
@@ -767,14 +879,8 @@ Private Sub JobChoiceList_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
             tmpTask.jobType = 1
             tmpTask.jobNr = index - (indexImg + 1)
         End If
-        tmpTask.SaveImage = Me.SaveImage
-        tmpTask.Period = CInt(Me.Period)
-        If StartOption Then
-            tmpTask.Period = 0
-        End If
-        If EndOption Then
-             tmpTask.Period = -1
-        End If
+        tmpTask.SaveImage = True
+        tmpTask.Period = 1
         Pipelines(currPipeline).addTask tmpTask
         If Pipelines(currPipeline).count = 1 Then
             Pipelines(currPipeline).Repetition.number = CInt(RepetitionNumber.value)
@@ -785,6 +891,9 @@ Private Sub JobChoiceList_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
     End If
     JobChoiceFrame.Visible = False
     If CurrentPipelineList.ListCount > 0 Then
+        If CurrentPipelineList.ListIndex < 0 Then
+            CurrentPipelineList.ListIndex = 0
+        End If
         TrackingFrame.Visible = True
         enableFrame FramePipelineRepetitions, True
         enableFrame FramePipelineTrigger, True
@@ -925,7 +1034,7 @@ Private Sub AddJobsToList(List As ListBox, Jobs)
     End With
 End Sub
 
-Private Sub UpdatePipelineList(List As ListBox, index As Integer)
+Public Sub UpdatePipelineList(List As ListBox, index As Integer)
     Dim jobType As Integer
     Dim jobNr As Integer
     
@@ -934,7 +1043,12 @@ Private Sub UpdatePipelineList(List As ListBox, index As Integer)
     If Pipelines(index).isEmpty Then
         Exit Sub
     End If
+    Debug.Print "Counts " & Pipelines(index).count
+    
     For i = 0 To Pipelines(index).count - 1
+        If i > Pipelines(index).count - 1 Then
+            GoTo Nexti
+        End If
         jobType = Pipelines(index).getTask(i).jobType
         jobNr = Pipelines(index).getTask(i).jobNr
         If jobType = 0 Then
@@ -1090,6 +1204,9 @@ Private Sub PeriodButton_SpinUp()
     If index > -1 Then
         If Period.value < RepetitionNumber - 1 Then
             Period.value = Period.value + 1
+        Else
+            MsgBox "The period of acquisition cannot be higher than number of Repetitions , i.e. " & RepetitionNumber, VbInformation
+            Exit Sub
         End If
         Pipelines(currPipeline).setPeriod index, Period.value
     End If
@@ -1128,9 +1245,10 @@ Private Sub getPeriod()
     If index > -1 Then
         With Pipelines(currPipeline)
             If .getPeriod(index) > 0 Then
+                Period.value = .getPeriod(index)
                 PeriodOption.value = True
                 Period.Enabled = True
-                Period.value = .getPeriod(index)
+                
             End If
             If .getPeriod(index) = 0 Then
                 StartOption.value = True
@@ -1176,92 +1294,7 @@ Private Sub EventMng_Busy(Task As Integer)
     MicStatus.ForeColor = "&H00000080"
 End Sub
 
-Private Sub AcquireFcsJobButton_Click()
-    Dim index As Integer
-    Dim newPosition() As Vector
-    ReDim newPosition(0) ' position where FCS will be done
-    Dim currentPosition As Vector
-    ScanStop = False
-    index = FcsJobList.ListIndex
-    If index = -1 Then
-        MsgBox "FcsJob list is empty"
-        Exit Sub
-    End If
-    'for Fcs the position for ZEN are passed in meter!! (different to Lsm5.Hardware.CpStages is in um!!)
-    ' For X and Y relative position to center. For Z absolute position in meter
-    newPosition(0).x = 0
-    newPosition(0).y = 0
-    newPosition(0).Z = Lsm5.Hardware.CpFocus.position * 0.000001 'convet from um to meter
-    'eventually force creation of FcsRecord
-    If Not GlobalFcsRecordingDoc Is Nothing Then
-        GlobalFcsRecordingDoc.BringToTop
-    End If
-    NewFcsRecordGui GlobalFcsRecordingDoc, GlobalFcsData, FcsJobs(index).Name, ZEN, ZenV
-    'this brings record to top
-    FcsJobs(index).PutJob ZEN, ZenV
-    Application.ThrowEvent eEventScanStart, 1
-    ScanToFcs GlobalFcsRecordingDoc, GlobalFcsData
-End Sub
 
-Private Sub AcquireJobButton_Click()
-    Dim index As Integer
-    Dim Time As Double
-    
-On Error GoTo AcquireJobButton_Click_Error
-    ScanStop = False
-    index = ImgJobList.ListIndex
-
-    If index = -1 Then
-        MsgBox "Job list is empty"
-        Exit Sub
-    End If
-    If Not GlobalRecordingDoc Is Nothing Then
-        GlobalRecordingDoc.BringToTop
-    End If
-    NewRecordGui GlobalRecordingDoc, ImgJobs(index).Name, ZEN, ZenV
-    If ZenV > 2010 And Not ZEN Is Nothing Then
-        Dim vo As AimImageVectorOverlay
-        Set vo = Lsm5.ExternalDsObject.ScanController.AcquisitionRegions
-        If vo.GetNumberElements > 0 Then
-            ZEN.gui.Acquisition.Regions.Delete.Execute
-        End If
-    End If
-    Dim position As Vector
-    Lsm5.Hardware.CpStages.GetXYPosition position.x, position.y
-    position.Z = Lsm5.Hardware.CpFocus.position
-    Running = True
-    'currentImgJob = -1
-    AcquireJob index, ImgJobs(index), GlobalRecordingDoc, ImgJobs(index).Name, position
-    
-    'for imaging the position to image can be passed directly to AcquireJob. ZEN uses the absolute position in um
-    'NewRecordGui GlobalRecordingDoc, ImgJobs(index).Name, ZEN, ZENv
-    'ImgJobs(index).PutJob ZEN
-    'GlobalRecordingDoc.Recording.StartScanEvent = eStartScanUser
-    'Lsm5.StartScan
-    'Application.ThrowEvent eEventScanStart, 1
-    'ScanToImage GlobalRecordingDoc
-
-   On Error GoTo 0
-   Exit Sub
-
-AcquireJobButton_Click_Error:
-
-    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-    ") in procedure AcquireJobButton_Click of Form JobSetter at line " & Erl & " "
-
-End Sub
-
-Private Sub ImgJobList_Click()
-    Dim index As Integer
-    index = ImgJobList.ListIndex
-    
-    If index = -1 Then
-        Exit Sub
-    End If
-    On Error Resume Next
-    setLabels index
-    setTrackNames index
-End Sub
 
 
 
@@ -1276,124 +1309,19 @@ Private Sub StopFcsButton_Click()
 End Sub
 
 
-Private Sub Track1_Click()
-    TrackClick (1)
-End Sub
-
-Private Sub Track2_Click()
-    TrackClick (2)
-End Sub
-
-Private Sub Track3_Click()
-    TrackClick (3)
-End Sub
-
-Private Sub Track4_Click()
-    TrackClick (4)
-End Sub
 
 
 
 
-Private Sub TrackClick(iTrack As Integer)
-    Dim index As Integer
-    index = ImgJobList.ListIndex
-    If index <> -1 Then
-        ImgJobs(index).setAcquireTrack iTrack - 1, Me.Controls("Track" + CStr(iTrack)).value
-    End If
-End Sub
 
 
-Private Sub TrackVisible(Visible As Boolean)
-    Track1.Visible = Visible
-    Track2.Visible = Visible
-    Track3.Visible = Visible
-    Track4.Visible = Visible
-End Sub
-
-Private Sub SetJobButton_Click()
-    Dim index As Integer
-    index = ImgJobList.ListIndex
-    If index = -1 Then
-        MsgBox "Job list is empty or you need to select one job"
-        Exit Sub
-    End If
-    Debug.Assert (ImgJobs(index).SetJob(Lsm5.DsRecording, ZEN))
-    setLabels index
-    setTrackNames index
-End Sub
-
-Private Sub SetFcsJob_Click()
-    Dim index As Integer
-    index = FcsJobList.ListIndex
-    If index = -1 Then
-        MsgBox "Job list is empty or you need to select one job"
-        Exit Sub
-    End If
-    Debug.Assert (FcsJobs(index).SetJob(ZEN, ZenV))
-    setFcsLabels index
-End Sub
-
-Private Sub setLabels(index As Integer)
-    Dim jobDescription() As String
-    jobDescription = ImgJobs(index).splittedJobDescriptor(13, ImgJobs(index).jobDescriptor)
-    JobLabel1.Caption = jobDescription(0)
-    JobLabel2.Caption = jobDescription(1)
-End Sub
-
-Private Sub setFcsLabels(index As Integer)
-    Dim jobDescription() As String
-    jobDescription = FcsJobs(index).splittedJobDescriptor(13, FcsJobs(index).jobDescriptor)
-    FcsJobLabel1.Caption = jobDescription(0)
-    FcsJobLabel2.Caption = jobDescription(1)
-End Sub
-
-Private Sub PutJobButton_Click()
-    Dim index As Integer
-    index = ImgJobList.ListIndex
-    If index = -1 Then
-        MsgBox "Job list is empty or you need to select one job"
-        Exit Sub
-    End If
-    ImgJobs(index).PutJob ZEN
-    If ZenV > 2010 Then  'On 2010 it is extremely slow and the command does not wait for finishing
-        Application.ThrowEvent tag_Events.eEventDsActiveRecChanged, 0
-        DoEvents
-    End If
-End Sub
 
 
-Private Sub PutFcsJob_Click()
-    Dim index As Integer
-    index = FcsJobList.ListIndex
-    If index = -1 Then
-        MsgBox "Job list is empty or you need to select one job"
-        Exit Sub
-    End If
-    FcsJobs(index).PutJob ZEN, ZenV
-End Sub
 
-Private Sub AddFcsJobButton_Click()
-    Dim i As Integer
-    Dim OpenForms() As Boolean
-    Dim ListEntry As Variant
 
-    If FcsJobName = "" Then
-        MsgBox "You need to specify a name for the fcs job"
-        Exit Sub
-    End If
-    If Not UniqueListName(FcsJobList, FcsJobName) Or Not UniqueListName(ImgJobList, FcsJobName) Then
-        MsgBox "Name of fcs job must be unique"
-        Exit Sub
-    End If
-    OpenForms = HideShowForms(OpenForms)
-    FcsJobList.AddItem FcsJobName.value
-    FcsJobList.Selected(FcsJobList.ListCount - 1) = True
-    AddFcsJob FcsJobs, FcsJobList.List(FcsJobList.ListCount - 1), ZEN
-    setFcsLabels FcsJobList.ListCount - 1
-    HideShowForms OpenForms
-    'PipelineConstructor.UpdateFcsJobList
-End Sub
+
+
+
 
 Private Function UniqueListName(List As ListBox, JobName As String) As Boolean
     Dim ListEntry As Variant
@@ -1437,23 +1365,6 @@ Public Function HideShowForms(OpenForms() As Boolean) As Boolean()
     End If
 End Function
 
-Private Sub AddJobButton_Click()
-    Dim i As Integer
-    If JobName.value = "" Then
-        MsgBox "You need to specify a name for the job"
-        Exit Sub
-    End If
-    If Not UniqueListName(FcsJobList, JobName) Or Not UniqueListName(ImgJobList, JobName) Then
-        MsgBox "Name of imaging job must be unique"
-        Exit Sub
-    End If
-    ImgJobList.AddItem JobName.value
-    ImgJobList.Selected(ImgJobList.ListCount - 1) = True
-    AddJob ImgJobs, ImgJobList.List(ImgJobList.ListCount - 1), Lsm5.DsRecording, ZEN
-    setLabels ImgJobList.ListCount - 1
-    setTrackNames ImgJobList.ListCount - 1
-    'PipelineConstructor.UpdateImgJobList
-End Sub
 
 Private Sub setTrackNames(index As Integer)
     Dim i As Integer
@@ -1488,15 +1399,6 @@ Private Sub setTrackNames(index As Integer)
     Next i
 End Sub
 
-Private Sub DeleteJobButton_Click()
-    Dim index As Integer
-    index = ImgJobList.ListIndex
-    If index <> -1 Then
-        DeleteJob ImgJobs, index, ImgJobList.List(index)
-        ImgJobList.RemoveItem index
-    End If
-    'PipelineConstructor.UpdateImgJobList
-End Sub
 
 
 Public Sub AddJob(JobsV() As AJob, Name As String, Recording As DsRecording, ZEN As Object)
@@ -1523,74 +1425,19 @@ Public Sub AddFcsJob(JobsV() As AFcsJob, Name As String, ZEN As Object)
 End Sub
 
 
-'''
-' DeleteJob
-'   Delete Job and decrease number of Jobs
-'''
-Public Sub DeleteJob(JobsV() As AJob, index As Integer, Optional Name As String = "")
-    Dim i As Integer
-    Dim IJob As Integer
-    If isArrayEmpty(JobsV) Then
-        MsgBox "Nothing to delete"
-    End If
-    Debug.Assert (index <= UBound(JobsV))
-    If Name <> "" Then
-        Debug.Assert (StrComp(JobsV(index).Name, Name) = 0)
-    End If
-    For i = index To UBound(JobsV) - 1
-        Set JobsV(i) = JobsV(i + 1)
-    Next i
-    If UBound(JobsV) = 0 Then
-        Erase JobsV
-        TrackVisible False
-        JobLabel1.Caption = ""
-        JobLabel2.Caption = ""
-    Else
-        ReDim Preserve JobsV(0 To UBound(JobsV) - 1)
-    End If
-End Sub
 
 
 
 
-Private Sub DeleteFcsJobButton_Click()
-    Dim index As Integer
-    index = FcsJobList.ListIndex
-    If index <> -1 Then
-        DeleteFcsJob FcsJobs, index, FcsJobList.List(index)
-        FcsJobList.RemoveItem index
-    End If
-    'PipelineConstructor.UpdateFcsJobList
-End Sub
 
-Private Sub DeleteFcsJob(JobsV() As AFcsJob, index As Integer, Optional Name As String = "")
-    Dim i As Integer
-    Dim IJob As Integer
-    If isArrayEmpty(JobsV) Then
-        MsgBox "Nothing to delete"
-    End If
-    Debug.Assert (index <= UBound(JobsV))
-    If Name <> "" Then
-        Debug.Assert (StrComp(JobsV(index).Name, Name) = 0)
-    End If
-    For i = index To UBound(JobsV) - 1
-        Set JobsV(i) = JobsV(i + 1)
-    Next i
-    If UBound(JobsV) = 0 Then
-        Erase JobsV
-        FcsJobLabel1.Caption = ""
-        FcsJobLabel2.Caption = ""
-    Else
-        ReDim Preserve JobsV(0 To UBound(JobsV) - 1)
-    End If
-End Sub
+
 
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ' Output Folder
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Private Sub CommandButtonNewDataBase_Click()
-    Dim Filter As String, FileName As String
+    Dim Filter As String, fileName As String
     Dim Flags As Long
     Dim DefDir As String
 
@@ -1603,10 +1450,10 @@ Private Sub CommandButtonNewDataBase_Click()
         DefDir = GlobalDataBaseName
     End If
     
-    FileName = CommonDialogAPI.ShowOpen(Filter, Flags, "*.*", DefDir, "Select output folder")
-    If Len(FileName) > 3 Then
-        FileName = VBA.Left(FileName, Len(FileName) - 3)
-        DatabaseTextbox.value = FileName
+    fileName = CommonDialogAPI.ShowOpen(Filter, Flags, "*.*", DefDir, "Select output folder")
+    If Len(fileName) > 3 Then
+        fileName = VBA.Left(fileName, Len(fileName) - 3)
+        DatabaseTextbox.value = fileName
         SetDatabase
     End If
 End Sub
@@ -1681,3 +1528,58 @@ Private Sub SetFileName()
     End If
 End Sub
 
+Public Sub LoadFormSettings(fileName As String)
+    Dim iFileNum As Integer, ipip As Integer, iSet As Integer
+    Dim tsk As Task
+    Dim arr() As Variant
+    Dim Fields As String
+    Dim JobName As String
+    Dim FieldEntries() As String
+    Close
+    'On Error GoTo ErrorHandle
+    iFileNum = FreeFile()
+    Open fileName For Input As iFileNum
+    arr = TaskToArray(tsk)
+    Pipelines(0).delAllTasks
+    Pipelines(1).delAllTasks
+    Pipelines(2).delAllTasks
+    Do While Not EOF(iFileNum)
+            Line Input #iFileNum, Fields
+            While VBA.Left(Fields, 1) = "%"
+                Line Input #iFileNum, Fields
+            Wend
+            If Fields <> "" Then
+                FieldEntries = Split(Fields, " ")
+                ipip = CInt(FieldEntries(1))
+                If FieldEntries(2) = "Reptime" Then
+                    Pipelines(ipip).Repetition.Time = CDbl(FieldEntries(3))
+                    Pipelines(ipip).Repetition.number = CInt(FieldEntries(5))
+                    Pipelines(ipip).Repetition.interval = CBool(FieldEntries(7))
+                End If
+                If FieldEntries(2) = "Tsk" Then
+                    For iSet = 0 To UBound(arr)
+                        Select Case VarType(arr(iSet))
+                            Case vbInteger
+                                arr(iSet) = CInt(FieldEntries(iSet * 2 + 5))
+                            Case vbDouble
+                                arr(iSet) = CDbl(FieldEntries(iSet * 2 + 5))
+                            Case vbBoolean
+                                arr(iSet) = CBool(FieldEntries(iSet * 2 + 5))
+                            Case vbLong
+                                arr(iSet) = CLng(FieldEntries(iSet * 2 + 5))
+                        End Select
+                    Next iSet
+                    Pipelines(ipip).addTask ArrayToTask(arr)
+                End If
+            End If
+    Loop
+    
+    UpdatePipelineList PipelineConstructor.CurrentPipelineList, currPipeline
+    UpdateRepetitionSettings currPipeline
+    UpdateFocusEnabled
+    getPeriod
+    Close #iFileNum
+    Exit Sub
+ErrorHandle:
+    MsgBox "Not able to read " & fileName & " for AutofocusScreen settings"
+End Sub

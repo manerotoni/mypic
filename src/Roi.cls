@@ -23,13 +23,16 @@ Private roiTypeDic As Dictionary ' map name to number
 Private Sub populateDic()
     Set roiAimDic = New Dictionary
     Set roiTypeDic = New Dictionary
-    roiAimDic.Add "", 0
+    roiAimDic.Add "", ""
     roiAimDic.Add "nothing", 0
-    roiAimDic.Add "bleach", AimVectorOverlay40.eVectorOverlayAcquisitionFlagsBleach Or AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAnalysis
+    roiAimDic.Add "bleach", AimVectorOverlay40.eVectorOverlayAcquisitionFlagsBleach
+
+    roiAimDic.Add "bleachAnalyse", AimVectorOverlay40.eVectorOverlayAcquisitionFlagsBleach Or AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAnalysis
     roiAimDic.Add "acquisition", AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAcquisition
     roiAimDic.Add "acquisitionBleach", AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAcquisition Or AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAnalysis _
             Or AimVectorOverlay40.eVectorOverlayAcquisitionFlagsBleach
-            
+    roiAimDic.Add "acquisitionAnalyse", AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAcquisition Or AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAnalysis
+    roiAimDic.Add "analyse", AimVectorOverlay40.eVectorOverlayAcquisitionFlagsAnalysis
     roiTypeDic.Add "circle", eImageVectorOverlayElementCircle
     roiTypeDic.Add "rectangle", eImageVectorOverlayElementRectangle
     roiTypeDic.Add "polyline", eImageVectorOverlayElementClosedPolyLine
@@ -57,7 +60,7 @@ Private Function createRoiTxt(roiTypeI As Integer, roiAimI As Integer) As Boolea
     Next i
     
     If Me.roiAim = "" Then
-        MsgBox "roi with code roiAim : " & roiAimI & "is not implemented"
+        MsgBox "roi with code roiAim : " & roiAimI & " is not implemented"
         Exit Function
     End If
     
@@ -71,7 +74,7 @@ Private Function createRoiTxt(roiTypeI As Integer, roiAimI As Integer) As Boolea
     Next i
     
     If Me.roiType = "" Then
-        MsgBox "roi with code roiType : " & roiTypeI & "is not implemented"
+        MsgBox "roi with code roiType : " & roiTypeI & " is not implemented"
         Exit Function
     End If
     createRoiTxt = True
@@ -79,13 +82,13 @@ Private Function createRoiTxt(roiTypeI As Integer, roiAimI As Integer) As Boolea
 End Function
 
 
-Public Sub setX(x() As Double)
-    roiX = x
+Public Sub setX(X() As Double)
+    roiX = X
 End Sub
 
 
-Public Sub setY(y() As Double)
-    roiY = y
+Public Sub setY(Y() As Double)
+    roiY = Y
 End Sub
 
 
@@ -102,19 +105,19 @@ Public Sub setRoiFomZen(roiNr As Integer)
     On Error GoTo ErrorHandle
     Dim vo As AimImageVectorOverlay
     Dim i As Long
-    Dim x() As Double
-    Dim y() As Double
+    Dim X() As Double
+    Dim Y() As Double
     Set vo = Lsm5.ExternalDsObject.ScanController.AcquisitionRegions
     'Debug.Print "nr Elements "; vo.GetNumberElements
     If roiNr <= vo.GetNumberElements Then
-        If createRoiTxt(vo.ElementType(roiNr), vo.ElementAcquisitionFlags(roiNr)) Then
-            ReDim x(0 To vo.GetElementNumberKnots(roiNr) - 1)
-            ReDim y(0 To vo.GetElementNumberKnots(roiNr) - 1)
+         If createRoiTxt(vo.ElementType(roiNr), vo.ElementAcquisitionFlags(roiNr)) Then
+            ReDim X(0 To vo.GetElementNumberKnots(roiNr) - 1)
+            ReDim Y(0 To vo.GetElementNumberKnots(roiNr) - 1)
             For i = 0 To vo.GetElementNumberKnots(roiNr) - 1
-                vo.GetElementKnot roiNr, i, x(i), y(i), 0, 0
+                vo.GetElementKnot roiNr, i, X(i), Y(i), 0, 0
             Next i
-            Me.setX x
-            Me.setY y
+            Me.setX X
+            Me.setY Y
         Else
              MsgBox "Roi.setRoiFromZen: problems in generating Roi"
         End If
@@ -126,11 +129,11 @@ ErrorHandle:
    MsgBox "Error in Roi.setRoiFromZen " & Err.Description
 End Sub
 
-Public Sub setRoi(roiType As String, roiAim As String, x() As Double, y() As Double)
+Public Sub setRoi(roiType As String, roiAim As String, X() As Double, Y() As Double)
     Me.roiType = roiType
     Me.roiAim = roiAim
-    roiX = x
-    roiY = y
+    roiX = X
+    roiY = Y
     If Not roiConsistency Then
         MsgBox "Wrong dimensions/type/aim for  roi " + roiType + " " + roiAim
     End If

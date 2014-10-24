@@ -4,7 +4,7 @@ Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} JobSetter
    ClientHeight    =   6180
    ClientLeft      =   45
    ClientTop       =   375
-   ClientWidth     =   7320
+   ClientWidth     =   7260
    OleObjectBlob   =   "JobSetter.frx":0000
    ShowModal       =   0   'False
    StartUpPosition =   1  'CenterOwner
@@ -15,47 +15,113 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
+'The event manager as been disabled for the moment as it causes several crashes
 Public WithEvents EventMng As EventAdmin
 Attribute EventMng.VB_VarHelpID = -1
+
+Public Sub UserForm_Initialize()
+    ZenV = getVersionNr
+    'find the version of the software
+    If ZenV > 2010 Then
+        On Error GoTo errorMsg
+        'in some cases this does not register properly
+        'Set ZEN = Lsm5.CreateObject("Zeiss.Micro.AIM.ApplicationInterface.ApplicationInterface")
+        'this should always work
+        Set ZEN = Application.ApplicationInterface
+        Dim TestBool As Boolean
+        'Check if it works
+        TestBool = ZEN.GUI.Acquisition.EnableTimeSeries.value
+        ZEN.GUI.Acquisition.EnableTimeSeries.value = Not TestBool
+        ZEN.GUI.Acquisition.EnableTimeSeries.value = TestBool
+        GoTo NoError
+errorMsg:
+        MsgBox "Version is ZEN" & ZenV & " but can't find Zeiss.Micro.AIM.ApplicationInterface." & vbCrLf _
+        & "Using ZEN2010 settings instead." & vbCrLf _
+        & "Check if Zeiss.Micro.AIM.ApplicationInterface.dll is registered?" _
+        & "See also the manual how to register a dll into windows.", VbCritical, "JobSetter Error"
+        ZenV = 2010
+NoError:
+    End If
+    
+    TrackVisible False
+    UpdateImgListbox ImgJobList, ImgJobs
+    UpdateFcsListbox FcsJobList, FcsJobs
+    FormatUserForm Me.Caption
+      
+End Sub
+
+Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
+    If CloseMode = vbFormControlMenu Then
+        JobSetter.Hide
+        Cancel = True
+    End If
+
+End Sub
+
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Acquisition buttons     '''''''''''''''''''''''''''''''''''''''''''''
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 Private Sub AcquireFcsJobButton_Click()
     Dim index As Integer
     Dim newPosition() As Vector
-    ReDim newPosition(0) ' position where FCS will be done
     Dim currentPosition As Vector
+On Error GoTo AcquireFcsJobButton_Click_Error
+    ReDim newPosition(0) ' position where FCS will be done
     ScanStop = False
     index = FcsJobList.ListIndex
     If index = -1 Then
-        MsgBox "FcsJob list is empty"
+        MsgBox "FcsJob list is empty", VbExclamation, "JobSetter Warning"
         Exit Sub
     End If
     'for Fcs the position for ZEN are passed in meter!! (different to Lsm5.Hardware.CpStages is in um!!)
     ' For X and Y relative position to center. For Z absolute position in meter
-    newPosition(0).x = 0
-    newPosition(0).y = 0
-    newPosition(0).Z = Lsm5.Hardware.CpFocus.position * 0.000001 'convet from um to meter
+    newPosition(0).X = 0
+    newPosition(0).Y = 0
+    newPosition(0).Z = Lsm5.Hardware.CpFocus.position * 0.000001 'convert from um to meter
     'eventually force creation of FcsRecord
     If Not GlobalFcsRecordingDoc Is Nothing Then
         GlobalFcsRecordingDoc.BringToTop
     End If
-    NewFcsRecordGui GlobalFcsRecordingDoc, GlobalFcsData, FcsJobs(index).Name, ZEN, ZenV
     'this brings record to top
+    NewFcsRecordGui GlobalFcsRecordingDoc, GlobalFcsData, FcsJobs(index).Name, ZEN, ZenV
+    currentFcsJob = -1
     FcsJobs(index).PutJob ZEN, ZenV
+    Running = True
     Application.ThrowEvent eEventScanStart, 1
     ScanToFcs GlobalFcsRecordingDoc, GlobalFcsData
+    Running = False
+   On Error GoTo 0
+   Exit Sub
+
+AcquireFcsJobButton_Click_Error:
+    Running = False
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure AcquireFcsJobButton_Click of Form JobSetter at line " & Erl & " "
 End Sub
 
-Private Sub AcquireJobButton_Click()
+
+Private Sub AcquireImgJobButton_Click()
     Dim index As Integer
-    Dim Time As Double
     
-On Error GoTo AcquireJobButton_Click_Error
     ScanStop = False
     index = ImgJobList.ListIndex
-
     If index = -1 Then
-        MsgBox "Job list is empty"
+        MsgBox "List is empty or no imaging job are highlighted", VbExclamation, "JobSetter Warning"
         Exit Sub
     End If
+    Running = True
+    AcquireImgJob (index)
+    Running = False
+End Sub
+
+'''
+' Acquire imaging job from ImgJobs array at index
+'''
+Private Sub AcquireImgJob(index As Integer)
+    Dim position As Vector
+On Error GoTo AcquireJobIndex_Error
     If Not GlobalRecordingDoc Is Nothing Then
         GlobalRecordingDoc.BringToTop
     End If
@@ -64,38 +130,49 @@ On Error GoTo AcquireJobButton_Click_Error
         Dim vo As AimImageVectorOverlay
         Set vo = Lsm5.ExternalDsObject.ScanController.AcquisitionRegions
         If vo.GetNumberElements > 0 Then
-            ZEN.gui.Acquisition.Regions.Delete.Execute
+            ZEN.GUI.Acquisition.Regions.Delete.Execute
         End If
     End If
-    Dim position As Vector
-    Lsm5.Hardware.CpStages.GetXYPosition position.x, position.y
+    'get current position
+    Lsm5.Hardware.CpStages.GetXYPosition position.X, position.Y
     position.Z = Lsm5.Hardware.CpFocus.position
-    Running = True
-    'currentImgJob = -1
+    'start acquisition
+    currentImgJob = -1
     AcquireJob index, ImgJobs(index), GlobalRecordingDoc, ImgJobs(index).Name, position
-    
-    'for imaging the position to image can be passed directly to AcquireJob. ZEN uses the absolute position in um
-    'NewRecordGui GlobalRecordingDoc, ImgJobs(index).Name, ZEN, ZENv
-    'ImgJobs(index).PutJob ZEN
-    'GlobalRecordingDoc.Recording.StartScanEvent = eStartScanUser
-    'Lsm5.StartScan
-    'Application.ThrowEvent eEventScanStart, 1
-    'ScanToImage GlobalRecordingDoc
-
    On Error GoTo 0
    Exit Sub
-
-AcquireJobButton_Click_Error:
-
+   
+AcquireJobIndex_Error:
     LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-    ") in procedure AcquireJobButton_Click of Form JobSetter at line " & Erl & " "
-
+    ") in procedure AcquireJobIndex of Form JobSetter at line " & Erl & " "
 End Sub
+
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+' Mange Imaging jobs      '''''''''''''''''''''''''''''''''''''''''''''
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+Private Sub ChangeImgJobName_Click()
+    Dim index As Integer
+    Dim Name As String
+    index = ImgJobList.ListIndex
+    If index = -1 Then
+        Exit Sub
+    End If
+    'imgJobs(index).Name =
+    
+    Name = InputBox("Update name of current job", "JobSetter: Update Name", ImgJobList.List(index))
+    If Name = "" Or Not UniqueListName(ImgJobList, Name) Then
+        Exit Sub
+    End If
+    ImgJobs(index).Name = Name
+    UpdateImgListbox ImgJobList, ImgJobs
+    ImgJobList.Selected(index) = True
+End Sub
+
 
 Private Sub ImgJobList_Click()
     Dim index As Integer
     index = ImgJobList.ListIndex
-    
     If index = -1 Then
         Exit Sub
     End If
@@ -106,7 +183,129 @@ End Sub
 
 
 
+Private Sub AddImgJobFromFileButton_Click()
+    Dim fso As New FileSystemObject
+    Dim Filter As String, fileName As String
+    Dim index As Integer
+    Dim Flags As Long
+    Dim DefDir As String
+    Dim fileNames() As String
+    
+    '''get filename(s) to be loaded into ZEN'''
+    If WorkingDir = "" Then
+        DefDir = "C:\"
+    Else
+        DefDir = WorkingDir
+    End If
+#If ZENvC > 2010 Then
+    Flags = OFN_LONGNAMES Or OFN_ALLOWMULTISELECT Or OFN_PATHMUSTEXIST Or OFN_HIDEREADONLY Or _
+    OFN_NOCHANGEDIR Or OFN_EXPLORER Or OFN_NOVALIDATE
+    Filter = "Images (*.lsm,*.czi)" & Chr$(0) & "*.lsm;*.czi" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
+#Else
+    Flags = OFN_LONGNAMES Or OFN_PATHMUSTEXIST Or OFN_HIDEREADONLY Or _
+    OFN_NOCHANGEDIR Or OFN_EXPLORER Or OFN_NOVALIDATE
+    Filter = "Images (*.lsm)" & Chr$(0) & "*.lsm" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
+#End If
+    fileName = CommonDialogAPI.ShowOpen(Filter, Flags, "", DefDir, "Select file(s) to be loaded as imaging jobs")
+    
+    If fileName = "" Then
+        Exit Sub
+    End If
+    
+    fileNames = Split(fileName, Chr$(0))
+    setStatus False
+    If UBound(fileNames) = 0 Then
+        AddImgJobFromFile fileNames(0)
+        WorkingDir = fso.GetParentFolderName(fileNames(0)) & "\"
+    Else
+        For index = 1 To UBound(fileNames)
+            AddImgJobFromFile fileNames(0) & "\" & fileNames(index)
+            SleepWithEvents 2000
+        Next index
+        WorkingDir = fileNames(0) & "\"
+    End If
+    setStatus True
+End Sub
 
+
+Private Sub AddImgJobFromFile(fileName As String)
+    Dim fso As New FileSystemObject
+    Dim JobName As String
+    If Not FileExist(fileName) Then
+        Exit Sub
+    End If
+    JobName = VBA.Split(fso.GetFileName(fileName), ".")(0)
+    If Not UniqueListName(FcsJobList, JobName) Or Not UniqueListName(ImgJobList, JobName) Then
+        MsgBox "Name of imaging job must be unique!", VbExclamation, "JobSetter warning"
+        Exit Sub
+    End If
+    ImgJobList.AddItem JobName
+    ImgJobList.Selected(ImgJobList.ListCount - 1) = True
+    AddJob ImgJobs, ImgJobList.List(ImgJobList.ListCount - 1), getRecordingFromImageFile(fileName, ZEN), ZEN
+    setLabels ImgJobList.ListCount - 1
+    setTrackNames ImgJobList.ListCount - 1
+End Sub
+    
+Private Sub SaveButton_Click()
+    
+    Dim fso As New FileSystemObject
+    Dim index As Integer
+    Dim Flags As Long
+    Dim dirName As String, DefDir As String, Filter As String
+    Dim answ As Integer
+    If Not ImgJobList.ListCount > 0 Then
+        MsgBox "No Imaging jobs defined yet!", VbExclamation, "JobSetter Warning"
+        Exit Sub
+    End If
+    
+    
+    If isArrayEmpty(ImgJobs) Then
+        MsgBox "Sorry there has been problems in saving the jobs!", vbError, "JobSetter Error"
+        ImgJobList.Clear
+        Exit Sub
+    End If
+    answ = MsgBox("Yes: All jobs are executed and saved" & vbCrLf & "No: Highlighted job is executed and saved" & vbCrLf, VbYesNoCancel + VbQuestion, "JobSetter: Save jobs")
+    If answ = vbCancel Then Exit Sub
+    If answ = vbNo And ImgJobList.ListIndex < 0 Then
+        MsgBox "Highlight one of the jobs to be saved", VbExclamation, "JobSetter Warning"
+        Exit Sub
+    End If
+    
+    Flags = OFN_PATHMUSTEXIST Or OFN_HIDEREADONLY Or OFN_NOCHANGEDIR Or OFN_EXPLORER Or OFN_NOVALIDATE
+    Filter = "Images (*.lsm,*.czi)" & Chr$(0) & "*.lsm;*.czi" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
+    If WorkingDir = "" Then
+        DefDir = "C:\"
+    Else
+        DefDir = WorkingDir
+    End If
+    setStatus False
+    dirName = CommonDialogAPI.ShowOpen(Filter, Flags, "*.*", DefDir, "Select output folder for jobs")
+    If dirName = "" Then Exit Sub
+    dirName = fso.GetParentFolderName(dirName) & "\"
+    WorkingDir = dirName
+#If ZENvC > 2010 Then
+    If answ = vbNo Then
+        AcquireImgJob ImgJobList.ListIndex
+        SaveDsRecordingDoc GlobalRecordingDoc, dirName & ImgJobs(ImgJobList.ListIndex).Name & ".czi", eAimExportFormatCzi
+    Else
+        For index = 0 To ImgJobList.ListCount - 1
+            AcquireImgJob (index)
+            SaveDsRecordingDoc GlobalRecordingDoc, dirName & ImgJobs(index).Name & ".czi", eAimExportFormatCzi
+        Next index
+    End If
+#Else
+    If answ = vbNo Then
+        AcquireImgJob ImgJobList.ListIndex
+        SaveDsRecordingDoc GlobalRecordingDoc, dirName & ImgJobs(ImgJobList.ListIndex).Name & ".lsm", eAimExportFormatLsm5
+    Else
+        For index = 0 To ImgJobList.ListCount - 1
+            AcquireImgJob (index)
+            SaveDsRecordingDoc GlobalRecordingDoc, dirName & ImgJobs(index).Name & ".lsm", eAimExportFormatLsm5
+        Next index
+    End If
+#End If
+    setStatus True
+End Sub
 
 Private Sub StopButton_Click()
     StopAcquisition
@@ -132,6 +331,15 @@ Private Sub Track4_Click()
     TrackClick (4)
 End Sub
 
+Private Sub setStatus(value As Boolean)
+    If value Then
+        StatusLabel = "READY"
+        StatusLabel.ForeColor = &HC000&
+    Else
+        StatusLabel = "BUSY"
+        StatusLabel.ForeColor = &HC0&
+    End If
+End Sub
 
 
 
@@ -155,7 +363,7 @@ Private Sub SetJobButton_Click()
     Dim index As Integer
     index = ImgJobList.ListIndex
     If index = -1 Then
-        MsgBox "Job list is empty or you need to select one job"
+        MsgBox "Job list is empty or you need to select one job", VbExclamation, "JobSetter Warning"
         Exit Sub
     End If
     Debug.Assert (ImgJobs(index).SetJob(Lsm5.DsRecording, ZEN))
@@ -167,7 +375,7 @@ Private Sub SetFcsJob_Click()
     Dim index As Integer
     index = FcsJobList.ListIndex
     If index = -1 Then
-        MsgBox "Job list is empty or you need to select one job"
+         MsgBox "FcsJob list is empty or you need to select one job", VbExclamation, "JobSetter Warning"
         Exit Sub
     End If
     Debug.Assert (FcsJobs(index).SetJob(ZEN, ZenV))
@@ -192,11 +400,11 @@ Private Sub PutJobButton_Click()
     Dim index As Integer
     index = ImgJobList.ListIndex
     If index = -1 Then
-        MsgBox "Job list is empty or you need to select one job"
+        MsgBox "Job list is empty or you need to select one job", VbExclamation, "JobSetter Warning"
         Exit Sub
     End If
     ImgJobs(index).PutJob ZEN
-    If ZenV > 2010 Then  'On 2010 it is extremely slow and the command does not wait for finishing
+    If ZenV > 2009 Then  'On 2010 it is extremely slow and the command does not wait for finishing
         Application.ThrowEvent tag_Events.eEventDsActiveRecChanged, 0
         DoEvents
     End If
@@ -207,7 +415,7 @@ Private Sub PutFcsJob_Click()
     Dim index As Integer
     index = FcsJobList.ListIndex
     If index = -1 Then
-        MsgBox "Job list is empty or you need to select one job"
+        MsgBox "FcsJob list is empty or you need to select one job", VbExclamation, "JobSetter Warning"
         Exit Sub
     End If
     FcsJobs(index).PutJob ZEN, ZenV
@@ -237,6 +445,7 @@ End Sub
 
 Private Function UniqueListName(List As ListBox, JobName As String) As Boolean
     Dim ListEntry As Variant
+    Debug.Print List.ListCount
     If List.ListCount > 0 Then
         For Each ListEntry In List.List
             If StrComp(ListEntry, JobName) = 0 Then
@@ -279,20 +488,24 @@ End Function
 
 Private Sub AddJobButton_Click()
     Dim i As Integer
-    If JobName.value = "" Then
-        MsgBox "You need to specify a name for the job"
+    Dim index As Integer
+    Dim Name As String
+
+    Name = InputBox("Name of imaging job to be created from current ZEN settings", "JobSetter: Define job name")
+    'Cancel pressed
+    If StrPtr(Name) = 0 Then Exit Sub
+
+    If Name = "" Or Not UniqueListName(ImgJobList, CStr(Name)) Or Not UniqueListName(FcsJobList, CStr(Name)) Then
+        MsgBox "You need to define an unique name for the imaging job!", VbExclamation, "JobSetter Warning"
         Exit Sub
     End If
-    If Not UniqueListName(FcsJobList, JobName) Or Not UniqueListName(ImgJobList, JobName) Then
-        MsgBox "Name of imaging job must be unique"
-        Exit Sub
-    End If
-    ImgJobList.AddItem JobName.value
+    setStatus False
+    ImgJobList.AddItem CStr(Name)
     ImgJobList.Selected(ImgJobList.ListCount - 1) = True
     AddJob ImgJobs, ImgJobList.List(ImgJobList.ListCount - 1), Lsm5.DsRecording, ZEN
     setLabels ImgJobList.ListCount - 1
     setTrackNames ImgJobList.ListCount - 1
-    'PipelineConstructor.UpdateImgJobList
+    setStatus True
 End Sub
 
 Private Sub setTrackNames(index As Integer)
@@ -374,7 +587,7 @@ Public Sub AddJob(JobsV() As AJob, Name As String, Recording As DsRecording, ZEN
     End If
     Set JobsV(UBound(JobsV)) = New AJob
     JobsV(UBound(JobsV)).Name = Name
-    JobsV(UBound(JobsV)).SetJob Lsm5.DsRecording, ZEN
+    JobsV(UBound(JobsV)).SetJob Recording, ZEN
 End Sub
 
 
@@ -399,7 +612,8 @@ Public Sub DeleteJob(JobsV() As AJob, index As Integer, Optional Name As String 
     Dim i As Integer
     Dim IJob As Integer
     If isArrayEmpty(JobsV) Then
-        MsgBox "Nothing to delete"
+        MsgBox "Nothing to delete!", VbExclamation, "JobSetter Warning"
+        Exit Sub
     End If
     Debug.Assert (index <= UBound(JobsV))
     If Name <> "" Then
@@ -435,7 +649,8 @@ Private Sub DeleteFcsJob(JobsV() As AFcsJob, index As Integer, Optional Name As 
     Dim i As Integer
     Dim IJob As Integer
     If isArrayEmpty(JobsV) Then
-        MsgBox "Nothing to delete"
+        MsgBox "Nothing to delete", VbExclamation, "JobSetter Warning"
+        Exit Sub
     End If
     Debug.Assert (index <= UBound(JobsV))
     If Name <> "" Then
@@ -453,38 +668,3 @@ Private Sub DeleteFcsJob(JobsV() As AFcsJob, index As Integer, Optional Name As 
     End If
 End Sub
 
-Public Sub UserForm_Initialize()
-    ZenV = getVersionNr
-    'find the version of the software
-
-    If ZenV > 2010 Then
-        On Error GoTo errorMsg
-        'in some cases this does not register properly
-        'Set ZEN = Lsm5.CreateObject("Zeiss.Micro.AIM.ApplicationInterface.ApplicationInterface")
-        'this should always work
-        Set ZEN = Application.ApplicationInterface
-        Dim TestBool As Boolean
-        'Check if it works
-        TestBool = ZEN.gui.Acquisition.EnableTimeSeries.value
-        ZEN.gui.Acquisition.EnableTimeSeries.value = Not TestBool
-        ZEN.gui.Acquisition.EnableTimeSeries.value = TestBool
-        GoTo NoError
-errorMsg:
-        MsgBox "Version is ZEN" & ZenV & " but can't find Zeiss.Micro.AIM.ApplicationInterface." & vbCrLf _
-        & "Using ZEN2010 settings instead." & vbCrLf _
-        & "Check if Zeiss.Micro.AIM.ApplicationInterface.dll is registered?" _
-        & "See also the manual how to register a dll into windows."
-        ZenV = 2010
-
-NoError:
-    End If
-    'Erase ImgJobs
-    'Erase FcsJobs
-    
-    TrackVisible False
-    UpdateImgListbox ImgJobList, ImgJobs
-    UpdateFcsListbox FcsJobList, FcsJobs
-    
-    
-    'PipelineConstructor.Show
-End Sub

@@ -7,8 +7,8 @@ Option Explicit
 
 ''' A vector
 Public Type Vector
-  x As Double
-  y As Double
+  X As Double
+  Y As Double
   Z As Double
 End Type
 
@@ -49,43 +49,43 @@ End Function
 ''' Vector operations'''
 ''' To do: overload?''''
 ''''''''''''''''''''''''
-Public Function Double2Vector(x As Double, y As Double, Z As Double) As Vector
-    Double2Vector.x = x
-    Double2Vector.y = y
+Public Function Double2Vector(X As Double, Y As Double, Z As Double) As Vector
+    Double2Vector.X = X
+    Double2Vector.Y = Y
     Double2Vector.Z = Z
 End Function
 
 Public Function Vector2Double(vec As Vector) As Double()
     Dim vec2D(3) As Double
-    vec2D(0) = vec.x
-    vec2D(1) = vec.y
+    vec2D(0) = vec.X
+    vec2D(1) = vec.Y
     vec2D(2) = vec.Z
     Vector2Double = vec2D
 End Function
 
 Public Function diffVector(vec1 As Vector, vec2 As Vector) As Vector
-    diffVector.x = vec1.x - vec2.x
-    diffVector.y = vec1.y - vec2.y
+    diffVector.X = vec1.X - vec2.X
+    diffVector.Y = vec1.Y - vec2.Y
     diffVector.Z = vec1.Z - vec2.Z
 End Function
 
 Public Function sumVector(vec1 As Vector, vec2 As Vector) As Vector
-    sumVector.x = vec1.x + vec2.x
-    sumVector.y = vec1.y + vec2.y
+    sumVector.X = vec1.X + vec2.X
+    sumVector.Y = vec1.Y + vec2.Y
     sumVector.Z = vec1.Z + vec2.Z
 End Function
 
 Public Function normVector2D(vec As Vector) As Double
-    normVector2D = Sqr(vec.x ^ 2 + vec.y ^ 2)
+    normVector2D = Sqr(vec.X ^ 2 + vec.Y ^ 2)
 End Function
 
 Public Function normVector3D(vec As Vector) As Double
-    normVector3D = Sqr(vec.x ^ 2 + vec.y ^ 2 + vec.Z ^ 2)
+    normVector3D = Sqr(vec.X ^ 2 + vec.Y ^ 2 + vec.Z ^ 2)
 End Function
 
 Public Function scaleVector(vec As Vector, alpha As Double) As Vector
-    scaleVector.x = vec.x * alpha
-    scaleVector.y = vec.y * alpha
+    scaleVector.X = vec.X * alpha
+    scaleVector.Y = vec.Y * alpha
     scaleVector.Z = vec.Z * alpha
 End Function
 
@@ -106,13 +106,13 @@ End Function
 Public Function VectorList2String(vec() As Vector, Optional Rnd = 2) As String()
     Dim i As Integer
     Dim OutString(0 To 2) As String
-    OutString(0) = "" & Round(vec(0).x, Rnd)
-    OutString(1) = "" & Round(vec(0).y, Rnd)
+    OutString(0) = "" & Round(vec(0).X, Rnd)
+    OutString(1) = "" & Round(vec(0).Y, Rnd)
     OutString(2) = "" & Round(vec(0).Z, Rnd)
     If UBound(vec) > 0 Then
         For i = 1 To UBound(vec)
-            OutString(0) = OutString(0) & "; " & Round(vec(i).x, Rnd)
-            OutString(1) = OutString(1) & "; " & Round(vec(i).y, Rnd)
+            OutString(0) = OutString(0) & "; " & Round(vec(i).X, Rnd)
+            OutString(1) = OutString(1) & "; " & Round(vec(i).Y, Rnd)
             OutString(2) = OutString(2) & "; " & Round(vec(i).Z, Rnd)
         Next i
     End If

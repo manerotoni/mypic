@@ -22,12 +22,12 @@ End Sub
 '''
 ' Create a set of grids with specified names. The default size is 0,0,0,0
 '''
-Public Sub initialize(Names() As String)
+Public Sub initialize(names() As String)
     Dim i As Integer
-    ReDim Grids(0 To UBound(Names))
+    ReDim Grids(0 To UBound(names))
     Set GridNames = New Dictionary
-    For i = 0 To UBound(Names)
-        AddGrid (Names(i))
+    For i = 0 To UBound(names)
+        AddGrid (names(i))
     Next i
 End Sub
 
@@ -131,13 +131,13 @@ End Function
 
 Public Function setIsRunning(Name As String, value As Boolean)
     If checkGridName(Name) Then
-        Grids(GridNames.item(Name)).setIsRunning (value)
+        Grids(GridNames.item(Name)).isRunning = value
     End If
 End Function
 
 Public Function getIsRunning(Name As String) As Boolean
     If checkGridName(Name) Then
-        getIsRunning = Grids(GridNames.item(Name)).getIsRunning
+        getIsRunning = Grids(GridNames.item(Name)).isRunning
     End If
 End Function
 

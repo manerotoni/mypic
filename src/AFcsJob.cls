@@ -107,35 +107,35 @@ Public Function setJobAi(ZEN As Object) As Boolean
     Dim i As Integer
     Dim NrLasers As Integer
     If Not ZEN Is Nothing Then
-        NrLasers = ZEN.gui.Fcs.LightPath.Lasers.ItemCount
+        NrLasers = ZEN.GUI.Fcs.LightPath.Lasers.ItemCount
         ZEN.CommandExecute "Fcs.BeamPath.Save"
         'get the current saved item. Loading this item is in priciple enough for the experiment
-        LightPathConfig = ZEN.gui.Fcs.LightPathConfig.CurrentItem
+        LightPathConfig = ZEN.GUI.Fcs.LightPathConfig.CurrentItem
         
         ReDim LaserActive(0 To NrLasers - 1)
         ReDim LaserTransmission(0 To NrLasers - 1)
         ReDim LaserName(0 To NrLasers - 1)
         
         For i = 0 To NrLasers - 1
-            ZEN.gui.Fcs.LightPath.Lasers.ByIndex = i
-            LaserActive(i) = ZEN.gui.Fcs.LightPath.Lasers.On.value
-            LaserTransmission(i) = ZEN.gui.Fcs.LightPath.Lasers.Transmission.value / 100
-            LaserName(i) = ZEN.gui.Fcs.LightPath.Lasers.ByName
+            ZEN.GUI.Fcs.LightPath.Lasers.ByIndex = i
+            LaserActive(i) = ZEN.GUI.Fcs.LightPath.Lasers.On.value
+            LaserTransmission(i) = ZEN.GUI.Fcs.LightPath.Lasers.Transmission.value / 100
+            LaserName(i) = ZEN.GUI.Fcs.LightPath.Lasers.ByName
         Next i
         
         ReDim BleachActive(0 To NrLasers - 1)
         ReDim BleachTransmission(0 To NrLasers - 1)
         
         For i = 0 To NrLasers - 1
-            ZEN.gui.Fcs.LightPath.BleachLasers.ByIndex = i
-            BleachActive(i) = ZEN.gui.Fcs.LightPath.BleachLasers.On.value
-            BleachTransmission(i) = ZEN.gui.Fcs.LightPath.BleachLasers.Transmission.value / 100
+            ZEN.GUI.Fcs.LightPath.BleachLasers.ByIndex = i
+            BleachActive(i) = ZEN.GUI.Fcs.LightPath.BleachLasers.On.value
+            BleachTransmission(i) = ZEN.GUI.Fcs.LightPath.BleachLasers.Transmission.value / 100
         Next i
         MeasurementTime = FcsControl.AcquisitionParameters.MeasurementTime
         Repetitions = FcsControl.AcquisitionParameters.MeasurementRepeat
         BleachTime = FcsControl.AcquisitionParameters.BleachTime
-        PositionsEnabled = ZEN.gui.Fcs.EnablePositions.value
-        TimeSeriesEnabled = ZEN.gui.Fcs.EnableTimeSeries.value
+        PositionsEnabled = ZEN.GUI.Fcs.EnablePositions.value
+        TimeSeriesEnabled = ZEN.GUI.Fcs.EnableTimeSeries.value
         Me.timeToAcquire = 0
         setJobAi = True
         
@@ -173,8 +173,8 @@ Public Function putJobAi(ZEN As Object) As Boolean
     On Error GoTo ErrorHandle
     If Not ZEN Is Nothing Then
         'get the current saved item. Loading this item is in priciple enough for the experiment
-        If ZEN.gui.Fcs.LightPathConfig.isValidItem(LightPathConfig) Then
-            ZEN.gui.Fcs.LightPathConfig.Load LightPathConfig
+        If ZEN.GUI.Fcs.LightPathConfig.isValidItem(LightPathConfig) Then
+            ZEN.GUI.Fcs.LightPathConfig.Load LightPathConfig
         Else
             If LightPathConfig <> "" Then
                 MsgBox "AFcsJob.putJobGui. For Fcs Job " & Name & ". No LightPathconfig with the name " & LightPathConfig
@@ -183,8 +183,8 @@ Public Function putJobAi(ZEN As Object) As Boolean
             End If
             Exit Function
         End If
-        ZEN.gui.Fcs.EnablePositions.value = PositionsEnabled
-        ZEN.gui.Fcs.EnableTimeSeries.value = TimeSeriesEnabled
+        ZEN.GUI.Fcs.EnablePositions.value = PositionsEnabled
+        ZEN.GUI.Fcs.EnableTimeSeries.value = TimeSeriesEnabled
         ZEN.SetDouble "Fcs.Acquisition.MeasureTime", MeasurementTime
         ZEN.SetDouble "Fcs.Acquisition.Repetitions", Repetitions
         ZEN.SetDouble "Fcs.Acquisition.BleachTime", BleachTime

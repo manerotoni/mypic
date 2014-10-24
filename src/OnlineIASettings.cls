@@ -328,7 +328,7 @@ End Sub
 '   ReadOiaSettingsFromFile(Settings As Dictionary, FileName As String)
 '       Read FileName and store key and paramter into Settings
 ''''
-Public Sub readFromFile(FileName As String)
+Public Sub ReadFromFile(fileName As String)
     checkExistKeys
     Dim iFileNum As Integer
     Dim Fields As String
@@ -337,7 +337,7 @@ Public Sub readFromFile(FileName As String)
     Close
     On Error GoTo ErrorHandle
     iFileNum = FreeFile()
-    Open FileName For Input As iFileNum
+    Open fileName For Input As iFileNum
     Do While Not EOF(iFileNum)
             Line Input #iFileNum, Fields
             While VBA.Left(Fields, 1) = "%" 'this are comments
@@ -349,14 +349,14 @@ Public Sub readFromFile(FileName As String)
     Close #iFileNum
     Exit Sub
 ErrorHandle:
-    MsgBox "Not able to read " & FileName & " for OiaSettings"
+    MsgBox "Not able to read " & fileName & " for OiaSettings"
 End Sub
 
 ''''
 '   WriteOiaSettingsToFile(Settings As Dictionary, FileName As String)
 '   Write Settings to file with FileName
 ''''
-Public Sub writeToFile(FileName As String)
+Public Sub writeToFile(fileName As String)
     checkExistKeys
     Dim i As Integer
     Dim iFileNum As Integer
@@ -364,7 +364,7 @@ Public Sub writeToFile(FileName As String)
     Close
     'On Error GoTo ErrorHandle
     iFileNum = FreeFile()
-    Open FileName For Output As iFileNum
+    Open fileName For Output As iFileNum
     
     For Each Key In Settings.Keys
         Print #iFileNum, Key & " " & Settings.item(Key)
@@ -378,8 +378,8 @@ End Sub
 '   It is assumed that FileName = something_Txxx.lsm
 '   ToDO: better parsing
 '''
-Public Function settingsFileName(FileName As String) As String
-    settingsFileName = VBA.Left(FileName, Len(FileName) - 9) & "_oia.txt"
+Public Function settingsFileName(fileName As String) As String
+    settingsFileName = VBA.Left(fileName, Len(fileName) - 9) & "_oia.txt"
 End Function
 
 
@@ -391,8 +391,8 @@ Public Function getRois(Rois() As Roi) As Boolean
     Dim RoiOut() As Roi
     Dim XRois()  As String 'the string containinig all X-positions of a ROI
     Dim YRois()  As String 'the string containinig all Y-positions of a ROI
-    Dim x() As String ' string containing X pos of a single ROI
-    Dim y() As String ' String containing y pos of a single ROI
+    Dim X() As String ' string containing X pos of a single ROI
+    Dim Y() As String ' String containing y pos of a single ROI
     Dim XD()  As Double 'the double array containinig the X-positions
     Dim YD()  As Double 'the double array containinig the Y-positions
     Dim i As Integer
@@ -420,17 +420,17 @@ Public Function getRois(Rois() As Roi) As Boolean
     End If
     ReDim Rois(0 To UBound(roiType))
     For iRoi = 0 To UBound(roiType)
-        x() = Split(XRois(iRoi), ",")
-        y() = Split(YRois(iRoi), ",")
-        If isArrayEmpty(x) Or isArrayEmpty(y) Then
+        X() = Split(XRois(iRoi), ",")
+        Y() = Split(YRois(iRoi), ",")
+        If isArrayEmpty(X) Or isArrayEmpty(Y) Then
             MsgBox "GetRoisFromRegistry: No coordinates found in registry foir roix and roiy (in pixel)"
             Exit Function
         End If
-        ReDim XD(UBound(x))
-        ReDim YD(UBound(y))
-        For i = 0 To UBound(x)
-            XD(i) = CDbl(x(i))
-            YD(i) = CDbl(y(i))
+        ReDim XD(UBound(X))
+        ReDim YD(UBound(Y))
+        For i = 0 To UBound(X)
+            XD(i) = CDbl(X(i))
+            YD(i) = CDbl(Y(i))
         Next i
         Set Rois(iRoi) = New Roi
         Rois(iRoi).setRoi roiType(iRoi), roiAim(iRoi), XD, YD
@@ -516,8 +516,8 @@ Public Function getPositions(stgPos() As Vector, currentPosition As Vector) As B
     ' Convert values to Double
     ReDim stgPos(0 To UBound(locX))
     For i = 0 To UBound(locX)
-        stgPos(i).x = CDbl(locX(i))
-        stgPos(i).y = CDbl(locY(i))
+        stgPos(i).X = CDbl(locX(i))
+        stgPos(i).Y = CDbl(locY(i))
         stgPos(i).Z = CDbl(locZ(i))
     Next i
     getPositions = True
@@ -581,8 +581,8 @@ Public Function getFcsPositions(stgPos() As Vector, currentPosition As Vector) A
     ' Convert values to Double
     ReDim stgPos(0 To UBound(locX))
     For i = 0 To UBound(locX)
-        stgPos(i).x = CDbl(locX(i))
-        stgPos(i).y = CDbl(locY(i))
+        stgPos(i).X = CDbl(locX(i))
+        stgPos(i).Y = CDbl(locY(i))
         stgPos(i).Z = CDbl(locZ(i))
     Next i
     getFcsPositions = True
