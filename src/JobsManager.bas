@@ -691,7 +691,7 @@ On Error GoTo ExecuteJobAndTrack_Error
                 If Not .analyse = AnalyseOnline Then
                     Time = Timer
                     stgPos = TrackOffLine(Pipelines(indexPl).getTask(indexTsk), RecordingDoc, stgPos)
-                    LogManager.UpdateLog " Time tp TrackOffline " & Round(Timer - Time, 2), 1
+                    LogManager.UpdateLog " Time to TrackOffline " & Round(Timer - Time, 2), 1
                 Else
                     OiaSettings.writeKeyToRegistry "codeMic", "wait"
                     OiaSettings.writeKeyToRegistry "codeOia", "newImage"
@@ -711,8 +711,16 @@ On Error GoTo ExecuteJobAndTrack_Error
         End If
 '        If .jobType = 1 Then
 '            Time = Timer
-'            For i = 0 To UBound(Positions)
-'                fcsPos(i).Z = fcsPos(i).Z + .Zoffser * 0.000001
+'            If isEmpty(fcsPos) Then
+'                LogManager.UpdateErrorLog "No fcs Positions have been defined for " & Pipelines(indexPl).Grid.NameGrid & "_" & indexTsk & " use center of image and current Z!"
+'                ReDim fcsPos(0)
+'                fcsPos(0).X = 0
+'                fcsPos(0).Y = 0
+'                fcsPos(0).Z =
+'
+'            End If
+'            For i = 0 To UBound(fcsPos)
+'                fcsPos(i).Z = fcsPos(i).Z + .ZOffset * 0.000001
 '            Next i
 '
 '            If Not CleanFcsData(FcsRecordingDoc, FcsData) Then
@@ -955,6 +963,38 @@ End Function
 'End Function
 
 
+'''''
+'   Pause()
+'   Function called when ScanPause = True
+'   Checks state and wait for action in Form
+'''''
+Public Function Pause() As Boolean
+    
+    Dim rettime As Double
+    Dim GlobalPrvTime As Double
+    Dim DiffTime As Double
+    
+    GlobalPrvTime = CDbl(GetTickCount) * 0.001
+    rettime = GlobalPrvTime
+    DiffTime = rettime - GlobalPrvTime
+    Do While True
+        SleepWithEvents 100
+        DoEvents
+        If ScanStop Then
+            Exit Function
+        End If
+        If Not ScanPause Then
+            Pause = True
+            Exit Function
+        End If
+
+        DisplayProgress PipelineConstructor.ProgressLabel, "Pause " & CStr(CInt(DiffTime)) & " s", RGB(&HC0, &HC0, 0)
+        rettime = CDbl(GetTickCount) * 0.001
+        DiffTime = rettime - GlobalPrvTime
+    Loop
+End Function
+
+
 '---------------------------------------------------------------------------------------
 ' Procedure : StartJobOnGrid
 ' Purpose   : Performs imaging/fcs on a grid. Pretty much the whole macro runs through here
@@ -1034,7 +1074,12 @@ On Error GoTo StartPipeline_Error
                     Next iTask
                     .Grid.setThisPosition stgPos
                 End If
-                    
+                If ScanPause Then
+                    If Not Pause Then
+                        GoTo StopJob
+                    End If
+                End If
+                
             Loop While .Grid.nextGridPt(False)
             
             ''Wait till next repetition
@@ -1070,8 +1115,13 @@ On Error GoTo StartPipeline_Error
                     LogManager.UpdateErrorLog "No more default active positions. use keep-parent positions in Trigger1/2 to keep default positions after trigger"
                     GoTo StopJob
                 End If
+                If ScanPause Then
+                    If Not Pause Then
+                        GoTo StopJob
+                    End If
+                End If
                 If .Grid.getNrValidPts = 0 Then
-                    
+                        
                 End If
             Wend
         DoEvents
@@ -1741,7 +1791,7 @@ End Function
 '             newPositions - Array of stage/focus positions (in um)
 '---------------------------------------------------------------------------------------
 '
-Public Function updateSubPipelineGrid(index As Integer, newPositions() As Vector, fcsPos() As Vector, Optional ParentPath As String) As Boolean
+Public Function updateSubPipelineGrid(index As Integer, newPositions() As Vector, fcsPos() As Vector, prefix As String, Optional ParentPath As String) As Boolean
 On Error GoTo updateSubPipelineGrid_Error
     
     Dim i As Integer
@@ -1767,6 +1817,7 @@ On Error GoTo updateSubPipelineGrid_Error
             .Grid.setPt newPositions(i), True, 1, 1, 1, i + GridLowBound
             .Grid.setParentPath ParentPath, 1, 1, 1, i + GridLowBound
             .Grid.setFcsPosition fcsPos, 1, 1, 1, i + GridLowBound
+            .Grid.setName prefix & .Grid.getName(1, 1, 1, i + GridLowBound), 1, 1, 1, i + GridLowBound
         Next i
     End With
     On Error GoTo 0
@@ -1830,6 +1881,7 @@ On Error GoTo ComputeJobSequential_Error
     Dim code As Variant
     Dim tsk As Task
     Dim JobName As String
+    Dim prefix As String
     tsk = Pipelines(indexPl).getTask(indexTsk)
     JobName = Pipelines(indexPl).Grid.NameGrid & "_" & indexTsk + 1
     Dim codeMicToJobName As Dictionary 'use to convert codes of regisrty into Jobnames as used in the code
@@ -1907,7 +1959,7 @@ On Error GoTo ComputeJobSequential_Error
         End If
     End If
     OiaSettings.getRois Rois
-
+    prefix = OiaSettings.readKeyFromRegistry("prefix")
 
     
     ''for all commands in codeMic
@@ -1961,7 +2013,8 @@ On Error GoTo ComputeJobSequential_Error
 '                    ImgJobs(Pipelines(codeMicToJobName.item(code)).getTask(0).jobNr).UseRoi = True  'this is not exactly how it should be a task should have associated a roi
 '                    ImgJobs(Pipelines(codeMicToJobName.item(code)).getTask(0).jobNr).setRois = Rois 'this is not exactly how it should be a task should have associated a roi
 '                End If
-                updateSubPipelineGrid codeMicToJobName.item(code), newPositions, fcsPos, ParentPath & parentFile & "\"
+                
+                updateSubPipelineGrid codeMicToJobName.item(code), newPositions, fcsPos, prefix, ParentPath & parentFile & "\"
             Case Else
                 MsgBox ("Invalid OnlineImageAnalysis codeMic = " & code)
                 GoTo Abort

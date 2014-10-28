@@ -25,6 +25,25 @@ Private Lett() As Variant
 Public Version As String
 
 
+Private Sub PauseExpButton_Click()
+    If Not Pipelines(0).Grid.isRunning Then
+        ScanPause = False
+        PauseExpButton.value = False
+        PauseExpButton.Caption = ""
+        PauseExpButton.BackColor = &H8000000F
+    Else
+        If PauseExpButton.value Then
+            ScanPause = True
+            PauseExpButton.Caption = "RESUME"
+            PauseExpButton.BackColor = 12648447
+        Else
+            ScanPause = False
+            PauseExpButton.Caption = ""
+            PauseExpButton.BackColor = &H8000000F
+        End If
+    End If
+End Sub
+
 Public Sub UserForm_Initialize()
     Dim i As Integer
     'Contains name of the Grids two letter code
@@ -76,6 +95,7 @@ NoError:
     Erase FcsJobs
     Set OiaSettings = New OnlineIASettings
     OiaSettings.initializeDefault
+    OiaSettings.resetRegistry
     imgFileFormat = eAimExportFormatLsm5
     imgFileExtension = ".lsm"
     
@@ -115,6 +135,7 @@ NoError:
     ToggleFrameButton (1)
     Me.Height = 465
     Me.Width = 430
+    
     Load JobSetter
 End Sub
 
@@ -128,11 +149,6 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
     End If
 End Sub
 
-
-Private Sub UserForm_Terminate()
-    
-       
-End Sub
 
 Private Sub GridScanPositionFileButton_Click()
     Dim fso As New FileSystemObject

@@ -35,7 +35,7 @@ Private subKey_roiType_HowTo As Dictionary
 Public Sub initializeDefault()
     On Error GoTo errMsg
 'This variable contains the keys for the OnlineImageanalysis
-    ReDim Keys(0 To 17)
+    ReDim Keys(0 To 18)
     Keys(0) = "codeMic"
     Keys(1) = "codeOia"
     Keys(2) = "fileAnalyzed"
@@ -54,14 +54,17 @@ Public Sub initializeDefault()
     Keys(15) = "OutputFolder"
     Keys(16) = "errorMsg"
     Keys(17) = "codePump"
+    Keys(18) = "prefix" 'prefix to be added to filenames
     
     Set subKey_roiAim_HowTo = New Dictionary
     subKey_roiAim_HowTo.Add "", "(empty char) do nothing with roi"
     subKey_roiAim_HowTo.Add "nothing", "do nothing with roi"
     subKey_roiAim_HowTo.Add "bleach", "bleach and analyse roi"
     subKey_roiAim_HowTo.Add "acquisition", "acquire roi"
-    subKey_roiAim_HowTo.Add "acquisitionBleach", "acquire, bleach, and analyse roi"
-    
+    subKey_roiAim_HowTo.Add "acquisitionBleach", "acquire and bleach"
+    subKey_roiAim_HowTo.Add "acquisitionAnalyse", "acquire and analyse"
+    subKey_roiAim_HowTo.Add "bleachAnalyse", "bleach and analyse"
+
     
     Set subKey_roiType_HowTo = New Dictionary
     subKey_roiType_HowTo.Add "", "(empty char) no type"
@@ -89,6 +92,7 @@ Public Sub initializeDefault()
     Keys_HowTo.Add Keys(15), "main directory where images are stored"
     Keys_HowTo.Add Keys(16), "error message coming from Oia"
     Keys_HowTo.Add Keys(17), "time (ms) to activate water pump"
+    Keys_HowTo.Add Keys(18), "prefix that is added to filename"
     
     Set subKey_codeMic_HowTo = New Dictionary
     subKey_codeMic_HowTo.Add "", "(empty char) wait for image analysis"
@@ -443,12 +447,13 @@ End Function
 
 
 '''
-'   GetPositionsFromSettings(Settings As Dictionary, StgPos() As Vector) As Boolean
-'   Settings contains all settings for OnlineImageanalysis
-'   StgPos containes the coordinates
-'   StgPos.X, StgPos.Y: defined 0,0 at upper left corner
-'   StgPos.Z: defined 0 for first slice
+'   getPositions(stgPos() As Vector, currentPosition As Vector) As Boolean
+'   Read position in pixel from registry
+'   stgPos containes the coordinates
+'   stgPos.X, stgPos.Y: defined 0,0 at upper left corner
+'   stgPos.Z: defined 0 for first slice
 '   units are converted afterwards as it depends on the type of Job (default input unit is px)
+'   currentPosition refers to center of image (changes depending on size of image)
 ''''
 Public Function getPositions(stgPos() As Vector, currentPosition As Vector) As Boolean
     checkExistKeys
@@ -524,14 +529,14 @@ Public Function getPositions(stgPos() As Vector, currentPosition As Vector) As B
 End Function
 
 '''
-'   GetPositionsFromSettings(Settings As Dictionary, StgPos() As Vector) As Boolean
-'   Settings contains all settings for OnlineImageanalysis
-'   StgPos containes the coordinates
-'   StgPos.X, StgPos.Y: defined 0,0 at upper left corner
-'   StgPos.Z: defined 0 for the central slice
-'   units are converted afterwards as it depends on the type of Job (default unit is px)
+'   getFcsPositions(StgPos() As Vector) As Boolean
+'   fcsPos array where to load fcsPositions and currentPosition: current stagePosition
+'   fcsPos.X, fcsPos.Y: defined 0,0 at upper left corner
+'   fcsPos.Z: defined 0 for bottom slice
+'   currentPosition should refer to center of the image (this depends on size X, Y and Z for specific job)
+'   units are now in pixels. For Fcs these needs to be converted and placed with respect to center of image!
 ''''
-Public Function getFcsPositions(stgPos() As Vector, currentPosition As Vector) As Boolean
+Public Function getFcsPositions(fcsPos() As Vector, currentPosition As Vector) As Boolean
     checkExistKeys
     ' store postion from windows registry in array
     Dim locX()  As String 'the string containinig the X-positions
@@ -581,9 +586,9 @@ Public Function getFcsPositions(stgPos() As Vector, currentPosition As Vector) A
     ' Convert values to Double
     ReDim stgPos(0 To UBound(locX))
     For i = 0 To UBound(locX)
-        stgPos(i).X = CDbl(locX(i))
-        stgPos(i).Y = CDbl(locY(i))
-        stgPos(i).Z = CDbl(locZ(i))
+        fcsPos(i).X = CDbl(locX(i))
+        fcsPos(i).Y = CDbl(locY(i))
+        fcsPos(i).Z = CDbl(locZ(i))
     Next i
     getFcsPositions = True
 End Function
