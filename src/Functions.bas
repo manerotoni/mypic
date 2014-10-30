@@ -4,7 +4,6 @@ Attribute VB_Name = "Functions"
 ''''
 Option Explicit
 
-
 ''' A vector
 Public Type Vector
   X As Double
@@ -17,6 +16,29 @@ Public Type WellPoint
     well As String
 End Type
 
+'simple bubble sort for a small array
+Function BubbleSort(ByRef strArray As Variant) As Variant()
+    'sortieren von String Array
+    'eindimensionale Array
+    'Bubble-Sortier-Verfahren
+    Dim Z       As Long
+    Dim i       As Long
+    Dim strWert As Variant
+      
+     For Z = UBound(strArray) - 1 To LBound(strArray) Step -1
+         For i = LBound(strArray) To Z
+             If LCase(strArray(i)) > LCase(strArray(i + 1)) Then
+                 strWert = strArray(i)
+                 strArray(i) = strArray(i + 1)
+                 strArray(i + 1) = strWert
+             End If
+         Next i
+     Next Z
+     BubbleSort = strArray
+End Function
+
+
+
 
 Public Function ProcessEvents(ByVal EventNr As Long, ByVal ObjName As String, ByVal PropertyNr As Long, ByVal Param As Variant)
     If EventNr = eEventScanEnd Then
@@ -25,6 +47,17 @@ Public Function ProcessEvents(ByVal EventNr As Long, ByVal ObjName As String, By
         Wend
         PipelineConstructor.EventMng.setReady True
     End If
+    
+    If EventNr = eEventScanStart Then
+        PipelineConstructor.EventMng.setBusy True
+    End If
+
+    If EventNr = eEventScanStop Then
+        'this events can be triggered from within a program
+        PipelineConstructor.EventMng.setReady True
+    End If
+    
+    ''This is specific to see if the FCS system is free
     If EventNr = ePropertyEventShutters And Param = 2 Then
         If InStr(ObjName, "FCS") Then
             Dim FcsControl As AimFcsController
@@ -35,13 +68,11 @@ Public Function ProcessEvents(ByVal EventNr As Long, ByVal ObjName As String, By
             PipelineConstructor.EventMng.setReady
         End If
     End If
+        ''This is specific to see if the FCS system is still acquiring
     If EventNr = ePropertyEventShutters And Param = 1 Then
         If InStr(ObjName, "FCS") Then
             PipelineConstructor.EventMng.setBusy 1
         End If
-    End If
-    If EventNr = eEventScanStart Then
-        PipelineConstructor.EventMng.setBusy 0, True
     End If
 End Function
 
@@ -89,7 +120,6 @@ Public Function scaleVector(vec As Vector, alpha As Double) As Vector
     scaleVector.Z = vec.Z * alpha
 End Function
 
-
 Public Function scaleVectorList(vec() As Vector, alpha As Double) As Vector()
     Dim outVec() As Vector
     ReDim outVec(0 To UBound(vec))
@@ -99,6 +129,8 @@ Public Function scaleVectorList(vec() As Vector, alpha As Double) As Vector()
     Next i
     scaleVectorList = outVec
 End Function
+
+
 
 '''
 ' Create a ; separated string of the elements in a vector list
@@ -119,31 +151,13 @@ Public Function VectorList2String(vec() As Vector, Optional Rnd = 2) As String()
     VectorList2String = OutString
 End Function
 
-'''Starts the form
-'Public Sub Autofocus_Setup()
-'    ZenV = getVersionNr
-'    find the version of the software
-'#If (ZENvC >= 2012) Then
-'    If ZenV < 2012 Then
-'        MsgBox "ZENvC Compiler constant is set to 2012 but your ZEN version is below ZEN2012." & vbCrLf & _
-'        "Edit project properties in the VBA editor by right clicking on project name and modify conditional compiler arguments ZENvC to your ZEN version"
-'        Exit Sub
-'    End If
-'#Else
-'    If ZenV >= 2012 Then
-'        MsgBox "ZENvC Compiler constant is not to 2012 or higher but your ZEN version is 2012 or higher." & vbCrLf & _
-'        "Edit project properties in the VBA editor by right clicking on project name and modify conditional compiler arguments ZENvC to your ZEN version"
-'        Exit Sub
-'    End If
-'#End If
-'    AutofocusForm.Show
-'End Sub
+
 
 '''Starts the form
 Public Sub PipelineConstructor_Setup()
     ZenV = getVersionNr
     'find the version of the software
-#If (ZENvC >= 2012) Then
+#If ZENvC >= 2012 Then
     If ZenV < 2012 Then
         MsgBox "ZENvC Compiler constant is set to 2012 but your ZEN version is below ZEN2012." & vbCrLf & _
         "Edit project properties in the VBA editor by right clicking on project name and modify conditional compiler arguments ZENvC to your ZEN version"
@@ -151,7 +165,7 @@ Public Sub PipelineConstructor_Setup()
     End If
 #Else
     If ZenV >= 2012 Then
-        MsgBox "ZENvC Compiler constant is not to 2012 or higher but your ZEN version is 2012 or higher." & vbCrLf & _
+        MsgBox "ZENvC Compiler constant is not set for 2012 or higher but your ZEN version is 2012 or higher." & vbCrLf & _
         "Edit project properties in the VBA editor by right clicking on project name and modify conditional compiler arguments ZENvC to your ZEN version"
         Exit Sub
     End If

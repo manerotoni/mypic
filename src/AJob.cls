@@ -194,7 +194,7 @@ End Function
 Public Sub ReDimAcquireTrack(value As Integer)
     ReDim Preserve pAcquireTrack(value)
 End Sub
-
+ 
 
 Public Function GetRecording() As DsRecording
     Set GetRecording = Recording

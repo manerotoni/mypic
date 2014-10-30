@@ -82,6 +82,9 @@ Public Function UpdateLog(Text As String, Optional Level As Integer = 0)
         If Level = -1 Then
             If SafeOpenTextFile(LogFileName, LogFile, FileSystem) Then
                 LogFile.WriteLine LogFileBuffer
+                LogFile.Close
+            Else
+                Log = False
             End If
         End If
 

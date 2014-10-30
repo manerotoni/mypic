@@ -49,6 +49,7 @@ Public ZEN As Object             'Object containing Zeiss.Micro.AIM.ApplicationI
 
 Public ScanStop As Boolean      'if TRUE current recording is stopped
 Public ScanPause As Boolean     'if TRUE current recording is paused
+Public ScanStopAfterRepetition As Boolean 'if TRUE current measurement is stopped after repetition
 Public Running As Boolean       'TRUE when system is running (e.g. after start)
 Public GlobalDataBaseName As String   'Name of output folder
 Public TrackNumber As Integer    'number of available tracks
@@ -160,6 +161,9 @@ Public Sub SleepWithEvents(WaitTime As Double)
     Dim cycles As Long
     cycles = Round(WaitTime / PauseGrabbing)
     For i = 0 To cycles
+        If ScanStop Then
+            Exit Sub
+        End If
         Sleep (PauseGrabbing)
         DoEvents
     Next i
@@ -193,7 +197,7 @@ RepeatScanToImage:
     AcquisitionController.DestinationImage(0) = treenode 'EngelImageToHechtImage(GlobalSingleImage).Image(0, True)
     AcquisitionController.DestinationImage(1) = Nothing
     Set ProgressFifo = AcquisitionController.DestinationImage(0)
-    Lsm5.tools.CheckLockControllers True
+    Lsm5.Tools.CheckLockControllers True
     
     AcquisitionController.StartGrab eGrabModeSingle
     Time = Timer
@@ -238,25 +242,28 @@ Public Function ScanToFcs(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData,
 On Error GoTo ErrorScanToFcs
     Dim iTry As Integer
     Dim FcsControl As AimFcsController
-    Dim Time As Double
+    Dim TimeToWait As Double
 
     iTry = 1
     'Procedure is completely executed 3 times in case of error. RecordingDoc.IsBusy is less (not at all?) error prone
 RepeatScanToFcs:
     Set FcsControl = Fcs
-    If FcsData Is Nothing Then
+    If FcsData Is Nothing Or FcsControl Is Nothing Then
       Exit Function
     End If
-    FcsControl.StartMeasurement FcsData
-    Time = Timer
-    'this is the minimal time it takes + some extra time for the hardware to switch
     With FcsControl.AcquisitionParameters
         If FcsControl.SamplePositionParameters.PositionListSize = 0 Then
-            SleepWithEvents (.MeasurementTime * .MeasurementRepeat * 1000 + fcsTimeOverhead)
+            TimeToWait = .MeasurementTime * .MeasurementRepeat * 1000 + fcsTimeOverhead
         Else
-            SleepWithEvents (.MeasurementTime * .MeasurementRepeat * FcsControl.SamplePositionParameters.PositionListSize * 1000 + fcsTimeOverhead)
+            TimeToWait = .MeasurementTime * .MeasurementRepeat * FcsControl.SamplePositionParameters.PositionListSize * 1000 + fcsTimeOverhead
         End If
     End With
+    FcsControl.StartMeasurement FcsData
+    
+    SleepWithEvents TimeToWait
+    
+    'this is the minimal time it takes + some extra time for the hardware to switch
+
     'check if for sure we are finished
     While FcsControl.IsAcquisitionRunning(1)
         SleepWithEvents (PauseGrabbing)
@@ -395,10 +402,10 @@ ErrorHandle:
 End Function
 
 
-
-''''
-'   Create a new FCSData record
-''''
+'
+'''''
+''   Create a new FCSData record
+'''''
 Public Function NewFcsRecord(RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, Name As String, Optional ForceCreation As Boolean = False) As Boolean
     Dim MaxDataSets As Integer
     Dim i As Integer
@@ -413,7 +420,7 @@ Public Function NewFcsRecord(RecordingDoc As DsRecordingDoc, FcsData As AimFcsDa
         Set Node = Lsm5.NewDocument
         Node.Type = eExperimentTeeeNodeTypeConfoCor
         Set FcsData = Node.FcsData
-        Set FcsData = New AimFcsData
+        'also Set FcsData = Lsm5.CreateObject("AimFcsData.FcsData") and Node.FcsData = FcsData
         FcsData.Name = Name
         Set RecordingDoc = Lsm5.DsRecordingActiveDocObject
         While RecordingDoc.IsBusy
@@ -428,6 +435,7 @@ Public Function NewFcsRecord(RecordingDoc As DsRecordingDoc, FcsData As AimFcsDa
 ErrorHandle:
     LogManager.UpdateErrorLog "Error in NewFcsRecord " & Name & " " & Err.Description
 End Function
+
 
 '''
 ' Remove all existing Data from FcsData. This is recquired if you want only to save new data
@@ -505,21 +513,20 @@ End Function
 ''''
 ' SaveFcsMeasurment to File
 ''''
-Public Function SaveFcsMeasurement(FcsData As AimFcsData, fileName As String) As Boolean
-    
+Public Function SaveFcsMeasurement(FcsData As AimFcsData, FcsDsDoc As DsRecordingDoc, fileName As String) As Boolean
+    Dim writer As AimFcsFileWrite
+    Set writer = Lsm5.CreateObject("AimFcsFile.Write")
     If FcsData Is Nothing Then
         MsgBox "No Fcs Recording to Save"
         Exit Function
     End If
     ' Write to file
-    Dim writer As AimFcsFileWrite
-    Set writer = Lsm5.CreateObject("AimFcsFile.Write")
     writer.fileName = fileName
     writer.FileWriteType = eFcsFileWriteTypeAll
     writer.format = eFcsFileFormatConfoCor3WithRawData
     writer.Source = FcsData
     writer.Run
-    Sleep (1000)
+    SleepWithEvents (1000)
     'write twice to be sure
     If Not writer.DestinationFilesExist(fileName) Then
         writer.fileName = fileName
@@ -527,13 +534,14 @@ Public Function SaveFcsMeasurement(FcsData As AimFcsData, fileName As String) As
         writer.format = eFcsFileFormatConfoCor3WithRawData
         writer.Source = FcsData
         writer.Run
-    Else
-        
     End If
+    While FcsDsDoc.IsBusy
+        SleepWithEvents (200)
+    Wend
     SaveFcsMeasurement = True
 End Function
 
-Public Sub SaveFcsPositionList(sFile As String, positionsPx() As Vector)
+Public Sub SaveFcsPositionList(sFile As String, positionsPx() As Vector, imageName As String)
     On Error GoTo ErrorHandle
     Close
     Dim iFileNum As Integer
@@ -542,18 +550,37 @@ Public Sub SaveFcsPositionList(sFile As String, positionsPx() As Vector)
     Dim PosY As Double
     Dim PosZ As Double
     iFileNum = FreeFile()
-    Open sFile For Output As iFileNum
-    Print #iFileNum, "%X Y Z (um): ZEN Fcs position convention 0, 0  is center of image, Z is absolute coordinate"
+    Open sFile & ".txt" For Output As iFileNum
+    Print #iFileNum, "%X Y Z (meter): ZEN Fcs position convention 0, 0  is center of image, Z is absolute coordinate"
     For i = 0 To GetFcsPositionListLength - 1
         getFcsPosition PosX, PosY, PosZ, i
-        Print #iFileNum, Round(PosX * 1000000, PrecXY) & " " & Round(PosY * 1000000, PrecXY) & " " & Round(PosZ * 1000000, PrecXY)
+        Print #iFileNum, PosX & " " & PosY & " " & PosZ
     Next i
     On Error GoTo ErrorHandle2:
     Print #iFileNum, "%X Y Z (px). Imaging convention 0,0,0 is upper left corner bottom slice"
     For i = 0 To UBound(positionsPx)
         Print #iFileNum, positionsPx(i).X & " " & positionsPx(i).Y & " " & positionsPx(i).Z
     Next i
-
+    Close
+    'create also an xml file (test)
+    iFileNum = FreeFile()
+    Open sFile & ".xml" For Output As iFileNum
+    Print #iFileNum, "<?xml  version=" & VBA.Chr(34) & "1.0" & VBA.Chr(34) & "?>" & vbCrLf & "<xml>"
+    Print #iFileNum, "<Image Name=" & VBA.Chr(34) & imageName & VBA.Chr(34) & "></Image>"
+    For i = 0 To GetFcsPositionListLength - 1
+        getFcsPosition PosX, PosY, PosZ, i
+        Print #iFileNum, "<object ID= " & VBA.Chr(34) & i + 1 & VBA.Chr(34) & ">"
+        Print #iFileNum, vbTab & "<class>none</class>"
+        Print #iFileNum, vbTab & "<x>" & positionsPx(i).X & "</x>"
+        Print #iFileNum, vbTab & "<y>" & positionsPx(i).Y & "</y>"
+        Print #iFileNum, vbTab & "<z>" & positionsPx(i).Z & "</z>"
+        Print #iFileNum, vbTab & "<xm>" & PosX & "</xm>"
+        Print #iFileNum, vbTab & "<ym>" & PosY & "</ym>"
+        Print #iFileNum, vbTab & "<zm>" & PosZ & "</zm>"
+        Print #iFileNum, "</object>"
+    Next i
+    Print #iFileNum, "</xml>"
+    
     Close
     Exit Sub
 ErrorHandle:
@@ -733,6 +760,11 @@ Public Function MoveToNextLocation(Optional Mark As Integer = 0) As Boolean
         MoveToNextLocation = True
 End Function
 
+Public Function getCurrentPosition() As Vector
+    getCurrentPosition.X = Lsm5.Hardware.CpStages.PositionX
+    getCurrentPosition.Y = Lsm5.Hardware.CpStages.PositionY
+    getCurrentPosition.Z = Lsm5.Hardware.CpFocus.position
+End Function
 
 '---------------------------------------------------------------------------------------
 ' Procedure : getMarkedStagePosition

@@ -96,6 +96,24 @@ Public Declare Function GetDiskFreeSpace Lib "kernel32" Alias "GetDiskFreeSpaceA
 lpNumberOfFreeClusters As Long, lpTotalNumberOfClusters As Long) As Long
 
 Public Declare Function GetTickCount Lib "kernel32" () As Long
+Public Declare Function FindWindow _
+    Lib "user32" Alias "FindWindowA" _
+  (ByVal lpClassName As String, _
+    ByVal lpWindowName As String) As Long
 
+Public Declare Function ExtractIcon _
+    Lib "shell32.dll" Alias "ExtractIconA" _
+  (ByVal hInst As Long, _
+    ByVal lpszExeFileName As String, _
+    ByVal nIconIndex As Long) As Long
+
+Public Declare Function SendMessage _
+    Lib "user32" Alias "SendMessageA" _
+ (ByVal hWnd As Long, _
+    ByVal wMsg As Long, _
+    ByVal wParam As Integer, _
+    ByVal lParam As Long) As Long
+
+Public Const WM_SETICON = &H80
 
 

@@ -25,12 +25,19 @@ Private Lett() As Variant
 Public Version As String
 
 
+Private Sub CreditButton_Click()
+    CreditForm.Show
+End Sub
+
+
+
+
 Private Sub PauseExpButton_Click()
     If Not Pipelines(0).Grid.isRunning Then
         ScanPause = False
         PauseExpButton.value = False
         PauseExpButton.Caption = ""
-        PauseExpButton.BackColor = &H8000000F
+        PauseExpButton.BackColor = &HE0E0E0
     Else
         If PauseExpButton.value Then
             ScanPause = True
@@ -39,13 +46,35 @@ Private Sub PauseExpButton_Click()
         Else
             ScanPause = False
             PauseExpButton.Caption = ""
-            PauseExpButton.BackColor = &H8000000F
+            PauseExpButton.BackColor = &HE0E0E0
         End If
+    End If
+End Sub
+
+
+
+Private Sub StopAfterRepButton_Click()
+    If StopAfterRepButton = True Then
+        If Running Then
+            ScanStopAfterRepetition = True
+            StopAfterRepButton.BackColor = 12648447
+        Else
+            ScanStopAfterRepetition = False
+            StopAfterRepButton.BackColor = &HE0E0E0
+            StopAfterRepButton = False
+        End If
+    Else
+        ScanStopAfterRepetition = False
+        StopAfterRepButton.BackColor = &HE0E0E0
     End If
 End Sub
 
 Public Sub UserForm_Initialize()
     Dim i As Integer
+    Dim strIconPath As String
+    Dim lngIcon As Long
+    Dim lnghWnd As Long
+
     'Contains name of the Grids two letter code
     Dim GridNames(2) As String
     GridNames(0) = "DE"
@@ -72,9 +101,18 @@ errorMsg:
 NoError:
     End If
     
-    Version = "v0.2"
+    Version = "v0.3"
     Me.Caption = Me.Caption + " " + Version
+    strIconPath = Application.ProjectFilePath & "\resources\micronaut_mc.ico"
+    ' Get the icon from the source
+    lngIcon = ExtractIcon(0, strIconPath, 0)
+    ' Get the window handle of the userform
+    lnghWnd = FindWindow("ThunderDFrame", Me.Caption)
+    'Set the big (32x32) and small (16x16) icons
+    SendMessage lnghWnd, WM_SETICON, True, lngIcon
+    SendMessage lnghWnd, WM_SETICON, False, lngIcon
     FormatUserForm Me.Caption
+    
     Set EventMng = New EventAdmin
     EventMng.initialize
         
@@ -137,6 +175,7 @@ NoError:
     Me.Width = 430
     
     Load JobSetter
+    Load PumpForm
 End Sub
 
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
@@ -144,6 +183,7 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
     exitPipCon = MsgBox("Exit PipelineConstructor?", VbOKCancel + VbQuestion, "PipCon exit")
     If exitPipCon = vbOK Then
         Unload JobSetter
+        Unload PumpForm
     Else
         Cancel = True
     End If
@@ -180,7 +220,7 @@ Private Sub GridScanPositionFileButton_Click()
     If Not locGrid.loadPositionGridFile(fileName) Then
         Exit Sub
     End If
-    
+
     GridScanPositionFile = fileName
     UpdatePositionsListFromGrid locGrid
 End Sub
@@ -197,7 +237,8 @@ Private Sub UpdatePositionsListFromGrid(locGrid As AGrid)
     Do ''Cycle all positions defined in grid
         If locGrid.getThisValid Then
             index = index + 1
-            AddPosition WellID.value, locGrid.getThisX, locGrid.getThisY, locGrid.getThisZ
+            
+            AddPosition WellID.value, locGrid.getThisPosition
         End If
     Loop While (locGrid.nextGridPt(False) And index < 100)
 End Sub
@@ -302,10 +343,15 @@ End Sub
 
 
 
-
+Private Sub StartPumpExpButton_Click()
+    PumpForm.Show
+End Sub
 
 Private Sub StartExpButton_Click()
+    Pump = False
     'Do some check for consistency
+    DoEvents
+     'Now we're starting. This will be set to false if the stop button is pressed or if we reached the total number of repetitions.
     StartSetting
 End Sub
 
@@ -314,7 +360,7 @@ End Sub
 '   Setups and controls before start of experiment
 '       Create list of positions for Grid or Multiposition
 ''''''
-Private Function StartSetting() As Boolean
+Public Function StartSetting() As Boolean
     Dim i As Integer
     Dim initPos As Boolean   'if False and gridsize correspond positions are taken from file positionsGrid.csv
     Dim SuccessRecenter As Boolean
@@ -322,7 +368,8 @@ Private Function StartSetting() As Boolean
     Dim gridDim() As Long
     Dim pos() As Vector
     Dim posCurr As Vector   'current position
-    ScanStop = False
+    Running = True
+    resetStopFlags
     StageSettings MirrorX, MirrorY, ExchangeXY
     If Not GlobalRecordingDoc Is Nothing Then
         GlobalRecordingDoc.BringToTop
@@ -335,16 +382,16 @@ Private Function StartSetting() As Boolean
     Set FileSystem = New FileSystemObject
     If Pipelines(0).count = 0 Then
         MsgBox ("Nothing to do! Add at least one task to Default pipeline!")
-        Exit Function
+        GoTo ExitStart
     End If
     ''Create and check directory for output and log files
     SetDatabase
     If GlobalDataBaseName = "" Then
         MsgBox ("No outputfolder selected ! Cannot start acquisition.")
-        Exit Function
+        GoTo ExitStart
     Else
         If Not CheckDir(GlobalDataBaseName) Then
-            Exit Function
+            GoTo ExitStart
         End If
         'initialize logFiles
         If LogFileNameBase <> "" Then
@@ -387,11 +434,19 @@ Private Function StartSetting() As Boolean
     Pipelines(0).Grid.writePositionGridFile GlobalDataBaseName & "PipelineConstructor.pos"
     Pipelines(0).Grid.setAllParentPath GlobalDataBaseName
     SaveFormSettings GlobalDataBaseName & "PipelineConstructor.ini"
+'    If Pump Then
+'        waitForPump 1, 1, 1 * 60, 0.1, 0.1, 1, 10
+'    End If
+    If Pump Then
+        lastTimePump = CDbl(GetTickCount) * 0.001
+    End If
     StartPipeline 0, GlobalRecordingDoc, GlobalFcsRecordingDoc, GlobalFcsData, GlobalDataBaseName
 ExitStart:
     LogManager.UpdateLog "End of Global pipeline", -1
+    resetStopFlags
+    Running = False
     DisplayProgress PipelineConstructor.ProgressLabel, "Ready", RGB(&HC0, &HC0, 0)
-
+    Exit Function
 
 End Function
 
@@ -399,9 +454,7 @@ End Function
 Function setGridFromPositionChoice(locGrid As AGrid) As Boolean
     Dim posCurr As Vector
     Dim i As Integer
-    posCurr.X = Lsm5.Hardware.CpStages.PositionX
-    posCurr.Y = Lsm5.Hardware.CpStages.PositionX
-    posCurr.Z = Lsm5.Hardware.CpFocus.position
+    posCurr = getCurrentPosition
     If PositionButton1 Then
         locGrid.initialize 1, 1, 1, 1
         locGrid.setPt posCurr, True, 1, 1, 1, 1
@@ -473,7 +526,7 @@ End Function
 Private Sub AcquirePipelineButton_Click()
     Dim stgPos As Vector
     Dim RepNum As Long
-    ScanStop = False
+    resetStopFlags
     If Pipelines(currPipeline).count > 0 Then
         If Not GlobalRecordingDoc Is Nothing Then
             GlobalRecordingDoc.BringToTop
@@ -608,18 +661,19 @@ Private Sub PositionButton5_Click()
 End Sub
 
 Private Sub AddPositionButton_Click()
-    AddPosition WellID.value, Lsm5.Hardware.CpStages.PositionX, _
-    Lsm5.Hardware.CpStages.PositionY, Lsm5.Hardware.CpFocus.position
+    Dim posVec As Vector
+    posVec = getCurrentPosition
+    AddPosition WellID.value, posVec
 End Sub
 
-Private Sub AddPosition(ID As String, X As Double, Y As Double, Z As Double)
+Private Sub AddPosition(ID As String, pos As Vector)
     With PositionsList
         .AddItem
         .List(.ListCount - 1, 0) = .ListCount
         .List(.ListCount - 1, 1) = WellID.value
-        .List(.ListCount - 1, 2) = X
-        .List(.ListCount - 1, 3) = Y
-        .List(.ListCount - 1, 4) = Z
+        .List(.ListCount - 1, 2) = pos.X
+        .List(.ListCount - 1, 3) = pos.Y
+        .List(.ListCount - 1, 4) = pos.Z
         .ListIndex = .ListCount - 1
     End With
 End Sub
@@ -634,12 +688,14 @@ Private Sub MoveToPositionButton_Click()
 End Sub
 
 Private Sub UpdatePositionButton_Click()
+    Dim posVec As Vector
+    posVec = getCurrentPosition
     With PositionsList
         If .ListIndex > -1 Then
             .List(.ListIndex, 1) = WellID.value
-            .List(.ListIndex, 2) = Lsm5.Hardware.CpStages.PositionX
-            .List(.ListIndex, 3) = Lsm5.Hardware.CpStages.PositionY
-            .List(.ListIndex, 4) = Lsm5.Hardware.CpFocus.position
+            .List(.ListIndex, 2) = posVec.X
+            .List(.ListIndex, 3) = posVec.Y
+            .List(.ListIndex, 4) = posVec.Z
         End If
     End With
 End Sub
@@ -834,9 +890,10 @@ Private Sub CurrentPipelineList_Click()
     enableFrame FrameTaskOptions, True
     enableFrame FramePipelineRepetitions, True
     enableFrame FramePipelineTrigger, True
+    CurrentPipelineList.SetFocus
     UpdateFocusEnabled
-    
 End Sub
+
 
 
 
@@ -900,7 +957,7 @@ Private Sub JobChoiceList_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
         Pipelines(currPipeline).addTask tmpTask
         If Pipelines(currPipeline).count = 1 Then
             Pipelines(currPipeline).Repetition.number = CInt(RepetitionNumber.value)
-            RepetitionTimeUpdate (index)
+            RepetitionTimeUpdate currPipeline
             Pipelines(currPipeline).maxWait = CDbl(maxWait.value)
             Pipelines(currPipeline).optPtNumber = CInt(optPtNumber.value)
         End If
@@ -916,6 +973,7 @@ Private Sub JobChoiceList_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
         enableFrame FrameTaskOptions, True
     End If
     FrameTaskOptions.Visible = True
+    CurrentPipelineList.ListIndex = CurrentPipelineList.ListCount - 1
 End Sub
 
 
@@ -1287,9 +1345,9 @@ Private Sub getZOffset()
 End Sub
 
 
-
-
-
+''''
+' this does not get all the changes
+''''
 Private Sub ZOffset_Change()
     Dim index As Integer
     index = CurrentPipelineList.ListIndex
@@ -1300,15 +1358,7 @@ End Sub
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 
-Private Sub EventMng_Ready()
-    MicStatus.Caption = "READY"
-    MicStatus.ForeColor = "&H00008000"
-End Sub
 
-Private Sub EventMng_Busy(Task As Integer)
-    MicStatus.Caption = "BUSY"
-    MicStatus.ForeColor = "&H00000080"
-End Sub
 
 
 
@@ -1417,28 +1467,6 @@ End Sub
 
 
 
-Public Sub AddJob(JobsV() As AJob, Name As String, Recording As DsRecording, ZEN As Object)
-    If isArrayEmpty(JobsV) Then
-        ReDim JobsV(0)
-    Else
-        ReDim Preserve JobsV(0 To UBound(JobsV) + 1)
-    End If
-    Set JobsV(UBound(JobsV)) = New AJob
-    JobsV(UBound(JobsV)).Name = Name
-    JobsV(UBound(JobsV)).SetJob Lsm5.DsRecording, ZEN
-End Sub
-
-
-Public Sub AddFcsJob(JobsV() As AFcsJob, Name As String, ZEN As Object)
-    If isArrayEmpty(JobsV) Then
-        ReDim JobsV(0)
-    Else
-        ReDim Preserve JobsV(0 To UBound(JobsV) + 1)
-    End If
-    Set JobsV(UBound(JobsV)) = New AFcsJob
-    JobsV(UBound(JobsV)).Name = Name
-    JobsV(UBound(JobsV)).SetJob ZEN, ZenV
-End Sub
 
 
 
@@ -1599,3 +1627,5 @@ Public Sub LoadFormSettings(fileName As String)
 ErrorHandle:
     MsgBox "Not able to read " & fileName & " for AutofocusScreen settings"
 End Sub
+
+

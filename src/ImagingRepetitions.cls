@@ -32,18 +32,18 @@ End Function
 '''
 '   Initialize a series of RepetitionJobs with given name
 '''
-Public Sub initialize(Names() As String, RepetitionTimes() As Double, RepetitionNumbers() As Integer, RepetitionIntervals() As Boolean)
+Public Sub initialize(names() As String, RepetitionTimes() As Double, RepetitionNumbers() As Integer, RepetitionIntervals() As Boolean)
 
     Dim Name As Variant
     Dim i As Integer
     Dim MaxNames As Integer
         
-    If isArrayEmpty(Names) Then
+    If isArrayEmpty(names) Then
         MsgBox "initialize ImagingRepetitions class: provide a non-empty array"
         Exit Sub
     End If
     Set Repetitions = New Collection
-    MaxNames = UBound(Names)
+    MaxNames = UBound(names)
     If UBound(RepetitionTimes) <> MaxNames Or UBound(RepetitionNumbers) <> MaxNames Or _
         UBound(RepetitionIntervals) <> MaxNames Then
         MsgBox "initialize ImagingRepetitions class: all arrays should have the same length"
@@ -51,7 +51,7 @@ Public Sub initialize(Names() As String, RepetitionTimes() As Double, Repetition
     End If
     
     For i = 0 To MaxNames
-        AddRepetition Names(i), RepetitionTimes(i), RepetitionNumbers(i), RepetitionIntervals(i)
+        AddRepetition names(i), RepetitionTimes(i), RepetitionNumbers(i), RepetitionIntervals(i)
     Next i
 
 End Sub

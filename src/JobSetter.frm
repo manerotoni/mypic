@@ -1,7 +1,7 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} JobSetter 
    Caption         =   "JobSetter"
-   ClientHeight    =   6180
+   ClientHeight    =   6390
    ClientLeft      =   45
    ClientTop       =   375
    ClientWidth     =   7260
@@ -19,7 +19,31 @@ Option Explicit
 Public WithEvents EventMng As EventAdmin
 Attribute EventMng.VB_VarHelpID = -1
 
+
+
+Private Sub EventMng_Ready()
+    setStatus True
+End Sub
+
+
+Private Sub EventMng_Busy()
+    setStatus False
+End Sub
+
+Private Sub FcsJobList_Click()
+    Dim index As Integer
+    index = FcsJobList.ListIndex
+    If index = -1 Then
+        Exit Sub
+    End If
+    On Error Resume Next
+    setFcsLabels index
+End Sub
+
 Public Sub UserForm_Initialize()
+    Dim strIconPath As String
+    Dim lngIcon As Long
+    Dim lnghWnd As Long
     ZenV = getVersionNr
     'find the version of the software
     If ZenV > 2010 Then
@@ -46,6 +70,16 @@ NoError:
     TrackVisible False
     UpdateImgListbox ImgJobList, ImgJobs
     UpdateFcsListbox FcsJobList, FcsJobs
+    Set EventMng = New EventAdmin
+    EventMng.initialize
+    strIconPath = Application.ProjectFilePath & "\resources\micronaut_mc.ico"
+    ' Get the icon from the source
+    lngIcon = ExtractIcon(0, strIconPath, 0)
+    ' Get the window handle of the userform
+    lnghWnd = FindWindow("ThunderDFrame", Me.Caption)
+    'Set the big (32x32) and small (16x16) icons
+    SendMessage lnghWnd, WM_SETICON, True, lngIcon
+    SendMessage lnghWnd, WM_SETICON, False, lngIcon
     FormatUserForm Me.Caption
       
 End Sub
@@ -55,7 +89,6 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
         JobSetter.Hide
         Cancel = True
     End If
-
 End Sub
 
 
@@ -65,11 +98,10 @@ End Sub
 
 Private Sub AcquireFcsJobButton_Click()
     Dim index As Integer
-    Dim newPosition() As Vector
-    Dim currentPosition As Vector
+    Dim newPosition(0) As Vector
+
 On Error GoTo AcquireFcsJobButton_Click_Error
-    ReDim newPosition(0) ' position where FCS will be done
-    ScanStop = False
+    resetStopFlags
     index = FcsJobList.ListIndex
     If index = -1 Then
         MsgBox "FcsJob list is empty", VbExclamation, "JobSetter Warning"
@@ -80,18 +112,23 @@ On Error GoTo AcquireFcsJobButton_Click_Error
     newPosition(0).X = 0
     newPosition(0).Y = 0
     newPosition(0).Z = Lsm5.Hardware.CpFocus.position * 0.000001 'convert from um to meter
-    'eventually force creation of FcsRecord
+    NewFcsRecordGui GlobalFcsRecordingDoc, GlobalFcsData, FcsJobs(index).Name, ZEN, ZenV
     If Not GlobalFcsRecordingDoc Is Nothing Then
         GlobalFcsRecordingDoc.BringToTop
     End If
-    'this brings record to top
-    NewFcsRecordGui GlobalFcsRecordingDoc, GlobalFcsData, FcsJobs(index).Name, ZEN, ZenV
     currentFcsJob = -1
-    FcsJobs(index).PutJob ZEN, ZenV
     Running = True
-    Application.ThrowEvent eEventScanStart, 1
-    ScanToFcs GlobalFcsRecordingDoc, GlobalFcsData
+    EventMng.setBusy
+    Application.ThrowEvent tag_Events.eEventScanStart, 0 'notify that acquisition is started
+
+    If Not CleanFcsData(GlobalFcsRecordingDoc, GlobalFcsData) Then
+        Exit Sub
+    End If
+    AcquireFcsJob index, FcsJobs(index), GlobalFcsRecordingDoc, GlobalFcsData, FcsJobs(index).Name, newPosition
+    Application.ThrowEvent tag_Events.eEventScanStop, 0 'notify that acquisition is started
+    EventMng.setReady
     Running = False
+
    On Error GoTo 0
    Exit Sub
 
@@ -105,14 +142,16 @@ End Sub
 Private Sub AcquireImgJobButton_Click()
     Dim index As Integer
     
-    ScanStop = False
+    resetStopFlags
     index = ImgJobList.ListIndex
     If index = -1 Then
         MsgBox "List is empty or no imaging job are highlighted", VbExclamation, "JobSetter Warning"
         Exit Sub
     End If
     Running = True
+    EventMng.setBusy
     AcquireImgJob (index)
+    EventMng.setReady
     Running = False
 End Sub
 
@@ -133,12 +172,9 @@ On Error GoTo AcquireJobIndex_Error
             ZEN.GUI.Acquisition.Regions.Delete.Execute
         End If
     End If
-    'get current position
-    Lsm5.Hardware.CpStages.GetXYPosition position.X, position.Y
-    position.Z = Lsm5.Hardware.CpFocus.position
     'start acquisition
     currentImgJob = -1
-    AcquireJob index, ImgJobs(index), GlobalRecordingDoc, ImgJobs(index).Name, position
+    AcquireJob index, ImgJobs(index), GlobalRecordingDoc, ImgJobs(index).Name, getCurrentPosition
    On Error GoTo 0
    Exit Sub
    
@@ -169,6 +205,24 @@ Private Sub ChangeImgJobName_Click()
     ImgJobList.Selected(index) = True
 End Sub
 
+
+Private Sub ChangeFcsJobName_Click()
+    Dim index As Integer
+    Dim Name As String
+    index = FcsJobList.ListIndex
+    If index = -1 Then
+        Exit Sub
+    End If
+    'imgJobs(index).Name =
+    
+    Name = InputBox("Update name of current job", "JobSetter: Update Name", FcsJobList.List(index))
+    If Name = "" Or Not UniqueListName(FcsJobList, Name) Then
+        Exit Sub
+    End If
+    FcsJobs(index).Name = Name
+    UpdateFcsListbox FcsJobList, FcsJobs
+    FcsJobList.Selected(index) = True
+End Sub
 
 Private Sub ImgJobList_Click()
     Dim index As Integer
@@ -213,7 +267,7 @@ Private Sub AddImgJobFromFileButton_Click()
     End If
     
     fileNames = Split(fileName, Chr$(0))
-    setStatus False
+    EventMng.setBusy
     If UBound(fileNames) = 0 Then
         AddImgJobFromFile fileNames(0)
         WorkingDir = fso.GetParentFolderName(fileNames(0)) & "\"
@@ -224,7 +278,7 @@ Private Sub AddImgJobFromFileButton_Click()
         Next index
         WorkingDir = fileNames(0) & "\"
     End If
-    setStatus True
+    EventMng.setReady
 End Sub
 
 
@@ -308,10 +362,13 @@ Private Sub SaveButton_Click()
 End Sub
 
 Private Sub StopButton_Click()
+    ScanStop = True
     StopAcquisition
+    
 End Sub
 
 Private Sub StopFcsButton_Click()
+    ScanStop = True
     StopAcquisition
 End Sub
 
@@ -423,23 +480,43 @@ End Sub
 
 Private Sub AddFcsJobButton_Click()
     Dim i As Integer
+    Dim index As Integer
+    Dim Name As String
     Dim OpenForms() As Boolean
-    Dim ListEntry As Variant
+    Name = InputBox("Name of job to be created from current ZEN settings", "JobSetter: Define FcsJob name")
+    'Cancel pressed
+    If StrPtr(Name) = 0 Then Exit Sub
 
-    If FcsJobName = "" Then
-        MsgBox "You need to specify a name for the fcs job"
-        Exit Sub
-    End If
-    If Not UniqueListName(FcsJobList, FcsJobName) Or Not UniqueListName(ImgJobList, FcsJobName) Then
-        MsgBox "Name of fcs job must be unique"
+    If Name = "" Or Not UniqueListName(ImgJobList, CStr(Name)) Or Not UniqueListName(FcsJobList, CStr(Name)) Then
+        MsgBox "You need to define an unique name for the imaging job!", VbExclamation, "JobSetter Warning"
         Exit Sub
     End If
     OpenForms = HideShowForms(OpenForms)
-    FcsJobList.AddItem FcsJobName.value
+    FcsJobList.AddItem CStr(Name)
     FcsJobList.Selected(FcsJobList.ListCount - 1) = True
     AddFcsJob FcsJobs, FcsJobList.List(FcsJobList.ListCount - 1), ZEN
     setFcsLabels FcsJobList.ListCount - 1
     HideShowForms OpenForms
+'    ImgJobList.AddItem CStr(Name)
+'    ImgJobList.Selected(ImgJobList.ListCount - 1) = True
+'    AddJob ImgJobs, ImgJobList.List(ImgJobList.ListCount - 1), Lsm5.DsRecording, ZEN
+'    setLabels ImgJobList.ListCount - 1
+'    setTrackNames ImgJobList.ListCount - 1
+'
+'
+'    Dim i As Integer
+'
+'    Dim ListEntry As Variant
+'
+'    If FcsJobName = "" Then
+'        MsgBox "You need to specify a name for the fcs job"
+'        Exit Sub
+'    End If
+'    If Not UniqueListName(FcsJobList, FcsJobName) Or Not UniqueListName(ImgJobList, FcsJobName) Then
+'        MsgBox "Name of fcs job must be unique"
+'        Exit Sub
+'    End If
+
     'PipelineConstructor.UpdateFcsJobList
 End Sub
 
@@ -499,13 +576,11 @@ Private Sub AddJobButton_Click()
         MsgBox "You need to define an unique name for the imaging job!", VbExclamation, "JobSetter Warning"
         Exit Sub
     End If
-    setStatus False
     ImgJobList.AddItem CStr(Name)
     ImgJobList.Selected(ImgJobList.ListCount - 1) = True
     AddJob ImgJobs, ImgJobList.List(ImgJobList.ListCount - 1), Lsm5.DsRecording, ZEN
     setLabels ImgJobList.ListCount - 1
     setTrackNames ImgJobList.ListCount - 1
-    setStatus True
 End Sub
 
 Private Sub setTrackNames(index As Integer)
@@ -642,7 +717,6 @@ Private Sub DeleteFcsJobButton_Click()
         DeleteFcsJob FcsJobs, index, FcsJobList.List(index)
         FcsJobList.RemoveItem index
     End If
-    'PipelineConstructor.UpdateFcsJobList
 End Sub
 
 Private Sub DeleteFcsJob(JobsV() As AFcsJob, index As Integer, Optional Name As String = "")

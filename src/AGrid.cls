@@ -26,7 +26,8 @@ Private Type GridPoint
     ParentPath As String 'Absolute path to store the object
     Name As String    'this should be used as prefix for the name, e.g. siRNA name
     stgPos As Vector  'this is a stage position
-    fcsPos() As Vector ' this are px, and Z (in m) with respect to curreny stgPos
+    fcsPos() As Vector 'this are aboslute position where to take measurments in meter. X, Y is with respect to center of image (current pos) Z (in m) absolute position
+    fcsPosPx() As Vector ' this are px positions using the usual convention 0,0,0 is upper left and bottom of image stack
     valid As Boolean
 End Type
 
@@ -381,26 +382,61 @@ Public Sub setThisZ(value As Double)
     GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).stgPos.Z = value
 End Sub
 
-Public Sub setThisFcsPosition(pos() As Vector)
+Public Sub setThisFcsPositions(pos() As Vector)
     GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).fcsPos = pos
 End Sub
 
-Public Function getThisFcsPosition() As Vector()
-    getThisFcsPosition = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).fcsPos
+Public Sub setThisFcsPositionsPx(pos() As Vector)
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).fcsPosPx = pos
+End Sub
+
+Public Function getThisFcsPositions() As Vector()
+    getThisFcsPositions = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).fcsPos
 End Function
 
-Public Sub setFcsPosition(pos() As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
+Public Function getThisFcsPositionsPx() As Vector()
+    getThisFcsPositionsPx = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).fcsPosPx
+End Function
+
+Public Sub setThisFcsPositionsZOffset(ZOffset As Double)
+    'ZOffset in meters
+    Dim i As Integer
+    Dim pos() As Vector
+    If Not isPosArrayEmpty(GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).fcsPos) Then
+        pos = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).fcsPos
+        For i = 0 To UBound(pos)
+            pos(i).Z = pos(i).Z + ZOffset
+        Next i
+        GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).fcsPos = pos
+    End If
+End Sub
+
+Public Sub setFcsPositions(pos() As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If correctIndeces(Row, Col, RowSub, ColSub) Then
         GridArray(Row, Col, RowSub, ColSub).fcsPos = pos
     End If
 End Sub
 
-Public Function getFcsPosition(Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Vector()
+Public Function getFcsPositions(Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Vector()
     If correctIndeces(Row, Col, RowSub, ColSub) Then
-        getFcsPosition = GridArray(Row, Col, RowSub, ColSub).fcsPos
+        getFcsPositions = GridArray(Row, Col, RowSub, ColSub).fcsPos
     End If
 End Function
 
+
+Public Sub setFcsPositionsZOffset(ZOffset As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
+    Dim i As Integer
+    Dim pos() As Vector
+    If correctIndeces(Row, Col, RowSub, ColSub) Then
+        If Not isPosArrayEmpty(GridArray(Row, Col, RowSub, ColSub).fcsPos) Then
+            pos = GridArray(Row, Col, RowSub, ColSub).fcsPos
+            For i = 0 To UBound(pos)
+                pos(i).Z = pos(i).Z + ZOffset
+            Next i
+            GridArray(Row, Col, RowSub, ColSub).fcsPos = pos
+        End If
+    End If
+End Sub
 
 Public Sub setThisValid(value As Boolean)
     GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).valid = value
