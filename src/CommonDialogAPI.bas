@@ -140,8 +140,6 @@ End Function
 '''''''''
 'Minimize button for Macro window
 ''''''
-
-
 Sub FormatUserForm(UserFormCaption As String)
      
     Dim hWnd            As Long

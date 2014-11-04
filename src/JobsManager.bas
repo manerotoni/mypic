@@ -9,7 +9,7 @@ Attribute VB_Name = "JobsManager"
 
 Option Explicit
 Public Type Task
-    analyse As Integer
+    Analyse As Integer
     jobType As Integer
     jobNr As Integer
     Period As Long
@@ -26,12 +26,28 @@ Public Const LogLevel = 0
 
 'name of the repetitions
 Public RepNames() As String
+Public Enum jobTypes
+    imgjob = 0
+    fcsjob = 1
+    gotoPip = 2
+End Enum
 
-Public Const NoAnalyse As Integer = 0
-Public Const AnalyseCenterOfMassThr As Integer = 1
-Public Const AnalysePeak As Integer = 2
-Public Const AnalyseCenterOfMass As Integer = 3
-Public Const AnalyseOnline As Integer = 4
+
+
+Public Enum AnalyseImage
+    No = 0
+    CenterOfMassThr = 1
+    Peak = 2
+    CenterOfMass = 3
+    Online = 4
+    FcsLoop = 5 'debug mode to automatically start an fcs measurment after an image
+End Enum
+'Public Const NoAnalyse As Integer = 0
+'Public Const AnalyseCenterOfMassThr As Integer = 1
+'Public Const AnalysePeak As Integer = 2
+'Public Const AnalyseCenterOfMass As Integer = 3
+'Public Const AnalyseOnline As Integer = 4
+'Public Const AnalyseFcsLoop As Integer = 5
 Public FocusMethods As Dictionary
 
 
@@ -90,7 +106,7 @@ End Function
 Public Function TaskToArray(tsk As Task) As Variant()
     Dim arr(8) As Variant
     With tsk
-        arr(0) = .analyse
+        arr(0) = .Analyse
         arr(1) = .jobNr
         arr(2) = .jobType
         arr(3) = .Period
@@ -106,7 +122,7 @@ End Function
 Public Function ArrayToTask(arr() As Variant) As Task
     Dim tsk As Task
     With tsk
-        .analyse = arr(0)
+        .Analyse = arr(0)
         .jobNr = arr(1)
         .jobType = arr(2)
         .Period = arr(3)
@@ -139,7 +155,7 @@ On Error GoTo AcquireJob_Error
     StopAcquisition
     Time = Timer
     'Create a NewRecord if required
-    NewRecord RecordingDoc, RecordingName, 0
+    NewRecord RecordingDoc, "IMG:" & RecordingName, 0
     'move stage if required
     If Round(cStgPos.X, PrecXY) <> Round(position.X, PrecXY) Or Round(cStgPos.Y, PrecXY) <> Round(position.Y, PrecXY) Then
         If ZSafeDown <> 0 Then
@@ -257,7 +273,7 @@ On Error GoTo AcquireFcsJob_Error
     'Stop Fcs acquisition
     StopAcquisition
     Time = Timer
-    If Not NewFcsRecord(RecordingDoc, FcsData, fileName, 0) Then
+    If Not NewFcsRecord(RecordingDoc, FcsData, "FCS:" & fileName, 0) Then
         GoTo WarningHandle
     End If
     If Not CleanFcsData(RecordingDoc, FcsData) Then
@@ -449,10 +465,10 @@ On Error GoTo TrackOffLine_Error
     Dim TrackingChannel As String
     newPosition(0) = currentPosition
     TrackOffLine = currentPosition
-    If tsk.analyse = NoAnalyse Or tsk.analyse = AnalyseOnline Then
+    If tsk.Analyse = AnalyseImage.No Or tsk.Analyse = AnalyseImage.Online Then
         Exit Function
     End If
-    newPosition(0) = MassCenter(RecordingDoc, tsk.TrackChannel, tsk.analyse)
+    newPosition(0) = MassCenter(RecordingDoc, tsk.TrackChannel, tsk.Analyse)
     If Not checkForMaximalDisplacementVecPixels(ImgJobs(tsk.jobNr), newPosition) Then
         LogManager.UpdateWarningLog "TrackOffline for ImgJob " & tsk.jobNr & " computed position differs from possible range. Use current position!"
         GoTo Abort
@@ -631,6 +647,8 @@ On Error GoTo ExecuteJobAndTrack_Error
     'Default return is input position
     ExecuteTask = stgPos
     Dim Time As Double
+    Dim fcsPos() As Vector
+    Dim fcsPosPx() As Vector
     Dim ScanMode As String
     Dim newStgPos As Vector
     Dim fileName As String
@@ -665,103 +683,76 @@ On Error GoTo ExecuteJobAndTrack_Error
     FilePath = Pipelines(indexPl).Grid.getThisParentPath & FilePathSuffixFromPipeline(indexPl) & "\"
     stgPos.Z = stgPos.Z + Pipelines(indexPl).getTask(indexTsk).ZOffset
     With Pipelines(indexPl).getTask(indexTsk)
-        If .jobType = 0 Then
-            Time = Timer
-            If Not AcquireJob(.jobNr, ImgJobs(.jobNr), RecordingDoc, fileName, stgPos) Then
-                Exit Function
-            End If
-            LogManager.UpdateLog "Pipeline " & Pipelines(indexPl).Grid.NameGrid & " task " & indexTsk + 1 & " ImgJob " & jobNr + 1 & " " & fileName & " at X = " & stgPos.X & ", Y =  " & stgPos.Y & ", Z =  " & stgPos.Z & " in " & Round(Timer - Time, 3) & " sec"
-
-            If TimeOut Then
-                If ImgJobs(.jobNr).timeToAcquire < 0 Then
-                    ImgJobs(.jobNr).timeToAcquire = Timer - Time + TimeOutOverHead
-                End If
-            End If
-            If .SaveImage Then
-                If Not SaveDsRecordingDoc(RecordingDoc, FilePath & fileName & imgFileExtension, imgFileFormat) Then
+        Select Case .jobType
+            Case jobTypes.imgjob
+                Time = Timer
+                If Not AcquireJob(.jobNr, ImgJobs(.jobNr), RecordingDoc, fileName, stgPos) Then
                     Exit Function
                 End If
-                OiaSettings.writeKeyToRegistry "filePath", FilePath & fileName & imgFileExtension
-            End If
-            If .analyse > NoAnalyse Then
-                If Not .analyse = AnalyseOnline Then
-                    Time = Timer
-                    stgPos = TrackOffLine(Pipelines(indexPl).getTask(indexTsk), RecordingDoc, stgPos)
-                    LogManager.UpdateLog " Time to TrackOffline " & Round(Timer - Time, 2), 1
-                Else
-                    OiaSettings.writeKeyToRegistry "codeMic", "wait"
-                    OiaSettings.writeKeyToRegistry "codeOia", "newImage"
-                    newStgPos = ComputeJobSequential(indexPl, indexTsk, stgPos, FilePath, fileName, RecordingDoc)
-                    If .TrackZ Then
-                       stgPos.Z = newStgPos.Z
+                LogManager.UpdateLog "Pipeline " & Pipelines(indexPl).Grid.NameGrid & " task " & indexTsk + 1 & " ImgJob " & jobNr + 1 & " " & fileName & " at X = " & stgPos.X & ", Y =  " & stgPos.Y & ", Z =  " & stgPos.Z & " in " & Round(Timer - Time, 3) & " sec"
+                If .SaveImage Then
+                    If Not SaveDsRecordingDoc(RecordingDoc, FilePath & fileName & imgFileExtension, imgFileFormat) Then
+                        Exit Function
                     End If
-                    If .TrackXY Then
-                        stgPos.X = newStgPos.X
-                        stgPos.Y = newStgPos.Y
-                    End If
+                    OiaSettings.writeKeyToRegistry "filePath", FilePath & fileName & imgFileExtension
                 End If
-            End If
-            If Not .TrackZ Then
-                stgPos.Z = stgPos.Z - Pipelines(indexPl).getTask(indexTsk).ZOffset
-            End If
-        End If
-        'Fcs Job
-        If .jobType = 1 Then
-            Dim fcsPos() As Vector
-            Time = Timer
-            If isPosArrayEmpty(Pipelines(indexPl).Grid.getThisFcsPositions) Then
-                ReDim fcsPos(0)
-                fcsPos(0) = Double2Vector(0, 0, Lsm5.Hardware.CpFocus.position * 0.000001)
-                LogManager.UpdateErrorLog "No fcs Positions have been defined for " & Pipelines(indexPl).Grid.NameGrid & "_" & indexTsk & " use center of image and current Z!"
-                Pipelines(indexPl).Grid.setThisFcsPositions fcsPos
-            End If
-            Pipelines(indexPl).Grid.setThisFcsPositionsZOffset .ZOffset * 0.000001
+                Select Case .Analyse
+                    Case AnalyseImage.No
+                    Case AnalyseImage.Online
+                        OiaSettings.writeKeyToRegistry "codeMic", "wait"
+                        OiaSettings.writeKeyToRegistry "codeOia", "newImage"
+                        newStgPos = ComputeJobSequential(indexPl, indexTsk, stgPos, FilePath, fileName, RecordingDoc)
+                        If .TrackZ Then
+                           stgPos.Z = newStgPos.Z
+                        End If
+                        If .TrackXY Then
+                            stgPos.X = newStgPos.X
+                            stgPos.Y = newStgPos.Y
+                        End If
+                    Case AnalyseImage.FcsLoop
+                        ReDim fcsPos(0 To 2)
+                        'position in pixels
+                        fcsPos(0) = ImgJobs(indexTsk).getCentralPointPx
+                        fcsPos(1) = ImgJobs(indexTsk).getCentralPointPx
+                        fcsPos(2) = ImgJobs(indexTsk).getCentralPointPx
+                        Pipelines(indexPl).Grid.setThisFcsPositionsPx fcsPos
+                        'position of fcs pt with respect to center of image  (XY) and absolute Z in meter
+                        fcsPos(0) = Double2Vector(0, 0, Lsm5.Hardware.CpFocus.position * 0.000001)
+                        fcsPos(1) = Double2Vector(0, 0, Lsm5.Hardware.CpFocus.position * 0.000001)
+                        fcsPos(2) = Double2Vector(0, 0, Lsm5.Hardware.CpFocus.position * 0.000001)
+                        Pipelines(indexPl).Grid.setThisFcsPositions fcsPos
+                    Case Else
+                        stgPos = TrackOffLine(Pipelines(indexPl).getTask(indexTsk), RecordingDoc, stgPos)
+                        LogManager.UpdateLog " Time to TrackOffline " & Round(Timer - Time, 2), 1
+                End Select
+                If Not .TrackZ Then
+                    stgPos.Z = stgPos.Z - Pipelines(indexPl).getTask(indexTsk).ZOffset
+                End If
+            Case jobTypes.fcsjob
+                Time = Timer
+                If isPosArrayEmpty(Pipelines(indexPl).Grid.getThisFcsPositions) Then
+                    ReDim fcsPos(0)
+                    ReDim fcsPosPx(0)
+                    fcsPos(0) = Double2Vector(0, 0, Lsm5.Hardware.CpFocus.position * 0.000001)
+                    LogManager.UpdateErrorLog "No fcs Positions have been defined for " & Pipelines(indexPl).Grid.NameGrid & "_" & indexTsk & " use center of image and current Z!"
+                    Pipelines(indexPl).Grid.setThisFcsPositions fcsPos
+                    Pipelines(indexPl).Grid.setThisFcsPositionsPx fcsPosPx
+                End If
+                Pipelines(indexPl).Grid.setThisFcsPositionsZOffset .ZOffset * 0.000001
 
-            If Not AcquireFcsJob(.jobNr, FcsJobs(.jobNr), FcsRecordingDoc, FcsData, fileName, Pipelines(indexPl).Grid.getThisFcsPositions) Then
-                Exit Function
-            End If
-            If .SaveImage Then
-                If Not SaveFcsMeasurement(FcsData, FcsRecordingDoc, FilePath & fileName & ".fcs") Then
+                If Not AcquireFcsJob(.jobNr, FcsJobs(.jobNr), FcsRecordingDoc, FcsData, fileName, Pipelines(indexPl).Grid.getThisFcsPositions) Then
                     Exit Function
                 End If
-                SaveFcsPositionList FilePath & fileName, Pipelines(indexPl).Grid.getThisFcsPositionsPx, RecordingDoc.Title & imgFileExtension
-            End If
-            
-            
-'           For i = 0 To UBound(fcsPos)
-'                fcsPos(i).Z = fcsPos(i).Z + .ZOffset * 0.000001
-'            Next i
-'
-
-'
-'            CurrentFileName = fileName
-'
-'            If AutofocusForm.Controls(JobName + "TimeOut") Then
-'                If JobsFcs.getTimeToAcquire(JobName) <= 0 Then
-'                    JobsFcs.setTimeToAcquire JobName, Timer - Time + TimeOutOverHead
-'                End If
-'            Else
-'                JobsFcs.setTimeToAcquire JobName, 0
-'            End If
-'
-'
-'
-'            Sleep (500)
-'            If Not SaveFcsMeasurement(FcsData, FilePath & fileName & ".fcs") Then
-'                 Exit Function
-'            End If
-'            While RecordingDoc.IsBusy
-'                Sleep (50)
-'            Wend
-'            LogManager.UpdateLog " save Fcsjob " & JobName & " " & FilePath & fileName & ".fcs"
-'            SaveFcsPositionList FilePath & fileName & ".txt", positionsPx
-'
-'            OiaSettings.writeKeyToRegistry "filePath", FilePath & fileName & ".fcs"
-'            If ScanStop Then
-'                Exit Function
-'            End If
-'            ExecuteFcsJob = True
-        End If
+                
+                If .SaveImage Then
+                    If Not SaveFcsMeasurement(FcsData, FcsRecordingDoc, FilePath & fileName & ".fcs") Then
+                        Exit Function
+                    End If
+                    SaveFcsPositionList FilePath & fileName, Pipelines(indexPl).Grid.getThisFcsPositionsPx, VBA.Right(RecordingDoc.Title, Len(RecordingDoc.Title) - 4) & imgFileExtension
+                End If
+            Case jobTypes.gotoPip
+                updateSubPipelineGrid .jobNr, Vector2Array(stgPos), fcsPos, fcsPosPx, "", FilePath & fileName & "\"
+            End Select
             
     End With
 
@@ -1035,7 +1026,7 @@ On Error GoTo StartPipeline_Error
       
     fileName = PipelineConstructor.TextBoxFileName.value & Pipelines(index).Grid.getName(1, 1, 1, 1) & Pipelines(index).Grid.suffix(1, 1, 1, 1) & Pipelines(index).Repetition.suffix(1)
     'create a new Gui document if recquired
-    NewRecord RecordingDoc, fileName
+    NewRecord RecordingDoc, "IMG:" & fileName
     
     currentImgJob = -1
      
@@ -1670,7 +1661,7 @@ End Function
 '             newPositions - Array of stage/focus positions (in um)
 '---------------------------------------------------------------------------------------
 '
-Public Function updateSubPipelineGrid(index As Integer, newPositions() As Vector, fcsPos() As Vector, prefix As String, Optional ParentPath As String) As Boolean
+Public Function updateSubPipelineGrid(index As Integer, newPositions() As Vector, fcsPos() As Vector, fcsPosPx() As Vector, prefix As String, Optional ParentPath As String) As Boolean
 On Error GoTo updateSubPipelineGrid_Error
     
     Dim i As Integer
@@ -1696,6 +1687,7 @@ On Error GoTo updateSubPipelineGrid_Error
             .Grid.setPt newPositions(i), True, 1, 1, 1, i + GridLowBound
             .Grid.setParentPath ParentPath, 1, 1, 1, i + GridLowBound
             .Grid.setFcsPositions fcsPos, 1, 1, 1, i + GridLowBound
+            .Grid.setFcsPositionsPx fcsPosPx, 1, 1, 1, i + GridLowBound
             .Grid.setName prefix & .Grid.getName(1, 1, 1, i + GridLowBound), 1, 1, 1, i + GridLowBound
         Next i
     End With
@@ -1910,7 +1902,7 @@ On Error GoTo ComputeJobSequential_Error
 '                    ImgJobs(Pipelines(codeMicToJobName.item(code)).getTask(0).jobNr).setRois = Rois 'this is not exactly how it should be a task should have associated a roi
 '                End If
                 
-                updateSubPipelineGrid codeMicToJobName.item(code), newPositions, fcsPos, prefix, ParentPath & parentFile & "\"
+                updateSubPipelineGrid codeMicToJobName.item(code), newPositions, fcsPos, fcsPosPx, prefix, ParentPath & parentFile & "\"
             Case Else
                 MsgBox ("Invalid OnlineImageAnalysis codeMic = " & code)
                 GoTo Abort

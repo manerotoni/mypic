@@ -66,10 +66,9 @@ errorMsg:
         ZenV = 2010
 NoError:
     End If
-    
     TrackVisible False
-    UpdateImgListbox ImgJobList, ImgJobs
-    UpdateFcsListbox FcsJobList, FcsJobs
+    UpdateJobListbox ImgJobList, ImgJobs
+    UpdateJobListbox FcsJobList, FcsJobs
     Set EventMng = New EventAdmin
     EventMng.initialize
     strIconPath = Application.ProjectFilePath & "\resources\micronaut_mc.ico"
@@ -112,7 +111,7 @@ On Error GoTo AcquireFcsJobButton_Click_Error
     newPosition(0).X = 0
     newPosition(0).Y = 0
     newPosition(0).Z = Lsm5.Hardware.CpFocus.position * 0.000001 'convert from um to meter
-    NewFcsRecordGui GlobalFcsRecordingDoc, GlobalFcsData, FcsJobs(index).Name, ZEN, ZenV
+    NewFcsRecordGui GlobalFcsRecordingDoc, GlobalFcsData, "FCS:" & FcsJobs(index).Name, ZEN, ZenV
     If Not GlobalFcsRecordingDoc Is Nothing Then
         GlobalFcsRecordingDoc.BringToTop
     End If
@@ -164,7 +163,7 @@ On Error GoTo AcquireJobIndex_Error
     If Not GlobalRecordingDoc Is Nothing Then
         GlobalRecordingDoc.BringToTop
     End If
-    NewRecordGui GlobalRecordingDoc, ImgJobs(index).Name, ZEN, ZenV
+    NewRecordGui GlobalRecordingDoc, "IMG:" & ImgJobs(index).Name, ZEN, ZenV
     If ZenV > 2010 And Not ZEN Is Nothing Then
         Dim vo As AimImageVectorOverlay
         Set vo = Lsm5.ExternalDsObject.ScanController.AcquisitionRegions
@@ -201,7 +200,7 @@ Private Sub ChangeImgJobName_Click()
         Exit Sub
     End If
     ImgJobs(index).Name = Name
-    UpdateImgListbox ImgJobList, ImgJobs
+    UpdateJobListbox ImgJobList, ImgJobs
     ImgJobList.Selected(index) = True
 End Sub
 
@@ -220,7 +219,7 @@ Private Sub ChangeFcsJobName_Click()
         Exit Sub
     End If
     FcsJobs(index).Name = Name
-    UpdateFcsListbox FcsJobList, FcsJobs
+    UpdateJobListbox FcsJobList, FcsJobs
     FcsJobList.Selected(index) = True
 End Sub
 
@@ -238,7 +237,7 @@ End Sub
 
 
 Private Sub AddImgJobFromFileButton_Click()
-    Dim fso As New FileSystemObject
+    Dim FSO As New FileSystemObject
     Dim Filter As String, fileName As String
     Dim index As Integer
     Dim Flags As Long
@@ -270,7 +269,7 @@ Private Sub AddImgJobFromFileButton_Click()
     EventMng.setBusy
     If UBound(fileNames) = 0 Then
         AddImgJobFromFile fileNames(0)
-        WorkingDir = fso.GetParentFolderName(fileNames(0)) & "\"
+        WorkingDir = FSO.GetParentFolderName(fileNames(0)) & "\"
     Else
         For index = 1 To UBound(fileNames)
             AddImgJobFromFile fileNames(0) & "\" & fileNames(index)
@@ -283,12 +282,12 @@ End Sub
 
 
 Private Sub AddImgJobFromFile(fileName As String)
-    Dim fso As New FileSystemObject
+    Dim FSO As New FileSystemObject
     Dim JobName As String
     If Not FileExist(fileName) Then
         Exit Sub
     End If
-    JobName = VBA.Split(fso.GetFileName(fileName), ".")(0)
+    JobName = VBA.Split(FSO.GetFileName(fileName), ".")(0)
     If Not UniqueListName(FcsJobList, JobName) Or Not UniqueListName(ImgJobList, JobName) Then
         MsgBox "Name of imaging job must be unique!", VbExclamation, "JobSetter warning"
         Exit Sub
@@ -302,7 +301,7 @@ End Sub
     
 Private Sub SaveButton_Click()
     
-    Dim fso As New FileSystemObject
+    Dim FSO As New FileSystemObject
     Dim index As Integer
     Dim Flags As Long
     Dim dirName As String, DefDir As String, Filter As String
@@ -335,7 +334,7 @@ Private Sub SaveButton_Click()
     setStatus False
     dirName = CommonDialogAPI.ShowOpen(Filter, Flags, "*.*", DefDir, "Select output folder for jobs")
     If dirName = "" Then Exit Sub
-    dirName = fso.GetParentFolderName(dirName) & "\"
+    dirName = FSO.GetParentFolderName(dirName) & "\"
     WorkingDir = dirName
 #If ZENvC > 2010 Then
     If answ = vbNo Then
@@ -616,7 +615,7 @@ Private Sub setTrackNames(index As Integer)
     Next i
 End Sub
 
-Private Sub UpdateImgListbox(List1 As ListBox, JobArray() As AJob)
+Private Sub UpdateJobListbox(List1 As ListBox, JobArray)
     Dim i As Integer
     If isArrayEmpty(JobArray) Then
         List1.Clear
@@ -629,18 +628,6 @@ Private Sub UpdateImgListbox(List1 As ListBox, JobArray() As AJob)
     End If
 End Sub
 
-Private Sub UpdateFcsListbox(List1 As ListBox, JobArray() As AFcsJob)
-    Dim i As Integer
-    If isArrayEmpty(JobArray) Then
-        List1.Clear
-        Exit Sub
-    Else
-        List1.Clear
-        For i = 0 To UBound(JobArray)
-            List1.AddItem JobArray(i).Name
-        Next i
-    End If
-End Sub
 
 
 Private Sub DeleteJobButton_Click()

@@ -86,6 +86,13 @@ Public Function Double2Vector(X As Double, Y As Double, Z As Double) As Vector
     Double2Vector.Z = Z
 End Function
 
+Public Function Vector2Array(vec As Vector) As Vector()
+    Dim vecA(0) As Vector
+    vecA(0) = vec
+    Vector2Array = vecA
+End Function
+
+
 Public Function Vector2Double(vec As Vector) As Double()
     Dim vec2D(3) As Double
     vec2D(0) = vec.X
@@ -190,19 +197,19 @@ End Sub
 '''
 ' Shifts position of element in list
 '''
-Public Sub MoveListboxItem(List1 As ListBox, CurrentIndex As Integer, NewIndex As Integer)
+Public Sub MoveListboxItem(List1 As ListBox, CurrentIndex As Integer, newIndex As Integer)
     Dim strItem() As String
     Dim i As Integer
     With List1
-        If CurrentIndex > -1 And CurrentIndex < .ColumnCount And NewIndex > -1 And NewIndex < .ColumnCount Then
+        If CurrentIndex > -1 And CurrentIndex < .ColumnCount And newIndex > -1 And newIndex < .ColumnCount Then
             ReDim strItem(0 To .ColumnCount - 1)
             For i = 0 To .ColumnCount - 1
                 strItem(i) = List1.List(CurrentIndex, i)
             Next i
             .RemoveItem CurrentIndex
-            .AddItem strItem(0), NewIndex
+            .AddItem strItem(0), newIndex
             For i = 1 To .ColumnCount - 1
-                .List(NewIndex, i) = strItem(i)
+                .List(newIndex, i) = strItem(i)
             Next i
         End If
     End With

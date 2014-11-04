@@ -47,6 +47,31 @@ Public Function ZeroString(NrofZeros As Integer) As String
     ZeroString = Name
 End Function
 
+Sub Clear_All_Files_And_SubFolders_In_Folder(MyPath As String)
+'Delete all files and subfolders
+'Be sure that no file is open in the folder
+    Dim FSO As Object
+
+    Set FSO = CreateObject("scripting.filesystemobject")
+
+
+    If VBA.Right(MyPath, 1) = "\" Then
+        MyPath = VBA.Left(MyPath, Len(MyPath) - 1)
+    End If
+
+    If FSO.FolderExists(MyPath) = False Then
+        Exit Sub
+    End If
+
+    On Error Resume Next
+    'Delete files
+    FSO.DeleteFile MyPath & "\*.*", True
+    'Delete subfolders
+    FSO.DeleteFolder MyPath & "\*.*", True
+    On Error GoTo 0
+
+End Sub
+
 '''''
 '   FileExist(ByVal Pathname)
 '   Check if file is present or not
@@ -114,10 +139,10 @@ Public Function getRecordingFromImageFile(PathName As String, ZEN As Object) As 
     Set getRecordingFromImageFile = Lsm5.DsRecording
     getRecordingFromImageFile.Copy Lsm5.DsRecording
     SleepWithEvents (500)
-    ViewerGuiServer.Close Node
     While Lsm5.DsRecordingActiveDocObject.IsBusy
         SleepWithEvents (200)
     Wend
+    ViewerGuiServer.Close Node
 End Function
 
 '''''

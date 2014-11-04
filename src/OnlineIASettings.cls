@@ -103,7 +103,7 @@ Public Sub initializeDefault()
     subKey_codeMic_HowTo.Add "focus", "read X, Y, and Z  and change focus"
     subKey_codeMic_HowTo.Add "trigger1", "perform job Trigger1 at position X, Y, and Z"
     subKey_codeMic_HowTo.Add "trigger2", "perform job Trigger2 at position X, Y, and Z"
-    subKey_codeMic_HowTo.Add "fcs1", "perform job Fcs1 at position fcsX, fcsY, and fcsZ"
+    subKey_codeMic_HowTo.Add "setFcsPos", "read position for putative fcs Measurement fcsX, fcsY, and fcsZ"
     
     Set subKey_codeOia_HowTo = New Dictionary
     subKey_codeOia_HowTo.Add "", "(empty char) online image analysis does nothing"
@@ -584,7 +584,7 @@ Public Function getFcsPositions(fcsPos() As Vector, currentPosition As Vector) A
     End If
     
     ' Convert values to Double
-    ReDim stgPos(0 To UBound(locX))
+    ReDim fcsPos(0 To UBound(locX))
     For i = 0 To UBound(locX)
         fcsPos(i).X = CDbl(locX(i))
         fcsPos(i).Y = CDbl(locY(i))

@@ -150,11 +150,11 @@ Public Sub setSaveImage(index As Integer, save As Boolean)
 End Sub
 
 Public Function getAnalyse(index As Integer) As Integer
-    getAnalyse = TaskArray(index).analyse
+    getAnalyse = TaskArray(index).Analyse
 End Function
 
-Public Sub setAnalyse(index As Integer, analyse As Integer)
-    TaskArray(index).analyse = analyse
+Public Sub setAnalyse(index As Integer, Analyse As Integer)
+    TaskArray(index).Analyse = Analyse
 End Sub
 
 

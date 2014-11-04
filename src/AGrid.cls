@@ -417,12 +417,24 @@ Public Sub setFcsPositions(pos() As Vector, Row As Long, Col As Long, RowSub As 
     End If
 End Sub
 
+Public Sub setFcsPositionsPx(pos() As Vector, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
+    If correctIndeces(Row, Col, RowSub, ColSub) Then
+        GridArray(Row, Col, RowSub, ColSub).fcsPosPx = pos
+    End If
+End Sub
+
 Public Function getFcsPositions(Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Vector()
     If correctIndeces(Row, Col, RowSub, ColSub) Then
         getFcsPositions = GridArray(Row, Col, RowSub, ColSub).fcsPos
     End If
 End Function
 
+
+Public Function getFcsPositionsPx(Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Vector()
+    If correctIndeces(Row, Col, RowSub, ColSub) Then
+        getFcsPositionsPx = GridArray(Row, Col, RowSub, ColSub).fcsPosPx
+    End If
+End Function
 
 Public Sub setFcsPositionsZOffset(ZOffset As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     Dim i As Integer
