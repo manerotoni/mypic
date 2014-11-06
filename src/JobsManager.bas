@@ -711,15 +711,19 @@ On Error GoTo ExecuteJobAndTrack_Error
                         End If
                     Case AnalyseImage.FcsLoop
                         ReDim fcsPos(0 To 2)
+                        ReDim fcsPosPx(0 To 2)
                         'position in pixels
-                        fcsPos(0) = ImgJobs(indexTsk).getCentralPointPx
-                        fcsPos(1) = ImgJobs(indexTsk).getCentralPointPx
-                        fcsPos(2) = ImgJobs(indexTsk).getCentralPointPx
-                        Pipelines(indexPl).Grid.setThisFcsPositionsPx fcsPos
-                        'position of fcs pt with respect to center of image  (XY) and absolute Z in meter
-                        fcsPos(0) = Double2Vector(0, 0, Lsm5.Hardware.CpFocus.position * 0.000001)
-                        fcsPos(1) = Double2Vector(0, 0, Lsm5.Hardware.CpFocus.position * 0.000001)
-                        fcsPos(2) = Double2Vector(0, 0, Lsm5.Hardware.CpFocus.position * 0.000001)
+                        fcsPosPx(0) = ImgJobs(indexTsk).getCentralPointPx
+                        fcsPosPx(1) = ImgJobs(indexTsk).getCentralPointPx
+                        fcsPosPx(2) = ImgJobs(indexTsk).getCentralPointPx
+                        fcsPosPx(1).X = fcsPosPx(1).X + 10
+                        fcsPosPx(1).Y = fcsPosPx(1).Y + 10
+                        fcsPosPx(1).Z = fcsPosPx(1).Z + 1
+                        fcsPosPx(2).X = fcsPosPx(1).X - 10
+                        fcsPosPx(2).Y = fcsPosPx(1).Y - 10
+                        fcsPosPx(2).Z = fcsPosPx(1).Z - 1
+                        Pipelines(indexPl).Grid.setThisFcsPositionsPx fcsPosPx
+                        fcsPos = computeCoordinatesFcs(ImgJobs(Pipelines(indexPl).getTask(indexTsk).jobNr), stgPos, fcsPosPx)
                         Pipelines(indexPl).Grid.setThisFcsPositions fcsPos
                     Case Else
                         stgPos = TrackOffLine(Pipelines(indexPl).getTask(indexTsk), RecordingDoc, stgPos)
@@ -731,12 +735,19 @@ On Error GoTo ExecuteJobAndTrack_Error
             Case jobTypes.fcsjob
                 Time = Timer
                 If isPosArrayEmpty(Pipelines(indexPl).Grid.getThisFcsPositions) Then
-                    ReDim fcsPos(0)
-                    ReDim fcsPosPx(0)
-                    fcsPos(0) = Double2Vector(0, 0, Lsm5.Hardware.CpFocus.position * 0.000001)
-                    LogManager.UpdateErrorLog "No fcs Positions have been defined for " & Pipelines(indexPl).Grid.NameGrid & "_" & indexTsk & " use center of image and current Z!"
-                    Pipelines(indexPl).Grid.setThisFcsPositions fcsPos
-                    Pipelines(indexPl).Grid.setThisFcsPositionsPx fcsPosPx
+                    If DebugCode Then
+                        ReDim fcsPos(0 To 2)
+                        fcsPos(0) = Double2Vector(0, 0, Lsm5.Hardware.CpFocus.position * 0.000001)
+                        fcsPos(1) = Double2Vector(0.00001, 0.00001, (Lsm5.Hardware.CpFocus.position + 1) * 0.000001)
+                        fcsPos(2) = Double2Vector(-0.00001, -0.00001, (Lsm5.Hardware.CpFocus.position - 1) * 0.000001)
+                        'LogManager.UpdateErrorLog "No fcs Positions have been defined for " & Pipelines(indexPl).Grid.NameGrid & "_" & indexTsk & " use center of image and current Z!"
+                        Pipelines(indexPl).Grid.setThisFcsPositions fcsPos
+                        Pipelines(indexPl).Grid.setThisFcsPositionsPx fcsPos
+                    Else
+                        LogManager.UpdateErrorLog "No fcs Positions has been defined for " & Pipelines(indexPl).Grid.NameGrid & "_" & indexTsk _
+                        & " fcs measurment is not performed! Analyse the previous image in the pipeline and pass the position via the registry!"
+                        GoTo NoProcess
+                    End If
                 End If
                 Pipelines(indexPl).Grid.setThisFcsPositionsZOffset .ZOffset * 0.000001
 
@@ -760,7 +771,6 @@ NoProcess:
     ExecuteTask = stgPos
     Success = True
     Exit Function
-    OiaSettings.readKeyFromRegistry ("filePath")
    On Error GoTo 0
    Exit Function
 
@@ -1022,7 +1032,6 @@ On Error GoTo StartPipeline_Error
     
        
     OiaSettings.resetRegistry
-    OiaSettings.readFromRegistry
       
     fileName = PipelineConstructor.TextBoxFileName.value & Pipelines(index).Grid.getName(1, 1, 1, 1) & Pipelines(index).Grid.suffix(1, 1, 1, 1) & Pipelines(index).Repetition.suffix(1)
     'create a new Gui document if recquired
@@ -1167,17 +1176,14 @@ End Function
 Public Function waitForPump(timeToPump As Double, TimeToWait As Double, lastTimePump As Double, distDiff As Double, timeMax As Double, distMax As Double, maxTimeWaitRegistry As Double) As Double
     
     Dim doPump As Boolean
-    Dim OiaSettings As OnlineIASettings
     Dim TimeStart As Double
     Dim TimeWait As Double
-    Set OiaSettings = New OnlineIASettings
     ''check if we need to pump
     If (distDiff <= distMax Or distMax = 0) And (CDbl(GetTickCount) * 0.001 - lastTimePump <= timeMax Or timeMax = 0) Then
         waitForPump = lastTimePump
         Exit Function
     End If
     
-    OiaSettings.readFromRegistry
     OiaSettings.writeKeyToRegistry "codeMic", "wait"
     OiaSettings.writeKeyToRegistry "codePump", CStr(timeToPump)
     DoEvents
@@ -1219,7 +1225,6 @@ Public Function waitForPump(timeToPump As Double, TimeToWait As Double, lastTime
             'LogManager.UpdateErrorLog "codeMic timeExpired. Waiting for pump signal took more then " & maxTimeWaitRegistry & " sec. Have you started the PumpController"
             LogManager.UpdateLog " Waiting for pump signal took more then " & maxTimeWaitRegistry & " sec"
             MsgBox "Waiting for pump signal took more then " & maxTimeWaitRegistry & " sec. Have you started the PumpController?", VbCritical
-            
     End Select
     
     waitForPump = CDbl(GetTickCount) * 0.001
@@ -1764,9 +1769,6 @@ On Error GoTo ComputeJobSequential_Error
     Set codeMicToJobName = New Dictionary
     codeMicToJobName.Add "trigger1", 1
     codeMicToJobName.Add "trigger2", 2
-    
-    Dim OiaSettings As OnlineIASettings
-    Set OiaSettings = New OnlineIASettings
     
     codeMic = Split(Replace(OiaSettings.readKeyFromRegistry("codeMic"), " ", ""), ";")
     Dim TimeWait, TimeStart, maxTimeWait As Double

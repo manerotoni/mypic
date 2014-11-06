@@ -29,6 +29,8 @@ Public Version As String
 Private TestedPipelines
 Private positionOption As Integer
 
+
+
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '' USER FORM INITIALIZATION AND DEATH
@@ -73,16 +75,8 @@ errorMsg:
 NoError:
     End If
     
-    'read in the icon
-    strIconPath = Application.ProjectFilePath & "\resources\micronaut_mc.ico"
-    ' Get the icon from the source
-    lngIcon = ExtractIcon(0, strIconPath, 0)
-    ' Get the window handle of the userform
-    lnghWnd = FindWindow("ThunderDFrame", Me.Caption)
-    'Set the big (32x32) and small (16x16) icons
-    SendMessage lnghWnd, WM_SETICON, True, lngIcon
-    SendMessage lnghWnd, WM_SETICON, False, lngIcon
-    FormatUserForm Me.Caption
+
+    StageSettings MirrorX, MirrorY, ExchangeXY
     
     'a custom event manager
     Set EventMng = New EventAdmin
@@ -102,6 +96,7 @@ NoError:
     
     Erase ImgJobs
     Erase FcsJobs
+    'initialize registry reader and registry values
     Set OiaSettings = New OnlineIASettings
     OiaSettings.initializeDefault
     OiaSettings.resetRegistry
@@ -154,6 +149,16 @@ NoError:
     
     Load JobSetter
     Load PumpForm
+    'read in the icon
+    strIconPath = Application.ProjectFilePath & "\resources\micronaut_mc.ico"
+    ' Get the icon from the source
+    lngIcon = ExtractIcon(0, strIconPath, 0)
+    ' Get the window handle of the userform
+    lnghWnd = FindWindow("ThunderDFrame", Me.Caption)
+    'Set the big (32x32) and small (16x16) icons
+    SendMessage lnghWnd, WM_SETICON, True, lngIcon
+    SendMessage lnghWnd, WM_SETICON, False, lngIcon
+    FormatUserForm Me.Caption
 End Sub
 
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
@@ -302,8 +307,8 @@ Private Sub SaveSettings_Click()
     Dim Flags As Long
     Dim DefDir As String
    
-    Flags = OFN_PATHMUSTEXIST Or OFN_HIDEREADONLY Or OFN_NOCHANGEDIR Or OFN_EXPLORER Or OFN_NOVALIDATE
-    Filter = "Images (*.ini)" & Chr$(0) & "*.ini" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
+    Flags = OFN_OVERWRITEPROMPT Or OFN_LONGNAMES Or OFN_PATHMUSTEXIST Or OFN_HIDEREADONLY Or OFN_NOCHANGEDIR Or OFN_EXPLORER Or OFN_NOVALIDATE
+    Filter = "Configuration (*.ini)" & Chr$(0) & "*.ini" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
     If WorkingDir = "" Then
         DefDir = "C:\"
     Else
@@ -321,6 +326,49 @@ Private Sub SaveSettings_Click()
     End If
     SaveFormSettings fileName
 End Sub
+
+''''
+'   SaveSettings of PipelineConstructor in file name FileName.
+''''
+Public Sub SaveFormSettings(fileName As String)
+    Dim iTsk As Integer, ipip As Integer, iSet As Integer
+    Dim tskSettings As String
+    Dim iFileNum As Long
+    Dim arrTsk() As Variant
+    Dim tskFieldNames() As String
+    Dim tsk As Task
+On Error GoTo SaveFormSettings_Error
+    Close
+    iFileNum = FreeFile()
+    Open fileName For Output As iFileNum
+    tskFieldNames = TaskFieldNames
+    For ipip = 0 To UBound(Pipelines)
+        With Pipelines(ipip)
+            Print #iFileNum, "Pip " & ipip & " Reptime " & .Repetition.Time & " RepNr " & .Repetition.number & " RepInt " & .Repetition.interval
+            
+            For iTsk = 0 To Pipelines(ipip).count - 1
+                arrTsk = TaskToArray(.getTask(iTsk))
+                Debug.Print "Variable type " & VarType(arrTsk(0))
+                tskSettings = ""
+                For iSet = 0 To UBound(arrTsk)
+                    tskSettings = tskSettings & " " & tskFieldNames(iSet) & " " & arrTsk(iSet)
+                Next iSet
+                Print #iFileNum, "Pip " & ipip & " Tsk " & iTsk & tskSettings
+            Next iTsk
+        End With
+    Next ipip
+    Print #iFileNum, "PosSet " & positionOption & " nRow " & GridScan_nRow & " nColumn " & GridScan_nColumn & " dRow " & GridScan_dRow & " dColumn " & GridScan_dColumn & _
+    " nRowSub " & GridScan_nRowsub & " nColumnSub " & GridScan_nColumnsub & " dRowSub " & GridScan_dRowsub & " dColumnSub " & GridScan_dColumnsub
+    Close #iFileNum
+    Exit Sub
+SaveFormSettings_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure SaveFormSettings of Module AutofocusFormSaveLoad at line " & Erl & " "
+
+End Sub
+
+
 
 Private Sub LoadSettings_Click()
     Dim FSO As FileSystemObject
@@ -346,11 +394,14 @@ Private Sub LoadSettings_Click()
 End Sub
 
 Public Sub LoadFormSettings(fileName As String)
+'TODO use regExp to remove several white spaces
     Dim iFileNum As Integer, ipip As Integer, iSet As Integer
     Dim tsk As Task
     Dim arr() As Variant
     Dim Fields As String
     Dim JobName As String
+    Dim objRegExp As Object
+    Set objRegExp = CreateObject("vbscript.regexp")
     Dim FieldEntries() As String
     Close
     'On Error GoTo ErrorHandle
@@ -366,27 +417,43 @@ Public Sub LoadFormSettings(fileName As String)
                 Line Input #iFileNum, Fields
             Wend
             If Fields <> "" Then
+                With objRegExp
+                    .Global = True
+                    .Pattern = "\s+"
+            
+                    Fields = .Replace(Fields, " ")
+                End With
                 FieldEntries = Split(Fields, " ")
-                ipip = CInt(FieldEntries(1))
-                If FieldEntries(2) = "Reptime" Then
-                    Pipelines(ipip).Repetition.Time = CDbl(FieldEntries(3))
-                    Pipelines(ipip).Repetition.number = CInt(FieldEntries(5))
-                    Pipelines(ipip).Repetition.interval = CBool(FieldEntries(7))
-                End If
-                If FieldEntries(2) = "Tsk" Then
-                    For iSet = 0 To UBound(arr)
-                        Select Case VarType(arr(iSet))
-                            Case vbInteger
-                                arr(iSet) = CInt(FieldEntries(iSet * 2 + 5))
-                            Case vbDouble
-                                arr(iSet) = CDbl(FieldEntries(iSet * 2 + 5))
-                            Case vbBoolean
-                                arr(iSet) = CBool(FieldEntries(iSet * 2 + 5))
-                            Case vbLong
-                                arr(iSet) = CLng(FieldEntries(iSet * 2 + 5))
-                        End Select
+                If FieldEntries(0) = "Pip" Then
+                    ipip = CInt(FieldEntries(1))
+                    If FieldEntries(2) = "Reptime" Then
+                        Pipelines(ipip).Repetition.Time = CDbl(FieldEntries(3))
+                        Pipelines(ipip).Repetition.number = CInt(FieldEntries(5))
+                        Pipelines(ipip).Repetition.interval = CBool(FieldEntries(7))
+                    End If
+                    If FieldEntries(2) = "Tsk" Then
+                        For iSet = 0 To UBound(arr)
+                            Select Case VarType(arr(iSet))
+                                Case vbInteger
+                                    arr(iSet) = CInt(FieldEntries(iSet * 2 + 5))
+                                Case vbDouble
+                                    arr(iSet) = CDbl(FieldEntries(iSet * 2 + 5))
+                                Case vbBoolean
+                                    arr(iSet) = CBool(FieldEntries(iSet * 2 + 5))
+                                Case vbLong
+                                    arr(iSet) = CLng(FieldEntries(iSet * 2 + 5))
+                            End Select
+                        Next iSet
+                        Pipelines(ipip).addTask ArrayToTask(arr)
+                    End If
+                ElseIf FieldEntries(0) = "PosSet" Then
+                    ipip = CInt(FieldEntries(1))
+                    Me.Controls("PositionButton" & ipip).value = True
+                    For iSet = 2 To UBound(FieldEntries) Step 2
+                        On Error GoTo nextiSet
+                        Me.Controls("GridScan_" & FieldEntries(iSet)).value = CInt(FieldEntries(iSet + 1))
+nextiSet:
                     Next iSet
-                    Pipelines(ipip).addTask ArrayToTask(arr)
                 End If
             End If
     Loop
@@ -478,6 +545,7 @@ Private Sub AcquirePipelineButton_Click()
         End If
         NewRecordGui GlobalRecordingDoc, "IMG:" & Pipelines(currPipeline).Grid.NameGrid, ZEN, ZenV
         'create pipeline position
+
         Pipelines(currPipeline).Grid.initialize 1, 1, 1, 1
         Pipelines(currPipeline).Grid.setPt getCurrentPosition, True, 1, 1, 1, 1
         
@@ -514,15 +582,16 @@ Private Sub TestAllPipelinesButton_Click()
     
     If GlobalDataBaseName = "" Then
         MsgBox "No outputfolder selected! Cannot start acquisition. Click on Saving button.", VbCritical
-        Exit Sub
+        GoTo Endtest
     End If
     If Not CheckDir(GlobalDataBaseName & "\Test") Then
-        Exit Sub
+        GoTo Endtest
     End If
     'create imaging record
     If Not GlobalRecordingDoc Is Nothing Then
         GlobalRecordingDoc.BringToTop
     End If
+    StageSettings MirrorX, MirrorY, ExchangeXY
     NewRecordGui GlobalRecordingDoc, "IMG:" & Pipelines(currPipeline).Grid.NameGrid, ZEN, ZenV
     Clear_All_Files_And_SubFolders_In_Folder GlobalDataBaseName & "\Test\"
     For i = 0 To NrPipelines - 1
@@ -530,9 +599,7 @@ Private Sub TestAllPipelinesButton_Click()
             'create pipeline position
             Pipelines(i).Grid.initialize 1, 1, 1, 1
             Pipelines(i).Grid.setPt getCurrentPosition, True, 1, 1, 1, 1
-            
             'UpdateRepetitionSettings currPipeline
-            
             Pipelines(i).Grid.setAllParentPath GlobalDataBaseName & "\Test\"
             RepNum = Pipelines(i).Repetition.number
             Pipelines(i).Repetition.number = 1
@@ -540,6 +607,7 @@ Private Sub TestAllPipelinesButton_Click()
             Pipelines(i).Repetition.number = RepNum
         End If
     Next i
+Endtest:
     DisplayProgress ProgressLabel, "Ready", RGB(&HC0, &HC0, 0)
     TestedPipelines = True
 End Sub
@@ -1078,7 +1146,11 @@ Private Sub UpdateFocusEnabled()
     Dim index As Integer
     TrackingFrame.Visible = True
     index = CurrentPipelineList.ListIndex
-    If index = -1 Or Pipelines(currPipeline).getTask(index).jobType <> jobTypes.imgjob Then
+    If index = -1 Then
+        enableFrame TrackingFrame, False
+        Exit Sub
+    End If
+    If Pipelines(currPipeline).getTask(index).jobType <> jobTypes.imgjob Then
         enableFrame TrackingFrame, False
         Exit Sub
     End If

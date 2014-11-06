@@ -6,45 +6,6 @@ Attribute VB_Name = "PipConstructorSaveLoad"
 Option Explicit
 
 
-''''
-'   SaveSettings of PipelineConstructor in file name FileName.
-''''
-Public Sub SaveFormSettings(fileName As String)
-    Dim iTsk As Integer, ipip As Integer, iSet As Integer
-    Dim tskSettings As String
-    Dim iFileNum As Long
-    Dim arrTsk() As Variant
-    Dim tskFieldNames() As String
-    Dim tsk As Task
-On Error GoTo SaveFormSettings_Error
-    Close
-    iFileNum = FreeFile()
-    Open fileName For Output As iFileNum
-    tskFieldNames = TaskFieldNames
-    For ipip = 0 To UBound(Pipelines)
-        With Pipelines(ipip)
-            Print #iFileNum, "Pip " & ipip & " Reptime " & .Repetition.Time & " RepNr " & .Repetition.number & " RepInt " & .Repetition.interval
-            
-            For iTsk = 0 To Pipelines(ipip).count - 1
-                arrTsk = TaskToArray(.getTask(iTsk))
-                Debug.Print "Variable type " & VarType(arrTsk(0))
-                tskSettings = ""
-                For iSet = 0 To UBound(arrTsk)
-                    tskSettings = tskSettings & " " & tskFieldNames(iSet) & " " & arrTsk(iSet)
-                Next iSet
-                Print #iFileNum, "Pip " & ipip & " Tsk " & iTsk & tskSettings
-            Next iTsk
-        End With
-    Next ipip
-    Close #iFileNum
-    Exit Sub
-SaveFormSettings_Error:
-
-    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-    ") in procedure SaveFormSettings of Module AutofocusFormSaveLoad at line " & Erl & " "
-
-End Sub
-
 
 
 
