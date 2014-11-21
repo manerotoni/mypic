@@ -9,8 +9,6 @@ Public FcsControl As AimFcsController
 Public ViewerGuiServer As AimViewerGuiServer
 Public FcsPositions As AimFcsSamplePositionParameters
 
-
-
 '''''
 '   GetFcsPosition(PosX As Double, PosY As Double, PosZ As Double)
 '   reads position of small crosshair
@@ -74,26 +72,5 @@ Public Function ClearFcsPositionList()
     FcsPositions.PositionListSize = 0
     ViewerGuiServer.UpdateFcsPositions
 End Function
-
-
-
-
-''''''
-''   SetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Pos As Long)
-''   Create a new position if Pos > FcsPositions.PositionListSize
-''   then all positions inbetween are set to 0
-''
-''''''
-'Public Function SetFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Pos As Long) As Boolean
-'    Set FcsControl = Fcs
-'    Set FcsPositions = FcsControl.SamplePositionParameters
-'    FcsPositions.PositionX(Pos) = PosX
-'    FcsPositions.PositionY(Pos) = PosY
-'    FcsPositions.PositionZ(Pos) = PosZ
-'    'this shows the small crosshair
-'    viewerGuiServer.UpdateFcsPositions
-'End Function
-
-
 
 

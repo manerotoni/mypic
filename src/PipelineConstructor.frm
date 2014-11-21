@@ -531,9 +531,10 @@ Private Sub AcquirePipelineButton_Click()
     Dim stgPos As Vector
     Dim RepNum As Long
     resetStopFlags
+    Pump = False
     If Pipelines(currPipeline).count > 0 Then
         If GlobalDataBaseName = "" Then
-            MsgBox "No outputfolder selected! Cannot start acquisition. Click on Saving button.", VbCritical
+            MsgBox "No output folder selected! Cannot start acquisition. Click on Saving button.", VbExclamation
             Exit Sub
         End If
         If Not CheckDir(GlobalDataBaseName & "\Test") Then
@@ -577,11 +578,12 @@ Private Sub TestAllPipelinesButton_Click()
     Dim RepNum As Long
     Dim i As Integer
     resetStopFlags
+    Pump = False
     DisplayProgress ProgressLabel, "Test run for all pipelines", RGB(&HC0, &HC0, 0)
     SleepWithEvents (2000)
     
     If GlobalDataBaseName = "" Then
-        MsgBox "No outputfolder selected! Cannot start acquisition. Click on Saving button.", VbCritical
+        MsgBox "No output folder selected! Cannot start acquisition. Click on Saving button.", VbExclamation
         GoTo Endtest
     End If
     If Not CheckDir(GlobalDataBaseName & "\Test") Then
@@ -646,7 +648,7 @@ Public Function StartSetting() As Boolean
     ''Create and check directory for output and log files
     SetDatabase
     If GlobalDataBaseName = "" Then
-        MsgBox "No outputfolder selected! Cannot start acquisition. Click on Saving button.", VbCritical
+        MsgBox "No output folder selected! Cannot start acquisition. Click on Saving button.", VbExclamation
         GoTo ExitStart
     Else
         If Not CheckDir(GlobalDataBaseName) Then

@@ -72,6 +72,15 @@ Sub Clear_All_Files_And_SubFolders_In_Folder(MyPath As String)
 
 End Sub
 
+Function appendSep(value As String, sep As String) As String
+    appendSep = value
+    If value <> "" Then
+        If VBA.Right(value, Len(sep)) <> sep Then
+            appendSep = value & sep
+        End If
+    End If
+End Function
+
 '''''
 '   FileExist(ByVal Pathname)
 '   Check if file is present or not

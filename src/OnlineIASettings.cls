@@ -390,9 +390,9 @@ End Function
 ''''
 '   Parse rois from settings
 ''''
-Public Function getRois(Rois() As Roi) As Boolean
+Public Function getRois(Rois() As roi) As Boolean
     checkExistKeys
-    Dim RoiOut() As Roi
+    Dim RoiOut() As roi
     Dim XRois()  As String 'the string containinig all X-positions of a ROI
     Dim YRois()  As String 'the string containinig all Y-positions of a ROI
     Dim X() As String ' string containing X pos of a single ROI
@@ -436,7 +436,7 @@ Public Function getRois(Rois() As Roi) As Boolean
             XD(i) = CDbl(X(i))
             YD(i) = CDbl(Y(i))
         Next i
-        Set Rois(iRoi) = New Roi
+        Set Rois(iRoi) = New roi
         Rois(iRoi).setRoi roiType(iRoi), roiAim(iRoi), XD, YD
         If Not Rois(iRoi).roiConsistency Then
             Exit Function

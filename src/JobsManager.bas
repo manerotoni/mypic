@@ -18,6 +18,7 @@ Public Type Task
     TrackZ As Boolean
     TrackChannel As Integer
     ZOffset As Double
+    'tskRoi As roi
 End Type
 
 Public wellPt() As WellPoint
@@ -723,6 +724,8 @@ On Error GoTo ExecuteJobAndTrack_Error
                         fcsPosPx(2).Y = fcsPosPx(1).Y - 10
                         fcsPosPx(2).Z = fcsPosPx(1).Z - 1
                         Pipelines(indexPl).Grid.setThisFcsPositionsPx fcsPosPx
+                        Pipelines(indexPl).Grid.setThisFcsImage FilePath & fileName & imgFileExtension
+                        Pipelines(indexPl).Grid.setThisFcsName "fcsLoop; testPt; testPt; testPt"
                         fcsPos = computeCoordinatesFcs(ImgJobs(Pipelines(indexPl).getTask(indexTsk).jobNr), stgPos, fcsPosPx)
                         Pipelines(indexPl).Grid.setThisFcsPositions fcsPos
                     Case Else
@@ -733,33 +736,32 @@ On Error GoTo ExecuteJobAndTrack_Error
                     stgPos.Z = stgPos.Z - Pipelines(indexPl).getTask(indexTsk).ZOffset
                 End If
             Case jobTypes.fcsjob
+                Dim prefix() As String
+                prefix = Split(VBA.Replace(Pipelines(indexPl).Grid.getThisFcsName, " ", ""), ";")
+                If UBound(prefix) < 0 Then
+                    ReDim prefix(0)
+                    prefix(0) = ""
+                End If
                 Time = Timer
                 If isPosArrayEmpty(Pipelines(indexPl).Grid.getThisFcsPositions) Then
-                    If DebugCode Then
-                        ReDim fcsPos(0 To 2)
-                        fcsPos(0) = Double2Vector(0, 0, Lsm5.Hardware.CpFocus.position * 0.000001)
-                        fcsPos(1) = Double2Vector(0.00001, 0.00001, (Lsm5.Hardware.CpFocus.position + 1) * 0.000001)
-                        fcsPos(2) = Double2Vector(-0.00001, -0.00001, (Lsm5.Hardware.CpFocus.position - 1) * 0.000001)
-                        'LogManager.UpdateErrorLog "No fcs Positions have been defined for " & Pipelines(indexPl).Grid.NameGrid & "_" & indexTsk & " use center of image and current Z!"
-                        Pipelines(indexPl).Grid.setThisFcsPositions fcsPos
-                        Pipelines(indexPl).Grid.setThisFcsPositionsPx fcsPos
-                    Else
-                        LogManager.UpdateErrorLog "No fcs Positions has been defined for " & Pipelines(indexPl).Grid.NameGrid & "_" & indexTsk _
-                        & " fcs measurment is not performed! Analyse the previous image in the pipeline and pass the position via the registry!"
-                        GoTo NoProcess
-                    End If
+                    LogManager.UpdateWarningLog "No fcs Positions has been defined for " & Pipelines(indexPl).Grid.NameGrid & "_" & indexTsk _
+                    & " fcs measurment is not performed! Analyse the previous image in the pipeline and pass the position via the registry!"
+                    GoTo NoProcess
                 End If
+                
                 Pipelines(indexPl).Grid.setThisFcsPositionsZOffset .ZOffset * 0.000001
 
-                If Not AcquireFcsJob(.jobNr, FcsJobs(.jobNr), FcsRecordingDoc, FcsData, fileName, Pipelines(indexPl).Grid.getThisFcsPositions) Then
+                If Not AcquireFcsJob(.jobNr, FcsJobs(.jobNr), FcsRecordingDoc, FcsData, appendSep(prefix(0), FNSep) & _
+                fileName, Pipelines(indexPl).Grid.getThisFcsPositions) Then
                     Exit Function
                 End If
                 
                 If .SaveImage Then
-                    If Not SaveFcsMeasurement(FcsData, FcsRecordingDoc, FilePath & fileName & ".fcs") Then
+                    If Not SaveFcsMeasurement(FcsData, FcsRecordingDoc, FilePath & appendSep(prefix(0), FNSep) & fileName & ".fcs") Then
                         Exit Function
                     End If
-                    SaveFcsPositionList FilePath & fileName, Pipelines(indexPl).Grid.getThisFcsPositionsPx, VBA.Right(RecordingDoc.Title, Len(RecordingDoc.Title) - 4) & imgFileExtension
+                    SaveFcsPositionList FilePath & appendSep(prefix(0), FNSep) & fileName, Pipelines(indexPl).Grid.getThisFcsPositionsPx, _
+                                        Pipelines(indexPl).Grid.getThisFcsImage, prefix
                 End If
             Case jobTypes.gotoPip
                 updateSubPipelineGrid .jobNr, Vector2Array(stgPos), fcsPos, fcsPosPx, "", FilePath & fileName & "\"
@@ -1289,11 +1291,13 @@ End Function
 'End Function
 
 
-
+'''
+' make name of file from pipeline and task
+'''
 Private Function FileNameFromPipeline(indexPl As Integer, indexTask As Integer) As String
 On Error GoTo FileNameFromPipeline_Error
     With Pipelines(indexPl)
-        FileNameFromPipeline = PipelineConstructor.TextBoxFileName.value & .Grid.getThisName & .Grid.NameGrid & FNSep & _
+        FileNameFromPipeline = appendSep(PipelineConstructor.TextBoxFileName.value, FNSep) & appendSep(.Grid.getThisName, FNSep) & appendSep(.Grid.NameGrid, FNSep) & _
         CInt(indexTask + 1) & FNSep & .Grid.thisSuffix & .Repetition.thisSuffix
     End With
     Exit Function
@@ -1311,9 +1315,9 @@ On Error GoTo FilePathSuffixFromPipeline_Error
     With Pipelines(indexPl)
         FilePathSuffixFromPipeline = PipelineConstructor.TextBoxFileName.value & .Grid.getThisName & .Grid.NameGrid
         If .Grid.hasOneGridPoint Or Not .Grid.hasWellsAndSubwells Then 'only one position
-            FilePathSuffixFromPipeline = FilePathSuffixFromPipeline & FNSep & .Grid.thisSuffix
+            FilePathSuffixFromPipeline = appendSep(FilePathSuffixFromPipeline, FNSep) & .Grid.thisSuffix
         Else
-            FilePathSuffixFromPipeline = FilePathSuffixFromPipeline & FNSep & .Grid.thisSuffixWell & "\" & FilePathSuffixFromPipeline & FNSep & .Grid.thisSuffix
+            FilePathSuffixFromPipeline = appendSep(FilePathSuffixFromPipeline, FNSep) & .Grid.thisSuffixWell & "\" & appendSep(FilePathSuffixFromPipeline, FNSep) & .Grid.thisSuffix
         End If
     End With
    On Error GoTo 0
@@ -1752,7 +1756,7 @@ On Error GoTo ComputeJobSequential_Error
     Dim newPositions() As Vector
     Dim newPositionsAbs() As Vector
     Dim VectorString() As String
-    Dim Rois() As Roi
+    Dim Rois() As roi
     'Position for fcs as read fro registry these correspond to position in image
     Dim fcsPosPx() As Vector
     'position for fcs as used by the microscope. These are in meters! deviation with respect to current position and z in meters abosolute
@@ -1761,6 +1765,7 @@ On Error GoTo ComputeJobSequential_Error
     Dim codeMic() As String
     Dim code As Variant
     Dim tsk As Task
+    Dim iTsk As Integer
     Dim JobName As String
     Dim prefix As String
     tsk = Pipelines(indexPl).getTask(indexTsk)
@@ -1842,6 +1847,7 @@ On Error GoTo ComputeJobSequential_Error
     OiaSettings.getRois Rois
     prefix = OiaSettings.readKeyFromRegistry("prefix")
 
+    'TODO find way for passing ROIS
     
     ''for all commands in codeMic
     For Each code In codeMic
@@ -1849,7 +1855,10 @@ On Error GoTo ComputeJobSequential_Error
         OiaSettings.writeKeyToRegistry "codeMic", "nothing"
         Select Case code
             Case "nothing", "": 'Nothing to do
-                
+                Pipelines(indexPl).Grid.setThisFcsPositions fcsPos
+                Pipelines(indexPl).Grid.setThisFcsPositionsPx fcsPosPx
+                Pipelines(indexPl).Grid.setThisFcsName prefix
+                Pipelines(indexPl).Grid.setThisFcsImage ""
                 
             Case "error":
                 OiaSettings.readKeyFromRegistry "errorMsg"
@@ -1857,7 +1866,7 @@ On Error GoTo ComputeJobSequential_Error
                 LogManager.UpdateErrorLog "codeMic error. Online image analysis for task " & JobName & " file " & ParentPath & parentFile & " failed . " _
                 & " Error from Oia: " & OiaSettings.getSettings("errorMsg")
                 LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " obtained an error. " & OiaSettings.getSettings("errorMsg")
-            
+                OiaSettings.writeKeyToRegistry "errorMsg", ""
             Case "timeExpired":
                 LogManager.UpdateErrorLog "codeMic timeExpired. Online image analysis for job " & JobName & " file " & ParentPath & parentFile & " took more then " & maxTimeWait & " sec"
                 LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " took more then " & maxTimeWait & " sec"
@@ -1871,11 +1880,6 @@ On Error GoTo ComputeJobSequential_Error
                 If UBound(newPositions) > 0 Then
                     LogManager.UpdateErrorLog " ComputeJobSequential: for Job focus " & ParentPath & parentFile & " passed only one point to X, Y, and Z of regisrty instead of " & UBound(newPositions) + 1 & ". Using the first point!"
                 End If
-'                Pipelines(indexPl).Grid.setThisFcsPosition fcsPos
-'                If Not isArrayEmpty(Rois) Then
-'                    ImgJobs(Pipelines(indexPl).getTask(indexTsk).jobNr).UseRoi = True 'this is not exactly how it should be a task should have associated a roi
-'                    ImgJobs(Pipelines(indexPl).getTask(indexTsk).jobNr).setRois Rois  'this is not exactly how it should be a task should have associated a roi
-'                End If
                 ComputeJobSequential = newPositions(0)
                 LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " focus at  " & " X = " & newPositions(0).X & " Y = " & newPositions(0).Y & " Z = " & newPositions(0).Z & ". Absolute position in um"
             
@@ -1887,6 +1891,8 @@ On Error GoTo ComputeJobSequential_Error
                 End If
                 Pipelines(indexPl).Grid.setThisFcsPositions fcsPos
                 Pipelines(indexPl).Grid.setThisFcsPositionsPx fcsPosPx
+                Pipelines(indexPl).Grid.setThisFcsName prefix
+                Pipelines(indexPl).Grid.setThisFcsImage ParentPath & parentFile
             Case "trigger1", "trigger2":
                 If Pipelines(codeMicToJobName.item(code)).count = 0 Then
                     LogManager.UpdateErrorLog " ComputeJobSequential:  Pipeline " & Pipelines(codeMicToJobName.item(code)).Grid.NameGrid & " has no task to do. Original file " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath")
@@ -1899,10 +1905,16 @@ On Error GoTo ComputeJobSequential_Error
                     ReDim newPositions(0)
                     newPositions(0) = parentPosition
                 End If
-'                If Not isArrayEmpty(Rois) And Pipelines(codeMicToJobName.item(code)).getTask(0).jobType = 0 Then
-'                    ImgJobs(Pipelines(codeMicToJobName.item(code)).getTask(0).jobNr).UseRoi = True  'this is not exactly how it should be a task should have associated a roi
-'                    ImgJobs(Pipelines(codeMicToJobName.item(code)).getTask(0).jobNr).setRois = Rois 'this is not exactly how it should be a task should have associated a roi
-'                End If
+                
+                'this creates a rois for all jobs in pipeline not optimal!!
+                If Not isArrayEmpty(Rois) Then
+                    For iTsk = 0 To Pipelines(codeMicToJobName.item(code)).count - 1
+                        If Pipelines(codeMicToJobName.item(code)).getTask(iTsk).jobType = 0 Then
+                            ImgJobs(Pipelines(codeMicToJobName.item(code)).getTask(iTsk).jobNr).UseRoi = True  'this is not exactly how it should be a task should have associated a roi
+                            ImgJobs(Pipelines(codeMicToJobName.item(code)).getTask(iTsk).jobNr).setRois Rois   'this is not exactly how it should be a task should have associated a roi
+                        End If
+                    Next iTsk
+                End If
                 
                 updateSubPipelineGrid codeMicToJobName.item(code), newPositions, fcsPos, fcsPosPx, prefix, ParentPath & parentFile & "\"
             Case Else

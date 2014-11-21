@@ -541,7 +541,7 @@ Public Function SaveFcsMeasurement(FcsData As AimFcsData, FcsDsDoc As DsRecordin
     SaveFcsMeasurement = True
 End Function
 
-Public Sub SaveFcsPositionList(sFile As String, positionsPx() As Vector, imageName As String)
+Public Sub SaveFcsPositionList(sFile As String, positionsPx() As Vector, imageName As String, classNames() As String)
     On Error GoTo ErrorHandle
     Close
     Dim iFileNum As Integer
@@ -570,13 +570,14 @@ Public Sub SaveFcsPositionList(sFile As String, positionsPx() As Vector, imageNa
     For i = 0 To GetFcsPositionListLength - 1
         getFcsPosition PosX, PosY, PosZ, i
         Print #iFileNum, "<object ID= " & VBA.Chr(34) & i + 1 & VBA.Chr(34) & ">"
-        Print #iFileNum, vbTab & "<class>none</class>"
+        If UBound(classNames) >= i + 1 Then
+            Print #iFileNum, vbTab & "<class>" & classNames(i + 1); "</class>"
+        Else
+            Print #iFileNum, vbTab & "<class></class>"
+        End If
         Print #iFileNum, vbTab & "<x>" & positionsPx(i).X & "</x>"
         Print #iFileNum, vbTab & "<y>" & positionsPx(i).Y & "</y>"
         Print #iFileNum, vbTab & "<z>" & positionsPx(i).Z & "</z>"
-        Print #iFileNum, vbTab & "<xm>" & PosX & "</xm>"
-        Print #iFileNum, vbTab & "<ym>" & PosY & "</ym>"
-        Print #iFileNum, vbTab & "<zm>" & PosZ & "</zm>"
         Print #iFileNum, "</object>"
     Next i
     Print #iFileNum, "</xml>"
