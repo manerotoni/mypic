@@ -170,6 +170,7 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
         Erase ImgJobs
         Erase FcsJobs
         Erase Pipelines
+        End
     Else
         Cancel = True
     End If
