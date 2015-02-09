@@ -31,8 +31,6 @@ Private positionOption As Integer
 
 
 
-
-
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '' USER FORM INITIALIZATION AND DEATH
@@ -733,7 +731,7 @@ Public Function StartSetting() As Boolean
         lastTimePump = CDbl(GetTickCount) * 0.001
     End If
     
-    StartPipeline 0, GlobalRecordingDoc, GlobalFcsRecordingDoc, GlobalFcsData, GlobalDataBaseName, GridScanFirstWell.value
+    StartPipeline 0, GlobalRecordingDoc, GlobalFcsRecordingDoc, GlobalFcsData, GlobalDataBaseName
     
 ExitStart:
     LogManager.UpdateLog "End of Global pipeline", -1
@@ -770,7 +768,6 @@ Private Sub PositionButton2_Click()
         enableFrame FrameGridControl, False
         enableFrame FrameSubGridControl, False
         enableFrame FrameGridLoad, False
-        enableFrame FrameGridOrder, False
         positionOption = 2
     End If
 End Sub
@@ -783,7 +780,6 @@ Private Sub PositionButton3_Click()
         enableFrame FrameGridControl, True
         enableFrame FrameSubGridControl, True
         enableFrame FrameGridLoad, False
-        enableFrame FrameGridOrder, True
         positionOption = 3
     End If
 End Sub
@@ -796,7 +792,6 @@ Private Sub PositionButton4_Click()
         enableFrame FrameGridControl, False
         enableFrame FrameSubGridControl, True
         enableFrame FrameGridLoad, False
-        enableFrame FrameGridOrder, False
         positionOption = 4
     End If
 End Sub
@@ -809,7 +804,6 @@ Private Sub PositionButton5_Click()
         enableFrame FrameGridControl, False
         enableFrame FrameSubGridControl, False
         enableFrame FrameGridLoad, True
-        enableFrame FrameGridOrder, True
         positionOption = 5
     End If
 End Sub

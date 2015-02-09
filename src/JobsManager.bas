@@ -8,7 +8,6 @@ Attribute VB_Name = "JobsManager"
 '---------------------------------------------------------------------------------------
 
 Option Explicit
-
 Public Type Task
     Analyse As Integer
     jobType As Integer
@@ -44,6 +43,12 @@ Public Enum AnalyseImage
     Online = 4
     FcsLoop = 5 'debug mode to automatically start an fcs measurment after an image
 End Enum
+'Public Const NoAnalyse As Integer = 0
+'Public Const AnalyseCenterOfMassThr As Integer = 1
+'Public Const AnalysePeak As Integer = 2
+'Public Const AnalyseCenterOfMass As Integer = 3
+'Public Const AnalyseOnline As Integer = 4
+'Public Const AnalyseFcsLoop As Integer = 5
 Public FocusMethods As Dictionary
 
 
@@ -1003,7 +1008,7 @@ Public Sub resetStopFlags(Optional i As Integer)
 End Sub
 
 '---------------------------------------------------------------------------------------
-' Procedure : StartPipeline
+' Procedure : StartJobOnGrid
 ' Purpose   : Performs imaging/fcs on a grid. Pretty much the whole macro runs through here
 ' Variables : GridName -
 '             JobName -
@@ -1011,7 +1016,7 @@ End Sub
 '---------------------------------------------------------------------------------------
 '
 Public Function StartPipeline(index As Integer, RecordingDoc As DsRecordingDoc, FcsRecordingDoc As DsRecordingDoc, _
-FcsData As AimFcsData, ParentPath As String, Optional WellFirst As Boolean = False) As Boolean
+FcsData As AimFcsData, ParentPath As String) As Boolean
 On Error GoTo StartPipeline_Error
 
     Dim i As Integer
@@ -1083,7 +1088,7 @@ On Error GoTo StartPipeline_Error
                     End If
                 End If
                 
-            Loop While .Grid.nextGridPt(WellFirst)
+            Loop While .Grid.nextGridPt(False)
             
             ''Wait till next repetition
             .Repetition.updateTimeStart
