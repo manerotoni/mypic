@@ -96,7 +96,12 @@ On Error GoTo SetJob_Error
     UseRoi = AcquisitionParameters.UseROIs
     setRoiFromZen
     SetJob = True
-
+    If Recording.TileAcquisition Then
+        If Recording.TileAcquisitionOverlap <> 0 Then
+            MsgBox "Online image analysis does not work if Tile Overlap > 0 ", VbExclamation, "Loading Imaging Job"
+        
+        End If
+    End If
    On Error GoTo 0
    Exit Function
 
@@ -207,16 +212,53 @@ Public Sub SetRecording(value As DsRecording)
 End Sub
 
 ''
-' returns position of central point for a Job
+' returns size of image in pixels base 0
+''''
+Public Function imageSizePx() As Vector
+    Dim TX As Integer
+    Dim TY As Integer
+    TX = 1
+    TY = 1
+    If Recording.TileAcquisition Then
+        TX = Recording.TilesX
+        TY = Recording.TilesY
+    End If
+    imageSizePx.X = Recording.SamplesPerLine * TX
+    
+    If Recording.ScanMode = "ZScan" Then
+        imageSizePx.Y = 0
+    Else
+        imageSizePx.Y = Recording.LinesPerFrame * TY
+    End If
+    
+    If isZStack Then
+        imageSizePx.Z = Recording.framesPerStack
+    Else
+        imageSizePx.Z = 0
+    End If
+End Function
+
+
+''
+' returns size of image in um
+''''
+Public Function imageSize() As Vector
+    Dim imgSizePx As Vector
+    imgSizePx = imageSizePx
+    imageSize.X = imgSizePx.X * Recording.SampleSpacing
+    imageSize.Y = imgSizePx.Y * Recording.SampleSpacing
+    imageSize.Z = imgSizePx.Z * Recording.frameSpacing
+End Function
+
+''
+' returns position of central point for a Job (base 0)
 ''''
 Public Function getCentralPointPx() As Vector
-    getCentralPointPx.X = (Recording.SamplesPerLine - 1) / 2
-    getCentralPointPx.Y = (Recording.LinesPerFrame - 1) / 2
-    If isZStack Then
-        getCentralPointPx.Z = (Recording.framesPerStack - 1) / 2
-    Else
-        getCentralPointPx.Z = 0
-    End If
+    Dim imgSizePx As Vector
+    imgSizePx = imageSizePx
+    getCentralPointPx.X = (imgSizePx.X - 1) / 2
+    getCentralPointPx.Y = (imgSizePx.Y - 1) / 2
+    getCentralPointPx.Z = (imgSizePx.Z - 1) / 2
 End Function
 
 Public Function isBleaching() As Boolean
@@ -235,6 +277,17 @@ Public Function isZStack() As Boolean
         isZStack = False
     End If
 End Function
+
+Public Function isLineScan() As Boolean
+    Dim ScanMode As String
+    ScanMode = Recording.ScanMode
+    If ScanMode = "ZScan" Or ScanMode = "Line" Then
+        isLineScan = True
+    Else
+        isLineScan = False
+    End If
+End Function
+
 
 
 Public Sub setRoiMaxNr(roiMaxNr As Integer)
@@ -342,7 +395,7 @@ Public Function jobDescriptor() As String
     Dim iTrack As Integer
     Dim ScanMode As String
     ScanMode = Recording.ScanMode
-    If ScanMode = "Line" Or ScanMode = "ZScan" Then
+    If isLineScan Then
         'Description = Description & "ScanMode = Line" & vbCrLf
         Description = Description & "X = " & Recording.SamplesPerLine & ", Y = 1" & vbCrLf
         Description = Description & "LineStep = " & Recording.LineStepNumber & vbCrLf

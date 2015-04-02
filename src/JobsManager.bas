@@ -1336,14 +1336,15 @@ End Function
 '
 Public Function checkForMaximalDisplacement(IJob As AJob, currentPos As Vector, newPos As Vector) As Boolean
 On Error GoTo checkForMaximalDisplacement_Error
-
+    Dim imgSize As Vector
+    imgSize = IJob.imageSize
     Dim MaxMovementXY As Double
     Dim MaxMovementZ As Double
-    MaxMovementXY = MAX(IJob.Recording.SamplesPerLine, IJob.Recording.LinesPerFrame) * IJob.Recording.SampleSpacing
-    MaxMovementZ = IJob.Recording.framesPerStack * IJob.Recording.frameSpacing
+    MaxMovementXY = MAX(imgSize.X, imgSize.Y)
+   
     
                                 
-    If Abs(newPos.X - currentPos.X) > MaxMovementXY Or Abs(newPos.Y - currentPos.Y) > MaxMovementXY Or Abs(newPos.Z - currentPos.Z) > MaxMovementZ Then
+    If Abs(newPos.X - currentPos.X) > MaxMovementXY Or Abs(newPos.Y - currentPos.Y) > MaxMovementXY Or Abs(newPos.Z - currentPos.Z) > imgSize.Z Then
         LogManager.UpdateErrorLog "Job " & IJob.Name & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
         "dX, dY, dZ = " & Abs(newPos.X - currentPos.X) & ", " & Abs(newPos.Y - currentPos.Y) & ", " & Abs(newPos.Z - currentPos.Z) & vbCrLf & _
         "accepted dX, dY, dZ = " & MaxMovementXY & ", " & MaxMovementXY & ", " & MaxMovementZ
@@ -1397,22 +1398,13 @@ End Function
 '
 Private Function checkForMaximalDisplacementPixels(IJob As AJob, newPos As Vector) As Boolean
 On Error GoTo checkForMaximalDisplacementPixels_Error
-    Dim MaxX As Long
+    Dim imgSizePx As Vector
     Dim MaxY As Long
     Dim MaxZ As Long
     Dim i As Integer
+    
+    imgSizePx = IJob.imageSizePx
 
-    MaxX = IJob.Recording.SamplesPerLine - 1
-    If IJob.Recording.ScanMode = "ZScan" Then
-        MaxY = 0
-    Else
-        MaxY = IJob.Recording.LinesPerFrame - 1
-    End If
-    If IJob.isZStack Then
-        MaxZ = IJob.Recording.framesPerStack - 1
-    Else
-        MaxZ = 0
-    End If
 
     If newPos.X + TolPx < 0 Then
         LogManager.UpdateErrorLog "Job " & IJob.Name & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned negative pixel values " & _
@@ -1432,22 +1424,22 @@ On Error GoTo checkForMaximalDisplacementPixels_Error
         newPos.Z = 0
     End If
     
-    If newPos.X - MaxX > TolPx Then
+    If newPos.X - imgSizePx.X > TolPx Then
         LogManager.UpdateErrorLog "Job " & IJob.Name & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
-        "X = " & newPos.X & " accepted range is X = " & 0 & "-" & MaxX & ". VBA macro sets value to center of image" & MaxX / 2
-        newPos.X = MaxX / 2
+        "X = " & newPos.X & " accepted range is X = " & 0 & "-" & imgSizePx.X & ". VBA macro sets value to center of image " & imgSizePx.X / 2
+        newPos.X = imgSizePx.X / 2
     End If
     
-    If newPos.Y - MaxY > TolPx Then
+    If newPos.Y - imgSizePx.Y > TolPx Then
         LogManager.UpdateErrorLog "Job " & IJob.Name & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
-        "Y = " & newPos.Y & " accepted range is Y = " & 0 & "-" & MaxY & ". VBA macro sets value to center of image" & MaxY / 2
-        newPos.Y = MaxY / 2
+        "Y = " & newPos.Y & " accepted range is Y = " & 0 & "-" & imgSizePx.Y & ". VBA macro sets value to center of image" & imgSizePx.Y / 2
+        newPos.Y = imgSizePx.Y / 2
     End If
     
-    If newPos.Z - MaxZ > TolPx Then
+    If newPos.Z - imgSizePx.Z > TolPx Then
         LogManager.UpdateErrorLog "Job " & IJob.Name & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
-        "Z = " & newPos.Z & " accepted range is Z = " & 0 & "-" & MaxZ & ". VBA macro sets value to center of image" & MaxZ / 2
-        newPos.Z = MaxZ / 2
+        "Z = " & newPos.Z & " accepted range is Z = " & 0 & "-" & imgSizePx.Z & ". VBA macro sets value to center of image" & imgSizePx.Z / 2
+        newPos.Z = imgSizePx.Z / 2
     End If
     checkForMaximalDisplacementPixels = True
 
@@ -1550,7 +1542,7 @@ End Function
 '
 Public Function computeCoordinatesImaging(IJob As AJob, currentPosition As Vector, newPosition() As Vector) As Vector()
 On Error GoTo computeCoordinatesImaging_Error
-    
+    Dim imgSize As Vector
     Dim pixelSize As Double
     Dim frameSpacing As Double
     Dim MaxX As Integer
@@ -1563,24 +1555,14 @@ On Error GoTo computeCoordinatesImaging_Error
     'pixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing 'This is in meter!!! be careful . Position for imaging is provided in um
     pixelSize = IJob.Recording.SampleSpacing ' this is in um
     'compute difference with respect to center
-    MaxX = IJob.Recording.SamplesPerLine - 1
-    If IJob.Recording.ScanMode = "ZScan" Then
-        MaxY = 0
-    Else
-        MaxY = IJob.Recording.LinesPerFrame - 1
-    End If
-    If IJob.isZStack Then
-        MaxZ = IJob.Recording.framesPerStack - 1
-    Else
-        MaxZ = 0
-    End If
+    imgSize = IJob.imageSizePx
     frameSpacing = IJob.Recording.frameSpacing
     
     For i = 0 To UBound(newPosition)
-        position(i).X = (position(i).X - MaxX / 2) * pixelSize
-        position(i).Y = (position(i).Y - MaxY / 2) * pixelSize
+        position(i).X = (position(i).X - (imgSize.X - 1) / 2) * pixelSize
+        position(i).Y = (position(i).Y - (imgSize.Y - 1) / 2) * pixelSize
         If IJob.isZStack Then
-            position(i).Z = (position(i).Z - MaxZ / 2) * frameSpacing
+            position(i).Z = (position(i).Z - (imgSize.Z - 1) / 2) * frameSpacing
         Else
             position(i).Z = 0
         End If
@@ -1609,36 +1591,24 @@ End Function
 '
 Public Function computeCoordinatesFcs(IJob As AJob, currentPosition As Vector, newPosition() As Vector) As Vector()
 On Error GoTo computeCoordinatesFcs_Error
+    Dim imgSizePx  As Vector
     Dim pixelSize As Double
     Dim frameSpacing As Double
-    Dim MaxX As Integer
-    Dim MaxY As Integer
-    Dim MaxZ As Integer
-    Dim framesPerStack As Integer
     Dim i As Integer
     Dim position() As Vector
     position = newPosition
     'pixelSize = Lsm5.DsRecordingActiveDocObject.Recording.SampleSpacing 'This is in meter!!! be careful . Position for imaging is provided in um
     pixelSize = IJob.Recording.SampleSpacing ' this is in um
-    'compute difference with respect to center
-    MaxX = IJob.Recording.SamplesPerLine - 1
-    If IJob.Recording.ScanMode = "ZScan" Then
-        MaxY = 0
-    Else
-        MaxY = IJob.Recording.LinesPerFrame - 1
-    End If
-    If IJob.isZStack Then
-        MaxZ = IJob.Recording.framesPerStack - 1
-    Else
-        MaxZ = 0
-    End If
     frameSpacing = IJob.Recording.frameSpacing
+    imgSizePx = IJob.imageSizePx
+    'compute difference with respect to center
+    
     For i = 0 To UBound(newPosition)
         'for FCS position is with respect center of image in meter
-        position(i).X = (position(i).X - MaxX / 2) * pixelSize * 0.000001
-        position(i).Y = (position(i).Y - MaxY / 2) * pixelSize * 0.000001
+        position(i).X = (position(i).X - (imgSizePx.X - 1) / 2) * pixelSize * 0.000001
+        position(i).Y = (position(i).Y - (imgSizePx.Y - 1) / 2) * pixelSize * 0.000001
         If IJob.isZStack Then
-            position(i).Z = (position(i).Z - MaxZ / 2) * frameSpacing
+            position(i).Z = (position(i).Z - (imgSizePx.Z - 1) / 2) * frameSpacing
         Else
             position(i).Z = 0
         End If
@@ -1812,7 +1782,7 @@ On Error GoTo ComputeJobSequential_Error
     codeMic = Split(Replace(OiaSettings.getSettings("codeMic"), " ", ""), ";")
 
 
-    'Read positions and rois from registry the fcs positions are read with respect to
+    'Read positions and rois from registry the fcs positions are read with respect to center of image
     If OiaSettings.getFcsPositions(fcsPosPx, ImgJobs(tsk.jobNr).getCentralPointPx) Then
         VectorString = VectorList2String(fcsPosPx)
         LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " obtained " & UBound(fcsPosPx) + 1 & " position(s) " & _

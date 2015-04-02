@@ -33,6 +33,8 @@ Private positionOption As Integer
 
 
 
+
+
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '' USER FORM INITIALIZATION AND DEATH
@@ -361,7 +363,8 @@ On Error GoTo SaveFormSettings_Error
         End With
     Next ipip
     Print #iFileNum, "PosSet " & positionOption & " nRow " & GridScan_nRow & " nColumn " & GridScan_nColumn & " dRow " & GridScan_dRow & " dColumn " & GridScan_dColumn & _
-    " nRowSub " & GridScan_nRowsub & " nColumnSub " & GridScan_nColumnsub & " dRowSub " & GridScan_dRowsub & " dColumnSub " & GridScan_dColumnsub
+    " nRowSub " & GridScan_nRowsub & " nColumnSub " & GridScan_nColumnsub & " dRowSub " & GridScan_dRowsub & " dColumnSub " & _
+    GridScan_dColumnsub & " FirstWell " & CInt(GridScan_FirstWell.value) & " WellUpperLeft " & CInt(GridScan_WellUpperLeft.value)
     Close #iFileNum
     Exit Sub
 SaveFormSettings_Error:
@@ -718,6 +721,7 @@ Public Function StartSetting() As Boolean
     'set all grids to 0 fo the start
     For i = 0 To UBound(Pipelines)
         Pipelines(i).Grid.initializeToZero
+        Pipelines(i).Grid.wellUpperLeft = GridScan_WellUpperLeft.value
     Next i
     
     Set TimersGridCreation = Nothing
@@ -733,7 +737,7 @@ Public Function StartSetting() As Boolean
         lastTimePump = CDbl(GetTickCount) * 0.001
     End If
     
-    StartPipeline 0, GlobalRecordingDoc, GlobalFcsRecordingDoc, GlobalFcsData, GlobalDataBaseName, GridScanFirstWell.value
+    StartPipeline 0, GlobalRecordingDoc, GlobalFcsRecordingDoc, GlobalFcsData, GlobalDataBaseName, GridScan_FirstWell.value
     
 ExitStart:
     LogManager.UpdateLog "End of Global pipeline", -1
@@ -758,6 +762,7 @@ Private Sub PositionButton1_Click()
         enableFrame FrameGridControl, False
         enableFrame FrameSubGridControl, False
         enableFrame FrameGridLoad, False
+        enableFrame FrameGridOrder, False
         positionOption = 1
     End If
 End Sub
@@ -796,7 +801,7 @@ Private Sub PositionButton4_Click()
         enableFrame FrameGridControl, False
         enableFrame FrameSubGridControl, True
         enableFrame FrameGridLoad, False
-        enableFrame FrameGridOrder, False
+        enableFrame FrameGridOrder, True
         positionOption = 4
     End If
 End Sub
@@ -1072,6 +1077,22 @@ Private Sub SavePositionsButton_Click()
     End If
 ExitSub:
     DisplayProgress Me.ProgressLabel, "Ready", RGB(&HC0, &HC0, 0)
+End Sub
+
+'''
+' Update GUI when reloeding the positions
+'''
+Private Sub GridScan_FirstWell_Change()
+    If Not GridScan_FirstWell.value Then
+        GridScan_FirstSubPos.value = True
+    End If
+End Sub
+
+
+Private Sub GridScan_WellUpperLeft_Change()
+    If Not GridScan_WellUpperLeft.value Then
+        GridScan_WellCenter.value = True
+    End If
 End Sub
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''

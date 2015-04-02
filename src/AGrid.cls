@@ -18,6 +18,9 @@ Option Explicit
 Public NameGrid As String
 ''' a grid may not be actually running
 Private pIsRunning As Boolean
+''' Well is first position of subWell
+Private pWellUpperLeft As Boolean
+
 '''' Max zeros padded in front of Wxxxx
 Const maxZeros = 4
 
@@ -25,8 +28,10 @@ Const maxZeros = 4
 Private Type GridPoint
     ParentPath As String 'Absolute path to store the object
     Name As String    'this should be used as prefix for the name, e.g. siRNA name
+    fcsName As String
     stgPos As Vector  'this is a stage position
     fcsPos() As Vector 'this are aboslute position where to take measurments in meter. X, Y is with respect to center of image (current pos) Z (in m) absolute position
+    fcsImage As String
     fcsPosPx() As Vector ' this are px positions using the usual convention 0,0,0 is upper left and bottom of image stack
     valid As Boolean
 End Type
@@ -44,6 +49,7 @@ Public iRow As Long
 Public iCol As Long
 Public iRowSub As Long
 Public iColSub As Long
+
 
 '''
 '   Initialize the dimensions of the array
@@ -121,7 +127,6 @@ Public Sub updateGridSizePreserve(Row As Long, Col As Long, RowSub As Long, ColS
     Me.numCol = Col
     Me.numRowSub = RowSub
     Me.numColSub = ColSub
-
     ReDim Preserve GridArray(1 To Me.numRow, 1 To Me.numCol, 1 To Me.numRowSub, 1 To Me.numColSub)
 End Sub
 
@@ -145,6 +150,14 @@ Private Function correctIndeces(Row As Long, Col As Long, RowSub As Long, ColSub
         MsgBox "Grid getPt: was not able to access grid pt. Gridposition does not correspond to grid size"
     End If
 End Function
+
+Public Property Let wellUpperLeft(value As Boolean)
+    pWellUpperLeft = value
+End Property
+
+Public Property Get wellUpperLeft() As Boolean
+    wellUpperLeft = pWellUpperLeft
+End Property
 
 '''
 ' set if grid is running or not
@@ -239,7 +252,21 @@ Public Function suffix(Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     End If
 End Function
 
+Public Function setThisFcsName(value As String)
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).fcsName = value
+End Function
 
+Public Function setThisFcsImage(value As String)
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).fcsImage = value
+End Function
+
+Public Function getThisFcsName() As String
+     getThisFcsName = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).fcsName
+End Function
+
+Public Function getThisFcsImage() As String
+     getThisFcsImage = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).fcsImage
+End Function
 
 Public Function getThisName() As String
     getThisName = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).Name
@@ -262,7 +289,7 @@ Public Sub setName(value As String, Row As Long, Col As Long, RowSub As Long, Co
     If correctIndeces(Row, Col, RowSub, ColSub) Then
         GridArray(Row, Col, RowSub, ColSub).Name = value
         If value <> "" Then
-            If VBA.Right(value, 1) <> FNSep Then
+            If VBA.Right(value, Len(FNSep)) <> FNSep Then
                 GridArray(Row, Col, RowSub, ColSub).Name = value & FNSep
             End If
         End If
@@ -678,7 +705,7 @@ End Function
 '''''
 '   makeGridFromOnePt( pos As Vector, posGridY() As Double, posGridXY_valid() )
 '   Create a Grid and a Subgrid use using  pos as starting coordinates
-'       dX, dY:         Gridspacing main Grid. The main grid is the center of the subgrid
+'       dX, dY:         Gridspacing main Grid. The main grid is the upper left corner of subgrid
 '       dXsub, dYsub:   Gridspacing subGrid
 '       refRow:         reference row where main grid starts
 '       refCol:         reference column where main grid starts
@@ -698,9 +725,15 @@ dRowSub As Double, dColSub As Double, Optional refRow As Integer = 1, Optional r
             For iCol = 1 To Me.numCol
                 For iRowSub = 1 To Me.numRowSub
                     For iColSub = 1 To Me.numColSub
-                        GridArray(iRow, iCol, iRowSub, iColSub).stgPos.X = Round(pos.X + (1 - refCol) * dCol + (iCol - 1) * dCol + (iColSub - 1) * dColSub, PrecXY)
-                        GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Y = Round(pos.Y + (1 - refRow) * dRow + (iRow - 1) * dRow + (iRowSub - 1) * dRowSub, PrecXY)
-                        GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Z = Round(pos.Z, PrecZ)
+                        If pWellUpperLeft Then
+                            GridArray(iRow, iCol, iRowSub, iColSub).stgPos.X = Round(pos.X + (1 - refCol) * dCol + (iCol - 1) * dCol + (iColSub - 1) * dColSub, PrecXY)
+                            GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Y = Round(pos.Y + (1 - refRow) * dRow + (iRow - 1) * dRow + (iRowSub - 1) * dRowSub, PrecXY)
+                            GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Z = Round(pos.Z, PrecZ)
+                        Else
+                            GridArray(iRow, iCol, iRowSub, iColSub).stgPos.X = Round(pos.X + (1 - refCol) * dCol + (iCol - 1) * dCol + (iColSub - 1 - (Me.numColSub - 1) / 2) * dColSub, PrecXY)
+                            GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Y = Round(pos.Y + (1 - refRow) * dRow + (iRow - 1) * dRow + (iRowSub - 1 - (Me.numRowSub - 1) / 2) * dRowSub, PrecXY)
+                            GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Z = Round(pos.Z, PrecZ)
+                        End If
                     Next iColSub
                 Next iRowSub
             Next iCol
@@ -732,9 +765,15 @@ Public Sub makeGridFromManyPts(pos() As Vector, Row As Long, Col As Long, RowSub
         For iCol = 1 To Me.numCol
             For iRowSub = 1 To Me.numRowSub
                 For iColSub = 1 To Me.numColSub
-                    GridArray(1, iCol, iRowSub, iColSub).stgPos.X = Round(pos(iCol - 1).X + (iColSub - 1 - (Me.numColSub - 1) / 2) * dColSub, PrecXY)
-                    GridArray(1, iCol, iRowSub, iColSub).stgPos.Y = Round(pos(iCol - 1).Y + (iRowSub - 1 - (Me.numRowSub - 1) / 2) * dRowSub, PrecXY)
-                    GridArray(1, iCol, iRowSub, iColSub).stgPos.Z = Round(pos(iCol - 1).Z, PrecZ)
+                    If pWellUpperLeft Then
+                        GridArray(1, iCol, iRowSub, iColSub).stgPos.X = Round(pos(iCol - 1).X + (iColSub - 1) * dColSub, PrecXY)
+                        GridArray(1, iCol, iRowSub, iColSub).stgPos.Y = Round(pos(iCol - 1).Y + (iRowSub - 1) * dRowSub, PrecXY)
+                        GridArray(1, iCol, iRowSub, iColSub).stgPos.Z = Round(pos(iCol - 1).Z, PrecZ)
+                    Else
+                        GridArray(1, iCol, iRowSub, iColSub).stgPos.X = Round(pos(iCol - 1).X + (iColSub - 1 - (Me.numColSub - 1) / 2) * dColSub, PrecXY)
+                        GridArray(1, iCol, iRowSub, iColSub).stgPos.Y = Round(pos(iCol - 1).Y + (iRowSub - 1 - (Me.numRowSub - 1) / 2) * dRowSub, PrecXY)
+                        GridArray(1, iCol, iRowSub, iColSub).stgPos.Z = Round(pos(iCol - 1).Z, PrecZ)
+                    End If
                 Next iColSub
             Next iRowSub
         Next iCol

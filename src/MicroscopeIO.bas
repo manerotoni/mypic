@@ -258,6 +258,8 @@ RepeatScanToFcs:
             TimeToWait = .MeasurementTime * .MeasurementRepeat * FcsControl.SamplePositionParameters.PositionListSize * 1000 + fcsTimeOverhead
         End If
     End With
+    ''test purpose
+    TimeToWait = 0
     FcsControl.StartMeasurement FcsData
     
     SleepWithEvents TimeToWait
