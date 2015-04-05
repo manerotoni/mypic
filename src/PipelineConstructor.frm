@@ -46,7 +46,7 @@ Public Sub UserForm_Initialize()
     Dim lngIcon As Long
     Dim lnghWnd As Long
     
-    Version = "v0.3"
+    Version = "v0.4"
     Me.Caption = Me.Caption + " " + Version
 
     'Contains name of the Grids two letter code
