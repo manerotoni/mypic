@@ -457,7 +457,11 @@ Public Sub LoadFormSettings(fileName As String)
                     Me.Controls("PositionButton" & ipip).value = True
                     For iSet = 2 To UBound(FieldEntries) Step 2
                         On Error GoTo nextiSet
-                        Me.Controls("GridScan_" & FieldEntries(iSet)).value = CInt(FieldEntries(iSet + 1))
+                        If VarType(Me.Controls("GridScan_" & FieldEntries(iSet)).value) = vbBoolean Then
+                            Me.Controls("GridScan_" & FieldEntries(iSet)).value = CBool(FieldEntries(iSet + 1))
+                        Else
+                            Me.Controls("GridScan_" & FieldEntries(iSet)).value = CInt(FieldEntries(iSet + 1))
+                        End If
 nextiSet:
                     Next iSet
                 End If
