@@ -59,7 +59,7 @@ Public Sub initializeDefault()
     Set subKey_roiAim_HowTo = New Dictionary
     subKey_roiAim_HowTo.Add "", "(empty char) do nothing with roi"
     subKey_roiAim_HowTo.Add "nothing", "do nothing with roi"
-    subKey_roiAim_HowTo.Add "bleach", "bleach and analyse roi"
+    subKey_roiAim_HowTo.Add "bleach", "bleach roi"
     subKey_roiAim_HowTo.Add "acquisition", "acquire roi"
     subKey_roiAim_HowTo.Add "acquisitionBleach", "acquire and bleach"
     subKey_roiAim_HowTo.Add "acquisitionAnalyse", "acquire and analyse"
@@ -104,6 +104,7 @@ Public Sub initializeDefault()
     subKey_codeMic_HowTo.Add "trigger1", "perform job Trigger1 at position X, Y, and Z"
     subKey_codeMic_HowTo.Add "trigger2", "perform job Trigger2 at position X, Y, and Z"
     subKey_codeMic_HowTo.Add "setFcsPos", "read position for putative fcs Measurement fcsX, fcsY, and fcsZ"
+    subKey_codeMic_HowTo.Add "setRoi", "read ROI and update ROI for subsequent tasks in current pipelines"
     
     Set subKey_codeOia_HowTo = New Dictionary
     subKey_codeOia_HowTo.Add "", "(empty char) online image analysis does nothing"
@@ -160,20 +161,20 @@ Public Function createKeyReport() As String
     report = "Windows registry keys to interact with Online image analysis" & vbCrLf & _
     "location is: HKCU\SOFTWARE\VB and VBA Program Settings\OnlineImageAnalysis\macro" & vbCrLf & _
     "All coordinates must be in pixels. (X, Y, Z) = (0,0,0) is the upper left corner, first slice." & vbCrLf & _
-    "Use dot notation for subpixel (e.g. 2.5) !" & vbCrLf & _
+    "Use dot notation for subpixel (e.g. 2.5) !" & Chr(13) & _
     "------------------------" & vbCrLf & _
     "Principal Keys and meaning:" & vbCrLf
     report = report & available_subKey(Keys_HowTo)
-    report = report & "------------------------" & vbCrLf
-    report = report & "codeMic values: several commands separated with ;" & vbCrLf
+    report = report & "------------------------" & Chr(13)
+    report = report & "codeMic values: several commands separated with ;" & Chr(13)
     report = report & available_subKey(subKey_codeMic_HowTo)
-    report = report & "------------------------" & vbCrLf
+    report = report & "------------------------" & Chr(13)
     report = report & "codeOia values:" & vbCrLf
     report = report & available_subKey(subKey_codeOia_HowTo)
-    report = report & "------------------------" & vbCrLf
+    report = report & "------------------------" & Chr(13)
     report = report & "roiType values:" & vbCrLf
     report = report & available_subKey(subKey_roiType_HowTo)
-    report = report & "------------------------" & vbCrLf
+    report = report & "------------------------" & Chr(13)
     report = report & "roiAim values:" & vbCrLf
     report = report & available_subKey(subKey_roiAim_HowTo)
     
@@ -301,7 +302,6 @@ End Function
 '   writeToRegistry()
 '       Write settings with keys defined in Keys to Registry
 ''''
-
 Public Sub writeToRegistry()
     checkExistKeys
     Dim Key As Variant
@@ -501,22 +501,6 @@ Public Function getPositions(stgPos() As Vector, currentPosition As Vector) As B
         & vbCrLf & "X=X1; X2; ... " & vbCrLf & "Y = Y1; Y2; Y3.... " & vbCrLf & "Z = Z1; Z2; Z3.... "
         Exit Function
     End If
-    
-'    If Settings.Exists("deltaZ") Then
-'        locDeltaZ() = Split(Settings.Item("deltaZ"), ",")
-'    End If
-'
-'    If isArrayEmpty(locDeltaZ) Then
-'        ReDim locDeltaZ(UBound(locX)) 'deltaZ has not been set. We use a default values
-'        For i = 0 To UBound(locDeltaZ)
-'            locDeltaZ(i) = -1
-'        Next i
-'    End If
-'
-'    If UBound(locDeltaZ) <> UBound(locX) Then 'deltaZ has not been set for all positions
-'        MsgBox ("StorePositionsFromRegistry: nr of values in registry for deltaz, z are not the same, separate the values with comma!")
-'        Exit Function
-'    End If
     
     ' Convert values to Double
     ReDim stgPos(0 To UBound(locX))

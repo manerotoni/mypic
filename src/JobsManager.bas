@@ -174,7 +174,7 @@ On Error GoTo AcquireJob_Error
         End If
     End If
         
-    'Change settings for new Job if it is different from currentJob (global variable)
+    'Change settings for new Job if it is different from currentImgJob (global variable)
     If jobNr <> currentImgJob Then
         Job.PutJob ZEN
     End If
@@ -1344,7 +1344,7 @@ On Error GoTo checkForMaximalDisplacement_Error
    
     
                                 
-    If Abs(newPos.X - currentPos.X) > MaxMovementXY Or Abs(newPos.Y - currentPos.Y) > MaxMovementXY Or Abs(newPos.Z - currentPos.Z) > imgSize.Z Then
+    If Abs(newPos.X - currentPos.X) > MaxMovementXY Or Abs(newPos.Y - currentPos.Y) > MaxMovementXY Or (IJob.isZStack And Abs(newPos.Z - currentPos.Z) > imgSize.Z) Then
         LogManager.UpdateErrorLog "Job " & IJob.Name & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
         "dX, dY, dZ = " & Abs(newPos.X - currentPos.X) & ", " & Abs(newPos.Y - currentPos.Y) & ", " & Abs(newPos.Z - currentPos.Z) & vbCrLf & _
         "accepted dX, dY, dZ = " & MaxMovementXY & ", " & MaxMovementXY & ", " & MaxMovementZ
@@ -1424,19 +1424,19 @@ On Error GoTo checkForMaximalDisplacementPixels_Error
         newPos.Z = 0
     End If
     
-    If newPos.X - imgSizePx.X > TolPx Then
+    If newPos.X - (imgSizePx.X - 1) > TolPx Then
         LogManager.UpdateErrorLog "Job " & IJob.Name & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
         "X = " & newPos.X & " accepted range is X = " & 0 & "-" & imgSizePx.X & ". VBA macro sets value to center of image " & imgSizePx.X / 2
         newPos.X = imgSizePx.X / 2
     End If
     
-    If newPos.Y - imgSizePx.Y > TolPx Then
+    If newPos.Y - (imgSizePx.Y - 1) > TolPx Then
         LogManager.UpdateErrorLog "Job " & IJob.Name & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
         "Y = " & newPos.Y & " accepted range is Y = " & 0 & "-" & imgSizePx.Y & ". VBA macro sets value to center of image" & imgSizePx.Y / 2
         newPos.Y = imgSizePx.Y / 2
     End If
     
-    If newPos.Z - imgSizePx.Z > TolPx Then
+    If newPos.Z - (imgSizePx.Z - 1) > TolPx And IJob.isZStack Then
         LogManager.UpdateErrorLog "Job " & IJob.Name & " " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath") & " online image analysis returned a too large displacement/focus " & _
         "Z = " & newPos.Z & " accepted range is Z = " & 0 & "-" & imgSizePx.Z & ". VBA macro sets value to center of image" & imgSizePx.Z / 2
         newPos.Z = imgSizePx.Z / 2
@@ -1748,7 +1748,6 @@ On Error GoTo ComputeJobSequential_Error
     'default return value is currentPosition
     ComputeJobSequential = parentPosition
     'helping variables giving the parentPosition in px
-        
     Select Case codeMic(0)
         Case "wait":
             'Wait for image analysis to finish
@@ -1781,7 +1780,6 @@ On Error GoTo ComputeJobSequential_Error
     
     codeMic = Split(Replace(OiaSettings.getSettings("codeMic"), " ", ""), ";")
 
-
     'Read positions and rois from registry the fcs positions are read with respect to center of image
     If OiaSettings.getFcsPositions(fcsPosPx, ImgJobs(tsk.jobNr).getCentralPointPx) Then
         VectorString = VectorList2String(fcsPosPx)
@@ -1808,8 +1806,17 @@ On Error GoTo ComputeJobSequential_Error
         If Not checkForMaximalDisplacementVec(ImgJobs(tsk.jobNr), parentPosition, newPositions) Then
             GoTo ExitThis
         End If
+        OiaSettings.writeKeyToRegistry "X", ""
+        OiaSettings.writeKeyToRegistry "Y", ""
+        OiaSettings.writeKeyToRegistry "Z", ""
     End If
     OiaSettings.getRois Rois
+    OiaSettings.writeKeyToRegistry "roiAim", ""
+    OiaSettings.writeKeyToRegistry "roiType", ""
+    OiaSettings.writeKeyToRegistry "roiX", ""
+    OiaSettings.writeKeyToRegistry "roiY", ""
+
+    
     prefix = OiaSettings.readKeyFromRegistry("prefix")
 
     'TODO find way for passing ROIS
@@ -1824,7 +1831,6 @@ On Error GoTo ComputeJobSequential_Error
                 Pipelines(indexPl).Grid.setThisFcsPositionsPx fcsPosPx
                 Pipelines(indexPl).Grid.setThisFcsName prefix
                 Pipelines(indexPl).Grid.setThisFcsImage ""
-                
             Case "error":
                 OiaSettings.readKeyFromRegistry "errorMsg"
                 OiaSettings.getSettings ("errorMsg")
@@ -1850,14 +1856,38 @@ On Error GoTo ComputeJobSequential_Error
             
             Case "setFcsPos":
                 If isPosArrayEmpty(fcsPos) Then
-                    LogManager.UpdateErrorLog "ComputeJobSequential: No position/wrong position for settings FCS position of current point."
+                    LogManager.UpdateErrorLog "ComputeJobSequential: No position/wrong position for settings FCS. No FCS pts are being set."
                     Pipelines(indexPl).Grid.setThisFcsPositions fcsPos
+                    Pipelines(indexPl).Grid.setThisFcsPositionsPx fcsPosPx
+                    Pipelines(indexPl).Grid.setThisFcsName prefix
+                    Pipelines(indexPl).Grid.setThisFcsImage ""
                     GoTo nextCode
                 End If
+
                 Pipelines(indexPl).Grid.setThisFcsPositions fcsPos
                 Pipelines(indexPl).Grid.setThisFcsPositionsPx fcsPosPx
                 Pipelines(indexPl).Grid.setThisFcsName prefix
                 Pipelines(indexPl).Grid.setThisFcsImage ParentPath & parentFile
+                
+            Case "setRoi":
+                If indexTsk + 1 > Pipelines(indexPl).count - 1 Then
+                    LogManager.UpdateErrorLog "ComputeJobSequential: No next imaging task to which associate a ROI."
+                    GoTo nextCode
+                End If
+                If Pipelines(indexPl).getTask(indexTsk + 1).jobType <> 0 Then
+                    LogManager.UpdateErrorLog "ComputeJobSequential: No next imaging task to which associate a ROI."
+                    GoTo nextCode
+                End If
+                If isArrayEmpty(Rois) Then
+                    LogManager.UpdateErrorLog "ComputeJobSequential: No ROI specified. ROIs of next imaging task will be removed."
+                    ImgJobs(Pipelines(indexPl).getTask(indexTsk + 1).jobNr).UseRoi = False
+                    ImgJobs(Pipelines(indexPl).getTask(indexTsk + 1).jobNr).clearRois
+                    GoTo nextCode
+                End If
+                ImgJobs(Pipelines(indexPl).getTask(indexTsk + 1).jobNr).UseRoi = True
+                ImgJobs(Pipelines(indexPl).getTask(indexTsk + 1).jobNr).setRois Rois
+                currentImgJob = -1  'reset current imaging Job so that next job will be forced to be reloaded
+            
             Case "trigger1", "trigger2":
                 If Pipelines(codeMicToJobName.item(code)).count = 0 Then
                     LogManager.UpdateErrorLog " ComputeJobSequential:  Pipeline " & Pipelines(codeMicToJobName.item(code)).Grid.NameGrid & " has no task to do. Original file " & GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath")
@@ -1870,7 +1900,6 @@ On Error GoTo ComputeJobSequential_Error
                     ReDim newPositions(0)
                     newPositions(0) = parentPosition
                 End If
-                
                 'this creates a rois for all jobs in pipeline not optimal!!
                 If Not isArrayEmpty(Rois) Then
                     For iTsk = 0 To Pipelines(codeMicToJobName.item(code)).count - 1

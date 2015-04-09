@@ -35,6 +35,18 @@ Private positionOption As Integer
 
 
 
+Private Sub ShowOiaKeysButton_Click()
+'''''
+' Display Keys used for Online image analysis
+'''''
+    Dim OiaSettings As OnlineIASettings
+    Set OiaSettings = New OnlineIASettings
+    OiaSettings.initializeDefault
+    KeyReport.Show
+    KeyReport.KeyReportLabel2.MultiLine = True
+    KeyReport.KeyReportLabel2.Text = OiaSettings.createKeyReport
+End Sub
+
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 '' USER FORM INITIALIZATION AND DEATH
@@ -46,7 +58,7 @@ Public Sub UserForm_Initialize()
     Dim lngIcon As Long
     Dim lnghWnd As Long
     
-    Version = "v0.4"
+    Version = "v0.5"
     Me.Caption = Me.Caption + " " + Version
 
     'Contains name of the Grids two letter code
