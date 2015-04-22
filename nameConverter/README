@@ -1,9 +1,0 @@
-Windows usage of nameconverter.pl
-Install strawberry Perl http://strawberryperl.com
-edit nameconverter.pl (e.g. using http://notepad-plus-plus.org/download/v6.3.1.html)
-change $naming to the file name of your cellbase conversion
-change $dir    to the directory locating the lsm files
-
-Click on windows symbol and type cmd in search programs and files
-Go to the directory where nameconverter.pl is 
-type: perl nameconverter.pl
