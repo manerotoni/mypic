@@ -226,7 +226,7 @@ Public Function imageSizePx() As Vector
     imageSizePx.X = Recording.SamplesPerLine * TX
     
     If Recording.ScanMode = "ZScan" Then
-        imageSizePx.Y = 0
+        imageSizePx.Y = 1
     Else
         imageSizePx.Y = Recording.LinesPerFrame * TY
     End If
@@ -234,7 +234,7 @@ Public Function imageSizePx() As Vector
     If isZStack Then
         imageSizePx.Z = Recording.framesPerStack
     Else
-        imageSizePx.Z = 0
+        imageSizePx.Z = 1
     End If
 End Function
 
