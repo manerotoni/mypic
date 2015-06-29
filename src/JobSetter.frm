@@ -363,12 +363,13 @@ End Sub
 Private Sub StopButton_Click()
     ScanStop = True
     StopAcquisition
-    
+    ScanStop = False
 End Sub
 
 Private Sub StopFcsButton_Click()
     ScanStop = True
     StopAcquisition
+    ScanStop = False
 End Sub
 
 Private Sub Track1_Click()
@@ -429,13 +430,16 @@ End Sub
 
 Private Sub SetFcsJob_Click()
     Dim index As Integer
+    Dim OpenForms() As Boolean
     index = FcsJobList.ListIndex
     If index = -1 Then
          MsgBox "FcsJob list is empty or you need to select one job", VbExclamation, "JobSetter Warning"
         Exit Sub
     End If
+    OpenForms = HideShowForms(OpenForms)
     Debug.Assert (FcsJobs(index).SetJob(ZEN, ZenV))
     setFcsLabels index
+    HideShowForms OpenForms
 End Sub
 
 Private Sub setLabels(index As Integer)
@@ -496,27 +500,6 @@ Private Sub AddFcsJobButton_Click()
     AddFcsJob FcsJobs, FcsJobList.List(FcsJobList.ListCount - 1), ZEN
     setFcsLabels FcsJobList.ListCount - 1
     HideShowForms OpenForms
-'    ImgJobList.AddItem CStr(Name)
-'    ImgJobList.Selected(ImgJobList.ListCount - 1) = True
-'    AddJob ImgJobs, ImgJobList.List(ImgJobList.ListCount - 1), Lsm5.DsRecording, ZEN
-'    setLabels ImgJobList.ListCount - 1
-'    setTrackNames ImgJobList.ListCount - 1
-'
-'
-'    Dim i As Integer
-'
-'    Dim ListEntry As Variant
-'
-'    If FcsJobName = "" Then
-'        MsgBox "You need to specify a name for the fcs job"
-'        Exit Sub
-'    End If
-'    If Not UniqueListName(FcsJobList, FcsJobName) Or Not UniqueListName(ImgJobList, FcsJobName) Then
-'        MsgBox "Name of fcs job must be unique"
-'        Exit Sub
-'    End If
-
-    'PipelineConstructor.UpdateFcsJobList
 End Sub
 
 Private Function UniqueListName(List As ListBox, JobName As String) As Boolean

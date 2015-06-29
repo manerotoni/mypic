@@ -112,7 +112,7 @@ Public Function ShowSave(Filter As String, Flags As Long, fileName As String, Op
     Dim Result As Long
     Dim ComDlgOpenFileName As OPENFILENAME
     
-    Buffer = fileName & String$(128 - Len(fileName), 0)
+    Buffer = fileName & String$(600 - Len(fileName), 0)
     
     With ComDlgOpenFileName
         .lStructSize = Len(ComDlgOpenFileName)

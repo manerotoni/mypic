@@ -237,17 +237,17 @@ Public Function weightedMean(values() As Variant, imin As Long, imax As Long, Op
     Dim sum As Variant
     Dim weight As Variant
     Dim minV As Variant
-    Dim maxV As Variant
+    Dim MaxV As Variant
     Dim thresh As Double
     Dim i As Long
     sum = 0
     weight = 0
     minV = MINA(values, imin)
-    maxV = MAXA(values, imax)
+    MaxV = MAXA(values, imax)
     If threshL < 0 Or threshL > 1 Then
         threshL = 0
     End If
-    thresh = minV + (maxV - minV) * threshL
+    thresh = minV + (MaxV - minV) * threshL
     For i = LBound(values) To UBound(values)
         sum = sum + Positive(values(i) - thresh)
         weight = weight + i * Positive(values(i) - thresh)
