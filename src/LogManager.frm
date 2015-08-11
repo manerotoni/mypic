@@ -66,7 +66,7 @@ Public Function UpdateLog(Text As String, Optional Level As Integer = 0)
         If Level <= LogLevel Then
             LogFileBuffer = LogFileBuffer & Now & " " & Text
         
-            If Len(LogFileBuffer) > 10000 Then
+            If Len(LogFileBuffer) > 1000 Then
                 If SafeOpenTextFile(LogFileName, LogFile, FileSystem) Then
                     LogFile.WriteLine LogFileBuffer
                     LogFile.Close

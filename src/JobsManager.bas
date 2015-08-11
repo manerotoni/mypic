@@ -637,7 +637,7 @@ End Function
 'End Function
 
 Public Function ExecuteTask(indexPl As Integer, indexTsk As Integer, RecordingDoc As DsRecordingDoc, _
-    FcsRecordingDoc As DsRecordingDoc, FcsData As AimFcsData, ParentPath As String, _
+    FcsRecordingDoc As DsRecordingDoc, FcsData As AimFcsData, parentPath As String, _
     stgPos As Vector, Success As Boolean) As Vector
 On Error GoTo ExecuteJobAndTrack_Error
     'Default return is input position
@@ -1011,7 +1011,7 @@ End Sub
 '---------------------------------------------------------------------------------------
 '
 Public Function StartPipeline(index As Integer, RecordingDoc As DsRecordingDoc, FcsRecordingDoc As DsRecordingDoc, _
-FcsData As AimFcsData, ParentPath As String, Optional WellFirst As Boolean = False) As Boolean
+FcsData As AimFcsData, parentPath As String, Optional WellFirst As Boolean = False) As Boolean
 On Error GoTo StartPipeline_Error
 
     Dim i As Integer
@@ -1065,13 +1065,13 @@ On Error GoTo StartPipeline_Error
                     End If
                     ' Recenter and move where it should be. Job global is a series of jobs
                     For iTask = 0 To .count - 1
-                        stgPos = ExecuteTask(index, iTask, RecordingDoc, FcsRecordingDoc, FcsData, ParentPath, stgPos, SuccessExecute)
+                        stgPos = ExecuteTask(index, iTask, RecordingDoc, FcsRecordingDoc, FcsData, parentPath, stgPos, SuccessExecute)
                         If ScanStop Then
                             GoTo StopJob
                         End If
                         For ipip = 1 To UBound(Pipelines)
                             If Not Pipelines(ipip).Grid.isRunning And runSubPipeline(ipip) Then
-                                StartPipeline ipip, RecordingDoc, FcsRecordingDoc, FcsData, ParentPath
+                                StartPipeline ipip, RecordingDoc, FcsRecordingDoc, FcsData, parentPath
                             End If
                         Next ipip
                     Next iTask
@@ -1102,7 +1102,7 @@ On Error GoTo StartPipeline_Error
                 End If
                 For ipip = 1 To UBound(Pipelines)
                     If Not Pipelines(ipip).Grid.isRunning And runSubPipeline(ipip) Then
-                        If Not StartPipeline(ipip, RecordingDoc, FcsRecordingDoc, FcsData, ParentPath) Then
+                        If Not StartPipeline(ipip, RecordingDoc, FcsRecordingDoc, FcsData, parentPath) Then
                             GoTo StopJob
                         End If
                     End If
@@ -1635,7 +1635,7 @@ End Function
 '             newPositions - Array of stage/focus positions (in um)
 '---------------------------------------------------------------------------------------
 '
-Public Function updateSubPipelineGrid(index As Integer, newPositions() As Vector, fcsPos() As Vector, fcsPosPx() As Vector, prefix As String, Optional ParentPath As String) As Boolean
+Public Function updateSubPipelineGrid(index As Integer, newPositions() As Vector, fcsPos() As Vector, fcsPosPx() As Vector, prefix As String, Optional parentPath As String) As Boolean
 On Error GoTo updateSubPipelineGrid_Error
     
     Dim i As Integer
@@ -1659,7 +1659,7 @@ On Error GoTo updateSubPipelineGrid_Error
         ''' input grid positions
         For i = 0 To UBound(newPositions)
             .Grid.setPt newPositions(i), True, 1, 1, 1, i + GridLowBound
-            .Grid.setParentPath ParentPath, 1, 1, 1, i + GridLowBound
+            .Grid.setParentPath parentPath, 1, 1, 1, i + GridLowBound
             .Grid.setFcsPositions fcsPos, 1, 1, 1, i + GridLowBound
             .Grid.setFcsPositionsPx fcsPosPx, 1, 1, 1, i + GridLowBound
             .Grid.setName prefix & .Grid.getName(1, 1, 1, i + GridLowBound), 1, 1, 1, i + GridLowBound
@@ -1712,7 +1712,7 @@ End Function
 ' Variables : parent variables define Job and grid from which one comes
 '---------------------------------------------------------------------------------------
 '
-Public Function ComputeJobSequential(indexPl As Integer, indexTsk As Integer, parentPosition As Vector, ParentPath As String, parentFile As String, _
+Public Function ComputeJobSequential(indexPl As Integer, indexTsk As Integer, parentPosition As Vector, parentPath As String, parentFile As String, _
 RecordingDoc As DsRecordingDoc) As Vector
 On Error GoTo ComputeJobSequential_Error
     
@@ -1783,7 +1783,7 @@ On Error GoTo ComputeJobSequential_Error
     'Read positions and rois from registry the fcs positions are read with respect to center of image
     If OiaSettings.getFcsPositions(fcsPosPx, ImgJobs(tsk.jobNr).getCentralPointPx) Then
         VectorString = VectorList2String(fcsPosPx)
-        LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " obtained " & UBound(fcsPosPx) + 1 & " position(s) " & _
+        LogManager.UpdateLog "OnlineImageAnalysis from " & parentPath & parentFile & imgFileExtension & " obtained " & UBound(fcsPosPx) + 1 & " position(s) " & _
            " X = " & VectorString(0) & " Y = " & VectorString(1) & " Z = " & VectorString(2)
         If Not checkForMaximalDisplacementVecPixels(ImgJobs(tsk.jobNr), fcsPosPx) Then
             VectorString = VectorList2String(fcsPosPx)
@@ -1797,7 +1797,7 @@ On Error GoTo ComputeJobSequential_Error
     
     If OiaSettings.getPositions(newPositionsPx, ImgJobs(tsk.jobNr).getCentralPointPx) Then
         VectorString = VectorList2String(newPositionsPx)
-        LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " obtained " & UBound(newPositionsPx) + 1 & " position(s) (in px)" & _
+        LogManager.UpdateLog "OnlineImageAnalysis from " & parentPath & parentFile & imgFileExtension & " obtained " & UBound(newPositionsPx) + 1 & " position(s) (in px)" & _
         " X = " & VectorString(0) & " Y = " & VectorString(1) & " Z = " & VectorString(2)
         If Not checkForMaximalDisplacementVecPixels(ImgJobs(tsk.jobNr), newPositionsPx) Then
             LogManager.UpdateErrorLog "OnlineImageAnalysis position exceed boundaries and has been set to  X = " & newPositionsPx(0).X & " Y = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
@@ -1823,7 +1823,7 @@ On Error GoTo ComputeJobSequential_Error
     
     ''for all commands in codeMic
     For Each code In codeMic
-        LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " found " & code
+        LogManager.UpdateLog "OnlineImageAnalysis from " & parentPath & parentFile & " found " & code
         OiaSettings.writeKeyToRegistry "codeMic", "nothing"
         Select Case code
             Case "nothing", "": 'Nothing to do
@@ -1834,25 +1834,25 @@ On Error GoTo ComputeJobSequential_Error
             Case "error":
                 OiaSettings.readKeyFromRegistry "errorMsg"
                 OiaSettings.getSettings ("errorMsg")
-                LogManager.UpdateErrorLog "codeMic error. Online image analysis for task " & JobName & " file " & ParentPath & parentFile & " failed . " _
+                LogManager.UpdateErrorLog "codeMic error. Online image analysis for task " & JobName & " file " & parentPath & parentFile & " failed . " _
                 & " Error from Oia: " & OiaSettings.getSettings("errorMsg")
-                LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " obtained an error. " & OiaSettings.getSettings("errorMsg")
+                LogManager.UpdateLog "OnlineImageAnalysis from " & parentPath & parentFile & " obtained an error. " & OiaSettings.getSettings("errorMsg")
                 OiaSettings.writeKeyToRegistry "errorMsg", ""
             Case "timeExpired":
-                LogManager.UpdateErrorLog "codeMic timeExpired. Online image analysis for job " & JobName & " file " & ParentPath & parentFile & " took more then " & maxTimeWait & " sec"
-                LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " took more then " & maxTimeWait & " sec"
+                LogManager.UpdateErrorLog "codeMic timeExpired. Online image analysis for job " & JobName & " file " & parentPath & parentFile & " took more then " & maxTimeWait & " sec"
+                LogManager.UpdateLog "OnlineImageAnalysis from " & parentPath & parentFile & " took more then " & maxTimeWait & " sec"
             
             Case "focus":
                 If isPosArrayEmpty(newPositions) Then
-                    LogManager.UpdateErrorLog "ComputeJobSequential: No position/wrong position for Job focus. " & ParentPath & parentFile & vbCrLf & _
+                    LogManager.UpdateErrorLog "ComputeJobSequential: No position/wrong position for Job focus. " & parentPath & parentFile & vbCrLf & _
                     "Specify one position in X, Y, Z of registry (in pixels, (X,Y) = (0,0) upper left corner image, Z = 0 -> central slice of current stack)!"
                     GoTo nextCode
                 End If
                 If UBound(newPositions) > 0 Then
-                    LogManager.UpdateErrorLog " ComputeJobSequential: for Job focus " & ParentPath & parentFile & " passed only one point to X, Y, and Z of regisrty instead of " & UBound(newPositions) + 1 & ". Using the first point!"
+                    LogManager.UpdateErrorLog " ComputeJobSequential: for Job focus " & parentPath & parentFile & " passed only one point to X, Y, and Z of regisrty instead of " & UBound(newPositions) + 1 & ". Using the first point!"
                 End If
                 ComputeJobSequential = newPositions(0)
-                LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " focus at  " & " X = " & newPositions(0).X & " Y = " & newPositions(0).Y & " Z = " & newPositions(0).Z & ". Absolute position in um"
+                LogManager.UpdateLog "OnlineImageAnalysis from " & parentPath & parentFile & " focus at  " & " X = " & newPositions(0).X & " Y = " & newPositions(0).Y & " Z = " & newPositions(0).Z & ". Absolute position in um"
             
             Case "setFcsPos":
                 If isPosArrayEmpty(fcsPos) Then
@@ -1867,7 +1867,7 @@ On Error GoTo ComputeJobSequential_Error
                 Pipelines(indexPl).Grid.setThisFcsPositions fcsPos
                 Pipelines(indexPl).Grid.setThisFcsPositionsPx fcsPosPx
                 Pipelines(indexPl).Grid.setThisFcsName prefix
-                Pipelines(indexPl).Grid.setThisFcsImage ParentPath & parentFile
+                Pipelines(indexPl).Grid.setThisFcsImage parentPath & parentFile & imgFileExtension
                 
             Case "setRoi":
                 If indexTsk + 1 > Pipelines(indexPl).count - 1 Then
@@ -1896,7 +1896,7 @@ On Error GoTo ComputeJobSequential_Error
                 
                 Pipelines(indexPl).Grid.setThisValid Pipelines(codeMicToJobName.item(code)).keepParent
                 If isPosArrayEmpty(newPositions) Then
-                    LogManager.UpdateErrorLog " ComputeJobSequential: No position for pipeline " & Pipelines(codeMicToJobName.item(code)).Grid.NameGrid & " from file " & ParentPath & parentFile & " (key = " & code & ") has been specified! Imaging current position. "
+                    LogManager.UpdateErrorLog " ComputeJobSequential: No position for pipeline " & Pipelines(codeMicToJobName.item(code)).Grid.NameGrid & " from file " & parentPath & parentFile & " (key = " & code & ") has been specified! Imaging current position. "
                     ReDim newPositions(0)
                     newPositions(0) = parentPosition
                 End If
@@ -1909,8 +1909,7 @@ On Error GoTo ComputeJobSequential_Error
                         End If
                     Next iTsk
                 End If
-                
-                updateSubPipelineGrid codeMicToJobName.item(code), newPositions, fcsPos, fcsPosPx, prefix, ParentPath & parentFile & "\"
+                updateSubPipelineGrid codeMicToJobName.item(code), newPositions, fcsPos, fcsPosPx, prefix, parentPath & parentFile & "\"
             Case Else
                 MsgBox ("Invalid OnlineImageAnalysis codeMic = " & code)
                 GoTo Abort
@@ -1929,6 +1928,6 @@ Abort:
 ComputeJobSequential_Error:
 
     LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-    ") in procedure ComputeJobSequential of Module JobsManager at line " & Erl & " " & ParentPath & " " & parentFile
+    ") in procedure ComputeJobSequential of Module JobsManager at line " & Erl & " " & parentPath & " " & parentFile
 End Function
 
