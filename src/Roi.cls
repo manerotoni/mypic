@@ -18,7 +18,7 @@ Private roiX() As Double   'set of X coordinates in pixels
 Private roiY() As Double   'set of Y coordinates in pixels
 Private roiAimDic As Dictionary 'map name to number
 Private roiTypeDic As Dictionary ' map name to number
-
+Private roiPause As Double 'Pause for building the ROIs. If zero then the ROIs are not set properly
 
 Private Sub populateDic()
     Set roiAimDic = New Dictionary
@@ -147,6 +147,7 @@ Public Function ClearVectorElements() As Boolean
     Dim vo As AimImageVectorOverlay
     Set vo = Lsm5.ExternalDsObject.ScanController.AcquisitionRegions
     vo.Cleanup
+    SleepWithEvents 250
 End Function
 
 Public Function roiConsistency() As Boolean
@@ -227,15 +228,19 @@ Public Function MakeVectorElement() As Boolean
     Dim i As Integer
     Dim ElementNumber As Long
     
+    SleepWithEvents roiPause ' this pause is require to finish setting the elements
     vo.AddElement roiTypeDic.item(roiType)
+    SleepWithEvents roiPause ' this pause is require to finish setting the elements
+
     ElementNumber = vo.GetNumberElements - 1
-    Sleep 50 ' this pause is require to finish setting the elements
-    vo.ElementAcquisitionFlags(ElementNumber) = roiAimDic.item(roiAim)
-    Sleep 50 ' this pause is require to finish setting the elements
     For i = 0 To UBound(roiX)
         vo.AppendElementKnot ElementNumber, roiX(i), roiY(i), 0, 0
+        SleepWithEvents 50 ' this pause is require to finish setting the elements
     Next i
 
+    vo.ElementAcquisitionFlags(ElementNumber) = roiAimDic.item(roiAim)
+    
+    SleepWithEvents roiPause ' this pause is require to finish setting the elements
     MakeVectorElement = True
 End Function
 
