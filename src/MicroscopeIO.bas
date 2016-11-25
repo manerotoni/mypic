@@ -79,7 +79,7 @@ Public PauseEndAcquisition As Double 'A workaround to avoid errors in FCS/imagin
 '''
 Public Function getVersionNr() As Integer
     Dim VersionNr As Long
-    VersionNr = CLng(VBA.Left(Lsm5.Info.VersionIs, 1))
+    VersionNr = CLng(VBA.Left(Lsm5.Info.VersionIs, 2))
     Select Case VersionNr
         Case Is <= 6:
             getVersionNr = 2010
@@ -89,9 +89,9 @@ Public Function getVersionNr() As Integer
             getVersionNr = 2012
     End Select
     
-    If VersionNr > 8 Then
-        MsgBox "Don't understand the version of ZEN used. Set to ZEN2012"
-    End If
+    'If VersionNr > 8 Then
+    '    MsgBox "ZEN version is higher than ZEN 2012"
+    'End If
 End Function
 
 
@@ -1336,13 +1336,8 @@ On Error GoTo SaveDsRecordingDoc_Error
         Positions = 1
     End If
     
-    Select Case Vertical
-        Case eAimImportExportCoordinateY:
-             Planes = image.GetDimensionZ * image.GetDimensionT * Positions
-        Case eAimImportExportCoordinateZ:
-             Planes = image.GetDimensionT
-    End Select
-    'TODO check. what happens here with Export.ExportPlane Nothing why Nothing (thumbnails)
+    Export.GetNumberPlanes Planes
+    
     For Plane = 0 To Planes - 1
         If GetInputState() <> 0 Then
             DoEvents
@@ -1351,8 +1346,10 @@ On Error GoTo SaveDsRecordingDoc_Error
                 Exit Function
             End If
         End If
+On Error GoTo EndExport
         Export.ExportPlane Nothing
     Next Plane
+EndExport:
     Export.FinishExport
     SaveDsRecordingDoc = True
    On Error GoTo 0
