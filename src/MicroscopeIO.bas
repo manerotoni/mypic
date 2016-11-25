@@ -571,9 +571,13 @@ Public Sub SaveFcsPositionList(sFile As String, positionsPx() As Vector, imageNa
     Print #iFileNum, "<Image Name=" & VBA.Chr(34) & imageName & VBA.Chr(34) & "></Image>"
     For i = 0 To GetFcsPositionListLength - 1
         getFcsPosition PosX, PosY, PosZ, i
-        Print #iFileNum, "<object ID= " & VBA.Chr(34) & i + 1 & VBA.Chr(34) & ">"
+        Print #iFileNum, "<object ID= " & VBA.Chr(34) & 1 & VBA.Chr(34) & ">"
         If UBound(classNames) >= i + 1 Then
-            Print #iFileNum, vbTab & "<class>" & classNames(0) & "_" & classNames(i + 1); "</class>"
+            If classNames(0) = "" Then
+                Print #iFileNum, vbTab & "<class>" & classNames(i + 1); "</class>"
+            Else
+                Print #iFileNum, vbTab & "<class>" & classNames(0) & "_" & classNames(i + 1); "</class>"
+            End If
         Else
             Print #iFileNum, vbTab & "<class></class>"
         End If

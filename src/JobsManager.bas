@@ -311,138 +311,7 @@ AcquireFcsJob_Error:
     LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & ") in procedure AcquireFcsJob of Module JobsManager at line " & Erl & " " & fileName
 End Function
 
-'---------------------------------------------------------------------------------------
-' Procedure : ExecuteFcsJob
-' Purpose   : Executes the AcquireFcsJob and save data and positions
-' Variables : JobName  -  The name of the Job to execute
-'             RecordingDoc - the DsRecordingDoc of the Fcs measurements
-'             FcsData -  the AimFcsData containing the Fcs
-'             FilePath - Path to store file
-'             FileName - Name of file
-'             positions -  A vector array with position where to acquire Fcs X, Y (relative to center of image), and Z (absolute). Unit are in meter!!
-'             positionsPx - A vector array with position in px relative to upper corner  of image. Z = 0 bottom of stack. Used for logging the position
-'---------------------------------------------------------------------------------------
-'
-'Public Function ExecuteFcsJob(JobName As String, RecordingDoc As DsRecordingDoc, FcsData As AimFcsData, FilePath As String, fileName As String, _
-'Positions() As Vector, positionsPx() As Vector) As Boolean
-'    Dim OiaSettings As OnlineIASettings
-'    Set OiaSettings = New OnlineIASettings
-'    OiaSettings.initializeDefault
-'On Error GoTo ExecuteFcsJob_Error
-'
-'    Dim i As Integer
-'    Dim Time As Double
-'
-'    For i = 0 To UBound(Positions)
-'        Positions(i).Z = Positions(i).Z + AutofocusForm.Controls(JobName + "ZOffset").value * 0.000001
-'    Next i
-'
-'    If Not CleanFcsData(RecordingDoc, FcsData) Then
-'        Exit Function
-'    End If
-'    Time = Timer
-'    If Not AcquireFcsJob(JobName, RecordingDoc, FcsData, fileName, Positions) Then
-'        Exit Function
-'    End If
-'
-'    CurrentFileName = fileName
-'
-'    If AutofocusForm.Controls(JobName + "TimeOut") Then
-'        If JobsFcs.getTimeToAcquire(JobName) <= 0 Then
-'            JobsFcs.setTimeToAcquire JobName, Timer - Time + TimeOutOverHead
-'        End If
-'    Else
-'        JobsFcs.setTimeToAcquire JobName, 0
-'    End If
-'
-'
-'
-'    Sleep (500)
-'    If Not SaveFcsMeasurement(FcsData, FilePath & fileName & ".fcs") Then
-'         Exit Function
-'    End If
-'    While RecordingDoc.IsBusy
-'        Sleep (50)
-'    Wend
-'    LogManager.UpdateLog " save Fcsjob " & JobName & " " & FilePath & fileName & ".fcs"
-'    SaveFcsPositionList FilePath & fileName & ".txt", positionsPx
-'
-'    OiaSettings.writeKeyToRegistry "filePath", FilePath & fileName & ".fcs"
-'    If ScanStop Then
-'        Exit Function
-'    End If
-'    ExecuteFcsJob = True
-'    Exit Function
-'
-'   On Error GoTo 0
-'   Exit Function
-'
-'ExecuteFcsJob_Error:
-'
-'    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-'    ") in procedure ExecuteFcsJob of Module JobsManager at line " & Erl & " " & fileName
-'End Function
 
-'---------------------------------------------------------------------------------------
-' Procedure : ExecuteJob
-' Purpose   : Executes part of imaging Job and save the file (no tracking)
-' Variables : JobName  -  The name of the Job to execute
-'             RecordingDoc - the DsRecordingDoc of the Fcs measurements
-'             FilePath - Path to store file
-'             FileName - Name of file
-'             StgPos -  stage position where to acquire image X, Y (absolute), and Z (absolute). Unit are in micrometer!!
-'             delatZ - size of Z stack. Not currently used
-'---------------------------------------------------------------------------------------
-'
-'Public Function ExecuteJob(JobName As String, RecordingDoc As DsRecordingDoc, FilePath As String, FileName As String, _
-'stgPos As Vector, Optional deltaZ As Integer = -1) As Boolean
-'On Error GoTo ExecuteJob_Error
-'    Dim Time As Double
-'    Dim OiaSettings As OnlineIASettings
-'    Set OiaSettings = New OnlineIASettings
-'    OiaSettings.initializeDefault
-'
-'    Time = Timer
-'    If Not AcquireJob(JobName, RecordingDoc, FileName, stgPos) Then
-'        Exit Function
-'    End If
-'
-'    CurrentFileName = FileName
-'    If AutofocusForm.Controls(JobName + "TimeOut") Then
-'        If Jobs.getTimeToAcquire(JobName) <= 0 Then
-'            Jobs.setTimeToAcquire JobName, Timer - Time + TimeOutOverHead
-'        End If
-'    Else
-'        Jobs.setTimeToAcquire JobName, 0
-'    End If
-'
-'
-'    If AutofocusForm.Controls(JobName & "SaveImage") Then
-'        If Not SaveDsRecordingDoc(RecordingDoc, FilePath & FileName & imgFileExtension, imgFileFormat) Then
-'            Exit Function
-'        End If
-'        'we set the waiting after writing the file this may still be a problem if we do the analysis on the run
-'        If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
-'            OiaSettings.writeKeyToRegistry "codeMic", "wait"
-'        End If
-'        OiaSettings.writeKeyToRegistry "filePath", FilePath & FileName & imgFileExtension
-'        LogManager.UpdateLog " save job " & JobName & " " & FilePath & FileName & imgFileExtension
-'    End If
-'
-'    If ScanStop Then
-'        Exit Function
-'    End If
-'    ExecuteJob = True
-'    Exit Function
-'
-'   On Error GoTo 0
-'   Exit Function
-'
-'ExecuteJob_Error:
-'
-'    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-'    ") in procedure ExecuteJob of Module JobsManager at line " & Erl & " " & FileName
-'End Function
 
 
 '---------------------------------------------------------------------------------------
@@ -496,148 +365,10 @@ TrackOffLine_Error:
     LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
     ") in procedure TrackOffLine of Module JobsManager at line " & Erl & " "
 End Function
-''---------------------------------------------------------------------------------------
-'' Procedure : TrackJob
-'' Purpose   : Update a position with new position according to task specified (either none, Z, XY, or XYZ)
-'' Variables : JobName - Name of job (refer to access of AutofocusForm)
-''             StgPos - Current stage position (absolute in um)
-''             StgPosNew - New stage position
-'' Returns :   A stage position
-''---------------------------------------------------------------------------------------
-''
-'Public Function TrackJob(JobName As String, stgPos As Vector, StgPosNew As Vector) As Vector
-'On Error GoTo TrackJob_Error
-'
-'    TrackJob = stgPos
-'    If AutofocusForm.Controls(JobName & "TrackZ") Then
-'        TrackJob.Z = StgPosNew.Z
-'    End If
-'    If AutofocusForm.Controls(JobName & "TrackXY") Then
-'        TrackJob.X = StgPosNew.X
-'        TrackJob.Y = StgPosNew.Y
-'    End If
-'    Exit Function
-'
-'   On Error GoTo 0
-'   Exit Function
-'
-'TrackJob_Error:
-'
-'    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-'    ") in procedure TrackJob of Module JobsManager at line " & Erl & " " & JobName
-'End Function
 
-'''
-'
-'''
-'---------------------------------------------------------------------------------------
-' Procedure : ExecuteJobAndTrack
-' Purpose   : Execute a imaging job and perform a tracking. Returns an updated position X, Y, and Z
-' Variables : GridName - Name of position grid
-'             JobName - Name of imaging Job
-'             RecordingDoc - The recording Doc
-'             parentPath - the main imaging path
-'             StgPos - current stage position (absolute in um)
-'             Success - True if function finishes
-' Returns : an updated stage position (absolute in um)
-'---------------------------------------------------------------------------------------
-'Public Function ExecuteJobAndTrack(GridName As String, JobName As String, RecordingDoc As DsRecordingDoc, ParentPath As String, stgPos As Vector, _
-'Success As Boolean) As Vector
-'On Error GoTo ExecuteJobAndTrack_Error
-'
-'    Dim Time As Double
-'    Dim ScanMode As String
-'    Dim newStgPos As Vector
-'    Dim FileName As String
-'    Dim FilePath As String
-'    Dim OiaSettings As OnlineIASettings
-'    Set OiaSettings = New OnlineIASettings
-'    Success = False
-'    'Acquire if active and at periodicity JobNamePeriod
-'    If AutofocusForm.Controls(JobName + "Active") And _
-'    Not CBool(CInt(Reps.thisIndex(GridName) - 1) Mod AutofocusForm.Controls(JobName + "Period")) Then
-'         DisplayProgress "Job " & JobName & ", Row " & Grids.thisRow(GridName) & ", Col " & Grids.thisColumn(GridName) & vbCrLf & _
-'        "subRow " & Grids.thisSubRow(GridName) & ", subCol " & Grids.thisSubColumn(GridName) & ", Rep " & Reps.thisIndex(GridName), RGB(&HC0, &HC0, 0)
-'
-'        ScanMode = Jobs.getScanMode(JobName)
-'        If ScanMode = "ZScan" Or ScanMode = "Line" Then
-'            AutofocusForm.Controls(JobName & "TrackXY").value = False
-'        End If
-'        FileName = FileNameFromGrid(GridName, JobName)
-'        FilePath = Grids.getThisParentPath(GridName) & FilePathSuffix(GridName, JobName) & "\"
-'        'FilePath = GridSet
-'        stgPos.Z = stgPos.Z + AutofocusForm.Controls(JobName + "ZOffset").value
-'
-'
-'        Time = Timer
-'        If Not AcquireJob(JobName, RecordingDoc, FileName, stgPos) Then
-'            Exit Function
-'        End If
-'
-'        CurrentFileName = FileName
-'        If AutofocusForm.Controls(JobName + "TimeOut") Then
-'            If Jobs.getTimeToAcquire(JobName) <= 0 Then
-'                Jobs.setTimeToAcquire JobName, Timer - Time + TimeOutOverHead
-'            End If
-'        Else
-'            Jobs.setTimeToAcquire JobName, 0
-'        End If
-'
-'
-'    If AutofocusForm.Controls(JobName & "SaveImage") Then
-'        If Not SaveDsRecordingDoc(RecordingDoc, FilePath & FileName & imgFileExtension, imgFileFormat) Then
-'            Exit Function
-'        End If
-'        'we set the waiting after writing the file this may still be a problem if we do the analysis on the run
-'        If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
-'            OiaSettings.writeKeyToRegistry "codeMic", "wait"
-'        End If
-'        OiaSettings.writeKeyToRegistry "filePath", FilePath & FileName & imgFileExtension
-'        LogManager.UpdateLog " save job " & JobName & " " & FilePath & FileName & imgFileExtension
-'    End If
-'
-'    If ScanStop Then
-'        Exit Function
-'    End If
-'    ExecuteJob = True
-'        If Not ExecuteJob(JobName, RecordingDoc, FilePath, FileName, stgPos) Then
-'            Exit Function
-'        End If
-'        'do any recquired computation
-'        Time = Timer
-'        stgPos = TrackOffLine(JobName, RecordingDoc, stgPos)
-'
-'        Debug.Print "Time to TrackOffLine " & Timer - Time
-'        If AutofocusForm.Controls(JobName + "OiaActive") And AutofocusForm.Controls(JobName + "OiaSequential") Then
-'            OiaSettings.writeKeyToRegistry "codeOia", "newImage"
-'            newStgPos = ComputeJobSequential(JobName, GridName, stgPos, FilePath, FileName, RecordingDoc)
-'            If Not checkForMaximalDisplacement(JobName, stgPos, newStgPos) Then
-'                newStgPos = stgPos
-'            End If
-'
-'            Debug.Print "X =" & stgPos.x & ", " & newStgPos.x & ", " & stgPos.y & ", " & newStgPos.y & ", " & stgPos.Z & ", " & newStgPos.Z
-'            stgPos = TrackJob(JobName, stgPos, newStgPos)
-'        End If
-'
-'        If Not AutofocusForm.Controls(JobName & "TrackZ").value Then
-'            stgPos.Z = stgPos.Z - AutofocusForm.Controls(JobName + "ZOffset").value
-'        End If
-'    End If
-'    ExecuteJobAndTrack = stgPos
-'    Success = True
-'    Exit Function
-'    OiaSettings.readKeyFromRegistry ("filePath")
-'   On Error GoTo 0
-'   Exit Function
-'
-'ExecuteJobAndTrack_Error:
-'
-'    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-'    ") in procedure ExecuteJobAndTrack of Module JobsManager at line " & Erl & " " & GridName & " " & JobName & " " & ParentPath & " " & OiaSettings.getSettings("filePath")
-'End Function
 
 Public Function ExecuteTask(indexPl As Integer, indexTsk As Integer, RecordingDoc As DsRecordingDoc, _
-    FcsRecordingDoc As DsRecordingDoc, FcsData As AimFcsData, parentPath As String, _
+    FcsRecordingDoc As DsRecordingDoc, FcsData As AimFcsData, ParentPath As String, _
     stgPos As Vector, Success As Boolean) As Vector
 On Error GoTo ExecuteJobAndTrack_Error
     'Default return is input position
@@ -777,193 +508,6 @@ ExecuteJobAndTrack_Error:
     ") in procedure ExecuteTask of Module JobsManager at line " & Erl
 End Function
 
-'---------------------------------------------------------------------------------------
-' Procedure : StartJobOnGrid
-' Purpose   : Performs imaging/fcs on a grid. Pretty much the whole macro runs through here
-' Variables : GridName -
-'             JobName -
-'             parentPath - Path from where job has been initiated
-'---------------------------------------------------------------------------------------
-'
-'Public Function StartJobOnGrid(GridName As String, JobName As String, RecordingDoc As DsRecordingDoc, ParentPath As String) As Boolean
-'On Error GoTo StartJobOnGrid_Error
-'
-'    Dim OiaSettings As OnlineIASettings
-'    Set OiaSettings = New OnlineIASettings
-'    Dim i As Integer
-'    Dim stgPos As Vector
-'    '''The name of jobs run for the global mode
-'    Dim JobNamesGlobal(2) As String
-'    Dim iJobGlobal As Integer
-'
-'    JobNamesGlobal(0) = "Autofocus"
-'    JobNamesGlobal(1) = "Acquisition"
-'    JobNamesGlobal(2) = "AlterAcquisition"
-'
-'    Dim FileName As String
-'    Dim deltaZ As Integer
-'    deltaZ = -1
-'    Dim SuccessExecute As Boolean
-'    'Stop all running acquisitions (maybe to strong)
-'    StopAcquisition
-'
-'    'coordinates
-'    Dim previousZ As Double   'remember position of previous position in Z
-'
-'
-'    OiaSettings.resetRegistry
-'    OiaSettings.readFromRegistry
-'
-'    FileName = AutofocusForm.TextBoxFileName.value & Grids.getName(JobName, 1, 1, 1, 1) & Grids.suffix(JobName, 1, 1, 1, 1) & Reps.suffix(JobName, 1)
-'    'create a new Gui document if recquired
-'    NewRecord RecordingDoc, FileName
-'
-'    CurrentJob = ""
-'    Running = True  'Now we're starting. This will be set to false if the stop button is pressed or if we reached the total number of repetitions.
-'
-'
-'
-'    previousZ = Grids.getZ(JobName, 1, 1, 1, 1)
-'    Reps.resetIndex (JobName)
-'
-'    '''
-'    ' Check if there are any valid positions
-'    ''''
-'    If Grids.getNrValidPts(GridName) = 0 Then
-'        DisplayProgress "Job " & JobName & ", on grid " & GridName & " has no valid positions !", RGB(&HC0, &HC0, 0)
-'        Sleep (500)
-'        Exit Function
-'    End If
-'
-'    Grids.setIsRunning GridName, True
-'
-'    While Reps.nextRep(GridName) ' cycle all repetitions
-'        Grids.setIndeces GridName, 1, 1, 1, 1
-'        Do ''Cycle all positions defined in grid
-'            If Grids.getThisValid(GridName) Then
-'               DisplayProgress "Job " & JobName & ", Row " & Grids.thisRow(GridName) & ", Col " & Grids.thisColumn(JobName) & vbCrLf & _
-'                "subRow " & Grids.thisSubRow(GridName) & ", subCol " & Grids.thisSubColumn(GridName) & ", Rep " & Reps.thisIndex(GridName), RGB(&HC0, &HC0, 0)
-'
-'                'Do some positional Job
-'                stgPos.x = Grids.getThisX(GridName)
-'                stgPos.y = Grids.getThisY(GridName)
-'                stgPos.Z = Grids.getThisZ(GridName)
-'
-'                'For first repetition and globalgrid we use previous position to prime next position (this is not the optimal way of doing it, better is a focusMap)
-'                If Reps.getIndex(GridName) = 1 And AutofocusForm.GridScanActive And AutofocusForm.SingleLocationToggle And GridName = "Global" And AutofocusForm.GridScanPositionFile = "" Then
-'                    stgPos.Z = previousZ
-'                End If
-'                'pump if time elapsed before starting imaging on a specific point
-'                If Pump Then
-'                    lastTimePump = waitForPump(PumpTime, PumpWait, lastTimePump, 0, PumpIntervalTime * 60, _
-'                    0, 10)
-'                End If
-'                ' Recenter and move where it should be. Job global is a series of jobs
-'                ' TODO move into one single function per task
-'                If JobName = "Global" Then
-'                    For iJobGlobal = 0 To UBound(JobNamesGlobal)
-'                        ' run subJobs for global setting
-'                        stgPos = ExecuteJobAndTrack(GridName, JobNamesGlobal(iJobGlobal), RecordingDoc, ParentPath, stgPos, SuccessExecute)
-'                        If Not SuccessExecute Then
-'                            GoTo StopJob
-'                        End If
-'                    Next iJobGlobal
-'                Else
-'                    If AutofocusForm.Controls(JobName + "Autofocus") Then
-'                        stgPos = ExecuteJobAndTrack(GridName, "Autofocus", RecordingDoc, ParentPath, stgPos, SuccessExecute)
-'                    End If
-'                    stgPos = ExecuteJobAndTrack(GridName, JobName, RecordingDoc, ParentPath, stgPos, SuccessExecute)
-'                    If Not SuccessExecute Then
-'                        GoTo StopJob
-'                    End If
-'                End If
-'
-'                Grids.setThisX GridName, stgPos.x
-'                Grids.setThisY GridName, stgPos.y
-'                Grids.setThisZ GridName, stgPos.Z
-'                previousZ = Grids.getThisZ(GridName)
-'            End If
-'            If ScanPause = True Then
-'                If Not AutofocusForm.Pause Then ' Pause is true if Resume
-'                    GoTo StopJob
-'                End If
-'            End If
-'        Loop While Grids.nextGridPt(JobName, AutofocusForm.GridScan_WellsFirst)
-'        ''Wait till next repetition
-'        Reps.updateTimeStart (JobName)
-'
-'        If Reps.wait(JobName) > 0 Then
-'            DisplayProgress "Waiting " & CStr(CInt(Reps.wait(JobName))) & " s before scanning repetition  " & Reps.getIndex(JobName) + 1, RGB(&HC0, &HC0, 0)
-'            DoEvents
-'        End If
-'
-'        If AutofocusForm.StopAfterRepetition Then
-'            GoTo StopJob
-'        End If
-'
-'        While ((Reps.wait(JobName) > 0) And (Reps.getIndex(JobName) < Reps.getRepetitionNumber(JobName)))
-'            Sleep (100)
-'            DoEvents
-'            If Pump Then
-'                lastTimePump = waitForPump(PumpTime, PumpWait, lastTimePump, 0, PumpIntervalTime * 60, _
-'                0, 10)
-'            End If
-'            If ScanPause = True Then
-'                If Not AutofocusForm.Pause Then ' Pause is true if Resume
-'                    GoTo StopJob
-'                    Exit Function
-'                End If
-'            End If
-'            If ScanStop Then
-'                GoTo StopJob
-'            End If
-'            DisplayProgress "Waiting " & CStr(CInt(Reps.wait(JobName))) & " s before scanning repetition  " & Reps.getIndex(JobName) + 1, RGB(&HC0, &HC0, 0)
-'
-'            '''Check for extra jobs to run
-'            For i = 3 To 4
-'                 If Grids.getNrValidPts(JobNames(i)) > 0 And Not Grids.getIsRunning(JobNames(i)) Then
-'                    If TimersGridCreation.wait(JobNames(i), CDbl(AutofocusForm.Controls(JobNames(i) + "maxWait").value)) < 0 Then
-'                        LogManager.UpdateLog " OnlineImageAnalysis  execute job " & JobNames(i) & " after maximal time exceeded "
-'                        'start acquisition of Job on grid named JobName
-'                        If Not StartJobOnGrid(JobNames(i), JobNames(i), RecordingDoc, ParentPath & "\") Then
-'                            GoTo StopJob
-'                        End If
-'                        'set all run positions to notValid
-'                        Grids.setAllValid JobNames(i), False
-'                        Grids.setIsRunning JobNames(i), False
-'                    End If
-'                End If
-'            Next i
-'        Wend
-'        Sleep (100)
-'        DoEvents
-'        If ScanPause = True Then
-'            If Not AutofocusForm.Pause Then ' Pause is true is Resume
-'                GoTo StopJob
-'            End If
-'        End If
-'        If ScanStop Then
-'            GoTo StopJob
-'        End If
-'    Wend
-'    StartJobOnGrid = True
-'    Grids.setIsRunning GridName, False
-'    Exit Function
-'StopJob:
-'    ScanStop = True
-'    StopAcquisition
-'    DisplayProgress "Stopped", RGB(&HC0, 0, 0)
-'    Exit Function
-'
-'   On Error GoTo 0
-'   Exit Function
-'
-'StartJobOnGrid_Error:
-'    ScanStop = True
-'    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-'    ") in procedure StartJobOnGrid of Module JobsManager at line " & Erl & " " & " Grid " & GridName & " Job " & JobName
-'End Function
-
 
 '''''
 '   Pause()
@@ -1011,7 +555,7 @@ End Sub
 '---------------------------------------------------------------------------------------
 '
 Public Function StartPipeline(index As Integer, RecordingDoc As DsRecordingDoc, FcsRecordingDoc As DsRecordingDoc, _
-FcsData As AimFcsData, parentPath As String, Optional WellFirst As Boolean = False) As Boolean
+FcsData As AimFcsData, ParentPath As String, Optional WellFirst As Boolean = False) As Boolean
 On Error GoTo StartPipeline_Error
 
     Dim i As Integer
@@ -1065,13 +609,13 @@ On Error GoTo StartPipeline_Error
                     End If
                     ' Recenter and move where it should be. Job global is a series of jobs
                     For iTask = 0 To .count - 1
-                        stgPos = ExecuteTask(index, iTask, RecordingDoc, FcsRecordingDoc, FcsData, parentPath, stgPos, SuccessExecute)
+                        stgPos = ExecuteTask(index, iTask, RecordingDoc, FcsRecordingDoc, FcsData, ParentPath, stgPos, SuccessExecute)
                         If ScanStop Then
                             GoTo StopJob
                         End If
                         For ipip = 1 To UBound(Pipelines)
                             If Not Pipelines(ipip).Grid.isRunning And runSubPipeline(ipip) Then
-                                StartPipeline ipip, RecordingDoc, FcsRecordingDoc, FcsData, parentPath
+                                StartPipeline ipip, RecordingDoc, FcsRecordingDoc, FcsData, ParentPath
                             End If
                         Next ipip
                     Next iTask
@@ -1102,7 +646,7 @@ On Error GoTo StartPipeline_Error
                 End If
                 For ipip = 1 To UBound(Pipelines)
                     If Not Pipelines(ipip).Grid.isRunning And runSubPipeline(ipip) Then
-                        If Not StartPipeline(ipip, RecordingDoc, FcsRecordingDoc, FcsData, parentPath) Then
+                        If Not StartPipeline(ipip, RecordingDoc, FcsRecordingDoc, FcsData, ParentPath) Then
                             GoTo StopJob
                         End If
                     End If
@@ -1238,52 +782,6 @@ Abort:
 End Function
 
 
-''---------------------------------------------------------------------------------------
-'' Procedure : FileNameFromGrid
-'' Purpose   : Derive filename from Grid and repetition
-''---------------------------------------------------------------------------------------
-''
-'Private Function FileNameFromGrid(GridName As String, JobName As String) As String
-'On Error GoTo FileNameFromGrid_Error
-'    FileNameFromGrid = AutofocusForm.TextBoxFileName.value & Grids.getThisName(GridName) & JobShortNames(JobName) & FNSep & Grids.thisSuffix(GridName) & Reps.thisSuffix(GridName)
-'    Exit Function
-'   On Error GoTo 0
-'   Exit Function
-'
-'FileNameFromGrid_Error:
-'
-'    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-'    ") in procedure FileNameFromGrid of Module JobsManager at line " & Erl & " " & GridName & " " & JobName
-'End Function
-
-'---------------------------------------------------------------------------------------
-' Procedure : FilePathSuffix
-' Purpose   : Derive filepath Suffix from Grid and repetition
-'---------------------------------------------------------------------------------------
-
-'Private Function FilePathSuffix(GridName As String, JobName As String) As String
-'On Error GoTo FilePathSuffix_Error
-'
-'    FilePathSuffix = AutofocusForm.TextBoxFileName.value & Grids.getThisName(GridName) & JobShortNames(JobName)
-'    If (Grids.numCol(GridName) * Grids.numRow(GridName) = 1 And Grids.numColSub(GridName) * Grids.numRowSub(GridName) = 1) Then
-'        FilePathSuffix = FilePathSuffix & FNSep & Grids.thisSuffix(GridName)
-'        Exit Function
-'    End If
-'    If (Grids.numCol(GridName) * Grids.numRow(GridName) > 1 And Not Grids.numColSub(GridName) * Grids.numRowSub(GridName) > 1) _
-'    Or (Not Grids.numCol(GridName) * Grids.numRow(GridName) > 1 And Grids.numColSub(GridName) * Grids.numRowSub(GridName) > 1) Then
-'        FilePathSuffix = FilePathSuffix & FNSep & Grids.thisSuffix(GridName)
-'    Else
-'        FilePathSuffix = FilePathSuffix & FNSep & Grids.thisSuffixWell(GridName) & "\" & FilePathSuffix & FNSep & Grids.thisSuffix(GridName)
-'    End If
-'
-'   On Error GoTo 0
-'   Exit Function
-'
-'FilePathSuffix_Error:
-'
-'    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-'    ") in procedure FilePathSuffix of Module JobsManager at line " & Erl & " "
-'End Function
 
 
 '''
@@ -1635,7 +1133,7 @@ End Function
 '             newPositions - Array of stage/focus positions (in um)
 '---------------------------------------------------------------------------------------
 '
-Public Function updateSubPipelineGrid(index As Integer, newPositions() As Vector, fcsPos() As Vector, fcsPosPx() As Vector, prefix As String, Optional parentPath As String) As Boolean
+Public Function updateSubPipelineGrid(index As Integer, newPositions() As Vector, fcsPos() As Vector, fcsPosPx() As Vector, prefix As String, Optional ParentPath As String) As Boolean
 On Error GoTo updateSubPipelineGrid_Error
     
     Dim i As Integer
@@ -1659,7 +1157,7 @@ On Error GoTo updateSubPipelineGrid_Error
         ''' input grid positions
         For i = 0 To UBound(newPositions)
             .Grid.setPt newPositions(i), True, 1, 1, 1, i + GridLowBound
-            .Grid.setParentPath parentPath, 1, 1, 1, i + GridLowBound
+            .Grid.setParentPath ParentPath, 1, 1, 1, i + GridLowBound
             .Grid.setFcsPositions fcsPos, 1, 1, 1, i + GridLowBound
             .Grid.setFcsPositionsPx fcsPosPx, 1, 1, 1, i + GridLowBound
             .Grid.setName prefix & .Grid.getName(1, 1, 1, i + GridLowBound), 1, 1, 1, i + GridLowBound
@@ -1712,7 +1210,7 @@ End Function
 ' Variables : parent variables define Job and grid from which one comes
 '---------------------------------------------------------------------------------------
 '
-Public Function ComputeJobSequential(indexPl As Integer, indexTsk As Integer, parentPosition As Vector, parentPath As String, parentFile As String, _
+Public Function ComputeJobSequential(indexPl As Integer, indexTsk As Integer, parentPosition As Vector, ParentPath As String, parentFile As String, _
 RecordingDoc As DsRecordingDoc) As Vector
 On Error GoTo ComputeJobSequential_Error
     
@@ -1783,7 +1281,7 @@ On Error GoTo ComputeJobSequential_Error
     'Read positions and rois from registry the fcs positions are read with respect to center of image
     If OiaSettings.getFcsPositions(fcsPosPx, ImgJobs(tsk.jobNr).getCentralPointPx) Then
         VectorString = VectorList2String(fcsPosPx)
-        LogManager.UpdateLog "OnlineImageAnalysis from " & parentPath & parentFile & imgFileExtension & " obtained " & UBound(fcsPosPx) + 1 & " position(s) " & _
+        LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & imgFileExtension & " obtained " & UBound(fcsPosPx) + 1 & " position(s) " & _
            " X = " & VectorString(0) & " Y = " & VectorString(1) & " Z = " & VectorString(2)
         If Not checkForMaximalDisplacementVecPixels(ImgJobs(tsk.jobNr), fcsPosPx) Then
             VectorString = VectorList2String(fcsPosPx)
@@ -1797,7 +1295,7 @@ On Error GoTo ComputeJobSequential_Error
     
     If OiaSettings.getPositions(newPositionsPx, ImgJobs(tsk.jobNr).getCentralPointPx) Then
         VectorString = VectorList2String(newPositionsPx)
-        LogManager.UpdateLog "OnlineImageAnalysis from " & parentPath & parentFile & imgFileExtension & " obtained " & UBound(newPositionsPx) + 1 & " position(s) (in px)" & _
+        LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & imgFileExtension & " obtained " & UBound(newPositionsPx) + 1 & " position(s) (in px)" & _
         " X = " & VectorString(0) & " Y = " & VectorString(1) & " Z = " & VectorString(2)
         If Not checkForMaximalDisplacementVecPixels(ImgJobs(tsk.jobNr), newPositionsPx) Then
             LogManager.UpdateErrorLog "OnlineImageAnalysis position exceed boundaries and has been set to  X = " & newPositionsPx(0).X & " Y = " & newPositionsPx(0).Y & " Z = " & newPositionsPx(0).Z
@@ -1815,44 +1313,42 @@ On Error GoTo ComputeJobSequential_Error
     OiaSettings.writeKeyToRegistry "roiType", ""
     OiaSettings.writeKeyToRegistry "roiX", ""
     OiaSettings.writeKeyToRegistry "roiY", ""
-
-    
     prefix = OiaSettings.readKeyFromRegistry("prefix")
-
+    OiaSettings.writeKeyToRegistry "prefix", ""
     'TODO find way for passing ROIS
     
     ''for all commands in codeMic
     For Each code In codeMic
-        LogManager.UpdateLog "OnlineImageAnalysis from " & parentPath & parentFile & " found " & code
+        LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " found " & code
         OiaSettings.writeKeyToRegistry "codeMic", "nothing"
         Select Case code
             Case "nothing", "": 'Nothing to do
                 Pipelines(indexPl).Grid.setThisFcsPositions fcsPos
                 Pipelines(indexPl).Grid.setThisFcsPositionsPx fcsPosPx
-                Pipelines(indexPl).Grid.setThisFcsName prefix
+                Pipelines(indexPl).Grid.setThisFcsName ""
                 Pipelines(indexPl).Grid.setThisFcsImage ""
             Case "error":
                 OiaSettings.readKeyFromRegistry "errorMsg"
                 OiaSettings.getSettings ("errorMsg")
-                LogManager.UpdateErrorLog "codeMic error. Online image analysis for task " & JobName & " file " & parentPath & parentFile & " failed . " _
+                LogManager.UpdateErrorLog "codeMic error. Online image analysis for task " & JobName & " file " & ParentPath & parentFile & " failed . " _
                 & " Error from Oia: " & OiaSettings.getSettings("errorMsg")
-                LogManager.UpdateLog "OnlineImageAnalysis from " & parentPath & parentFile & " obtained an error. " & OiaSettings.getSettings("errorMsg")
+                LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " obtained an error. " & OiaSettings.getSettings("errorMsg")
                 OiaSettings.writeKeyToRegistry "errorMsg", ""
             Case "timeExpired":
-                LogManager.UpdateErrorLog "codeMic timeExpired. Online image analysis for job " & JobName & " file " & parentPath & parentFile & " took more then " & maxTimeWait & " sec"
-                LogManager.UpdateLog "OnlineImageAnalysis from " & parentPath & parentFile & " took more then " & maxTimeWait & " sec"
+                LogManager.UpdateErrorLog "codeMic timeExpired. Online image analysis for job " & JobName & " file " & ParentPath & parentFile & " took more then " & maxTimeWait & " sec"
+                LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " took more then " & maxTimeWait & " sec"
             
             Case "focus":
                 If isPosArrayEmpty(newPositions) Then
-                    LogManager.UpdateErrorLog "ComputeJobSequential: No position/wrong position for Job focus. " & parentPath & parentFile & vbCrLf & _
+                    LogManager.UpdateErrorLog "ComputeJobSequential: No position/wrong position for Job focus. " & ParentPath & parentFile & vbCrLf & _
                     "Specify one position in X, Y, Z of registry (in pixels, (X,Y) = (0,0) upper left corner image, Z = 0 -> central slice of current stack)!"
                     GoTo nextCode
                 End If
                 If UBound(newPositions) > 0 Then
-                    LogManager.UpdateErrorLog " ComputeJobSequential: for Job focus " & parentPath & parentFile & " passed only one point to X, Y, and Z of regisrty instead of " & UBound(newPositions) + 1 & ". Using the first point!"
+                    LogManager.UpdateErrorLog " ComputeJobSequential: for Job focus " & ParentPath & parentFile & " passed only one point to X, Y, and Z of regisrty instead of " & UBound(newPositions) + 1 & ". Using the first point!"
                 End If
                 ComputeJobSequential = newPositions(0)
-                LogManager.UpdateLog "OnlineImageAnalysis from " & parentPath & parentFile & " focus at  " & " X = " & newPositions(0).X & " Y = " & newPositions(0).Y & " Z = " & newPositions(0).Z & ". Absolute position in um"
+                LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " focus at  " & " X = " & newPositions(0).X & " Y = " & newPositions(0).Y & " Z = " & newPositions(0).Z & ". Absolute position in um"
             
             Case "setFcsPos":
                 If isPosArrayEmpty(fcsPos) Then
@@ -1867,7 +1363,7 @@ On Error GoTo ComputeJobSequential_Error
                 Pipelines(indexPl).Grid.setThisFcsPositions fcsPos
                 Pipelines(indexPl).Grid.setThisFcsPositionsPx fcsPosPx
                 Pipelines(indexPl).Grid.setThisFcsName prefix
-                Pipelines(indexPl).Grid.setThisFcsImage parentPath & parentFile & imgFileExtension
+                Pipelines(indexPl).Grid.setThisFcsImage ParentPath & parentFile & imgFileExtension
                 
             Case "setRoi":
                 If indexTsk + 1 > Pipelines(indexPl).count - 1 Then
@@ -1896,7 +1392,7 @@ On Error GoTo ComputeJobSequential_Error
                 
                 Pipelines(indexPl).Grid.setThisValid Pipelines(codeMicToJobName.item(code)).keepParent
                 If isPosArrayEmpty(newPositions) Then
-                    LogManager.UpdateErrorLog " ComputeJobSequential: No position for pipeline " & Pipelines(codeMicToJobName.item(code)).Grid.NameGrid & " from file " & parentPath & parentFile & " (key = " & code & ") has been specified! Imaging current position. "
+                    LogManager.UpdateErrorLog " ComputeJobSequential: No position for pipeline " & Pipelines(codeMicToJobName.item(code)).Grid.NameGrid & " from file " & ParentPath & parentFile & " (key = " & code & ") has been specified! Imaging current position. "
                     ReDim newPositions(0)
                     newPositions(0) = parentPosition
                 End If
@@ -1909,7 +1405,7 @@ On Error GoTo ComputeJobSequential_Error
                         End If
                     Next iTsk
                 End If
-                updateSubPipelineGrid codeMicToJobName.item(code), newPositions, fcsPos, fcsPosPx, prefix, parentPath & parentFile & "\"
+                updateSubPipelineGrid codeMicToJobName.item(code), newPositions, fcsPos, fcsPosPx, prefix, ParentPath & parentFile & "\"
             Case Else
                 MsgBox ("Invalid OnlineImageAnalysis codeMic = " & code)
                 GoTo Abort
@@ -1928,6 +1424,6 @@ Abort:
 ComputeJobSequential_Error:
 
     LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-    ") in procedure ComputeJobSequential of Module JobsManager at line " & Erl & " " & parentPath & " " & parentFile
+    ") in procedure ComputeJobSequential of Module JobsManager at line " & Erl & " " & ParentPath & " " & parentFile
 End Function
 
