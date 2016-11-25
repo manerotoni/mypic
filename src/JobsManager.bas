@@ -383,6 +383,8 @@ On Error GoTo ExecuteJobAndTrack_Error
     Dim Period As Long
     Dim Rep As Long
     Dim jobNr As Long
+    'Dim locimgFileFormat As enumAimExportFormat 'work around to save czi fro Airy
+    'Dim locimgFileExtension As String
     jobNr = Pipelines(indexPl).getTask(indexTsk).jobNr
     Rep = Pipelines(indexPl).Repetition.index
     Period = Pipelines(indexPl).getTask(indexTsk).Period
@@ -418,6 +420,18 @@ On Error GoTo ExecuteJobAndTrack_Error
                 End If
                 LogManager.UpdateLog "Pipeline " & Pipelines(indexPl).Grid.NameGrid & " task " & indexTsk + 1 & " ImgJob " & jobNr + 1 & " " & fileName & " at X = " & stgPos.X & ", Y =  " & stgPos.Y & ", Z =  " & stgPos.Z & " in " & Round(Timer - Time, 3) & " sec"
                 If .SaveImage Then
+                    ''' Work around to use Airy (requires. czi) and Micronaut that can only read lsm
+                    'If indexPl = 1 Then
+                    '    locimgFileFormat = eAimExportFormatCzi
+                    '    locimgFileExtension = ".czi"
+                    'Else
+                    '    locimgFileFormat = imgFileFormat
+                    '    locimgFileExtension = imgFileExtension
+                    'End If
+                    'If Not SaveDsRecordingDoc(RecordingDoc, FilePath & fileName & locimgFileExtension, locimgFileFormat) Then
+                    '    Exit Function
+                    'End If
+                    
                     If Not SaveDsRecordingDoc(RecordingDoc, FilePath & fileName & imgFileExtension, imgFileFormat) Then
                         Exit Function
                     End If

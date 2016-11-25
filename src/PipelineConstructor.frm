@@ -58,7 +58,7 @@ Public Sub UserForm_Initialize()
     Dim lngIcon As Long
     Dim lnghWnd As Long
     
-    Version = "v0.5"
+    Version = "v0.6"
     Me.Caption = Me.Caption + " " + Version
 
     'Contains name of the Grids two letter code
@@ -72,7 +72,6 @@ Public Sub UserForm_Initialize()
     
     
     'find the version of the software and load ZEN object
-    ZenV = getVersionNr
     If ZenV > 2010 Then
         On Error GoTo errorMsg
         'in some cases this does not register properly
@@ -362,7 +361,8 @@ On Error GoTo SaveFormSettings_Error
     For ipip = 0 To UBound(Pipelines)
         With Pipelines(ipip)
             Print #iFileNum, "Pip " & ipip & " Reptime " & .Repetition.Time & " RepNr " & .Repetition.number & " RepInt " & .Repetition.interval
-            
+            Print #iFileNum, "Pip " & ipip & " keepParent " & .keepParent & " optPtNumber " & .optPtNumber & " maxWait " & .maxWait
+
             For iTsk = 0 To Pipelines(ipip).count - 1
                 arrTsk = TaskToArray(.getTask(iTsk))
                 Debug.Print "Variable type " & VarType(arrTsk(0))
@@ -409,6 +409,7 @@ Private Sub LoadSettings_Click()
     Set FSO = New FileSystemObject
     WorkingDir = FSO.GetParentFolderName(fileName) & "\"
     LoadFormSettings fileName
+    ToggleFrameButton currPipeline + 1
 End Sub
 
 Public Sub LoadFormSettings(fileName As String)
@@ -449,6 +450,13 @@ Public Sub LoadFormSettings(fileName As String)
                         Pipelines(ipip).Repetition.number = CInt(FieldEntries(5))
                         Pipelines(ipip).Repetition.interval = CBool(FieldEntries(7))
                     End If
+                    If FieldEntries(2) = "keepParent" Then
+                        Pipelines(ipip).keepParent = CBool(FieldEntries(3))
+                        Pipelines(ipip).optPtNumber = CInt(FieldEntries(5))
+                        Pipelines(ipip).maxWait = CLng(FieldEntries(7))
+                    End If
+                        
+                        
                     If FieldEntries(2) = "Tsk" Then
                         For iSet = 0 To UBound(arr)
                             Select Case VarType(arr(iSet))
