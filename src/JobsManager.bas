@@ -205,7 +205,12 @@ On Error GoTo AcquireJob_Error
     End If
     'Time = Timer
     Application.ThrowEvent tag_Events.eEventScanStart, 0 'notify that acquisition is started
-
+    Debug.Print (Lsm5.DsRecording.MultiPositionZ(0))
+    Debug.Print (position.Z * 0.000001)
+    
+    If Lsm5.DsRecording.MultiPositionAcquisition Then
+            Lsm5.DsRecording.MultiPositionZ(0) = position.Z * 0.000001
+    End If
     If Job.isAcquiring Then
         If Not ScanToImage(RecordingDoc, Job.timeToAcquire) Then
             Exit Function
