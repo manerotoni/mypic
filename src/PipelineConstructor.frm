@@ -58,7 +58,8 @@ Public Sub UserForm_Initialize()
     Dim lngIcon As Long
     Dim lnghWnd As Long
     
-    Version = "v0.6"
+    Version = "v0.7"
+    
     Me.Caption = Me.Caption + " " + Version
 
     'Contains name of the Grids two letter code
@@ -712,11 +713,11 @@ Public Function StartSetting() As Boolean
     End If
     
     ''check if pipeline has been tested
-    If Not TestedPipelines Then
-        If MsgBox("You have not tested your pipelines (press play - T button for this). Do you want to continue?", VbYesNo + VbQuestion, "PipCon") = vbNo Then
-            GoTo ExitStart
-        End If
-    End If
+'    If Not TestedPipelines Then
+'        If MsgBox("You have not tested your pipelines (press play - T button for this). Do you want to continue?", VbYesNo + VbQuestion, "PipCon") = vbNo Then
+'            GoTo ExitStart
+'        End If
+'    End If
     
     Running = True
     StageSettings MirrorX, MirrorY, ExchangeXY

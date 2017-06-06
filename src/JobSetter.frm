@@ -44,7 +44,6 @@ Public Sub UserForm_Initialize()
     Dim strIconPath As String
     Dim lngIcon As Long
     Dim lnghWnd As Long
-    ZenV = getVersionNr
     'find the version of the software
     If ZenV > 2010 Then
         On Error GoTo errorMsg

@@ -1,5 +1,5 @@
 # Macro for Zeiss LSM microscopes
-## Authors
+## Authors  
 Antonio Politi
  
 Developed in collaboration with Zeiss from the Ellenberg group at EMBL, Heidelberg
