@@ -58,7 +58,7 @@ Public Sub UserForm_Initialize()
     Dim lngIcon As Long
     Dim lnghWnd As Long
     
-    Version = "v0.7"
+    Version = "v0.8"
     
     Me.Caption = Me.Caption + " " + Version
 

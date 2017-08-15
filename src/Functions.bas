@@ -16,26 +16,6 @@ Public Type WellPoint
     well As String
 End Type
 
-'simple bubble sort for a small array
-Function BubbleSort(ByRef strArray As Variant) As Variant()
-    'sortieren von String Array
-    'eindimensionale Array
-    'Bubble-Sortier-Verfahren
-    Dim Z       As Long
-    Dim i       As Long
-    Dim strWert As Variant
-      
-     For Z = UBound(strArray) - 1 To LBound(strArray) Step -1
-         For i = LBound(strArray) To Z
-             If LCase(strArray(i)) > LCase(strArray(i + 1)) Then
-                 strWert = strArray(i)
-                 strArray(i) = strArray(i + 1)
-                 strArray(i + 1) = strWert
-             End If
-         Next i
-     Next Z
-     BubbleSort = strArray
-End Function
 
 
 
@@ -398,58 +378,32 @@ Public Function selectedListIndex(List As ListBox) As Long
     
 End Function
 
-''''''
-''   FServerFromDescription(strName As String, StrPath As String, ExecName As String) As Boolean
-''   TODO: What is this?
-''''''
-'Function FServerFromDescription(strName As String, StrPath As String, ExecName As String) As Boolean
-'    Dim lngResult As Long
-'    Dim strTmp As String
-'    Dim hKeyServer As Long
-'    Dim strBuffer As String
-'    Dim cb As Long
-'    Dim i As Integer
-'
-'    FServerFromDescription = False
-'
-'    strTmp = VBA.Space(255)
-'    strTmp = strName + "\CLSID"
-'    lngResult = RegOpenKeyEx(HKEY_CLASSES_ROOT, strTmp, 0&, KEY_READ, hKeyServer)
-'
-'    If (Not lngResult = ERROR_SUCCESS) Then GoTo error_exit
-'    strBuffer = VBA.Space(255)
-'    cb = Len(strBuffer)
-'
-'    lngResult = RegQueryValueEx(hKeyServer, "", 0&, REG_SZ, ByVal strBuffer, cb)
-'    If (Not lngResult = ERROR_SUCCESS) Then GoTo error_exit
-'
-'    lngResult = RegCloseKey(hKeyServer)
-'    strTmp = VBA.Space(255)
-'    strTmp = "CLSID\" + Strings.Left(strBuffer, cb - 1) + "\LocalServer32"
-'    strBuffer = VBA.Space(255)
-'    cb = Len(strBuffer)
-'    lngResult = RegOpenKeyEx(HKEY_CLASSES_ROOT, strTmp, 0&, KEY_READ, hKeyServer)
-'    If (Not lngResult = ERROR_SUCCESS) Then GoTo error_exit
-'
-'    lngResult = RegQueryValueEx(hKeyServer, "", 0&, REG_SZ, ByVal strBuffer, cb)
-'    If (Not lngResult = ERROR_SUCCESS) Then GoTo error_exit
-'    StrPath = Strings.Left(strBuffer, cb - 1)
-'    ExecName = StrPath
-'    lngResult = RegCloseKey(hKeyServer)
-'
-'    i = Len(StrPath)
-'
-'    Do Until (i = 0)
-'        If (VBA.Mid(StrPath, i, 1) = "\") Then
-'            StrPath = Strings.Left(StrPath, i - 1)
-'            FServerFromDescription = True
-'            Exit Do
-'        End If
-'        i = i - 1
-'    Loop
-'
-'error_exit:
-'    If (Not hKeyServer = 0) Then lngResult = RegCloseKey(hKeyServer)
-'
-'End Function
+Public Sub QuickSort(ByRef Field() As String, ByVal LB As Long, ByVal UB As Long)
+    Dim P1 As Long, P2 As Long, Ref As String, TEMP As String
 
+    P1 = LB
+    P2 = UB
+    Ref = Field((P1 + P2) / 2)
+
+    Do
+        Do While (Field(P1) < Ref)
+            P1 = P1 + 1
+        Loop
+
+        Do While (Field(P2) > Ref)
+            P2 = P2 - 1
+        Loop
+
+        If P1 <= P2 Then
+            TEMP = Field(P1)
+            Field(P1) = Field(P2)
+            Field(P2) = TEMP
+
+            P1 = P1 + 1
+            P2 = P2 - 1
+        End If
+    Loop Until (P1 > P2)
+
+    If LB < P2 Then Call QuickSort(Field, LB, P2)
+    If P1 < UB Then Call QuickSort(Field, P1, UB)
+End Sub

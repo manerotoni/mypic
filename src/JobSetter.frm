@@ -265,11 +265,13 @@ Private Sub AddImgJobFromFileButton_Click()
     End If
     
     fileNames = Split(fileName, Chr$(0))
+    
     EventMng.setBusy
     If UBound(fileNames) = 0 Then
         AddImgJobFromFile fileNames(0)
         WorkingDir = FSO.GetParentFolderName(fileNames(0)) & "\"
     Else
+        QuickSort fileNames, 1, UBound(fileNames)
         For index = 1 To UBound(fileNames)
             AddImgJobFromFile fileNames(0) & "\" & fileNames(index)
             SleepWithEvents 2000
@@ -293,7 +295,7 @@ Private Sub AddImgJobFromFile(fileName As String)
     End If
     ImgJobList.AddItem JobName
     ImgJobList.Selected(ImgJobList.ListCount - 1) = True
-    AddJob ImgJobs, ImgJobList.List(ImgJobList.ListCount - 1), getRecordingFromImageFile(fileName, ZEN), ZEN
+    AddJob ImgJobs, ImgJobList.List(ImgJobList.ListCount - 1), ImgJobList.ListCount - 1, getRecordingFromImageFile(fileName, ZEN), ZEN
     setLabels ImgJobList.ListCount - 1
     setTrackNames ImgJobList.ListCount - 1
 End Sub
@@ -488,16 +490,28 @@ Private Sub AddFcsJobButton_Click()
     Name = InputBox("Name of job to be created from current ZEN settings", "JobSetter: Define FcsJob name")
     'Cancel pressed
     If StrPtr(Name) = 0 Then Exit Sub
-
+    
     If Name = "" Or Not UniqueListName(ImgJobList, CStr(Name)) Or Not UniqueListName(FcsJobList, CStr(Name)) Then
         MsgBox "You need to define an unique name for the imaging job!", VbExclamation, "JobSetter Warning"
         Exit Sub
     End If
+    
     OpenForms = HideShowForms(OpenForms)
-    FcsJobList.AddItem CStr(Name)
-    FcsJobList.Selected(FcsJobList.ListCount - 1) = True
-    AddFcsJob FcsJobs, FcsJobList.List(FcsJobList.ListCount - 1), ZEN
-    setFcsLabels FcsJobList.ListCount - 1
+    Name = CStr(Name)
+    If FcsJobList.ListCount = 0 Then
+        index = 0
+    Else
+        index = 0
+        For i = 0 To UBound(FcsJobs)
+            If Name > FcsJobs(i).Name Then
+                index = index + 1
+            End If
+        Next i
+    End If
+    FcsJobList.AddItem Name, index
+    FcsJobList.Selected(index) = True
+    AddFcsJob FcsJobs, Name, index, ZEN
+    setFcsLabels index
     HideShowForms OpenForms
 End Sub
 
@@ -548,7 +562,7 @@ Private Sub AddJobButton_Click()
     Dim i As Integer
     Dim index As Integer
     Dim Name As String
-
+    Dim Names() As String
     Name = InputBox("Name of imaging job to be created from current ZEN settings", "JobSetter: Define job name")
     'Cancel pressed
     If StrPtr(Name) = 0 Then Exit Sub
@@ -557,11 +571,23 @@ Private Sub AddJobButton_Click()
         MsgBox "You need to define an unique name for the imaging job!", VbExclamation, "JobSetter Warning"
         Exit Sub
     End If
-    ImgJobList.AddItem CStr(Name)
-    ImgJobList.Selected(ImgJobList.ListCount - 1) = True
-    AddJob ImgJobs, ImgJobList.List(ImgJobList.ListCount - 1), Lsm5.DsRecording, ZEN
-    setLabels ImgJobList.ListCount - 1
-    setTrackNames ImgJobList.ListCount - 1
+    Name = CStr(Name)
+    If ImgJobList.ListCount = 0 Then
+        index = 0
+    Else
+        index = 0
+        For i = 0 To UBound(ImgJobs)
+            If Name > ImgJobs(i).Name Then
+                index = index + 1
+            End If
+        Next i
+    End If
+    'Find position where to enter the job. It should be alphabetical
+    ImgJobList.AddItem Name, index
+    ImgJobList.Selected(index) = True
+    AddJob ImgJobs, Name, index, Lsm5.DsRecording, ZEN
+    setLabels index
+    setTrackNames index
 End Sub
 
 Private Sub setTrackNames(index As Integer)
@@ -622,28 +648,49 @@ Private Sub DeleteJobButton_Click()
     'PipelineConstructor.UpdateImgJobList
 End Sub
 
-
-Public Sub AddJob(JobsV() As AJob, Name As String, Recording As DsRecording, ZEN As Object)
+''
+' Add imaging job Recording to JobsV with Name at index base 0
+''
+Public Sub AddJob(JobsV() As AJob, Name As String, index As Integer, Recording As DsRecording, ZEN As Object)
+    Dim i As Integer
+    
     If isArrayEmpty(JobsV) Then
         ReDim JobsV(0)
     Else
         ReDim Preserve JobsV(0 To UBound(JobsV) + 1)
     End If
-    Set JobsV(UBound(JobsV)) = New AJob
-    JobsV(UBound(JobsV)).Name = Name
-    JobsV(UBound(JobsV)).SetJob Recording, ZEN
+    Debug.Assert (index <= UBound(JobsV))
+    If index < UBound(JobsV) Then
+        If UBound(JobsV) > 0 Then
+            For i = UBound(JobsV) - 1 To index Step -1
+                Set JobsV(i + 1) = JobsV(i)
+            Next i
+        End If
+    End If
+    Set JobsV(index) = New AJob
+    JobsV(index).Name = Name
+    JobsV(index).SetJob Recording, ZEN
 End Sub
 
 
-Public Sub AddFcsJob(JobsV() As AFcsJob, Name As String, ZEN As Object)
+Public Sub AddFcsJob(JobsV() As AFcsJob, Name As String, index As Integer, ZEN As Object)
+    Dim i As Integer
     If isArrayEmpty(JobsV) Then
         ReDim JobsV(0)
     Else
         ReDim Preserve JobsV(0 To UBound(JobsV) + 1)
     End If
-    Set JobsV(UBound(JobsV)) = New AFcsJob
-    JobsV(UBound(JobsV)).Name = Name
-    JobsV(UBound(JobsV)).SetJob ZEN, ZenV
+    Debug.Assert (index <= UBound(JobsV))
+    If index < UBound(JobsV) Then
+        If UBound(JobsV) > 0 Then
+            For i = UBound(JobsV) - 1 To index Step -1
+                Set JobsV(i + 1) = JobsV(i)
+            Next i
+        End If
+    End If
+    Set JobsV(index) = New AFcsJob
+    JobsV(index).Name = Name
+    JobsV(index).SetJob ZEN, ZenV
 End Sub
 
 
