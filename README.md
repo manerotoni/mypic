@@ -22,6 +22,8 @@ and examples.
 Antonio Politi, EMBL Heidelberg, Ellenberg group
 mail@apoliti.de
 
+### changes
+* version 0.8: minors, alphabetical sorting of jobs
 
 
 
