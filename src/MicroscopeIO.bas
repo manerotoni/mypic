@@ -515,7 +515,7 @@ End Function
 ''''
 ' SaveFcsMeasurment to File
 ''''
-Public Function SaveFcsMeasurement(FcsData As AimFcsData, FcsDsDoc As DsRecordingDoc, fileName As String) As Boolean
+Public Function SaveFcsMeasurement(FcsData As AimFcsData, FcsDsDoc As DsRecordingDoc, FileName As String) As Boolean
     Dim writer As AimFcsFileWrite
     Set writer = Lsm5.CreateObject("AimFcsFile.Write")
     If FcsData Is Nothing Then
@@ -523,15 +523,15 @@ Public Function SaveFcsMeasurement(FcsData As AimFcsData, FcsDsDoc As DsRecordin
         Exit Function
     End If
     ' Write to file
-    writer.fileName = fileName
+    writer.FileName = FileName
     writer.FileWriteType = eFcsFileWriteTypeAll
     writer.format = eFcsFileFormatConfoCor3WithRawData
     writer.Source = FcsData
     writer.Run
     SleepWithEvents (1000)
     'write twice to be sure
-    If Not writer.DestinationFilesExist(fileName) Then
-        writer.fileName = fileName
+    If Not writer.DestinationFilesExist(FileName) Then
+        writer.FileName = FileName
         writer.FileWriteType = eFcsFileWriteTypeAll
         writer.format = eFcsFileFormatConfoCor3WithRawData
         writer.Source = FcsData
@@ -1303,15 +1303,12 @@ End Function
 ' SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As String) As Boolean
 ' Copied and adapted from MultiTimeSeries macro
 ''''''
-Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, fileName As String, FileFormat As enumAimExportFormat) As Boolean
+Public Function SaveDsRecordingDoc(Document As DsRecordingDoc, FileName As String, FileFormat As enumAimExportFormat) As Boolean
     Dim Export As AimImageExport
     Dim image As AimImageMemory
     Dim error As AimError
     Dim Planes As Long
     Dim Plane As Long
-    Dim Positions As Long
-    Dim Horizontal As enumAimImportExportCoordinate
-    Dim Vertical As enumAimImportExportCoordinate
 
 On Error GoTo SaveDsRecordingDoc_Error
     'Set Image = EngelImageToHechtImage(Document).Image(0, True)
@@ -1321,20 +1318,12 @@ On Error GoTo SaveDsRecordingDoc_Error
     
     Set Export = Lsm5.CreateObject("AimImageImportExport.Export.4.5")
     'Set Export = New AimImageExport
-    Export.fileName = fileName
+    Export.FileName = FileName
     Export.format = FileFormat
     Export.StartExport image, image
     Set error = Export
     error.LastErrorMessage
     
-    Planes = 1
-    Export.GetPlaneDimensions Horizontal, Vertical
-    If Document.Recording.MultiPositionAcquisition Then
-        Positions = Document.Recording.MultiPositionArraySize
-    End If
-    If Positions = 0 Then
-        Positions = 1
-    End If
     
     Export.GetNumberPlanes Planes
     
@@ -1363,7 +1352,6 @@ SaveDsRecordingDoc_Error:
     LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
     ") in procedure SaveDsRecordingDoc of Module MicroscopeIO at line " & Erl & " "
 End Function
-
 '''
 ' Check if we have a ZStack
 ''''
