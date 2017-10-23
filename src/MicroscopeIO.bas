@@ -79,6 +79,8 @@ Public PauseEndAcquisition As Double 'A workaround to avoid errors in FCS/imagin
 '''
 Public Function getVersionNr() As Integer
     Dim VersionNr As Long
+On Error GoTo getVersionNr_Error
+    ' sometimes this does not work. In this case the version is forced
     VersionNr = CLng(VBA.Left(Lsm5.Info.VersionIs, 2))
     Select Case VersionNr
         Case Is <= 6:
@@ -92,6 +94,14 @@ Public Function getVersionNr() As Integer
     'If VersionNr > 8 Then
     '    MsgBox "ZEN version is higher than ZEN 2012"
     'End If
+   On Error GoTo 0
+   Exit Function
+   ' Force version
+   getVersionNr = 2012
+getVersionNr_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure getVersionNr of Module MicroscopeIO at line " & Erl & " ZEN version " & Lsm5.Info.VersionIs
 End Function
 
 
@@ -103,18 +113,30 @@ End Function
 '''''
 Public Function Range() As Double
     Dim RevolverPosition As Long
+On Error GoTo Range_Error
+
     RevolverPosition = Lsm5.Hardware.CpObjectiveRevolver.RevolverPosition
     If RevolverPosition >= 0 Then
         Range = Lsm5.Hardware.CpObjectiveRevolver.FreeWorkingDistance(RevolverPosition) * 1000# ' the # is a double declaration
     Else
         Range = 0#
     End If
+
+   On Error GoTo 0
+   Exit Function
+
+Range_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure Range of Module MicroscopeIO at line " & Erl & " "
 End Function
 
 ''''
 ' Stop all running FCS jobs and imaging jobs
 ''''
 Public Function StopAcquisition()
+On Error GoTo StopAcquisition_Error
+
     Lsm5.StopScan
     If Lsm5.Info.IsFCS Then
         Dim FcsControl As AimFcsController
@@ -122,6 +144,14 @@ Public Function StopAcquisition()
         FcsControl.StopAcquisitionAndWait
     End If
     DoEvents
+
+   On Error GoTo 0
+   Exit Function
+
+StopAcquisition_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure StopAcquisition of Module MicroscopeIO at line " & Erl & " "
 End Function
 
 
@@ -130,8 +160,18 @@ End Function
 ''''''
 Public Function ClearVectorElements() As Boolean
     Dim vo As AimImageVectorOverlay
+On Error GoTo ClearVectorElements_Error
+
     Set vo = Lsm5.ExternalDsObject.ScanController.AcquisitionRegions
     vo.Cleanup
+
+   On Error GoTo 0
+   Exit Function
+
+ClearVectorElements_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure ClearVectorElements of Module MicroscopeIO at line " & Erl & " "
 End Function
 
 
@@ -142,6 +182,8 @@ Public Function isReady(Optional Time As Double = 0.1) As Boolean
     Dim BusyFcs As Boolean
     Dim message As String
     Dim AimScanCalibration As AimScanCalibration
+On Error GoTo isReady_Error
+
     Set AimScanCalibration = Lsm5.ExternalDsObject.ScanController
 
     If Lsm5.Info.IsFCS Then
@@ -151,6 +193,14 @@ Public Function isReady(Optional Time As Double = 0.1) As Boolean
     End If
     isReady = CInt(AimScanCalibration.GetIsHardwareBusy(True, Time, message) Or BusyFcs Or Lsm5.Info.IsAnyHardwareBusy)
     isReady = Not isReady
+
+   On Error GoTo 0
+   Exit Function
+
+isReady_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure isReady of Module MicroscopeIO at line " & Erl & " "
 End Function
 
 '''
@@ -159,6 +209,8 @@ End Function
 Public Sub SleepWithEvents(WaitTime As Double)
     Dim i As Long
     Dim cycles As Long
+On Error GoTo SleepWithEvents_Error
+
     cycles = Round(WaitTime / PauseGrabbing)
     For i = 0 To cycles
         If ScanStop Then
@@ -167,6 +219,14 @@ Public Sub SleepWithEvents(WaitTime As Double)
         Sleep (PauseGrabbing)
         DoEvents
     Next i
+
+   On Error GoTo 0
+   Exit Sub
+
+SleepWithEvents_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure SleepWithEvents of Module MicroscopeIO at line " & Erl & " "
 End Sub
 
 '''''
@@ -517,6 +577,8 @@ End Function
 ''''
 Public Function SaveFcsMeasurement(FcsData As AimFcsData, FcsDsDoc As DsRecordingDoc, FileName As String) As Boolean
     Dim writer As AimFcsFileWrite
+On Error GoTo SaveFcsMeasurement_Error
+
     Set writer = Lsm5.CreateObject("AimFcsFile.Write")
     If FcsData Is Nothing Then
         MsgBox "No Fcs Recording to Save"
@@ -541,6 +603,14 @@ Public Function SaveFcsMeasurement(FcsData As AimFcsData, FcsDsDoc As DsRecordin
         SleepWithEvents (200)
     Wend
     SaveFcsMeasurement = True
+
+   On Error GoTo 0
+   Exit Function
+
+SaveFcsMeasurement_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure SaveFcsMeasurement of Module MicroscopeIO at line " & Erl & " "
 End Function
 
 Public Sub SaveFcsPositionList(sFile As String, positionsPx() As Vector, imageName As String, classNames() As String)
@@ -652,6 +722,8 @@ Public Function FailSafeMoveStageXY(X As Double, Y As Double) As Boolean
     Dim Prec As Double
     Dim Trial As Integer
     
+On Error GoTo FailSafeMoveStageXY_Error
+
     Prec = 1 'um (Thorsten Lenser uses 1 um)
     Trial = 1
 SetPosition:
@@ -680,6 +752,14 @@ SetPosition:
         GoTo SetPosition
     End If
     FailSafeMoveStageXY = True
+
+   On Error GoTo 0
+   Exit Function
+
+FailSafeMoveStageXY_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure FailSafeMoveStageXY of Module MicroscopeIO at line " & Erl & " "
 End Function
 
 
@@ -705,6 +785,8 @@ Public Function FailSafeMoveStageZExec(Z As Double) As Boolean
     Dim WaitTime As Integer
     Dim Prec As Double
     Dim Trial As Integer
+On Error GoTo FailSafeMoveStageZExec_Error
+
     Prec = 0.2 'Used in MultitimeZEN2012 Thoresten Lenser
     Trial = 1
     
@@ -734,6 +816,14 @@ SetPosition:
     End If
     SleepWithEvents (500) 'With 500 it works
     FailSafeMoveStageZExec = True
+
+   On Error GoTo 0
+   Exit Function
+
+FailSafeMoveStageZExec_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure FailSafeMoveStageZExec of Module MicroscopeIO at line " & Erl & " "
 End Function
 
 
@@ -751,6 +841,8 @@ Public Function MoveToNextLocation(Optional Mark As Integer = 0) As Boolean
         Dim dY As Double
         Dim dZ As Double
         Dim i As Integer
+On Error GoTo MoveToNextLocation_Error
+
         Lsm5.Hardware.CpStages.MarkMoveToZ (Mark)
         'Lsm5.ExternalCpObject.pHardwareObjects.pStage.pItem(0).MoveToMarkZ (0)  'old code Moves to the first location marked in the stage control. How to move to next point?
         ' the points were deleted and readded at the end of list in the Acquisition function
@@ -765,6 +857,14 @@ Public Function MoveToNextLocation(Optional Mark As Integer = 0) As Boolean
             End If
         Loop
         MoveToNextLocation = True
+
+   On Error GoTo 0
+   Exit Function
+
+MoveToNextLocation_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure MoveToNextLocation of Module MicroscopeIO at line " & Erl & " "
 End Function
 
 Public Function getCurrentPosition() As Vector

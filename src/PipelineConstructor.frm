@@ -40,11 +40,20 @@ Private Sub ShowOiaKeysButton_Click()
 ' Display Keys used for Online image analysis
 '''''
     Dim OiaSettings As OnlineIASettings
+On Error GoTo ShowOiaKeysButton_Click_Error
+
     Set OiaSettings = New OnlineIASettings
     OiaSettings.initializeDefault
     KeyReport.Show
     KeyReport.KeyReportLabel2.MultiLine = True
     KeyReport.KeyReportLabel2.Text = OiaSettings.createKeyReport
+
+   Exit Sub
+
+ShowOiaKeysButton_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure ShowOiaKeysButton_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -58,6 +67,8 @@ Public Sub UserForm_Initialize()
     Dim lngIcon As Long
     Dim lnghWnd As Long
     
+On Error GoTo UserForm_Initialize_Error
+
     Version = "v0.8"
     
     Me.Caption = Me.Caption + " " + Version
@@ -90,8 +101,6 @@ errorMsg:
         ZenV = 2010
 NoError:
     End If
-    
-
     StageSettings MirrorX, MirrorY, ExchangeXY
     
     'a custom event manager
@@ -175,10 +184,19 @@ NoError:
     SendMessage lnghWnd, WM_SETICON, True, lngIcon
     SendMessage lnghWnd, WM_SETICON, False, lngIcon
     FormatUserForm Me.Caption
+   On Error GoTo 0
+   Exit Sub
+
+UserForm_Initialize_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure UserForm_Initialize of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
     Dim exitPipCon As Integer
+On Error GoTo UserForm_QueryClose_Error
+
     exitPipCon = MsgBox("Exit PipelineConstructor?", VbOKCancel + VbQuestion, "PipCon exit")
     If exitPipCon = vbOK Then
         Unload JobSetter
@@ -190,11 +208,20 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
     Else
         Cancel = True
     End If
+   On Error GoTo 0
+   Exit Sub
+
+UserForm_QueryClose_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure UserForm_QueryClose of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Public Function HideShowForms(OpenForms() As Boolean) As Boolean()
     Dim UForm As Object
     Dim i As Integer
+On Error GoTo HideShowForms_Error
+
     If isArrayEmpty(OpenForms) Then
     
         For Each UForm In VBA.UserForms
@@ -219,6 +246,13 @@ Public Function HideShowForms(OpenForms() As Boolean) As Boolean()
             i = i + 1
         Next
     End If
+   On Error GoTo 0
+   Exit Function
+
+HideShowForms_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure HideShowForms of Form PipelineConstructor at line " & Erl & " "
 End Function
 
 
@@ -232,9 +266,19 @@ End Sub
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Private Sub JobSetterButton_Click()
+
+On Error GoTo JobSetterButton_Click_Error
+
     JobSetter.Show
     JobSetter.Repaint
     DoEvents
+On Error GoTo 0
+   Exit Sub
+
+JobSetterButton_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure JobSetterButton_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub FrameButton1_Click()
@@ -262,6 +306,8 @@ End Sub
 ''''
 Public Sub ToggleFrameButton(ButtonNumber As Integer)
     Dim i As Integer
+
+On Error GoTo ToggleFrameButton_Error
 
     For i = 1 To NrPipelines + 2
         Me.Controls("FrameButton" & i).value = False
@@ -316,14 +362,24 @@ Public Sub ToggleFrameButton(ButtonNumber As Integer)
             FrameSaving.Left = 73
             FrameSaving.Top = 25
         End Select
+
+   On Error GoTo 0
+   Exit Sub
+
+ToggleFrameButton_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure ToggleFrameButton of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub SaveSettings_Click()
     Dim FSO As FileSystemObject
-    Dim Filter As String, fileName As String
+    Dim Filter As String, FileName As String
     Dim Flags As Long
     Dim DefDir As String
    
+On Error GoTo SaveSettings_Click_Error
+
     Flags = OFN_OVERWRITEPROMPT Or OFN_LONGNAMES Or OFN_PATHMUSTEXIST Or OFN_HIDEREADONLY Or OFN_NOCHANGEDIR Or OFN_EXPLORER Or OFN_NOVALIDATE
     Filter = "Configuration (*.ini)" & Chr$(0) & "*.ini" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
     If WorkingDir = "" Then
@@ -332,22 +388,30 @@ Private Sub SaveSettings_Click()
         DefDir = WorkingDir
     End If
     
-    fileName = CommonDialogAPI.ShowSave(Filter, Flags, "PipelineConstructor.ini", DefDir, "Save PipelineConstructor settings")
-    If fileName = "" Then
+    FileName = CommonDialogAPI.ShowSave(Filter, Flags, "PipelineConstructor.ini", DefDir, "Save PipelineConstructor settings")
+    If FileName = "" Then
         Exit Sub
     End If
     Set FSO = New FileSystemObject
-    WorkingDir = FSO.GetParentFolderName(fileName) & "\"
-    If Len(fileName) > 3 And VBA.Right(fileName, 4) <> ".ini" Then
-        fileName = fileName & ".ini"
+    WorkingDir = FSO.GetParentFolderName(FileName) & "\"
+    If Len(FileName) > 3 And VBA.Right(FileName, 4) <> ".ini" Then
+        FileName = FileName & ".ini"
     End If
-    SaveFormSettings fileName
+    SaveFormSettings FileName
+
+   On Error GoTo 0
+   Exit Sub
+
+SaveSettings_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure SaveSettings_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 ''''
 '   SaveSettings of PipelineConstructor in file name FileName.
 ''''
-Public Sub SaveFormSettings(fileName As String)
+Public Sub SaveFormSettings(FileName As String)
     Dim iTsk As Integer, ipip As Integer, iSet As Integer
     Dim tskSettings As String
     Dim iFileNum As Long
@@ -355,9 +419,10 @@ Public Sub SaveFormSettings(fileName As String)
     Dim tskFieldNames() As String
     Dim tsk As Task
 On Error GoTo SaveFormSettings_Error
+
     Close
     iFileNum = FreeFile()
-    Open fileName For Output As iFileNum
+    Open FileName For Output As iFileNum
     tskFieldNames = TaskFieldNames
     For ipip = 0 To UBound(Pipelines)
         With Pipelines(ipip)
@@ -379,21 +444,26 @@ On Error GoTo SaveFormSettings_Error
     " nRowSub " & GridScan_nRowsub & " nColumnSub " & GridScan_nColumnsub & " dRowSub " & GridScan_dRowsub & " dColumnSub " & _
     GridScan_dColumnsub & " FirstWell " & CInt(GridScan_FirstWell.value) & " WellUpperLeft " & CInt(GridScan_WellUpperLeft.value)
     Close #iFileNum
-    Exit Sub
+
+   On Error GoTo 0
+   Exit Sub
+
 SaveFormSettings_Error:
 
     LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-    ") in procedure SaveFormSettings of Module AutofocusFormSaveLoad at line " & Erl & " "
-
+    ") in procedure SaveFormSettings of Form PipelineConstructor at line " & Erl & " "
+ 
 End Sub
 
 
 
 Private Sub LoadSettings_Click()
     Dim FSO As FileSystemObject
-    Dim Filter As String, fileName As String
+    Dim Filter As String, FileName As String
     Dim Flags As Long
     Dim DefDir As String
+
+On Error GoTo LoadSettings_Click_Error
 
     Flags = OFN_PATHMUSTEXIST Or OFN_HIDEREADONLY Or OFN_NOCHANGEDIR Or OFN_EXPLORER Or OFN_NOVALIDATE
     Filter = "Images (*.ini)" & Chr$(0) & "*.ini" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
@@ -403,17 +473,25 @@ Private Sub LoadSettings_Click()
         DefDir = WorkingDir
     End If
     
-    fileName = CommonDialogAPI.ShowOpen(Filter, Flags, "", DefDir, "Load PipelineConstructor settings")
-    If fileName = "" Then
+    FileName = CommonDialogAPI.ShowOpen(Filter, Flags, "", DefDir, "Load PipelineConstructor settings")
+    If FileName = "" Then
         Exit Sub
     End If
     Set FSO = New FileSystemObject
-    WorkingDir = FSO.GetParentFolderName(fileName) & "\"
-    LoadFormSettings fileName
+    WorkingDir = FSO.GetParentFolderName(FileName) & "\"
+    LoadFormSettings FileName
     ToggleFrameButton currPipeline + 1
+
+   On Error GoTo 0
+   Exit Sub
+
+LoadSettings_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure LoadSettings_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
-Public Sub LoadFormSettings(fileName As String)
+Public Sub LoadFormSettings(FileName As String)
 'TODO use regExp to remove several white spaces
     Dim iFileNum As Integer, ipip As Integer, iSet As Integer
     Dim tsk As Task
@@ -421,12 +499,14 @@ Public Sub LoadFormSettings(fileName As String)
     Dim Fields As String
     Dim JobName As String
     Dim objRegExp As Object
+On Error GoTo LoadFormSettings_Error
+
     Set objRegExp = CreateObject("vbscript.regexp")
     Dim FieldEntries() As String
     Close
     'On Error GoTo ErrorHandle
     iFileNum = FreeFile()
-    Open fileName For Input As iFileNum
+    Open FileName For Input As iFileNum
     arr = TaskToArray(tsk)
     Pipelines(0).delAllTasks
     Pipelines(1).delAllTasks
@@ -496,7 +576,15 @@ nextiSet:
     Close #iFileNum
     Exit Sub
 ErrorHandle:
-    MsgBox "Not able to read " & fileName & " for AutofocusScreen settings"
+    MsgBox "Not able to read " & FileName & " for AutofocusScreen settings"
+
+   On Error GoTo 0
+   Exit Sub
+
+LoadFormSettings_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure LoadFormSettings of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 
@@ -511,6 +599,8 @@ End Sub
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Private Sub StopExpButton_Click()
+On Error GoTo StopExpButton_Click_Error
+
     ScanStop = True
     StopAcquisition
 
@@ -518,9 +608,19 @@ Private Sub StopExpButton_Click()
         Pipelines(0).Grid.writePositionGridFile (GlobalDataBaseName + "positionsAfterStop.pos")
     End If
     Pipelines(0).Grid.isRunning = False
+
+   On Error GoTo 0
+   Exit Sub
+
+StopExpButton_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure StopExpButton_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub StopAfterRepButton_Click()
+On Error GoTo StopAfterRepButton_Click_Error
+
     If StopAfterRepButton = True Then
         If Running Then
             ScanStopAfterRepetition = True
@@ -534,9 +634,19 @@ Private Sub StopAfterRepButton_Click()
         ScanStopAfterRepetition = False
         StopAfterRepButton.BackColor = &HE0E0E0
     End If
+
+   On Error GoTo 0
+   Exit Sub
+
+StopAfterRepButton_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure StopAfterRepButton_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub PauseExpButton_Click()
+On Error GoTo PauseExpButton_Click_Error
+
     If Not Pipelines(0).Grid.isRunning Then
         ScanPause = False
         PauseExpButton.value = False
@@ -553,6 +663,14 @@ Private Sub PauseExpButton_Click()
             PauseExpButton.BackColor = &HE0E0E0
         End If
     End If
+
+   On Error GoTo 0
+   Exit Sub
+
+PauseExpButton_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure PauseExpButton_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 '''
@@ -561,6 +679,8 @@ End Sub
 Private Sub AcquirePipelineButton_Click()
     Dim stgPos As Vector
     Dim RepNum As Long
+On Error GoTo AcquirePipelineButton_Click_Error
+
     resetStopFlags
     Pump = False
     If Pipelines(currPipeline).count > 0 Then
@@ -599,6 +719,14 @@ Private Sub AcquirePipelineButton_Click()
         Next RepNum
         AddJobToPipelineButton.BackColor = "&H0000C000&"
     End If
+
+   On Error GoTo 0
+   Exit Sub
+
+AcquirePipelineButton_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure AcquirePipelineButton_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 '''
@@ -608,6 +736,8 @@ Private Sub TestAllPipelinesButton_Click()
     Dim stgPos As Vector
     Dim RepNum As Long
     Dim i As Integer
+On Error GoTo TestAllPipelinesButton_Click_Error
+
     resetStopFlags
     Pump = False
     DisplayProgress ProgressLabel, "Test run for all pipelines", RGB(&HC0, &HC0, 0)
@@ -643,16 +773,34 @@ Private Sub TestAllPipelinesButton_Click()
 Endtest:
     DisplayProgress ProgressLabel, "Ready", RGB(&HC0, &HC0, 0)
     TestedPipelines = True
+
+   On Error GoTo 0
+   Exit Sub
+
+TestAllPipelinesButton_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure TestAllPipelinesButton_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 
 Private Sub StartExpButton_Click()
+On Error GoTo StartExpButton_Click_Error
+
     Pump = False
     'Do some check for consistency
     DoEvents
      'Now we're starting. This will be set to false if the stop button is pressed or if we reached the total number of repetitions.
     StartSetting
     Running = False
+
+   On Error GoTo 0
+   Exit Sub
+
+StartExpButton_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure StartExpButton_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub StartPumpExpButton_Click()
@@ -672,6 +820,8 @@ Public Function StartSetting() As Boolean
     Dim gridDim() As Long
     Dim pos() As Vector
     Dim posCurr As Vector   'current position
+On Error GoTo StartSetting_Error
+
     Set FileSystem = New FileSystemObject
     
     resetStopFlags
@@ -770,6 +920,14 @@ ExitStart:
     Running = False
     DisplayProgress PipelineConstructor.ProgressLabel, "Ready", RGB(&HC0, &HC0, 0)
     Exit Function
+
+   On Error GoTo 0
+   Exit Function
+
+StartSetting_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure StartSetting of Form PipelineConstructor at line " & Erl & " "
 End Function
 
 
@@ -967,6 +1125,8 @@ Function setGridFromPositionChoice(locGrid As AGrid, optionPos As Integer) As Bo
     Dim i As Integer
     Dim posVec() As Vector
     'test if positions have been defined
+On Error GoTo setGridFromPositionChoice_Error
+
     If PositionsList.ListCount <= 0 Then
         Select Case optionPos
             Case 2
@@ -1012,6 +1172,14 @@ Function setGridFromPositionChoice(locGrid As AGrid, optionPos As Integer) As Bo
             End If
     End Select
     setGridFromPositionChoice = True
+
+   On Error GoTo 0
+   Exit Function
+
+setGridFromPositionChoice_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure setGridFromPositionChoice of Form PipelineConstructor at line " & Erl & " "
 End Function
 
 
@@ -1020,11 +1188,13 @@ End Function
 ''''
 Private Sub GridScanPositionFileButton_Click()
     Dim FSO As New FileSystemObject
-    Dim Filter As String, fileName As String
+    Dim Filter As String, FileName As String
     Dim Flags As Long
     Dim DefDir As String
     Dim locGrid As AGrid
     Dim gridDim() As Long
+On Error GoTo GridScanPositionFileButton_Click_Error
+
     Set locGrid = New AGrid
     
     Flags = OFN_PATHMUSTEXIST Or OFN_HIDEREADONLY Or OFN_NOCHANGEDIR Or OFN_EXPLORER Or OFN_NOVALIDATE
@@ -1035,27 +1205,37 @@ Private Sub GridScanPositionFileButton_Click()
         DefDir = WorkingDir
     End If
     
-    fileName = CommonDialogAPI.ShowOpen(Filter, Flags, "", DefDir, "Select position file")
-    If fileName = "" Then
+    FileName = CommonDialogAPI.ShowOpen(Filter, Flags, "", DefDir, "Select position file")
+    If FileName = "" Then
         Exit Sub
     End If
-    If Not FileExist(fileName) Then
-        MsgBox "Load positions from file failed. File " & fileName & " does not exist"
+    If Not FileExist(FileName) Then
+        MsgBox "Load positions from file failed. File " & FileName & " does not exist"
         Exit Sub
     End If
-    WorkingDir = FSO.GetParentFolderName(fileName) & "\"
-    gridDim = locGrid.getGridDimFromFile(fileName)
-    If Not locGrid.loadPositionGridFile(fileName) Then
+    WorkingDir = FSO.GetParentFolderName(FileName) & "\"
+    gridDim = locGrid.getGridDimFromFile(FileName)
+    If Not locGrid.loadPositionGridFile(FileName) Then
         Exit Sub
     End If
 
-    GridScanPositionFile = fileName
+    GridScanPositionFile = FileName
     UpdatePositionsListFromGrid locGrid
+
+   On Error GoTo 0
+   Exit Sub
+
+GridScanPositionFileButton_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure GridScanPositionFileButton_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 
 Private Sub UpdatePositionsListFromGrid(locGrid As AGrid)
     Dim index As Long
+On Error GoTo UpdatePositionsListFromGrid_Error
+
     locGrid.setIndeces 1, 1, 1, 1
     PositionsList.Clear
     If locGrid.getNrValidPts > 100 Then
@@ -1068,13 +1248,23 @@ Private Sub UpdatePositionsListFromGrid(locGrid As AGrid)
             AddPosition WellID.value, locGrid.getThisPosition
         End If
     Loop While (locGrid.nextGridPt(False) And index < 100)
+
+   On Error GoTo 0
+   Exit Sub
+
+UpdatePositionsListFromGrid_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure UpdatePositionsListFromGrid of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub SavePositionsButton_Click()
     Dim FSO As New FileSystemObject
-    Dim Filter As String, fileName As String, DefDir As String
+    Dim Filter As String, FileName As String, DefDir As String
     Dim Flags As Long
     Dim locGrid As AGrid
+On Error GoTo SavePositionsButton_Click_Error
+
     Set locGrid = New AGrid
     Flags = OFN_FILEMUSTEXIST Or OFN_HIDEREADONLY Or OFN_PATHMUSTEXIST
     Filter = "Position file (*.pos)" & Chr$(0) & "*.pos" & Chr$(0) & "All files (*.*)" & Chr$(0) & "*.*"
@@ -1083,25 +1273,33 @@ Private Sub SavePositionsButton_Click()
     Else
         DefDir = WorkingDir
     End If
-    fileName = CommonDialogAPI.ShowSave(Filter, Flags, "*.pos", DefDir, "Save positions")
+    FileName = CommonDialogAPI.ShowSave(Filter, Flags, "*.pos", DefDir, "Save positions")
     DisplayProgress Me.ProgressLabel, "Saving positions..", RGB(0, &HC0, 0)
     
-    If fileName <> "" Then
-        If VBA.Right(fileName, 4) <> ".pos" Then
-            fileName = fileName & ".pos"
+    If FileName <> "" Then
+        If VBA.Right(FileName, 4) <> ".pos" Then
+            FileName = FileName & ".pos"
         End If
     Else
         GoTo ExitSub
     End If
-    WorkingDir = FSO.GetParentFolderName(fileName) & "\"
+    WorkingDir = FSO.GetParentFolderName(FileName) & "\"
     If Not setGridFromPositionChoice(locGrid, positionOption) Then
         MsgBox "Saving of positions failed"
     End If
-    If Not locGrid.writePositionGridFile(fileName) Then
+    If Not locGrid.writePositionGridFile(FileName) Then
          MsgBox "Saving of positions failed"
     End If
 ExitSub:
     DisplayProgress Me.ProgressLabel, "Ready", RGB(&HC0, &HC0, 0)
+
+   On Error GoTo 0
+   Exit Sub
+
+SavePositionsButton_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure SavePositionsButton_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 '''
@@ -1152,6 +1350,8 @@ Public Sub FillTrackingChannelList(tmpTask As Task)
     Dim ca As Integer
     Dim Track As DsTrack
     Dim TrackOn As Boolean
+On Error GoTo FillTrackingChannelList_Error
+
     CenterOfMassChannel.Clear 'Content of popup menu for chosing track for post-acquisition tracking is deleted
     ca = 0
     If tmpTask.jobType = jobTypes.imgjob Then
@@ -1170,35 +1370,75 @@ Public Sub FillTrackingChannelList(tmpTask As Task)
             Next iTrack
         End With
     End If
+
+   On Error GoTo 0
+   Exit Sub
+
+FillTrackingChannelList_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure FillTrackingChannelList of Form PipelineConstructor at line " & Erl & " "
 End Sub
     
 Private Sub TrackXY_Click()
     Dim index As Integer
+On Error GoTo TrackXY_Click_Error
+
     index = CurrentPipelineList.ListIndex
     If index > -1 Then
         Pipelines(currPipeline).setTrackXY index, TrackXY
     End If
+
+   On Error GoTo 0
+   Exit Sub
+
+TrackXY_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure TrackXY_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub TrackZ_Click()
     Dim index As Integer
+On Error GoTo TrackZ_Click_Error
+
     index = CurrentPipelineList.ListIndex
     If index > -1 Then
         Pipelines(currPipeline).setTrackZ index, TrackZ
     End If
+
+   On Error GoTo 0
+   Exit Sub
+
+TrackZ_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure TrackZ_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub CenterOfMassChannel_Click()
     Dim index As Integer
+On Error GoTo CenterOfMassChannel_Click_Error
+
     index = CurrentPipelineList.ListIndex
     If index > -1 Then
         Pipelines(currPipeline).setTrackChannel index, CenterOfMassChannel.ListIndex
     End If
+
+   On Error GoTo 0
+   Exit Sub
+
+CenterOfMassChannel_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure CenterOfMassChannel_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 ''' update option for focusing and tracking in form according to type of job
 Private Sub UpdateFocusEnabled()
     Dim index As Integer
+On Error GoTo UpdateFocusEnabled_Error
+
     TrackingFrame.Visible = True
     index = CurrentPipelineList.ListIndex
     If index = -1 Then
@@ -1218,10 +1458,20 @@ Private Sub UpdateFocusEnabled()
         TrackZ.Enabled = .isZStack And (FocusMethod.ListIndex > AnalyseImage.No)
         TrackXY.Enabled = (FocusMethod.ListIndex > AnalyseImage.No) And (.Recording.ScanMode <> "ZScan") And (.Recording.ScanMode <> "Line")
     End With
+
+   On Error GoTo 0
+   Exit Sub
+
+UpdateFocusEnabled_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure UpdateFocusEnabled of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub FocusMethod_Click()
     Dim index As Integer
+On Error GoTo FocusMethod_Click_Error
+
     index = CurrentPipelineList.ListIndex
     If index < 0 Then
         Exit Sub
@@ -1233,11 +1483,21 @@ Private Sub FocusMethod_Click()
         SaveImage = True
         Pipelines(currPipeline).setSaveImage index, True
     End If
+
+   On Error GoTo 0
+   Exit Sub
+
+FocusMethod_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure FocusMethod_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 
 Private Sub CurrentPipelineList_Click()
     Dim index As Integer
+On Error GoTo CurrentPipelineList_Click_Error
+
     index = CurrentPipelineList.ListIndex
     getPeriod
     getZOffset
@@ -1254,10 +1514,20 @@ Private Sub CurrentPipelineList_Click()
     enableFrame FramePipelineTrigger, currPipeline > 0
     CurrentPipelineList.SetFocus
     UpdateFocusEnabled
+
+   On Error GoTo 0
+   Exit Sub
+
+CurrentPipelineList_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure CurrentPipelineList_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 
 Private Sub AddJobToPipelineButton_Click()
+On Error GoTo AddJobToPipelineButton_Click_Error
+
     If isArrayEmpty(ImgJobs) And isArrayEmpty(FcsJobs) < 0 Then
         MsgBox "First define jobs. Press JobSetter"
         Exit Sub
@@ -1270,11 +1540,21 @@ Private Sub AddJobToPipelineButton_Click()
     AddJobsToList JobChoiceList, FcsJobs
     AddSwitchesToList JobChoiceList, currPipeline
     FrameTaskOptions.Visible = False
+
+   On Error GoTo 0
+   Exit Sub
+
+AddJobToPipelineButton_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure AddJobToPipelineButton_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub DelJobPipelineButton_Click()
     Dim index As Integer
     Dim newIndex As Integer
+On Error GoTo DelJobPipelineButton_Click_Error
+
     With CurrentPipelineList
         index = .ListIndex
         If index > -1 Then
@@ -1293,6 +1573,14 @@ Private Sub DelJobPipelineButton_Click()
             .Selected(.ListCount - 1) = True
         End If
     End With
+
+   On Error GoTo 0
+   Exit Sub
+
+DelJobPipelineButton_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure DelJobPipelineButton_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 
@@ -1300,6 +1588,8 @@ Private Sub JobChoiceList_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
     Dim index As Integer
     Dim indexImg As Integer
     Dim tmpTask As Task
+On Error GoTo JobChoiceList_DblClick_Error
+
     index = JobChoiceList.ListIndex
     
     If isArrayEmpty(ImgJobs) Then
@@ -1348,11 +1638,21 @@ Private Sub JobChoiceList_DblClick(ByVal Cancel As MSForms.ReturnBoolean)
     End If
     FrameTaskOptions.Visible = True
     CurrentPipelineList.ListIndex = CurrentPipelineList.ListCount - 1
+
+   On Error GoTo 0
+   Exit Sub
+
+JobChoiceList_DblClick_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure JobChoiceList_DblClick of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 
 Private Sub JobUpDown_SpinDown()
     Dim index As Integer
+On Error GoTo JobUpDown_SpinDown_Error
+
     index = CurrentPipelineList.ListIndex
     If index >= 0 And index < CurrentPipelineList.ListCount - 1 Then
         Pipelines(currPipeline).swapTask index, index + 1
@@ -1361,11 +1661,21 @@ Private Sub JobUpDown_SpinDown()
     End If
     UpdatePipelineList CurrentPipelineList, currPipeline
     CurrentPipelineList.Selected(index + 1) = True
+
+   On Error GoTo 0
+   Exit Sub
+
+JobUpDown_SpinDown_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure JobUpDown_SpinDown of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub JobUpDown_SpinUp()
     Dim index As Integer
     
+On Error GoTo JobUpDown_SpinUp_Error
+
     index = CurrentPipelineList.ListIndex
     Debug.Print index
     If index >= 1 Then
@@ -1375,12 +1685,22 @@ Private Sub JobUpDown_SpinUp()
     End If
     UpdatePipelineList CurrentPipelineList, currPipeline
     CurrentPipelineList.Selected(index - 1) = True
+
+   On Error GoTo 0
+   Exit Sub
+
+JobUpDown_SpinUp_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure JobUpDown_SpinUp of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 ''' add imaging or FCS job to list
 Private Sub AddJobsToList(List As ListBox, Jobs)
     Dim jobNr As Integer
     Dim prefix As String
+On Error GoTo AddJobsToList_Error
+
     With List
         If Not isArrayEmpty(Jobs) Then
             If TypeOf Jobs(0) Is AJob Then
@@ -1396,12 +1716,22 @@ Private Sub AddJobsToList(List As ListBox, Jobs)
             Next jobNr
         End If
     End With
+
+   On Error GoTo 0
+   Exit Sub
+
+AddJobsToList_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure AddJobsToList of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 ''' add a switch from one pipeline to the other
 Private Sub AddSwitchesToList(List As ListBox, indexPip As Integer)
     Dim switchModes() As String
     Dim i As Integer
+On Error GoTo AddSwitchesToList_Error
+
     With List
         For i = 1 To UBound(Pipelines)
             If indexPip <> i Then
@@ -1411,6 +1741,14 @@ Private Sub AddSwitchesToList(List As ListBox, indexPip As Integer)
             End If
         Next i
     End With
+
+   On Error GoTo 0
+   Exit Sub
+
+AddSwitchesToList_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure AddSwitchesToList of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 
@@ -1422,6 +1760,8 @@ Public Sub UpdatePipelineList(List As ListBox, index As Integer)
     Dim jobNr As Integer
     
     Dim i As Integer
+On Error GoTo UpdatePipelineList_Error
+
     List.Clear
     If Pipelines(index).isEmpty Then
         Exit Sub
@@ -1481,30 +1821,68 @@ Public Sub UpdatePipelineList(List As ListBox, index As Integer)
         End With
 Nexti:
     Next i
+
+   On Error GoTo 0
+   Exit Sub
+
+UpdatePipelineList_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure UpdatePipelineList of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub saveImage_Click()
     Dim index As Integer
+On Error GoTo saveImage_Click_Error
+
     index = CurrentPipelineList.ListIndex
     If index > -1 Then
         Pipelines(currPipeline).setSaveImage index, SaveImage.value
     End If
+
+   On Error GoTo 0
+   Exit Sub
+
+saveImage_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure saveImage_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub getSaveImage()
     Dim index As Integer
+On Error GoTo getSaveImage_Error
+
     index = CurrentPipelineList.ListIndex
     If index > -1 Then
         SaveImage.value = Pipelines(currPipeline).getSaveImage(index)
     End If
+
+   On Error GoTo 0
+   Exit Sub
+
+getSaveImage_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure getSaveImage of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub getZOffset()
     Dim index As Integer
+On Error GoTo getZOffset_Error
+
     index = CurrentPipelineList.ListIndex
     If index > -1 Then
         ZOffset.value = Pipelines(currPipeline).getZOffset(index)
     End If
+
+   On Error GoTo 0
+   Exit Sub
+
+getZOffset_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure getZOffset of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 
@@ -1513,10 +1891,20 @@ End Sub
 ''''
 Private Sub ZOffset_Change()
     Dim index As Integer
+On Error GoTo ZOffset_Change_Error
+
     index = CurrentPipelineList.ListIndex
     If index > -1 Then
         Pipelines(currPipeline).setZOffset index, ZOffset.value
     End If
+
+   On Error GoTo 0
+   Exit Sub
+
+ZOffset_Change_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure ZOffset_Change of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 
@@ -1528,14 +1916,26 @@ End Sub
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 Private Sub RepetitionTimeUpdate(index As Integer)
+On Error GoTo RepetitionTimeUpdate_Error
+
     If RepetitionSec.value Then
         Pipelines(index).Repetition.Time = CDbl(RepetitionTime.value)
     ElseIf RepetitionMin.value Then
         Pipelines(index).Repetition.Time = CDbl(RepetitionTime.value) * 60
     End If
+
+   On Error GoTo 0
+   Exit Sub
+
+RepetitionTimeUpdate_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure RepetitionTimeUpdate of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub RepetitionMinSecUpdate(Min As Boolean)
+On Error GoTo RepetitionMinSecUpdate_Error
+
     If Min Then
         RepetitionMin.BackColor = &HFF8080
         RepetitionSec.BackColor = &H8000000F
@@ -1545,6 +1945,14 @@ Private Sub RepetitionMinSecUpdate(Min As Boolean)
     End If
     RepetitionTime.MAX = 360
     RepetitionTimeUpdate (currPipeline)
+
+   On Error GoTo 0
+   Exit Sub
+
+RepetitionMinSecUpdate_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure RepetitionMinSecUpdate of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub RepetitionTime_Click()
@@ -1580,6 +1988,8 @@ End Sub
 ' update form from pipeline index
 '''
 Private Sub UpdateRepetitionSettings(index As Integer)
+On Error GoTo UpdateRepetitionSettings_Error
+
     If Pipelines(index).Repetition.Time > 0 And ((Pipelines(index).Repetition.Time Mod 60) = 0 Or Pipelines(index).Repetition.Time > 360) Then
         RepetitionTime.value = Pipelines(index).Repetition.Time / 60
         RepetitionMin.value = True
@@ -1589,6 +1999,14 @@ Private Sub UpdateRepetitionSettings(index As Integer)
     End If
     RepetitionNumber.value = Pipelines(index).Repetition.number
     RepetitionInterval.value = Pipelines(index).Repetition.interval
+
+   On Error GoTo 0
+   Exit Sub
+
+UpdateRepetitionSettings_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure UpdateRepetitionSettings of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 '''
@@ -1687,9 +2105,11 @@ End Sub
 ' Set output folder
 ''''''''''''''''''''''''''''''''''''''
 Private Sub CommandButtonNewDataBase_Click()
-    Dim Filter As String, fileName As String
+    Dim Filter As String, FileName As String
     Dim Flags As Long
     Dim DefDir As String
+
+On Error GoTo CommandButtonNewDataBase_Click_Error
 
     Flags = OFN_PATHMUSTEXIST Or OFN_HIDEREADONLY Or OFN_NOCHANGEDIR Or OFN_EXPLORER Or OFN_NOVALIDATE
 
@@ -1700,12 +2120,20 @@ Private Sub CommandButtonNewDataBase_Click()
         DefDir = GlobalDataBaseName
     End If
     
-    fileName = CommonDialogAPI.ShowOpen(Filter, Flags, "*.*", DefDir, "Select output folder")
-    If Len(fileName) > 3 Then
-        fileName = VBA.Left(fileName, Len(fileName) - 3)
-        DatabaseTextbox.value = fileName
+    FileName = CommonDialogAPI.ShowOpen(Filter, Flags, "*.*", DefDir, "Select output folder")
+    If Len(FileName) > 3 Then
+        FileName = VBA.Left(FileName, Len(FileName) - 3)
+        DatabaseTextbox.value = FileName
         SetDatabase
     End If
+
+   On Error GoTo 0
+   Exit Sub
+
+CommandButtonNewDataBase_Click_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure CommandButtonNewDataBase_Click of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 '''''
@@ -1730,6 +2158,8 @@ End Sub
 '       Log]                Out/Global - If yes results are logged
 '''''
 Private Sub SetDatabase()
+
+On Error GoTo SetDatabase_Error
 
     GlobalDataBaseName = DatabaseTextbox.value
 
@@ -1766,14 +2196,32 @@ ErrorHandleDataBase:
     Exit Sub
 ErrorHandleLogFile:
     MsgBox "Could not create LogFile " & LogFileName
+
+   On Error GoTo 0
+   Exit Sub
+
+SetDatabase_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure SetDatabase of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 Private Sub SetFileName()
+On Error GoTo SetFileName_Error
+
     If TextBoxFileName.value <> "" Then
         If VBA.Right(TextBoxFileName.value, Len(FNSep)) <> FNSep Then
             TextBoxFileName.value = TextBoxFileName.value & FNSep
         End If
     End If
+
+   On Error GoTo 0
+   Exit Sub
+
+SetFileName_Error:
+
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure SetFileName of Form PipelineConstructor at line " & Erl & " "
 End Sub
 
 '''set global variables for file format
