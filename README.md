@@ -23,8 +23,8 @@ For adaptive feedback microscopy experiments you can use the ImageJ tool Automte
 
 ## Authors  
 Antonio Politi, EMBL Heidelberg, Ellenberg group
-mail@apoliti.de
-politi@embl.de
+
+mail@apoliti.de, politi@embl.de
 
 ### changes
 * version 0.8: minors, alphabetical sorting of jobs
