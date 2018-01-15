@@ -629,11 +629,14 @@ Private Sub setLabels(index As Integer)
     ''' Update description of imaging job number index in the GUI '''
     Dim jobDescription() As String
 On Error GoTo setLabels_Error
-
+    If UBound(ImgJobs) < index Then
+        Exit Sub
+    End If
+    
     jobDescription = ImgJobs(index).splittedJobDescriptor(13, ImgJobs(index).jobDescriptor)
     JobLabel1.Caption = jobDescription(0)
     JobLabel2.Caption = jobDescription(1)
-
+    
    On Error GoTo 0
    Exit Sub
 
@@ -647,11 +650,12 @@ Private Sub setFcsLabels(index As Integer)
     ''' Update description of fcs job number index in the GUI '''
     Dim jobDescription() As String
 On Error GoTo setFcsLabels_Error
-
+    If UBound(FcsJobs) < index Then
+        Exit Sub
+    End If
     jobDescription = FcsJobs(index).splittedJobDescriptor(13, FcsJobs(index).jobDescriptor)
     FcsJobLabel1.Caption = jobDescription(0)
     FcsJobLabel2.Caption = jobDescription(1)
-
    On Error GoTo 0
    Exit Sub
 
@@ -877,7 +881,9 @@ Private Sub setTrackNames(index As Integer)
     Dim AcquireTrack() As Boolean
     Dim MaxTracks As Long
 On Error GoTo setTrackNames_Error
-
+    If UBound(ImgJobs) < index Then
+        Exit Sub
+    End If
     MaxTracks = ImgJobs(index).Recording.GetNormalTrackCount
     AcquireTrack = ImgJobs(index).AcquireTrack
     For i = 0 To 3

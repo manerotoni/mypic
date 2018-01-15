@@ -69,7 +69,7 @@ Public Sub UserForm_Initialize()
     
 On Error GoTo UserForm_Initialize_Error
 
-    Version = "v0.8"
+    Version = "v0.8.1"
     
     Me.Caption = Me.Caption + " " + Version
 

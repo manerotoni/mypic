@@ -90,16 +90,12 @@ On Error GoTo getVersionNr_Error
         Case Is >= 8:
             getVersionNr = 2012
     End Select
-    
-    'If VersionNr > 8 Then
-    '    MsgBox "ZEN version is higher than ZEN 2012"
-    'End If
    On Error GoTo 0
    Exit Function
-   ' Force version
-   getVersionNr = 2012
+   
 getVersionNr_Error:
-
+    ' Force version
+    getVersionNr = 2012
     LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
     ") in procedure getVersionNr of Module MicroscopeIO at line " & Erl & " ZEN version " & Lsm5.Info.VersionIs
 End Function
