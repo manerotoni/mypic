@@ -96,11 +96,11 @@ On Error GoTo SetJob_Error
     UseRoi = AcquisitionParameters.UseROIs
     setRoiFromZen
     SetJob = True
-    'If Recording.TileAcquisition Then
-    '    If Recording.TileAcquisitionOverlap <> 0 Then
-            ' MsgBox "Online image analysis does not work if Tile Overlap > 0 ", VbExclamation, "Loading Imaging Job"
-    '    End If
-    'End If
+    If Recording.TileAcquisition Then
+        If Recording.TileAcquisitionStitchingThreshold < 1 Then
+            MsgBox "Online image analysis may not work properly if Online Stitching Threshold  < 1.  ", VbExclamation, "Loading Imaging Job"
+        End If
+    End If
    On Error GoTo 0
    Exit Function
 
@@ -222,12 +222,12 @@ Public Function imageSizePx() As Vector
         TX = Recording.TilesX
         TY = Recording.TilesY
     End If
-    imageSizePx.X = Round(Recording.SamplesPerLine * (TX - Recording.TileAcquisitionOverlap))
+    imageSizePx.X = Round(Recording.SamplesPerLine * (TX - (TX - 1) * Recording.TileAcquisitionOverlap))
     
     If Recording.ScanMode = "ZScan" Then
         imageSizePx.Y = 1
     Else
-        imageSizePx.Y = Round(Recording.LinesPerFrame * (TY - Recording.TileAcquisitionOverlap))
+        imageSizePx.Y = Round(Recording.LinesPerFrame * (TY - (TY - 1) * Recording.TileAcquisitionOverlap))
     End If
     
     If isZStack Then
