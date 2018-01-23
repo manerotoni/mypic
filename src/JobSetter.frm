@@ -649,10 +649,13 @@ End Sub
 Private Sub setFcsLabels(index As Integer)
     ''' Update description of fcs job number index in the GUI '''
     Dim jobDescription() As String
-On Error GoTo setFcsLabels_Error
+
     If UBound(FcsJobs) < index Then
         Exit Sub
     End If
+
+On Error GoTo setFcsLabels_Error
+
     jobDescription = FcsJobs(index).splittedJobDescriptor(13, FcsJobs(index).jobDescriptor)
     FcsJobLabel1.Caption = jobDescription(0)
     FcsJobLabel2.Caption = jobDescription(1)
