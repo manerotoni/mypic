@@ -5,7 +5,7 @@ MyPiC is a Visual Basic for Application (VBA) macro to be used with Zeiss confoc
 > Please cite:
 >>  Quantitative mapping of fluorescently tagged cellular proteins using FCS-calibrated four dimensional imaging
 Antonio Z Politi, Yin Cai, Nike Walther, M. Julius Hossain, Birgit Koch, Malte Wachsmuth, Jan Ellenberg (2018)
-bioRxiv 188862; doi: https://doi.org/10.1101/188862. Accepted for Nature Protocols, 2018. 
+bioRxiv 188862; doi: https://doi.org/10.1101/188862.
 > 
 > when using this tool.
 
