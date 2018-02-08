@@ -363,7 +363,7 @@
 </Property>
 <Property>
 <Name>Revision</Name>
-<Value>17593</Value>
+<Value>17733</Value>
 </Property>
 <Property>
 <Name>Created</Name>
@@ -371,7 +371,7 @@
 </Property>
 <Property>
 <Name>Modified</Name>
-<Value>25/08/2017 10:29:56</Value>
+<Value>23/01/2018 18:05:20</Value>
 </Property>
 <Property>
 <Name>ModifiedAuthor</Name>
@@ -5472,7 +5472,7 @@
 </Properties>
 <CodeModule>
 <CountOfDeclarationLines>25</CountOfDeclarationLines>
-<CountOfLines>584</CountOfLines>
+<CountOfLines>583</CountOfLines>
 <Interfaces>
 </Interfaces>
 <Events>
@@ -5551,7 +5551,7 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>55</CountOfLines>
+<CountOfLines>54</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine> setJob load settings from recording/ZEN into macro</CommentLine>
@@ -6250,7 +6250,192 @@
 <Type>MSForm</Type>
 <Properties>
 <Property>
+<Name>ActiveControl</Name>
 <Value></Value>
+</Property>
+<Property>
+<Name>BackColor</Name>
+<Value>-2147483633</Value>
+</Property>
+<Property>
+<Name>BorderColor</Name>
+<Value>-2147483630</Value>
+</Property>
+<Property>
+<Name>BorderStyle</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>CanPaste</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>CanRedo</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>CanUndo</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>Cycle</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>_Font_Reserved</Name>
+<Value></Value>
+</Property>
+<Property>
+<Name>ForeColor</Name>
+<Value>-2147483630</Value>
+</Property>
+<Property>
+<Name>InsideHeight</Name>
+<Value>195.75</Value>
+</Property>
+<Property>
+<Name>InsideWidth</Name>
+<Value>182.25</Value>
+</Property>
+<Property>
+<Name>KeepScrollBarsVisible</Name>
+<Value>3</Value>
+</Property>
+<Property>
+<Name>MousePointer</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>PictureAlignment</Name>
+<Value>2</Value>
+</Property>
+<Property>
+<Name>Picture</Name>
+<Value></Value>
+</Property>
+<Property>
+<Name>PictureSizeMode</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>PictureTiling</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>ScrollBars</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ScrollHeight</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ScrollLeft</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ScrollTop</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ScrollWidth</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>SpecialEffect</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>VerticalScrollBarSide</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>Zoom</Name>
+<Value>100</Value>
+</Property>
+<Property>
+<Name>DesignMode</Name>
+<Value>-2</Value>
+</Property>
+<Property>
+<Name>ShowToolbox</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>ShowGridDots</Name>
+<Value>-2</Value>
+</Property>
+<Property>
+<Name>SnapToGrid</Name>
+<Value>-2</Value>
+</Property>
+<Property>
+<Name>GridX</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>GridY</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>DrawBuffer</Name>
+<Value>32000</Value>
+</Property>
+<Property>
+<Name>Name</Name>
+<Value>CreditForm</Value>
+</Property>
+<Property>
+<Name>Caption</Name>
+<Value>PipelineContructor</Value>
+</Property>
+<Property>
+<Name>Left</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>Top</Name>
+<Value>-2.25</Value>
+</Property>
+<Property>
+<Name>Width</Name>
+<Value>186.75</Value>
+</Property>
+<Property>
+<Name>Height</Name>
+<Value>216.75</Value>
+</Property>
+<Property>
+<Name>Enabled</Name>
+<Value>True</Value>
+</Property>
+<Property>
+<Name>Tag</Name>
+<Value></Value>
+</Property>
+<Property>
+<Name>HelpContextID</Name>
+<Value>0</Value>
+</Property>
+<Property>
+<Name>WhatsThisButton</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>WhatsThisHelp</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>RightToLeft</Name>
+<Value>False</Value>
+</Property>
+<Property>
+<Name>StartUpPosition</Name>
+<Value>1</Value>
+</Property>
+<Property>
+<Name>ShowModal</Name>
+<Value>True</Value>
 </Property>
 </Properties>
 <CodeModule>
@@ -6455,7 +6640,7 @@
 </Properties>
 <CodeModule>
 <CountOfDeclarationLines>16</CountOfDeclarationLines>
-<CountOfLines>408</CountOfLines>
+<CountOfLines>406</CountOfLines>
 <Interfaces>
 </Interfaces>
 <Events>
@@ -6784,7 +6969,7 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>22</CountOfLines>
+<CountOfLines>20</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;Starts the form</CommentLine>
 </CommentLines>
@@ -8306,7 +8491,7 @@
 </Properties>
 <CodeModule>
 <CountOfDeclarationLines>74</CountOfDeclarationLines>
-<CountOfLines>1575</CountOfLines>
+<CountOfLines>1671</CountOfLines>
 <Interfaces>
 </Interfaces>
 <Events>
@@ -8317,7 +8502,7 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>20</CountOfLines>
+<CountOfLines>26</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;</CommentLine>
 <CommentLine> Returns version number (ZEN2010, etc.)</CommentLine>
@@ -8333,7 +8518,7 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>17</CountOfLines>
+<CountOfLines>27</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>   Range() As Double</CommentLine>
@@ -8350,7 +8535,7 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>13</CountOfLines>
+<CountOfLines>23</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine> Stop all running FCS jobs and imaging jobs</CommentLine>
@@ -8366,7 +8551,7 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>10</CountOfLines>
+<CountOfLines>20</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>&apos;   remove all vector elements</CommentLine>
@@ -8382,7 +8567,7 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>19</CountOfLines>
+<CountOfLines>29</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine> Check if system is busy in some of its actions</CommentLine>
@@ -8406,7 +8591,7 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>16</CountOfLines>
+<CountOfLines>26</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;</CommentLine>
 <CommentLine> Sleep for a certain time and perform DoEvents inbetween. WaitTime is in milliseconds</CommentLine>
@@ -8840,7 +9025,7 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>31</CountOfLines>
+<CountOfLines>41</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine> SaveFcsMeasurment to File</CommentLine>
@@ -8952,7 +9137,7 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>44</CountOfLines>
+<CountOfLines>54</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>   Moves stage and wait till it is finished. Repeat the process twice if precision is not achieved</CommentLine>
@@ -9010,7 +9195,7 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>41</CountOfLines>
+<CountOfLines>51</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>   Moves focus and wait till it is finished</CommentLine>
@@ -9035,7 +9220,7 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>31</CountOfLines>
+<CountOfLines>41</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>   MoveToNextLocation(Optional Mark As Integer = 0)</CommentLine>
@@ -9618,197 +9803,12 @@
 <Type>MSForm</Type>
 <Properties>
 <Property>
-<Name>ActiveControl</Name>
 <Value></Value>
-</Property>
-<Property>
-<Name>BackColor</Name>
-<Value>-2147483633</Value>
-</Property>
-<Property>
-<Name>BorderColor</Name>
-<Value>-2147483630</Value>
-</Property>
-<Property>
-<Name>BorderStyle</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>CanPaste</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>CanRedo</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>CanUndo</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>Cycle</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>_Font_Reserved</Name>
-<Value></Value>
-</Property>
-<Property>
-<Name>ForeColor</Name>
-<Value>-2147483630</Value>
-</Property>
-<Property>
-<Name>InsideHeight</Name>
-<Value>319.5</Value>
-</Property>
-<Property>
-<Name>InsideWidth</Name>
-<Value>363</Value>
-</Property>
-<Property>
-<Name>KeepScrollBarsVisible</Name>
-<Value>3</Value>
-</Property>
-<Property>
-<Name>MousePointer</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>PictureAlignment</Name>
-<Value>2</Value>
-</Property>
-<Property>
-<Name>Picture</Name>
-<Value></Value>
-</Property>
-<Property>
-<Name>PictureSizeMode</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>PictureTiling</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>ScrollBars</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>ScrollHeight</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>ScrollLeft</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>ScrollTop</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>ScrollWidth</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>SpecialEffect</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>VerticalScrollBarSide</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>Zoom</Name>
-<Value>100</Value>
-</Property>
-<Property>
-<Name>DesignMode</Name>
-<Value>-2</Value>
-</Property>
-<Property>
-<Name>ShowToolbox</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>ShowGridDots</Name>
-<Value>-2</Value>
-</Property>
-<Property>
-<Name>SnapToGrid</Name>
-<Value>-2</Value>
-</Property>
-<Property>
-<Name>GridX</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>GridY</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>DrawBuffer</Name>
-<Value>32000</Value>
-</Property>
-<Property>
-<Name>Name</Name>
-<Value>JobSetter</Value>
-</Property>
-<Property>
-<Name>Caption</Name>
-<Value>JobSetter</Value>
-</Property>
-<Property>
-<Name>Left</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>Top</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>Width</Name>
-<Value>367.5</Value>
-</Property>
-<Property>
-<Name>Height</Name>
-<Value>340.5</Value>
-</Property>
-<Property>
-<Name>Enabled</Name>
-<Value>True</Value>
-</Property>
-<Property>
-<Name>Tag</Name>
-<Value></Value>
-</Property>
-<Property>
-<Name>HelpContextID</Name>
-<Value>0</Value>
-</Property>
-<Property>
-<Name>WhatsThisButton</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>WhatsThisHelp</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>RightToLeft</Name>
-<Value>False</Value>
-</Property>
-<Property>
-<Name>StartUpPosition</Name>
-<Value>1</Value>
-</Property>
-<Property>
-<Name>ShowModal</Name>
-<Value>False</Value>
 </Property>
 </Properties>
 <CodeModule>
-<CountOfDeclarationLines>3</CountOfDeclarationLines>
-<CountOfLines>743</CountOfLines>
+<CountOfDeclarationLines>10</CountOfDeclarationLines>
+<CountOfLines>1142</CountOfLines>
 <Interfaces>
 </Interfaces>
 <Events>
@@ -9845,7 +9845,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>10</CountOfLines>
+<CountOfLines>20</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub FcsJobList_Click()</Declaration>
@@ -9858,7 +9858,7 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>42</CountOfLines>
+<CountOfLines>52</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Public Sub UserForm_Initialize()</Declaration>
@@ -9871,7 +9871,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>7</CountOfLines>
+<CountOfLines>17</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)</Declaration>
@@ -9916,7 +9916,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>17</CountOfLines>
+<CountOfLines>27</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub AcquireImgJobButton_Click()</Declaration>
@@ -9953,7 +9953,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>22</CountOfLines>
+<CountOfLines>32</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine> Mange Imaging jobs      &apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
@@ -9969,7 +9969,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>19</CountOfLines>
+<CountOfLines>29</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub ChangeFcsJobName_Click()</Declaration>
@@ -9982,7 +9982,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>11</CountOfLines>
+<CountOfLines>21</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub ImgJobList_Click()</Declaration>
@@ -9995,7 +9995,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>48</CountOfLines>
+<CountOfLines>58</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub AddImgJobFromFileButton_Click()</Declaration>
@@ -10008,7 +10008,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>19</CountOfLines>
+<CountOfLines>29</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub AddImgJobFromFile(FileName As String)</Declaration>
@@ -10029,7 +10029,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>61</CountOfLines>
+<CountOfLines>71</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub SaveButton_Click()</Declaration>
@@ -10042,7 +10042,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>6</CountOfLines>
+<CountOfLines>16</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub StopButton_Click()</Declaration>
@@ -10055,7 +10055,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>6</CountOfLines>
+<CountOfLines>16</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub StopFcsButton_Click()</Declaration>
@@ -10120,8 +10120,9 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>10</CountOfLines>
+<CountOfLines>21</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos; Change Status label text &apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub setStatus(value As Boolean)</Declaration>
 <Parameters>
@@ -10141,8 +10142,9 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>10</CountOfLines>
+<CountOfLines>21</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos; Update status of Track number iTrack if it should be acquired or not &apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub TrackClick(iTrack As Integer)</Declaration>
 <Parameters>
@@ -10162,8 +10164,9 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>8</CountOfLines>
+<CountOfLines>19</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos; Change Visible Status of Track in GUI &apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub TrackVisible(Visible As Boolean)</Declaration>
 <Parameters>
@@ -10183,8 +10186,9 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>12</CountOfLines>
+<CountOfLines>23</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos; Read imaging Job from ZEN and import into macro. ZEN-&gt;Macro button&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub SetJobButton_Click()</Declaration>
 <Parameters>
@@ -10196,8 +10200,9 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>14</CountOfLines>
+<CountOfLines>25</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos; Read FCS Job from ZEN and import into macro. ZEN-&gt;Macro button&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub SetFcsJob_Click()</Declaration>
 <Parameters>
@@ -10209,8 +10214,9 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>7</CountOfLines>
+<CountOfLines>21</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos; Update description of imaging job number index in the GUI &apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub setLabels(index As Integer)</Declaration>
 <Parameters>
@@ -10230,8 +10236,9 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>7</CountOfLines>
+<CountOfLines>22</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos; Update description of fcs job number index in the GUI &apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub setFcsLabels(index As Integer)</Declaration>
 <Parameters>
@@ -10251,8 +10258,9 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>14</CountOfLines>
+<CountOfLines>25</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos; Upload imaging job from macro into ZEN. Button Macro -&gt; ZEN &apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub PutJobButton_Click()</Declaration>
 <Parameters>
@@ -10264,8 +10272,9 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>11</CountOfLines>
+<CountOfLines>22</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos; Upload FCS job from macro into ZEN. Button Macro -&gt; ZEN &apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub PutFcsJob_Click()</Declaration>
 <Parameters>
@@ -10277,8 +10286,9 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>33</CountOfLines>
+<CountOfLines>44</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos; Add new FCS job to job list. + button &apos;&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub AddFcsJobButton_Click()</Declaration>
 <Parameters>
@@ -10290,7 +10300,7 @@
 <Scope>Private</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>13</CountOfLines>
+<CountOfLines>23</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Function UniqueListName(List As ListBox, JobName As String) As Boolean</Declaration>
@@ -10319,8 +10329,11 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>30</CountOfLines>
+<CountOfLines>42</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos;</CommentLine>
+<CommentLine>  HideShowForms: Hide or show different forms stored in OpenForms</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Public Function HideShowForms(OpenForms() As Boolean) As Boolean()</Declaration>
 <Parameters>
@@ -10340,8 +10353,11 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>32</CountOfLines>
+<CountOfLines>46</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos;</CommentLine>
+<CommentLine> AddJobButton_Click: Create a new imaging job from ZEN and add it to list of jobs</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub AddJobButton_Click()</Declaration>
 <Parameters>
@@ -10353,8 +10369,12 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>33</CountOfLines>
+<CountOfLines>50</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos;</CommentLine>
+<CommentLine> setTrackNames(index As Integer)</CommentLine>
+<CommentLine> Set name of imaging track with number index in GUI. Use data stored in ImgJobs list</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub setTrackNames(index As Integer)</Declaration>
 <Parameters>
@@ -10374,7 +10394,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>13</CountOfLines>
+<CountOfLines>23</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub UpdateJobListbox(List1 As ListBox, JobArray)</Declaration>
@@ -10403,8 +10423,12 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>12</CountOfLines>
+<CountOfLines>25</CountOfLines>
 <CommentLines>
+<CommentLine>&apos;&apos;</CommentLine>
+<CommentLine> DeleteJobButton_Click()</CommentLine>
+<CommentLine>   Remove a Imaging job from Listbox and ImgJobs Array</CommentLine>
+<CommentLine>&apos;&apos;</CommentLine>
 </CommentLines>
 <Declaration>Private Sub DeleteJobButton_Click()</Declaration>
 <Parameters>
@@ -10416,11 +10440,22 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>24</CountOfLines>
+<CountOfLines>45</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;</CommentLine>
 <CommentLine> Add imaging job Recording to JobsV with Name at index base 0</CommentLine>
 <CommentLine>&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : AddJob</CommentLine>
+<CommentLine> Purpose   : Add imaging job to an array of Jobs</CommentLine>
+<CommentLine> Variables :</CommentLine>
+<CommentLine>   JobsV()  - An Array of Imaging jobs</CommentLine>
+<CommentLine>   Name     - Name of new job</CommentLine>
+<CommentLine>   index    - index of new job</CommentLine>
+<CommentLine>   Recording - The ZEN imaging settings</CommentLine>
+<CommentLine>   ZEN       - A ZEN object (this is for compabilities ZEN2010 and &gt;= 2011</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Sub AddJob(JobsV() As AJob, Name As String, index As Integer, Recording As DsRecording, ZEN As Object)</Declaration>
 <Parameters>
@@ -10472,8 +10507,18 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>21</CountOfLines>
+<CountOfLines>41</CountOfLines>
 <CommentLines>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : AddFcsJob</CommentLine>
+<CommentLine> Purpose   : Add FCS job to an array of Jobs</CommentLine>
+<CommentLine> Variables :</CommentLine>
+<CommentLine>   JobsV()  - An Array of FCS jobs</CommentLine>
+<CommentLine>   Name     - Name of new job</CommentLine>
+<CommentLine>   index    - index of new job</CommentLine>
+<CommentLine>   ZEN       - A ZEN object (this is for compabilities ZEN2010 and &gt;= 2011</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Sub AddFcsJob(JobsV() As AFcsJob, Name As String, index As Integer, ZEN As Object)</Declaration>
 <Parameters>
@@ -10517,12 +10562,19 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>30</CountOfLines>
+<CountOfLines>48</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;</CommentLine>
-<CommentLine> DeleteJob</CommentLine>
-<CommentLine>   Delete Job and decrease number of Jobs</CommentLine>
-<CommentLine>&apos;&apos;</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Procedure : DeleteJob</CommentLine>
+<CommentLine> Purpose   : Delete Job and decrease number of Jobs. Job is found by index. Name</CommentLine>
+<CommentLine>             is used to double check the correct job</CommentLine>
+<CommentLine> Variables :</CommentLine>
+<CommentLine>   JobsV()  - An Array of imaging jobs</CommentLine>
+<CommentLine>   index    - index of job to delete</CommentLine>
+<CommentLine>   Name     - Name of job to delete</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine></CommentLine>
 </CommentLines>
 <Declaration>Public Sub DeleteJob(JobsV() As AJob, index As Integer, Optional Name As String = &quot;&quot;)</Declaration>
 <Parameters>
@@ -10558,7 +10610,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>12</CountOfLines>
+<CountOfLines>22</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub DeleteFcsJobButton_Click()</Declaration>
@@ -10571,7 +10623,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>23</CountOfLines>
+<CountOfLines>33</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub DeleteFcsJob(JobsV() As AFcsJob, index As Integer, Optional Name As String = &quot;&quot;)</Declaration>
@@ -10605,6 +10657,12 @@
 </Procedure>
 </Procedures>
 <CommentLines>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
+<CommentLine> Module    : JobSetter</CommentLine>
+<CommentLine> Author    : Antonio Politi</CommentLine>
+<CommentLine> Date      : 23/10/2017</CommentLine>
+<CommentLine> Purpose   :</CommentLine>
+<CommentLine>---------------------------------------------------------------------------------------</CommentLine>
 </CommentLines>
 </CodeModule>
 <Controls>
@@ -11257,7 +11315,7 @@
 </Properties>
 <CodeModule>
 <CountOfDeclarationLines>13</CountOfDeclarationLines>
-<CountOfLines>1776</CountOfLines>
+<CountOfLines>2224</CountOfLines>
 <Interfaces>
 </Interfaces>
 <Events>
@@ -11268,7 +11326,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>18</CountOfLines>
+<CountOfLines>27</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine> Display Keys used for Online image analysis</CommentLine>
@@ -11284,7 +11342,7 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>130</CountOfLines>
+<CountOfLines>137</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
@@ -11302,7 +11360,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>15</CountOfLines>
+<CountOfLines>24</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)</Declaration>
@@ -11331,7 +11389,7 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>29</CountOfLines>
+<CountOfLines>38</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Public Function HideShowForms(OpenForms() As Boolean) As Boolean()</Declaration>
@@ -11365,7 +11423,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>11</CountOfLines>
+<CountOfLines>21</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
@@ -11448,7 +11506,7 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>61</CountOfLines>
+<CountOfLines>71</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine> update form according to button that has been clicked</CommentLine>
@@ -11472,7 +11530,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>26</CountOfLines>
+<CountOfLines>36</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub SaveSettings_Click()</Declaration>
@@ -11485,7 +11543,7 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>43</CountOfLines>
+<CountOfLines>47</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine>   SaveSettings of PipelineConstructor in file name FileName.</CommentLine>
@@ -11509,7 +11567,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>26</CountOfLines>
+<CountOfLines>36</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub LoadSettings_Click()</Declaration>
@@ -11522,7 +11580,7 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>86</CountOfLines>
+<CountOfLines>96</CountOfLines>
 <CommentLines>
 <CommentLine>TODO use regExp to remove several white spaces</CommentLine>
 </CommentLines>
@@ -11557,7 +11615,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>16</CountOfLines>
+<CountOfLines>26</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
@@ -11575,7 +11633,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>16</CountOfLines>
+<CountOfLines>26</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub StopAfterRepButton_Click()</Declaration>
@@ -11588,7 +11646,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>19</CountOfLines>
+<CountOfLines>29</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub PauseExpButton_Click()</Declaration>
@@ -11601,7 +11659,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>46</CountOfLines>
+<CountOfLines>56</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;</CommentLine>
 <CommentLine> Acquire current pipeline</CommentLine>
@@ -11617,7 +11675,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>44</CountOfLines>
+<CountOfLines>54</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;</CommentLine>
 <CommentLine> Test all pipelines</CommentLine>
@@ -11633,7 +11691,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>10</CountOfLines>
+<CountOfLines>20</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub StartExpButton_Click()</Declaration>
@@ -11659,7 +11717,7 @@
 <Scope>Public</Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>113</CountOfLines>
+<CountOfLines>123</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>   StartSetting()</CommentLine>
@@ -11872,7 +11930,7 @@
 <Scope></Scope>
 <Type>Function</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>54</CountOfLines>
+<CountOfLines>64</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine> update positions from settings in form</CommentLine>
@@ -11904,7 +11962,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>39</CountOfLines>
+<CountOfLines>49</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine> load file containing coordinates of imaging positions</CommentLine>
@@ -11920,7 +11978,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>17</CountOfLines>
+<CountOfLines>27</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub UpdatePositionsListFromGrid(locGrid As AGrid)</Declaration>
@@ -11941,7 +11999,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>34</CountOfLines>
+<CountOfLines>44</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub SavePositionsButton_Click()</Declaration>
@@ -12030,7 +12088,7 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>31</CountOfLines>
+<CountOfLines>41</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine>   fills popup menu for chosing a track for post-acquisition tracking for Job with JobName</CommentLine>
@@ -12054,7 +12112,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>8</CountOfLines>
+<CountOfLines>18</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub TrackXY_Click()</Declaration>
@@ -12067,7 +12125,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>8</CountOfLines>
+<CountOfLines>18</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub TrackZ_Click()</Declaration>
@@ -12080,7 +12138,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>8</CountOfLines>
+<CountOfLines>18</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub CenterOfMassChannel_Click()</Declaration>
@@ -12093,7 +12151,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>24</CountOfLines>
+<CountOfLines>34</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos; update option for focusing and tracking in form according to type of job</CommentLine>
 </CommentLines>
@@ -12107,7 +12165,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>15</CountOfLines>
+<CountOfLines>25</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub FocusMethod_Click()</Declaration>
@@ -12120,7 +12178,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>21</CountOfLines>
+<CountOfLines>31</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub CurrentPipelineList_Click()</Declaration>
@@ -12133,7 +12191,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>16</CountOfLines>
+<CountOfLines>26</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub AddJobToPipelineButton_Click()</Declaration>
@@ -12146,7 +12204,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>23</CountOfLines>
+<CountOfLines>33</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub DelJobPipelineButton_Click()</Declaration>
@@ -12159,7 +12217,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>55</CountOfLines>
+<CountOfLines>65</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub JobChoiceList_DblClick(ByVal Cancel As MSForms.ReturnBoolean)</Declaration>
@@ -12180,7 +12238,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>13</CountOfLines>
+<CountOfLines>23</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub JobUpDown_SpinDown()</Declaration>
@@ -12193,7 +12251,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>14</CountOfLines>
+<CountOfLines>24</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub JobUpDown_SpinUp()</Declaration>
@@ -12206,7 +12264,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>21</CountOfLines>
+<CountOfLines>31</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos; add imaging or FCS job to list</CommentLine>
 </CommentLines>
@@ -12236,7 +12294,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>15</CountOfLines>
+<CountOfLines>25</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos; add a switch from one pipeline to the other</CommentLine>
 </CommentLines>
@@ -12266,7 +12324,7 @@
 <Scope>Public</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>70</CountOfLines>
+<CountOfLines>80</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;</CommentLine>
 <CommentLine> Clear List and update it according to pipeline with index</CommentLine>
@@ -12298,7 +12356,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>8</CountOfLines>
+<CountOfLines>18</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub saveImage_Click()</Declaration>
@@ -12311,7 +12369,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>8</CountOfLines>
+<CountOfLines>18</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub getSaveImage()</Declaration>
@@ -12324,7 +12382,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>8</CountOfLines>
+<CountOfLines>18</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub getZOffset()</Declaration>
@@ -12337,7 +12395,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>12</CountOfLines>
+<CountOfLines>22</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;</CommentLine>
 <CommentLine> this does not get all the changes</CommentLine>
@@ -12353,7 +12411,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>16</CountOfLines>
+<CountOfLines>26</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
@@ -12379,7 +12437,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>12</CountOfLines>
+<CountOfLines>22</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub RepetitionMinSecUpdate(Min As Boolean)</Declaration>
@@ -12478,7 +12536,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>15</CountOfLines>
+<CountOfLines>25</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;</CommentLine>
 <CommentLine> update form from pipeline index</CommentLine>
@@ -12596,7 +12654,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>32</CountOfLines>
+<CountOfLines>42</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;&apos;</CommentLine>
@@ -12678,7 +12736,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>45</CountOfLines>
+<CountOfLines>55</CountOfLines>
 <CommentLines>
 <CommentLine>&apos;&apos;&apos;&apos;</CommentLine>
 <CommentLine>   Set global variables for files and check if we can create Outputfolder</CommentLine>
@@ -12697,7 +12755,7 @@
 <Scope>Private</Scope>
 <Type>Subroutine</Type>
 <CountOfDeclarationLines>1</CountOfDeclarationLines>
-<CountOfLines>8</CountOfLines>
+<CountOfLines>18</CountOfLines>
 <CommentLines>
 </CommentLines>
 <Declaration>Private Sub SetFileName()</Declaration>
