@@ -34,7 +34,8 @@ Antonio Politi, EMBL Heidelberg, Ellenberg group
 mail@apoliti.de, politi@embl.de
 
 ### changes
-* version 0.8: minors, alphabetical sorting of jobs
+* version 0.8.2: Fix of errors when reading in jobs.
+* version 0.8: minors, alphabetical sorting of jobs.
 
 
 
