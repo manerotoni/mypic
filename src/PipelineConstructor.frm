@@ -175,7 +175,7 @@ NoError:
     Load JobSetter
     Load PumpForm
     'read in the icon
-    strIconPath = Application.ProjectFilePath & "\resources\micronaut_mc.ico"
+    strIconPath = Application.ProjectFilePath & "\resources\mypic_logo_small.ico"
     ' Get the icon from the source
     lngIcon = ExtractIcon(0, strIconPath, 0)
     ' Get the window handle of the userform
