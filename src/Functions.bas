@@ -382,7 +382,6 @@ Public Sub QuickSort(ByRef Field() As String, ByVal LB As Long, ByVal UB As Long
     P1 = LB
     P2 = UB
     Ref = Field((P1 + P2) / 2)
-
     Do
         Do While (Field(P1) < Ref)
             P1 = P1 + 1
@@ -405,3 +404,31 @@ Public Sub QuickSort(ByRef Field() As String, ByVal LB As Long, ByVal UB As Long
     If LB < P2 Then Call QuickSort(Field, LB, P2)
     If P1 < UB Then Call QuickSort(Field, P1, UB)
 End Sub
+
+
+'''
+' Sleep for a certain time and perform DoEvents inbetween. WaitTime is in milliseconds
+'''
+Public Sub SleepWithEvents(WaitTime As Double)
+    Dim i As Long
+    Dim cycles As Long
+On Error GoTo SleepWithEvents_Error
+    
+    cycles = Round(WaitTime / PauseGrabbing)
+    For i = 0 To cycles
+        If ScanStop Then
+            Exit Sub
+        End If
+        Sleep (PauseGrabbing)
+        DoEvents
+    Next i
+
+   On Error GoTo 0
+   Exit Sub
+   
+SleepWithEvents_Error:
+   LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+   ") in procedure SleepWithEvents of Module MicroscopeIO at line " & Erl & " "
+End Sub
+
+
