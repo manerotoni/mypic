@@ -30,6 +30,7 @@ Private Type GridPoint
     Name As String    'this should be used as prefix for the name, e.g. siRNA name
     fcsName As String
     stgPos As Vector  'this is a stage position
+    scanPos As Vector
     fcsPos() As Vector 'this are aboslute position where to take measurments in meter. X, Y is with respect to center of image (current pos) Z (in m) absolute position
     fcsImage As String
     fcsPosPx() As Vector ' this are px positions using the usual convention 0,0,0 is upper left and bottom of image stack
@@ -381,6 +382,10 @@ Public Function getThisZ() As Double
     getThisZ = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).stgPos.Z
 End Function
 
+Public Function getThisRotation() As Double
+    getThisRotation = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).stgPos.rot
+End Function
+
 
 Public Function getThisValid() As Boolean
     getThisValid = GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).valid
@@ -407,6 +412,14 @@ End Sub
 
 Public Sub setThisZ(value As Double)
     GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).stgPos.Z = value
+End Sub
+
+Public Sub setThisValid(value As Boolean)
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).valid = value
+End Sub
+
+Public Sub setThisRotation(rotation As Double)
+    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).stgPos.rot = rotation
 End Sub
 
 Public Sub setThisFcsPositions(pos() As Vector)
@@ -477,9 +490,6 @@ Public Sub setFcsPositionsZOffset(ZOffset As Double, Row As Long, Col As Long, R
     End If
 End Sub
 
-Public Sub setThisValid(value As Boolean)
-    GridArray(Me.iRow, Me.iCol, Me.iRowSub, Me.iColSub).valid = value
-End Sub
 
 
 
@@ -553,6 +563,12 @@ Public Function getValid(Row As Long, Col As Long, RowSub As Long, ColSub As Lon
     End If
 End Function
 
+Public Function getRotation(Row As Long, Col As Long, RowSub As Long, ColSub As Long) As Double
+    If correctIndeces(Row, Col, RowSub, ColSub) Then
+        getRotation = GridArray(Row, Col, RowSub, ColSub).stgPos.rot
+    End If
+End Function
+
 Public Sub setPt(pos As Vector, valid As Boolean, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If correctIndeces(Row, Col, RowSub, ColSub) Then
         GridArray(Row, Col, RowSub, ColSub).stgPos = pos
@@ -582,6 +598,12 @@ End Sub
 Public Sub setValid(valid As Boolean, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
     If correctIndeces(Row, Col, RowSub, ColSub) Then
         GridArray(Row, Col, RowSub, ColSub).valid = valid
+    End If
+End Sub
+
+Public Sub setRotation(rot As Double, Row As Long, Col As Long, RowSub As Long, ColSub As Long)
+    If correctIndeces(Row, Col, RowSub, ColSub) Then
+        GridArray(Row, Col, RowSub, ColSub).stgPos.rot = rot
     End If
 End Sub
 
@@ -729,11 +751,17 @@ dRowSub As Double, dColSub As Double, Optional refRow As Integer = 1, Optional r
                             GridArray(iRow, iCol, iRowSub, iColSub).stgPos.X = Round(pos.X + (1 - refCol) * dCol + (iCol - 1) * dCol + (iColSub - 1) * dColSub, PrecXY)
                             GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Y = Round(pos.Y + (1 - refRow) * dRow + (iRow - 1) * dRow + (iRowSub - 1) * dRowSub, PrecXY)
                             GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Z = Round(pos.Z, PrecZ)
+                            GridArray(iRow, iCol, iRowSub, iColSub).stgPos.rot = 0
+
                         Else
                             GridArray(iRow, iCol, iRowSub, iColSub).stgPos.X = Round(pos.X + (1 - refCol) * dCol + (iCol - 1) * dCol + (iColSub - 1 - (Me.numColSub - 1) / 2) * dColSub, PrecXY)
                             GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Y = Round(pos.Y + (1 - refRow) * dRow + (iRow - 1) * dRow + (iRowSub - 1 - (Me.numRowSub - 1) / 2) * dRowSub, PrecXY)
                             GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Z = Round(pos.Z, PrecZ)
+                            GridArray(iRow, iCol, iRowSub, iColSub).stgPos.rot = 0
+                            
                         End If
+                        GridArray(iRow, iCol, iRowSub, iColSub).scanPos.X = 0
+                        GridArray(iRow, iCol, iRowSub, iColSub).scanPos.Y = 0
                     Next iColSub
                 Next iRowSub
             Next iCol
@@ -769,11 +797,16 @@ Public Sub makeGridFromManyPts(pos() As Vector, Row As Long, Col As Long, RowSub
                         GridArray(1, iCol, iRowSub, iColSub).stgPos.X = Round(pos(iCol - 1).X + (iColSub - 1) * dColSub, PrecXY)
                         GridArray(1, iCol, iRowSub, iColSub).stgPos.Y = Round(pos(iCol - 1).Y + (iRowSub - 1) * dRowSub, PrecXY)
                         GridArray(1, iCol, iRowSub, iColSub).stgPos.Z = Round(pos(iCol - 1).Z, PrecZ)
+                        GridArray(1, iCol, iRowSub, iColSub).stgPos.rot = 0
+                        
                     Else
                         GridArray(1, iCol, iRowSub, iColSub).stgPos.X = Round(pos(iCol - 1).X + (iColSub - 1 - (Me.numColSub - 1) / 2) * dColSub, PrecXY)
                         GridArray(1, iCol, iRowSub, iColSub).stgPos.Y = Round(pos(iCol - 1).Y + (iRowSub - 1 - (Me.numRowSub - 1) / 2) * dRowSub, PrecXY)
                         GridArray(1, iCol, iRowSub, iColSub).stgPos.Z = Round(pos(iCol - 1).Z, PrecZ)
+                        GridArray(1, iCol, iRowSub, iColSub).stgPos.rot = 0
                     End If
+                    GridArray(1, iCol, iRowSub, iColSub).scanPos.X = 0
+                    GridArray(1, iCol, iRowSub, iColSub).scanPos.Y = 0
                 Next iColSub
             Next iRowSub
         Next iCol
@@ -917,7 +950,11 @@ Public Function loadPositionGridFile(ByVal sFile As String) As Boolean
                    GridArray(iRow, iCol, iRowSub, iColSub).stgPos.X = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * Me.numColSub * 3))
                    GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Y = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * Me.numColSub * 3 + 1))
                    GridArray(iRow, iCol, iRowSub, iColSub).stgPos.Z = CDbl(FieldEntries((iColSub - 1) * 3 + (iRowSub - 1) * Me.numColSub * 3 + 2))
+                   GridArray(iRow, iCol, iRowSub, iColSub).stgPos.rot = 0
+                   
               Next iColSub
+              GridArray(iRow, iCol, iRowSub, iColSub).scanPos.X = 0
+              GridArray(iRow, iCol, iRowSub, iColSub).scanPos.Y = 0
           Next iRowSub
       Next iCol
     Next iRow

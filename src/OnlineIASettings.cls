@@ -35,7 +35,7 @@ Private subKey_roiType_HowTo As Dictionary
 Public Sub initializeDefault()
     On Error GoTo errMsg
 'This variable contains the keys for the OnlineImageanalysis
-    ReDim Keys(0 To 18)
+    ReDim Keys(0 To 19)
     Keys(0) = "codeMic"
     Keys(1) = "codeOia"
     Keys(2) = "fileAnalyzed"
@@ -55,7 +55,7 @@ Public Sub initializeDefault()
     Keys(16) = "errorMsg"
     Keys(17) = "codePump"
     Keys(18) = "prefix" 'prefix to be added to filenames
-    
+    Keys(19) = "rotation" ' Rotation angle in degrees
     Set subKey_roiAim_HowTo = New Dictionary
     subKey_roiAim_HowTo.Add "", "(empty char) do nothing with roi"
     subKey_roiAim_HowTo.Add "nothing", "do nothing with roi"
@@ -78,9 +78,9 @@ Public Sub initializeDefault()
     Keys_HowTo.Add Keys(1), "message for the online image analysis (Oia)"
     Keys_HowTo.Add Keys(2), "file that has been analyzed by Oia (optional)"
     Keys_HowTo.Add Keys(3), "filepath of current image"
-    Keys_HowTo.Add Keys(4), "X position stage. Multiple positions: X1; X2; X3; ..."
-    Keys_HowTo.Add Keys(5), "Y position stage. Multiple positions: Y1; Y2; Y3; ..."
-    Keys_HowTo.Add Keys(6), "Z position stage. Empty char: keep current Z-position. Multiple positions: Z1; Z2; Z3; ..."
+    Keys_HowTo.Add Keys(4), "X position stage. Multiple positions (trigger1/2): X1; X2; X3; ..."
+    Keys_HowTo.Add Keys(5), "Y position stage. Multiple positions (trigger1/2): Y1; Y2; Y3; ..."
+    Keys_HowTo.Add Keys(6), "Z position stage. Empty char: keep current Z-position. Multiple positions (trigger1/2): Z1; Z2; Z3; ..."
     Keys_HowTo.Add Keys(7), "X position for fcs. Multiple positions: X1; X2; X3; ..."
     Keys_HowTo.Add Keys(8), "Y position for fcs. Multiple positions: Y1; Y2; Y3; ..."
     Keys_HowTo.Add Keys(9), "Z position for fcs. Empty char: keep current Z-position. Multiple positions: Z1; Y2; Y3; ..."
@@ -93,6 +93,9 @@ Public Sub initializeDefault()
     Keys_HowTo.Add Keys(16), "error message coming from Oia"
     Keys_HowTo.Add Keys(17), "time (ms) to activate water pump"
     Keys_HowTo.Add Keys(18), "prefix that is added to filename"
+    Keys_HowTo.Add Keys(19), "Rotation of image in degrees. Multiple positions (trigger1/2): rot1; rot2; rot3; ... "
+
+    
     
     Set subKey_codeMic_HowTo = New Dictionary
     subKey_codeMic_HowTo.Add "", "(empty char) wait for image analysis"
@@ -101,6 +104,7 @@ Public Sub initializeDefault()
     subKey_codeMic_HowTo.Add "timeExpired", "time for image analysis has expired"
     subKey_codeMic_HowTo.Add "nothing", "Do nothing"
     subKey_codeMic_HowTo.Add "focus", "read X, Y, and Z  and change focus"
+    subKey_codeMic_HowTo.Add "focusScanner", "read X, Y, and Z  and change focus"
     subKey_codeMic_HowTo.Add "trigger1", "perform job Trigger1 at position X, Y, and Z"
     subKey_codeMic_HowTo.Add "trigger2", "perform job Trigger2 at position X, Y, and Z"
     subKey_codeMic_HowTo.Add "setFcsPos", "read position for putative fcs Measurement fcsX, fcsY, and fcsZ"
@@ -332,7 +336,7 @@ End Sub
 '   ReadOiaSettingsFromFile(Settings As Dictionary, FileName As String)
 '       Read FileName and store key and paramter into Settings
 ''''
-Public Sub ReadFromFile(fileName As String)
+Public Sub ReadFromFile(FileName As String)
     checkExistKeys
     Dim iFileNum As Integer
     Dim Fields As String
@@ -341,7 +345,7 @@ Public Sub ReadFromFile(fileName As String)
     Close
     On Error GoTo ErrorHandle
     iFileNum = FreeFile()
-    Open fileName For Input As iFileNum
+    Open FileName For Input As iFileNum
     Do While Not EOF(iFileNum)
             Line Input #iFileNum, Fields
             While VBA.Left(Fields, 1) = "%" 'this are comments
@@ -353,14 +357,14 @@ Public Sub ReadFromFile(fileName As String)
     Close #iFileNum
     Exit Sub
 ErrorHandle:
-    MsgBox "Not able to read " & fileName & " for OiaSettings"
+    MsgBox "Not able to read " & FileName & " for OiaSettings"
 End Sub
 
 ''''
 '   WriteOiaSettingsToFile(Settings As Dictionary, FileName As String)
 '   Write Settings to file with FileName
 ''''
-Public Sub writeToFile(fileName As String)
+Public Sub writeToFile(FileName As String)
     checkExistKeys
     Dim i As Integer
     Dim iFileNum As Integer
@@ -368,7 +372,7 @@ Public Sub writeToFile(fileName As String)
     Close
     'On Error GoTo ErrorHandle
     iFileNum = FreeFile()
-    Open fileName For Output As iFileNum
+    Open FileName For Output As iFileNum
     
     For Each Key In Settings.Keys
         Print #iFileNum, Key & " " & Settings.item(Key)
@@ -382,8 +386,8 @@ End Sub
 '   It is assumed that FileName = something_Txxx.lsm
 '   ToDO: better parsing
 '''
-Public Function settingsFileName(fileName As String) As String
-    settingsFileName = VBA.Left(fileName, Len(fileName) - 9) & "_oia.txt"
+Public Function settingsFileName(FileName As String) As String
+    settingsFileName = VBA.Left(FileName, Len(FileName) - 9) & "_oia.txt"
 End Function
 
 
@@ -461,8 +465,10 @@ Public Function getPositions(stgPos() As Vector, currentPosition As Vector) As B
     Dim locX()  As String 'the string containinig the X-positions
     Dim locY()  As String 'the string containinig the Y-positions
     Dim locZ() As String  'the string containinig the Z-positions
+    Dim rot() As String
     Dim i As Integer
     
+
     If Settings.Exists("X") Then
         locX() = Split(Settings.item("X"), ";")
     End If
@@ -502,15 +508,33 @@ Public Function getPositions(stgPos() As Vector, currentPosition As Vector) As B
         Exit Function
     End If
     
+    
+    If Settings.Exists("rotation") Then
+        rot() = Split(Settings.item("rotation"), ";")
+    End If
+    
+    If isArrayEmpty(rot) Then
+        ReDim rot(UBound(locX))
+        For i = 0 To UBound(rot)
+            rot(i) = currentPosition.rot
+        Next i
+    End If
+    
+    
     ' Convert values to Double
     ReDim stgPos(0 To UBound(locX))
     For i = 0 To UBound(locX)
         stgPos(i).X = CDbl(locX(i))
         stgPos(i).Y = CDbl(locY(i))
         stgPos(i).Z = CDbl(locZ(i))
+        ' take modulo to be sure about orientation
+        stgPos(i).rot = angleMod(CDbl(rot(i)), 2, 180)
     Next i
     getPositions = True
 End Function
+
+
+
 
 '''
 '   getFcsPositions(StgPos() As Vector) As Boolean

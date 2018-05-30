@@ -199,36 +199,18 @@ isReady_Error:
     ") in procedure isReady of Module MicroscopeIO at line " & Erl & " "
 End Function
 
-'''
-' Sleep for a certain time and perform DoEvents inbetween. WaitTime is in milliseconds
-'''
-Public Sub SleepWithEvents(WaitTime As Double)
-    Dim i As Long
-    Dim cycles As Long
-On Error GoTo SleepWithEvents_Error
 
-    cycles = Round(WaitTime / PauseGrabbing)
-    For i = 0 To cycles
-        If ScanStop Then
-            Exit Sub
-        End If
-        Sleep (PauseGrabbing)
-        DoEvents
-    Next i
 
-   On Error GoTo 0
-   Exit Sub
 
-SleepWithEvents_Error:
-
-    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
-    ") in procedure SleepWithEvents of Module MicroscopeIO at line " & Erl & " "
-End Sub
-
-'''''
-'   ScanToImage (RecordingDoc As DsRecordingDoc) As Boolean
-'   scan overwrite the same image, even with several z-slices
-'''''
+'---------------------------------------------------------------------------------------
+' Procedure : ScanToImage
+' Purpose   : scan overwrite the same image, even with several z-slices
+' Variables :
+'   RecordingDoc As DsRecordingDoc: The DsRecordingDoc to hold the imagedata
+'   Optional TimeOut As Double = -1: A time in sec after which to exit the loop. By default disabled.
+' Returns TRUE if successful
+'---------------------------------------------------------------------------------------
+'
 Public Function ScanToImage(RecordingDoc As DsRecordingDoc, Optional TimeOut As Double = -1) As Boolean
 
 
@@ -253,7 +235,7 @@ RepeatScanToImage:
     AcquisitionController.DestinationImage(0) = treenode 'EngelImageToHechtImage(GlobalSingleImage).Image(0, True)
     AcquisitionController.DestinationImage(1) = Nothing
     Set ProgressFifo = AcquisitionController.DestinationImage(0)
-    Lsm5.Tools.CheckLockControllers True
+    'Lsm5.Tools.CheckLockControllers True
     
     AcquisitionController.StartGrab eGrabModeSingle
     Time = Timer
@@ -289,6 +271,86 @@ ErrorScanToImage:
         Err.Clear
         Resume RepeatScanToImage
     End If
+End Function
+
+
+'---------------------------------------------------------------------------------------
+' Procedure : ScanToImageAFM
+' Purpose   : scan overwrite the same image. Respond to commands build in pause for AdaptiveFeedback microscopy
+' Variables :
+'   RecordingDoc As DsRecordingDoc: The DsRecordingDoc to hold the imagedata
+'   Optional TimeOut As Double = -1: A time in sec after which to exit the loop. By default disabled.
+' Returns TRUE if successful
+'---------------------------------------------------------------------------------------
+'
+
+Public Function ScanToImageAFM(RecordingDoc As DsRecordingDoc, Optional TimeOut As Double = -1) As Boolean
+
+
+    Dim Time As Double
+    Dim ProgressFifo As IAimProgressFifo ' this shows how far you are with the acquisition image ( the blue bar at the bottom). The usage of it makes the macro quite slow
+    Dim AcquisitionController As AimScanController
+    Dim treenode As Object
+    Dim iTry As Integer
+    Dim codeMic() As String
+    Dim TimeWait, TimeStart, maxTimeWait As Double
+    maxTimeWait = 100
+    iTry = 1
+    'Procedure is completely executed 3 times in case of error. RecordingDoc.IsBusy is less (not at all?) error prone
+
+    'Dim gui As Object
+    'Set gui = Lsm5.ViewerGuiServer not recquired anymore
+    If RecordingDoc Is Nothing Then
+        Exit Function
+    End If
+    Set treenode = RecordingDoc.RecordingDocument.image(0, True)
+    'Set treenode = Lsm5.NewDocument this will create a new document we want to use the same document
+    Set AcquisitionController = Lsm5.ExternalDsObject.ScanController
+    AcquisitionController.DestinationImage(0) = treenode 'EngelImageToHechtImage(GlobalSingleImage).Image(0, True)
+    AcquisitionController.DestinationImage(1) = Nothing
+    Set ProgressFifo = AcquisitionController.DestinationImage(0)
+    'Lsm5.Tools.CheckLockControllers True ' not sure if required
+    
+    AcquisitionController.StartGrab eGrabModeSingle
+    Time = Timer
+    'Set RecordingDoc = Lsm5.StartScan this does not overwrite
+    If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
+    'Debug.Print "ScanToImage part1 " & Round(Timer - Time, 3)
+'    Sleep (PauseGrabbing)
+'    'While AcquisitionController.isGrabbing this command seems to hang quite frequently
+    While RecordingDoc.IsBusy
+        SleepWithEvents 100
+        codeMic = Split(Replace(OiaSettings.readKeyFromRegistry("codeMic"), " ", ""), ";")
+        'ZENL.GUI.Acquisition.ZStack.FocusPosition.value = -10
+        If UBound(codeMic) > -1 Then
+            Select Case codeMic(0)
+                Case "wait":
+                    AcquisitionController.TimeSeriesPause True
+                    ' Wait for image analysis to finish
+                    DisplayProgress PipelineConstructor.ProgressLabel, "Waiting for image analysis...", RGB(0, &HC0, 0)
+                    TimeStart = CDbl(GetTickCount) * 0.001
+                    Do While ((TimeWait < maxTimeWait) And (codeMic(0) = "wait"))
+                        TimeWait = CDbl(GetTickCount) * 0.001 - TimeStart
+                        codeMic = Split(Replace(OiaSettings.readKeyFromRegistry("codeMic"), " ", ""), ";")
+                        SleepWithEvents PauseGrabbing
+                        If ScanStop Then
+                            Exit Function
+                        End If
+                    Loop
+                    'Debug.Print ZENL.GUI.Acquisition.ZStack.FocusPosition
+                    'ZEN.GUI.Acquisition.ZStack.CenterPositionZ.value = -1
+                    DisplayProgress PipelineConstructor.ProgressLabel, "Continue acquisition ...", RGB(&HC0, &HC0, 0)
+                Case "focus":
+                
+        End Select
+        End If
+       
+        AcquisitionController.TimeSeriesPause False
+        If ScanStop Then
+            Exit Function
+        End If
+
+    Wend
 End Function
 
 ''''
@@ -715,18 +777,18 @@ Public Function FailSafeMoveStageXY(X As Double, Y As Double) As Boolean
     Dim CurrentX As Double
     Dim CurrentY As Double
     Dim WaitTime As Integer
-    Dim Prec As Double
+    Dim prec As Double
     Dim Trial As Integer
     
 On Error GoTo FailSafeMoveStageXY_Error
 
-    Prec = 1 'um (Thorsten Lenser uses 1 um)
+    prec = 1 'um (Thorsten Lenser uses 1 um)
     Trial = 1
 SetPosition:
     WaitTime = 0
     Lsm5.Hardware.CpStages.GetXYPosition CurrentX, CurrentY
     Lsm5.Hardware.CpStages.SetXYPosition X, Y
-    Do While (Abs(CurrentX - X) > Prec) Or (Abs(CurrentY - Y) > Prec) Or Lsm5.Hardware.CpStages.IsBusy
+    Do While (Abs(CurrentX - X) > prec) Or (Abs(CurrentY - Y) > prec) Or Lsm5.Hardware.CpStages.IsBusy
         SleepWithEvents (100)
         Lsm5.Hardware.CpStages.GetXYPosition CurrentX, CurrentY
         WaitTime = WaitTime + 1
@@ -735,7 +797,7 @@ SetPosition:
             Exit Function
         End If
         If WaitTime > 50 And Not Lsm5.Hardware.CpStages.IsBusy Then
-            LogManager.UpdateWarningLog " FailSafeMoveStageXY did not reach the precision of " & Prec _
+            LogManager.UpdateWarningLog " FailSafeMoveStageXY did not reach the precision of " & prec _
             & " um  within " & WaitTime * 100 & " ms on trial " & Trial & ". Goal position is XY: " & X & " " & Y & " reached XY: " & CurrentX _
             & " " & CurrentY
             Exit Do
@@ -743,7 +805,7 @@ SetPosition:
     Loop
     
     '''Try a second time if it failed
-    If (Abs(CurrentX - X) > Prec) Or (Abs(CurrentY - Y) > Prec) And Trial < 2 Then
+    If (Abs(CurrentX - X) > prec) Or (Abs(CurrentY - Y) > prec) And Trial < 2 Then
         Trial = Trial + 1
         GoTo SetPosition
     End If
@@ -779,11 +841,11 @@ End Function
 Public Function FailSafeMoveStageZExec(Z As Double) As Boolean
     Dim CurrentZ As Double
     Dim WaitTime As Integer
-    Dim Prec As Double
+    Dim prec As Double
     Dim Trial As Integer
 On Error GoTo FailSafeMoveStageZExec_Error
 
-    Prec = 0.2 'Used in MultitimeZEN2012 Thoresten Lenser
+    prec = 0.2 'Used in MultitimeZEN2012 Thoresten Lenser
     Trial = 1
     
 SetPosition:
@@ -791,7 +853,7 @@ SetPosition:
     CurrentZ = Lsm5.Hardware.CpFocus.position
     Lsm5.Hardware.CpFocus.position = Z
     
-    Do While (Abs(CurrentZ - Z) > Prec) Or Lsm5.Hardware.CpFocus.IsBusy
+    Do While (Abs(CurrentZ - Z) > prec) Or Lsm5.Hardware.CpFocus.IsBusy
         SleepWithEvents (100)
         CurrentZ = Lsm5.Hardware.CpFocus.position
         WaitTime = WaitTime + 1
@@ -799,14 +861,14 @@ SetPosition:
             Exit Function
         End If
         If WaitTime > 50 And Not Lsm5.Hardware.CpFocus.IsBusy Then
-            LogManager.UpdateErrorLog "Warning: FocusZMovement did not reach the precision of " & Prec _
+            LogManager.UpdateErrorLog "Warning: FocusZMovement did not reach the precision of " & prec _
             & "um  within " & WaitTime * 100 & " ms on trial  " & Trial & ". Goal position is " & Z & " reached " & CurrentZ
             Exit Do
         End If
     Loop
     
     ''second round
-    If (Abs(CurrentZ - Z) > Prec) And Trial < 2 Then
+    If (Abs(CurrentZ - Z) > prec) And Trial < 2 Then
         Trial = Trial + 1
         GoTo SetPosition
     End If
@@ -983,11 +1045,11 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
     Dim pos As Double
     Dim ZOffset As Double
     Dim ReferenceZ As Double
-    Dim Prec As Double
+    Dim prec As Double
     'Dim ScanController As AimScanController
     'Set ScanController = Lsm5.ExternalDsObject.ScanController
         
-    Prec = 0.01
+    prec = 0.01
     MaxCnt = 6
     cnt = 0
     
@@ -998,7 +1060,7 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
     
     If isZStack(Lsm5.DsRecording) Then
         Debug.Print "WaitForRecentering ZOffset start " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
-        While (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec Or Abs(Z - Lsm5.DsRecording.ReferenceZ) > Prec) And cnt < MaxCnt
+        While (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > prec Or Abs(Z - Lsm5.DsRecording.ReferenceZ) > prec) And cnt < MaxCnt
             If Reset Then
                 'ScanController.LockAll False
                 Lsm5.DsRecording.Sample0Z = ZOffset
@@ -1047,11 +1109,11 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
     Dim MaxCnt As Integer
     Dim pos As Double
     Dim ZOffset As Double
-    Dim Prec As Double
+    Dim prec As Double
     'Dim ScanController As AimScanController
     'Set ScanController = Lsm5.ExternalDsObject.ScanController
         
-    Prec = 0.01
+    prec = 0.01
     MaxCnt = 6
     cnt = 0
     
@@ -1061,7 +1123,7 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
     
     If isZStack(Lsm5.DsRecording) Then
         Debug.Print "WaitForRecentering ZOffset start " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
-        While Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec And cnt < MaxCnt
+        While Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > prec And cnt < MaxCnt
             If Reset Then
                 'ScanController.LockAll False
                 Lsm5.DsRecording.Sample0Z = ZOffset
@@ -1151,12 +1213,12 @@ End Function
 Public Function Recenter2011(Z As Double) As Boolean
     Dim pos As Double
     Dim ZOffset As Double
-    Dim Prec As Double
+    Dim prec As Double
     Dim count As Integer
     'Dim ScanController As AimScanController
     'Set ScanController = Lsm5.ExternalDsObject.ScanController
     count = 0
-    Prec = 0.001
+    prec = 0.001
     
 
     'ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
@@ -1180,10 +1242,10 @@ Public Function Recenter2011(Z As Double) As Boolean
         'ScanController.LockAll True
         SleepWithEvents (500) 'with 500 it works this makes the imaging slower but more reliable
         Debug.Print "Recenter Offset after 500 ms " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
-        While count < 3 And (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec Or Abs(Lsm5.DsRecording.ReferenceZ - Z > Prec))
+        While count < 3 And (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > prec Or Abs(Lsm5.DsRecording.ReferenceZ - Z > prec))
             LogManager.UpdateLog " Warning: " & CurrentFileName & " Recenter. Problem in settings ZStack on round " & count + 1 & _
             ".  Sample0Z_diff: " & ZOffset - Lsm5.DsRecording.Sample0Z & " ReferenceZ_diff: " & Z - Lsm5.DsRecording.ReferenceZ
-            While Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec Or Abs(Lsm5.DsRecording.ReferenceZ - Z > Prec)
+            While Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > prec Or Abs(Lsm5.DsRecording.ReferenceZ - Z > prec)
                 'ScanController.LockAll False
                 Lsm5.DsRecording.Sample0Z = ZOffset
                 Lsm5.DsRecording.ReferenceZ = Z
@@ -1197,7 +1259,7 @@ Public Function Recenter2011(Z As Double) As Boolean
             End If
             count = count + 1
         Wend
-        If (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec) Or (Abs(Lsm5.DsRecording.ReferenceZ - Z) > Prec) Then
+        If (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > prec) Or (Abs(Lsm5.DsRecording.ReferenceZ - Z) > prec) Then
             LogManager.UpdateWarningLog " Warning: " & CurrentFileName & " Recenter. Problem in settings ZStack. Sample0Z_diff: " & ZOffset - Lsm5.DsRecording.Sample0Z & " ReferenceZ_diff: " & Z - Lsm5.DsRecording.ReferenceZ
         End If
     End If
@@ -1213,12 +1275,12 @@ Public Function Recenter2011(Z As Double) As Boolean
     
     Dim pos As Double
     Dim ZOffset As Double
-    Dim Prec As Double
+    Dim prec As Double
     Dim count As Integer
     'Dim ScanController As AimScanController
     'Set ScanController = Lsm5.ExternalDsObject.ScanController
     count = 0
-    Prec = 0.001
+    prec = 0.001
     
 
     'ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
@@ -1244,10 +1306,10 @@ Public Function Recenter2011(Z As Double) As Boolean
         'ScanController.LockAll True
         SleepWithEvents (500) 'with 500 it works
         Debug.Print "Recenter Offset after 500 ms " & Abs(ZOffset - Lsm5.DsRecording.Sample0Z)
-        While count < 3 And Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec
+        While count < 3 And Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > prec
             LogManager.UpdateLog " Warning: " & CurrentFileName & " Recenter2011. Problem in settings ZStack on round " & count + 1 & _
             ".  Sample0Z_diff: " & ZOffset - Lsm5.DsRecording.Sample0Z
-            While Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec
+            While Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > prec
                 'ScanController.LockAll False
                 Lsm5.DsRecording.Sample0Z = ZOffset
                 'ScanController.LockAll True
@@ -1261,7 +1323,7 @@ Public Function Recenter2011(Z As Double) As Boolean
             count = count + 1
         Wend
         
-        If (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > Prec) Then
+        If (Abs(ZOffset - Lsm5.DsRecording.Sample0Z) > prec) Then
             LogManager.UpdateWarningLog " Warning: " & CurrentFileName & " Recenter2011. Problem in settings ZStack. Sample0Z_diff: " & ZOffset - Lsm5.DsRecording.Sample0Z
         End If
     End If

@@ -9,13 +9,16 @@ Public Type Vector
   X As Double
   Y As Double
   Z As Double
+  rot As Double
 End Type
+
 
 Public Type WellPoint
     pos As Vector
     well As String
 End Type
 
+Public Const Pi As Double = 3.14159265358979 'TODO this should move to a different part
 
 
 
@@ -60,10 +63,11 @@ End Function
 ''' Vector operations'''
 ''' To do: overload?''''
 ''''''''''''''''''''''''
-Public Function Double2Vector(X As Double, Y As Double, Z As Double) As Vector
+Public Function Double2Vector(X As Double, Y As Double, Z As Double, Optional rot As Double = 0) As Vector
     Double2Vector.X = X
     Double2Vector.Y = Y
     Double2Vector.Z = Z
+    Double2Vector.rot = rot
 End Function
 
 Public Function Vector2Array(vec As Vector) As Vector()
@@ -124,19 +128,25 @@ End Function
 '''
 Public Function VectorList2String(vec() As Vector, Optional Rnd = 2) As String()
     Dim i As Integer
-    Dim OutString(0 To 2) As String
+    Dim OutString(0 To 3) As String
     OutString(0) = "" & Round(vec(0).X, Rnd)
     OutString(1) = "" & Round(vec(0).Y, Rnd)
     OutString(2) = "" & Round(vec(0).Z, Rnd)
+    OutString(3) = "" & Round(vec(0).rot, Rnd)
+    
     If UBound(vec) > 0 Then
         For i = 1 To UBound(vec)
             OutString(0) = OutString(0) & "; " & Round(vec(i).X, Rnd)
             OutString(1) = OutString(1) & "; " & Round(vec(i).Y, Rnd)
             OutString(2) = OutString(2) & "; " & Round(vec(i).Z, Rnd)
+            OutString(3) = OutString(3) & "; " & Round(vec(i).rot, Rnd)
+          
         Next i
     End If
     VectorList2String = OutString
 End Function
+
+
 
 
 
@@ -207,6 +217,29 @@ Public Sub enableFrame(AFrame As Frame, value As Boolean)
          AFrame.ForeColor = "&H8000000A"
     End If
 End Sub
+
+'---------------------------------------------------------------------------------------
+' Procedure : angleMod (angle, prec, modV)
+' Date      : 05/29/2018
+' Purpose   : Compute modulo of number and map it to -modV to modV
+'---------------------------------------------------------------------------------------
+'
+Public Function angleMod(angle As Double, Optional prec As Integer = 2, Optional modV As Double = 180)
+
+    Dim tmpAngle As Double
+    angleMod = Round(angle, prec)
+    tmpAngle = (angleMod * 10 ^ prec) Mod (modV * 10 ^ prec)
+    tmpAngle = Round(tmpAngle / (10 ^ prec), prec)
+
+    If angleMod <> tmpAngle Then
+        If tmpAngle > 0 Then
+            angleMod = tmpAngle - modV
+        Else
+            angleMod = modV + tmpAngle
+        End If
+    End If
+End Function
+
 
 '''
 ' compute a weighted mean of the positiions of an array

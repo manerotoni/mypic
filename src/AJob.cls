@@ -21,8 +21,12 @@ Public pixelDwell As Double      'pixelDwell of acquisition
 Public TrackNumber As Integer
 Public TimeBetweenStacks As Double
 Public UseRoi As Boolean
-Public CorrX  As Double ' corretion for double directional scanning
-Public CorrY As Double  ' corretion for double directional scanning
+Public corrX  As Double ' correction for double directional scanning
+Public corrY As Double  ' correction for double directional scanning
+Public scannerX As Double ' scanner X offset
+Public scannerY As Double ' scanner Y offset
+Public rotation As Double ' Rotation of the scanning field connected to job
+
 Public SamplingNumber As Long
 Public SamplingMode As Long
 Public SamplingMethod As Long
@@ -76,18 +80,22 @@ On Error GoTo SetJob_Error
     
     If ZenV > 2010 Then
         If Recording.ScanDirection = 1 Then
-            CorrX = ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.CorrX.value
-            CorrY = ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.CorrY.value
+            corrX = ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.corrX.value
+            corrY = ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.corrY.value
         End If
         'Debug.Print "nr Lasers " & ZEN.gui.Acquisition.Channels.Track.LaserLine.ItemCount
         
     End If
     Recording.Sample0Z = Recording.frameSpacing * (Recording.framesPerStack - 1) / 2
+    Recording.rotation = angleMod(Recording.rotation, 2, 180)
     Me.pixelDwell = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
     Me.SamplingNumber = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingNumber
     Me.SamplingMethod = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingMethod
     Me.SamplingMode = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingMode
     Me.BitDepth = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).DataChannelObjectByIndex(0, 1).BitsPerSample
+    Me.rotation = Recording.rotation
+    Me.scannerX = Recording.Sample0X
+    Me.scannerY = Recording.Sample0Y
     Me.timeToAcquire = 0
     ReDim pAcquireTrack(TrackNumber - 1)
     For iTrack = 0 To TrackNumber - 1
@@ -139,11 +147,15 @@ Public Function PutJob(ZEN As Object, Optional Extensive As Boolean)
     Time = Timer
     Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).TimeBetweenStacks = TimeBetweenStacks
     Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime = Me.pixelDwell
+    Lsm5.DsRecording.rotation = Me.rotation
+    Lsm5.DsRecording.Sample0X = Me.scannerX
+    Lsm5.DsRecording.Sample0Y = Me.scannerY
     If Extensive Then
         Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingNumber = Me.SamplingNumber
         Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingMode = Me.SamplingMode
         Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingMethod = Me.SamplingMethod
         Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).DataChannelObjectByIndex(0, 1).BitsPerSample = Me.BitDepth
+
     End If
         
     For iTrack = 0 To TrackNumber - 1
@@ -157,11 +169,11 @@ Public Function PutJob(ZEN As Object, Optional Extensive As Boolean)
 '   the correction is not saved in the DsRecording
     If ZenV > 2010 Then
          If Recording.ScanDirection Then
-             If ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.CorrX.value <> CorrX Then
-                ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.CorrX.value = CorrX
+             If ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.corrX.value <> corrX Then
+                ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.corrX.value = corrX
              End If
-             If ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.CorrY.value <> CorrY Then
-                 ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.CorrY.value = CorrY
+             If ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.corrY.value <> corrY Then
+                 ZEN.GUI.Acquisition.AcquisitionMode.Bidirectional.corrY.value = corrY
              End If
          End If
      End If
@@ -258,6 +270,16 @@ Public Function getCentralPointPx() As Vector
     getCentralPointPx.X = (imgSizePx.X - 1) / 2
     getCentralPointPx.Y = (imgSizePx.Y - 1) / 2
     getCentralPointPx.Z = (imgSizePx.Z - 1) / 2
+End Function
+
+
+''
+' returns position of central point for a Job (base 0)
+''''
+Public Function getScannerPosition() As Scanner
+    getScannerPosition.X = Me.scannerX
+    getScannerPosition.Y = Me.scannerY
+    getScannerPosition.rot = Me.rotation
 End Function
 
 Public Function isBleaching() As Boolean
@@ -435,14 +457,18 @@ Public Function jobDescriptor() As String
         Description = Description & "Z-Slices = " & 1 & vbCrLf
     End If
 
-     If Recording.TimeSeries Then
+    If Recording.TimeSeries Then
         Description = Description & "TimeSeries = " & Recording.TimeSeries & vbCrLf
         Description = Description & "       Cycles     = " & Recording.StacksPerRecord & vbCrLf
-        Description = Description & "       Interval    = " & Me.TimeBetweenStacks & " sec"
+        Description = Description & "       Interval    = " & Me.TimeBetweenStacks & " sec" & vbCrLf
     Else
-        Description = Description & "TimeSeries = " & Recording.TimeSeries
+        Description = Description & "TimeSeries = " & Recording.TimeSeries & vbCrLf
     End If
-
+    
+    Description = Description & "rotation = " & Recording.rotation & vbCrLf
+    Description = Description & "scannerX = " & Round(Recording.Sample0X, PrecXY) & vbCrLf
+    Description = Description & "scannerY = " & Round(Recording.Sample0Y, PrecXY) & vbCrLf
+    
     jobDescriptor = Description
 End Function
 
@@ -486,8 +512,11 @@ Public Function jobDescriptorSettings() As String
     Descriptor = Descriptor & "SamplingMethod " & Me.SamplingMethod & vbCrLf
     Descriptor = Descriptor & "BitDepth " & Me.BitDepth & vbCrLf
     Descriptor = Descriptor & "ScanDirection " & Recording.ScanDirection & vbCrLf
-    Descriptor = Descriptor & "CorrX " & Me.CorrX & vbCrLf
-    Descriptor = Descriptor & "CorrY " & Me.CorrY & vbCrLf
+    Descriptor = Descriptor & "CorrX " & Me.corrX & vbCrLf
+    Descriptor = Descriptor & "CorrY " & Me.corrY & vbCrLf
+    Descriptor = Descriptor & "Rotation " & Me.rotation & vbCrLf
+    Descriptor = Descriptor & "ScannerX " & Me.scannerX & vbCrLf
+    Descriptor = Descriptor & "ScannerY " & Me.scannerY & vbCrLf
     Descriptor = Descriptor & "FramesPerStack " & Recording.framesPerStack & vbCrLf
     Descriptor = Descriptor & "FrameSpacing " & Recording.frameSpacing & vbCrLf
     Descriptor = Descriptor & "Bleaching " & isBleaching & vbCrLf
@@ -557,9 +586,15 @@ Public Function changeJobFromDescriptor(Descriptor As String, value As Variant)
         Case "ScanDirection":
             Recording.ScanDirection = CLng(value)
         Case "CorrX":
-            Me.CorrX = CDbl(value)
+            Me.corrX = CDbl(value)
         Case "CorrY":
-            Me.CorrY = CDbl(value)
+            Me.corrY = CDbl(value)
+        Case "Rotation":
+            Me.rotation = CDbl(value)
+        Case "ScannerX":
+            Me.scannerX = CDbl(value)
+        Case "ScannerY":
+            Me.scannerY = CDbl(value)
         Case "FramesPerStack":
             Recording.framesPerStack = CLng(value)
         Case "FrameSpacing":

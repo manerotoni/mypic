@@ -219,7 +219,9 @@ On Error GoTo AcquireJobIndex_Error
     End If
     'start acquisition
     currentImgJob = -1
-    AcquireJob index, ImgJobs(index), GlobalRecordingDoc, ImgJobs(index).Name, getCurrentPosition
+    position = getCurrentPosition
+    position.rot = ImgJobs(index).rotation
+    AcquireJob index, ImgJobs(index), GlobalRecordingDoc, ImgJobs(index).Name, position
    On Error GoTo 0
    Exit Sub
    
@@ -629,6 +631,8 @@ Private Sub setLabels(index As Integer)
     ''' Update description of imaging job number index in the GUI '''
     Dim jobDescription() As String
 On Error GoTo setLabels_Error
+    Debug.Print "SetLabels"
+    Debug.Print UBound(ImgJobs)
     If UBound(ImgJobs) < index Then
         Exit Sub
     End If
@@ -855,11 +859,11 @@ On Error GoTo AddJobButton_Click_Error
         Next i
     End If
     'Find position where to enter the job. It should be alphabetical
-    ImgJobList.AddItem Name, index
-    ImgJobList.Selected(index) = True
     AddJob ImgJobs, Name, index, Lsm5.DsRecording, ZEN
     setLabels index
     setTrackNames index
+    ImgJobList.AddItem Name, index
+    ImgJobList.Selected(index) = True
 
    On Error GoTo 0
    Exit Sub

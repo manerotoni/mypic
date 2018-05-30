@@ -1,3 +1,7 @@
 ### changes
+* version 0.9:
+	- Online image analysis (Adaptive feedback) allows to pass rotation of image. The rotation is for an imaging job 
+	(constant and specific for the job) + a position specific rotation. Rotation is from -180 to 180 degrees
+   
 * version 0.8.2: Fix of errors when reading in jobs.
 * version 0.8: minors, alphabetical sorting of jobs.
