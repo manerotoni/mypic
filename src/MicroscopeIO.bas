@@ -39,7 +39,7 @@ Public Const TolPx = 0.0001                'Tolerance for computed img px value
 Public ZBacklash  As Double           'ToDo: is it still recquired?.
                                            'Has to do with the movements of the focus wheel that are "better"
                                             'if they are long enough. For amoment a test did not gave significant differences This is required for ZEN2010
-Public ZSafeDown As Double
+Public ZSafeDown As Double        ' Go down a certain value in order to move between positions
 Public ZenV As Integer            'String variable indicating the version of ZEN used 2010 ir 2011 (2012)
 Public ZEN As Object             'Object containing Zeiss.Micro.AIM.ApplicationInterface.ApplicationInterface (for ZEN > 2011)
 
@@ -47,11 +47,12 @@ Public ZEN As Object             'Object containing Zeiss.Micro.AIM.ApplicationI
 '''GLOBAL VARIABLES'''
 ''''''''''''''''''''''
 
-Public ScanStop As Boolean      'if TRUE current recording is stopped
-Public ScanPause As Boolean     'if TRUE current recording is paused
-Public ScanStopAfterRepetition As Boolean 'if TRUE current measurement is stopped after repetition
-Public Running As Boolean       'TRUE when system is running (e.g. after start)
-Public GlobalDataBaseName As String   'Name of output folder
+Public ScanStop As Boolean      ' if TRUE current recording is stopped
+Public ScanPause As Boolean     ' if TRUE current recording is paused
+Public ScanStopAfterRepetition As Boolean ' if TRUE current measurement is stopped after repetition
+Public Running As Boolean       ' TRUE when system is running (e.g. after start)
+Public GlobalDataBaseName As String   ' Name of output folder
+Public GlobalAutoSaveName As String   ' Folder to autosave data
 Public TrackNumber As Integer    'number of available tracks
 
 Public GlobalCorrectionOffset As Double 'not anymore used
@@ -211,7 +212,7 @@ End Function
 ' Returns TRUE if successful
 '---------------------------------------------------------------------------------------
 '
-Public Function ScanToImage(RecordingDoc As DsRecordingDoc, Optional TimeOut As Double = -1) As Boolean
+Public Function ScanToImage(RecordingDoc As DsRecordingDoc, Job As AJob) As Boolean
 
 
     Dim Time As Double
@@ -235,7 +236,7 @@ RepeatScanToImage:
     AcquisitionController.DestinationImage(0) = treenode 'EngelImageToHechtImage(GlobalSingleImage).Image(0, True)
     AcquisitionController.DestinationImage(1) = Nothing
     Set ProgressFifo = AcquisitionController.DestinationImage(0)
-    'Lsm5.Tools.CheckLockControllers True
+    Lsm5.Tools.CheckLockControllers True
     
     AcquisitionController.StartGrab eGrabModeSingle
     Time = Timer
@@ -250,7 +251,9 @@ RepeatScanToImage:
         If ScanStop Then
             Exit Function
         End If
-        If TimeOut > 0 And (Timer - Time > TimeOut) Then
+        
+        ' If a minimal time to acquire is set this avoids continuing the acquisition
+        If Job.timeToAcquire > 0 And (Timer - Time > Job.timeToAcquire) Then
             LogManager.UpdateErrorLog "TimeOut of image acquisition  after " & TimeOut & " sec"
             StopAcquisition
             GoTo ExitWhile
@@ -275,82 +278,164 @@ End Function
 
 
 '---------------------------------------------------------------------------------------
-' Procedure : ScanToImageAFM
+' Procedure : ScanToImageAFMfast
 ' Purpose   : scan overwrite the same image. Respond to commands build in pause for AdaptiveFeedback microscopy
 ' Variables :
 '   RecordingDoc As DsRecordingDoc: The DsRecordingDoc to hold the imagedata
-'   Optional TimeOut As Double = -1: A time in sec after which to exit the loop. By default disabled.
+'   IJob: Current imaging job
 ' Returns TRUE if successful
 '---------------------------------------------------------------------------------------
 '
 
-Public Function ScanToImageAFM(RecordingDoc As DsRecordingDoc, Optional TimeOut As Double = -1) As Boolean
+Public Function ScanToImageAFMfast(RecordingDoc As DsRecordingDoc, Job As AJob, RecName As String, tsk As Task) As Boolean
 
 
     Dim Time As Double
     Dim ProgressFifo As IAimProgressFifo ' this shows how far you are with the acquisition image ( the blue bar at the bottom). The usage of it makes the macro quite slow
     Dim AcquisitionController As AimScanController
+    Dim AcquisitionControllerOptions As AimScanControllerOptions
+    Set AcquisitionController = Lsm5.ExternalDsObject.ScanController
+
     Dim treenode As Object
+    Dim newPositions() As Vector
+    Dim currPosition As Vector
+    Dim centralPositionPx As Vector
+    Dim VectorString() As String
     Dim iTry As Integer
     Dim codeMic() As String
     Dim TimeWait, TimeStart, maxTimeWait As Double
     maxTimeWait = 100
     iTry = 1
     'Procedure is completely executed 3 times in case of error. RecordingDoc.IsBusy is less (not at all?) error prone
-
-    'Dim gui As Object
-    'Set gui = Lsm5.ViewerGuiServer not recquired anymore
+RepeatScanToImage:
     If RecordingDoc Is Nothing Then
         Exit Function
     End If
     Set treenode = RecordingDoc.RecordingDocument.image(0, True)
-    'Set treenode = Lsm5.NewDocument this will create a new document we want to use the same document
     Set AcquisitionController = Lsm5.ExternalDsObject.ScanController
+    Set AcquisitionControllerOptions = AcquisitionController.ScanOptions
+    AcquisitionControllerOptions.AutoSave = True
+    AcquisitionControllerOptions.AutoSaveName = RecName
+    AcquisitionControllerOptions.AutoSaveDirectory = GlobalAutoSaveName
+    AcquisitionControllerOptions.AutoSaveSeparateFiles(3) = True
+    AcquisitionControllerOptions.AutoSaveFormat = imgFileFormat
     AcquisitionController.DestinationImage(0) = treenode 'EngelImageToHechtImage(GlobalSingleImage).Image(0, True)
     AcquisitionController.DestinationImage(1) = Nothing
     Set ProgressFifo = AcquisitionController.DestinationImage(0)
-    'Lsm5.Tools.CheckLockControllers True ' not sure if required
-    
+    ' Lsm5.Tools.CheckLockControllers True
+    ' Start imaging
     AcquisitionController.StartGrab eGrabModeSingle
     Time = Timer
-    'Set RecordingDoc = Lsm5.StartScan this does not overwrite
+    ' Progress tool bar in GUI
     If Not ProgressFifo Is Nothing Then ProgressFifo.Append AcquisitionController
-    'Debug.Print "ScanToImage part1 " & Round(Timer - Time, 3)
-'    Sleep (PauseGrabbing)
-'    'While AcquisitionController.isGrabbing this command seems to hang quite frequently
+    
+    ' start in waiting mode. This will execute one time point only
+    
+    AFMSettings.writeKeyToRegistry "codeMic", "wait"
+    SleepWithEvents PauseGrabbing
+    ' Run until acquisition is finished
     While RecordingDoc.IsBusy
-        SleepWithEvents 100
-        codeMic = Split(Replace(OiaSettings.readKeyFromRegistry("codeMic"), " ", ""), ";")
-        'ZENL.GUI.Acquisition.ZStack.FocusPosition.value = -10
+        Dim ProgressTime As Double
+        SleepWithEvents PauseGrabbing
+        codeMic = Split(Replace(AFMSettings.readKeyFromRegistry("codeMic"), " ", ""), ";")
+         
         If UBound(codeMic) > -1 Then
             Select Case codeMic(0)
                 Case "wait":
+                    ' when this command is called the code stops here until the Z-stack is finished
                     AcquisitionController.TimeSeriesPause True
-                    ' Wait for image analysis to finish
                     DisplayProgress PipelineConstructor.ProgressLabel, "Waiting for image analysis...", RGB(0, &HC0, 0)
                     TimeStart = CDbl(GetTickCount) * 0.001
+                    If Not RecordingDoc.IsBusy Then
+                        GoTo ExitThis
+                    End If
                     Do While ((TimeWait < maxTimeWait) And (codeMic(0) = "wait"))
                         TimeWait = CDbl(GetTickCount) * 0.001 - TimeStart
-                        codeMic = Split(Replace(OiaSettings.readKeyFromRegistry("codeMic"), " ", ""), ";")
+                        codeMic = Split(Replace(AFMSettings.readKeyFromRegistry("codeMic"), " ", ""), ";")
                         SleepWithEvents PauseGrabbing
                         If ScanStop Then
                             Exit Function
                         End If
                     Loop
-                    'Debug.Print ZENL.GUI.Acquisition.ZStack.FocusPosition
-                    'ZEN.GUI.Acquisition.ZStack.CenterPositionZ.value = -1
-                    DisplayProgress PipelineConstructor.ProgressLabel, "Continue acquisition ...", RGB(&HC0, &HC0, 0)
                 Case "focus":
-                
-        End Select
+                    ' when this command is called the code stops here until the Z-stack is finished
+                    AcquisitionController.TimeSeriesPause True
+                    'Read all settings at once
+                    AFMSettings.readFromRegistry
+                    AFMSettings.writeKeyToRegistry "codeMic", "wait"
+
+                    currPosition = getCurrentPosition
+                    centralPositionPx = Job.getCentralPointPx
+                    centralPositionPx.rot = Job.rotation
+
+                    If AFMSettings.getPositions(newPositions, centralPositionPx) Then
+                        VectorString = VectorList2String(newPositions)
+                        LogManager.UpdateLog "OnlineImageAnalysis obtained " & UBound(newPositions) + 1 & " position(s) (in px)" & _
+                        " X = " & VectorString(0) & " Y = " & VectorString(1) & " Z = " & VectorString(2) & " rot = " & VectorString(3)
+                        If Not checkForMaximalDisplacementVecPixels(Job, newPositions) Then
+                            LogManager.UpdateErrorLog "OnlineImageAnalysis position exceed boundaries and has been set to  X = " & newPositions(0).X & " Y = " & newPositions(0).Y & " Z = " & newPositions(0).Z
+                            GoTo ExitThis
+                        End If
+
+                        ' convert in um units
+                        newPositions = computeCoordinatesImaging(Job, currPosition, newPositions)
+
+                        If Not checkForMaximalDisplacementVec(Job, currPosition, newPositions) Then
+                            GoTo ExitThis
+                        End If
+                        
+                        ' This seems slow
+                        If tsk.TrackXY Then
+                            'Lsm5.Hardware.CpStages.SetXYPosition newPositions(0).X, newPositions(0).Y
+                            FailSafeMoveStageXY newPositions(0).X, newPositions(0).Y
+                        End If
+                        If tsk.TrackZ Then
+                            'FailSafeMoveStageZ newPositions(0).Z
+                            Lsm5.Hardware.CpFocus.position = newPositions(0).Z
+                        End If
+                        AFMSettings.writeKeyToRegistry "X", ""
+                        AFMSettings.writeKeyToRegistry "Y", ""
+                        AFMSettings.writeKeyToRegistry "Z", ""
+                        AFMSettings.writeKeyToRegistry "rotation", ""
+                    End If
+                    SleepWithEvents PauseGrabbing
+                    AcquisitionController.TimeSeriesPause False
+                Case Else
+                    SleepWithEvents PauseGrabbing
+                    AcquisitionController.TimeSeriesPause False
+            End Select
         End If
-       
-        AcquisitionController.TimeSeriesPause False
+ExitThis:
+        ' AcquisitionController.TimeSeriesPause False
+        ' DisplayProgress PipelineConstructor.ProgressLabel, "Ready", RGB(0, &HC0, 0)
         If ScanStop Then
             Exit Function
         End If
-
+        If Job.timeToAcquire > 0 And (Timer - Time > Job.timeToAcquire) Then
+            LogManager.UpdateErrorLog "TimeOut of image acquisition  after " & TimeOut & " sec"
+            StopAcquisition
+            GoTo ExitWhile
+        End If
     Wend
+ExitWhile:
+    AcquisitionController.TimeSeriesPause False
+    ScanToImageAFMfast = True
+    DisplayProgress PipelineConstructor.ProgressLabel, "Ready", RGB(&HC0, &HC0, 0)
+    On Error GoTo 0
+    Exit Function
+ErrorScanToImage:
+AcquisitionController.TimeSeriesPause False
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure ScanToImageAFM of Module MicroscopeIO at line " & Erl & ". Try " & iTry & "/3"
+    StopAcquisition
+    SleepWithEvents 500
+    
+    iTry = 1 + iTry
+    If iTry <= 3 Then
+        Err.Clear
+        Resume RepeatScanToImage
+    End If
+
 End Function
 
 ''''
@@ -767,6 +852,14 @@ Public Sub SystemVersionOffset(Optional Tmp As Boolean) ' tmp is a hack to hide 
 End Sub
 
 
+Public Function FailSafeMove(X As Double, Y As Double, Z As Double) As Boolean
+    If Not FailSafeMoveStageXY(X, Y) Then
+        Exit Function
+    End If
+    If Not FailSafeMoveStageZ(Z) Then
+        Exit Function
+    End If
+End Function
 
 '''''
 '   Moves stage and wait till it is finished. Repeat the process twice if precision is not achieved
@@ -788,6 +881,8 @@ SetPosition:
     WaitTime = 0
     Lsm5.Hardware.CpStages.GetXYPosition CurrentX, CurrentY
     Lsm5.Hardware.CpStages.SetXYPosition X, Y
+    
+    ''' Wait until movement is finished
     Do While (Abs(CurrentX - X) > prec) Or (Abs(CurrentY - Y) > prec) Or Lsm5.Hardware.CpStages.IsBusy
         SleepWithEvents (100)
         Lsm5.Hardware.CpStages.GetXYPosition CurrentX, CurrentY
@@ -1729,6 +1824,8 @@ End Sub
 '    End If
 '
 'End Sub
+
+
 
 
 

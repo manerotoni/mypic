@@ -37,16 +37,16 @@ Private positionOption As Integer
 
 Private Sub ShowOiaKeysButton_Click()
 '''''
-' Display Keys used for Online image analysis
+' Display Keys used for AFM image analysis
 '''''
-    Dim OiaSettings As OnlineIASettings
+    Dim AFMSettings As clsAFMSettings
 On Error GoTo ShowOiaKeysButton_Click_Error
 
-    Set OiaSettings = New OnlineIASettings
-    OiaSettings.initializeDefault
+    Set AFMSettings = New clsAFMSettings
+    AFMSettings.initializeDefault
     KeyReport.Show
     KeyReport.KeyReportLabel2.MultiLine = True
-    KeyReport.KeyReportLabel2.Text = OiaSettings.createKeyReport
+    KeyReport.KeyReportLabel2.Text = AFMSettings.createKeyReport
 
    Exit Sub
 
@@ -69,7 +69,7 @@ Public Sub UserForm_Initialize()
     
 On Error GoTo UserForm_Initialize_Error
 
-    Version = "v0.9.0"
+    Version = "v0.9.1"
     
     Me.Caption = Me.Caption + " " + Version
 
@@ -122,9 +122,9 @@ NoError:
     Erase ImgJobs
     Erase FcsJobs
     'initialize registry reader and registry values
-    Set OiaSettings = New OnlineIASettings
-    OiaSettings.initializeDefault
-    OiaSettings.resetRegistry
+    Set AFMSettings = New clsAFMSettings
+    AFMSettings.initializeDefault
+    AFMSettings.resetRegistry
     
     'default extension
     imgFileFormat = eAimExportFormatLsm5
@@ -144,7 +144,9 @@ NoError:
     FocusMethods.Add AnalyseImage.CenterOfMassThr, "Center of Mass (thr)"
     FocusMethods.Add AnalyseImage.Peak, "Peak"
     FocusMethods.Add AnalyseImage.CenterOfMass, "Center of Mass"
-    FocusMethods.Add AnalyseImage.Online, "Online img. analysis"
+    FocusMethods.Add AnalyseImage.AFM, "AFM"
+    FocusMethods.Add AnalyseImage.AFMfast, "AFM fast"
+    
     If DebugCode Then
         FocusMethods.Add AnalyseImage.FcsLoop, "Debug FcsLoop"
     End If
@@ -835,6 +837,10 @@ On Error GoTo StartSetting_Error
         If Not CheckDir(GlobalDataBaseName) Then
             GoTo ExitStart
         End If
+        GlobalAutoSaveName = GlobalDataBaseName & "\autosave"
+        If Not CheckDir(GlobalAutoSaveName) Then
+            GoTo ExitStart
+        End If
         'initialize logFiles
         If LogFileNameBase <> "" Then
             'On Error GoTo ErrorHandleLogFile
@@ -873,7 +879,13 @@ On Error GoTo StartSetting_Error
     StageSettings MirrorX, MirrorY, ExchangeXY
     
     'Eventually create new records
-    NewRecordGui GlobalRecordingDoc, "IMG", ZEN, ZenV
+    If GlobalRecordingDoc Is Nothing Then
+        NewRecordGui GlobalRecordingDoc, "IMG", ZEN, ZenV
+    Else
+        GlobalRecordingDoc.CloseAllWindows
+        NewRecordGui GlobalRecordingDoc, "IMG", ZEN, ZenV
+    End If
+    
     If Not isArrayEmpty(FcsJobs) Then
         NewFcsRecordGui GlobalFcsRecordingDoc, GlobalFcsData, "FCS", ZEN, ZenV
     End If
@@ -1451,7 +1463,7 @@ On Error GoTo UpdateFocusEnabled_Error
     End If
     enableFrame TrackingFrame, True
     FocusMethod.Enabled = True
-    CenterOfMassChannel.Enabled = True And (FocusMethod.ListIndex > AnalyseImage.No) And (Not FocusMethod.ListIndex = AnalyseImage.Online)
+    CenterOfMassChannel.Enabled = True And (FocusMethod.ListIndex > AnalyseImage.No) And (Not FocusMethod.ListIndex = AnalyseImage.AFM) And (Not FocusMethod.ListIndex = AnalyseImage.AFM)
     TrackZ.value = Pipelines(currPipeline).getTrackZ(index)
     TrackXY.value = Pipelines(currPipeline).getTrackXY(index)
     With ImgJobs(Pipelines(currPipeline).getTask(index).jobNr)
@@ -1479,7 +1491,7 @@ On Error GoTo FocusMethod_Click_Error
     Pipelines(currPipeline).setAnalyse index, FocusMethod.ListIndex
 
     UpdateFocusEnabled
-    If Pipelines(currPipeline).getAnalyse(index) = AnalyseImage.Online Then
+    If Pipelines(currPipeline).getAnalyse(index) = AnalyseImage.AFM Then
         SaveImage = True
         Pipelines(currPipeline).setSaveImage index, True
     End If
@@ -2172,7 +2184,7 @@ On Error GoTo SetDatabase_Error
         If Not CheckDir(GlobalDataBaseName) Then
             Exit Sub
         End If
-        OiaSettings.writeKeyToRegistry "OutputFolder", GlobalDataBaseName
+        AFMSettings.writeKeyToRegistry "OutputFolder", GlobalDataBaseName
         LogFileNameBase = GlobalDataBaseName & "\PipelineConstructor.log"
         ErrFileNameBase = GlobalDataBaseName & "\PipelineConstructor.err"
         If VBA.Right(GlobalDataBaseName, 1) = "\" Then

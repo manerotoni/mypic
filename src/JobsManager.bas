@@ -10,7 +10,7 @@ Attribute VB_Name = "JobsManager"
 Option Explicit
 
 Public Type Task
-    Analyse As Integer
+    analyse As Integer
     jobType As Integer
     jobNr As Integer
     Period As Long
@@ -40,8 +40,9 @@ Public Enum AnalyseImage
     CenterOfMassThr = 1
     Peak = 2
     CenterOfMass = 3
-    Online = 4
-    FcsLoop = 5 'debug mode to automatically start an fcs measurment after an image
+    AFM = 4
+    AFMfast = 5
+    FcsLoop = 6 'debug mode to automatically start an fcs measurment after an image
 End Enum
 Public FocusMethods As Dictionary
 
@@ -78,7 +79,7 @@ Public CurrentJobFcs As String
 'Name of file to be saved (used as reference for other functions)
 Public CurrentFileName As String
 
-Public OiaSettings As OnlineIASettings
+Public AFMSettings As clsAFMSettings
 
 
 ''' Timers initiated when great is created, reinitialized if recquired
@@ -101,7 +102,7 @@ End Function
 Public Function TaskToArray(tsk As Task) As Variant()
     Dim arr(8) As Variant
     With tsk
-        arr(0) = .Analyse
+        arr(0) = .analyse
         arr(1) = .jobNr
         arr(2) = .jobType
         arr(3) = .Period
@@ -117,7 +118,7 @@ End Function
 Public Function ArrayToTask(arr() As Variant) As Task
     Dim tsk As Task
     With tsk
-        .Analyse = arr(0)
+        .analyse = arr(0)
         .jobNr = arr(1)
         .jobType = arr(2)
         .Period = arr(3)
@@ -139,7 +140,7 @@ End Function
 '             position - A vector with stage position where to acquire image X, Y, and Z (cental slice) in um
 '---------------------------------------------------------------------------------------
 
-Public Function AcquireJob(jobNr As Integer, Job As AJob, RecordingDoc As DsRecordingDoc, RecordingName As String, position As Vector) As Boolean
+Public Function AcquireJob(jobNr As Integer, Job As AJob, RecordingDoc As DsRecordingDoc, RecordingName As String, position As Vector, tsk As Task) As Boolean
 On Error GoTo AcquireJob_Error
     Dim SuccessRecenter As Boolean
     Dim Time As Double
@@ -213,8 +214,15 @@ On Error GoTo AcquireJob_Error
             Lsm5.DsRecording.MultiPositionZ(0) = position.Z * 0.000001
     End If
     If Job.isAcquiring Then
-        If Not ScanToImage(RecordingDoc, Job.timeToAcquire) Then
-            Exit Function
+        
+        If tsk.analyse = AnalyseImage.AFMfast Then
+            If Not ScanToImageAFMfast(RecordingDoc, Job, RecordingName, tsk) Then
+                Exit Function
+            End If
+        Else
+            If Not ScanToImage(RecordingDoc, Job) Then
+                Exit Function
+            End If
         End If
     Else
         GoTo ErrorTrack
@@ -337,10 +345,10 @@ On Error GoTo TrackOffLine_Error
     Dim TrackingChannel As String
     newPosition(0) = currentPosition
     TrackOffLine = currentPosition
-    If tsk.Analyse = AnalyseImage.No Or tsk.Analyse = AnalyseImage.Online Then
+    If tsk.analyse = AnalyseImage.No Or tsk.analyse = AnalyseImage.AFM Then
         Exit Function
     End If
-    newPosition(0) = MassCenter(RecordingDoc, tsk.TrackChannel, tsk.Analyse)
+    newPosition(0) = MassCenter(RecordingDoc, tsk.TrackChannel, tsk.analyse)
     If Not checkForMaximalDisplacementVecPixels(ImgJobs(tsk.jobNr), newPosition) Then
         LogManager.UpdateWarningLog "TrackOffline for ImgJob " & tsk.jobNr & " computed position differs from possible range. Use current position!"
         GoTo Abort
@@ -422,7 +430,7 @@ On Error GoTo ExecuteJobAndTrack_Error
         Select Case .jobType
             Case jobTypes.imgjob
                 Time = Timer
-                If Not AcquireJob(.jobNr, ImgJobs(.jobNr), RecordingDoc, FileName, stgPos) Then
+                If Not AcquireJob(.jobNr, ImgJobs(.jobNr), RecordingDoc, FileName, stgPos, Pipelines(indexPl).getTask(indexTsk)) Then
                     Exit Function
                 End If
                 LogManager.UpdateLog "Pipeline " & Pipelines(indexPl).Grid.NameGrid & " task " & indexTsk + 1 & " ImgJob " & jobNr + 1 & " " & FileName & " at X = " & stgPos.X & ", Y =  " & stgPos.Y & ", Z =  " & stgPos.Z & " in " & Round(Timer - Time, 3) & " sec"
@@ -442,13 +450,13 @@ On Error GoTo ExecuteJobAndTrack_Error
                     If Not SaveDsRecordingDoc(RecordingDoc, FilePath & FileName & imgFileExtension, imgFileFormat) Then
                         Exit Function
                     End If
-                    OiaSettings.writeKeyToRegistry "filePath", FilePath & FileName & imgFileExtension
+                    AFMSettings.writeKeyToRegistry "filePath", FilePath & FileName & imgFileExtension
                 End If
-                Select Case .Analyse
-                    Case AnalyseImage.No
-                    Case AnalyseImage.Online
-                        OiaSettings.writeKeyToRegistry "codeMic", "wait"
-                        OiaSettings.writeKeyToRegistry "codeOia", "newImage"
+                Select Case .analyse
+                    Case AnalyseImage.No, AnalyseImage.AFMfast
+                    Case AnalyseImage.AFM
+                        AFMSettings.writeKeyToRegistry "codeMic", "wait"
+                        AFMSettings.writeKeyToRegistry "codeOia", "newImage"
                         newStgPos = ComputeJobSequential(indexPl, indexTsk, stgPos, FilePath, FileName, RecordingDoc)
                         If .TrackZ Then
                            stgPos.Z = newStgPos.Z
@@ -593,7 +601,7 @@ On Error GoTo StartPipeline_Error
     Dim previousZ As Double   'remember position of previous position in Z
     
        
-    OiaSettings.resetRegistry
+    AFMSettings.resetRegistry
       
     FileName = PipelineConstructor.TextBoxFileName.value & Pipelines(index).Grid.getName(1, 1, 1, 1) & Pipelines(index).Grid.suffix(1, 1, 1, 1) & Pipelines(index).Repetition.suffix(1)
     'create a new Gui document if recquired
@@ -746,13 +754,13 @@ Public Function waitForPump(timeToPump As Double, TimeToWait As Double, lastTime
         Exit Function
     End If
     
-    OiaSettings.writeKeyToRegistry "codeMic", "wait"
-    OiaSettings.writeKeyToRegistry "codePump", CStr(timeToPump)
+    AFMSettings.writeKeyToRegistry "codeMic", "wait"
+    AFMSettings.writeKeyToRegistry "codePump", CStr(timeToPump)
     DoEvents
     Sleep (200)
     TimeStart = CDbl(GetTickCount) * 0.001
     DisplayProgress PipelineConstructor.ProgressLabel, "Waiting for pump...", RGB(0, &HC0, 0)
-    Do While OiaSettings.readKeyFromRegistry("codeMic") = "wait" And (TimeWait < maxTimeWaitRegistry)
+    Do While AFMSettings.readKeyFromRegistry("codeMic") = "wait" And (TimeWait < maxTimeWaitRegistry)
             TimeWait = CDbl(GetTickCount) * 0.001 - TimeStart
             Sleep (50)
             DoEvents
@@ -762,28 +770,28 @@ Public Function waitForPump(timeToPump As Double, TimeToWait As Double, lastTime
     Loop
     
     If TimeWait > maxTimeWaitRegistry Then
-        OiaSettings.writeKeyToRegistry "codeMic", "timeExpired"
+        AFMSettings.writeKeyToRegistry "codeMic", "timeExpired"
     End If
     
     ''Read all settings at once
-    OiaSettings.readFromRegistry
-    If Not OiaSettings.checkKeyItem("codeMic", OiaSettings.getSettings("codeMic")) Then
+    AFMSettings.readFromRegistry
+    If Not AFMSettings.checkKeyItem("codeMic", AFMSettings.getSettings("codeMic")) Then
         GoTo Abort
     End If
     
 
-    Select Case OiaSettings.getSettings("codeMic")
+    Select Case AFMSettings.getSettings("codeMic")
         Case "nothing", "": 'Nothing to do
             LogManager.UpdateLog " Pump from was successfull "
         Case "error":
-            OiaSettings.writeKeyToRegistry "codeMic", "nothing"
-            OiaSettings.getSettings ("errorMsg")
+            AFMSettings.writeKeyToRegistry "codeMic", "nothing"
+            AFMSettings.getSettings ("errorMsg")
             LogManager.UpdateErrorLog "codeMic error. Pump for job failed . " _
-            & " Error from pump: " & OiaSettings.getSettings("errorMsg")
-            LogManager.UpdateLog " Pump from failed. " & OiaSettings.getSettings("errorMsg")
-            OiaSettings.writeKeyToRegistry "errorMsg", ""
+            & " Error from pump: " & AFMSettings.getSettings("errorMsg")
+            LogManager.UpdateLog " Pump from failed. " & AFMSettings.getSettings("errorMsg")
+            AFMSettings.writeKeyToRegistry "errorMsg", ""
         Case "timeExpired":
-            OiaSettings.writeKeyToRegistry "codeMic", "nothing"
+            AFMSettings.writeKeyToRegistry "codeMic", "nothing"
             'LogManager.UpdateErrorLog "codeMic timeExpired. Waiting for pump signal took more then " & maxTimeWaitRegistry & " sec. Have you started the PumpController"
             LogManager.UpdateLog " Waiting for pump signal took more then " & maxTimeWaitRegistry & " sec"
             MsgBox "Waiting for pump signal took more then " & maxTimeWaitRegistry & " sec. Have you started the PumpController?", VbCritical
@@ -888,7 +896,7 @@ End Function
 '             newPos - vector of stage positions in um
 '---------------------------------------------------------------------------------------
 '
-Private Function checkForMaximalDisplacementVec(IJob As AJob, currentPos As Vector, newPos() As Vector) As Boolean
+Public Function checkForMaximalDisplacementVec(IJob As AJob, currentPos As Vector, newPos() As Vector) As Boolean
 On Error GoTo checkForMaximalDisplacementVec_Error
     Dim i As Integer
 
@@ -915,7 +923,7 @@ End Function
 '             newPos - A new position in pixels 0,0,0 is upper left bottom slice
 '---------------------------------------------------------------------------------------
 '
-Private Function checkForMaximalDisplacementPixels(IJob As AJob, newPos As Vector) As Boolean
+Public Function checkForMaximalDisplacementPixels(IJob As AJob, newPos As Vector) As Boolean
 On Error GoTo checkForMaximalDisplacementPixels_Error
     Dim imgSizePx As Vector
     Dim MaxY As Long
@@ -978,7 +986,7 @@ End Function
 '             newPos - A vector of new positions in pixels 0,0,0 is upper left bottom slice
 '---------------------------------------------------------------------------------------
 '
-Private Function checkForMaximalDisplacementVecPixels(IJob As AJob, newPos() As Vector) As Boolean
+Public Function checkForMaximalDisplacementVecPixels(IJob As AJob, newPos() As Vector) As Boolean
 On Error GoTo checkForMaximalDisplacementVecPixels_Error
     Dim i As Integer
     For i = 0 To UBound(newPos)
@@ -1254,7 +1262,7 @@ On Error GoTo ComputeJobSequential_Error
     Dim newPositionsAbs() As Vector
     Dim centralPositionPx As Vector
     Dim VectorString() As String
-    Dim Rois() As roi
+    Dim Rois() As Roi
     'Position for fcs as read fro registry these correspond to position in image
     Dim fcsPosPx() As Vector
     'position for fcs as used by the microscope. These are in meters! deviation with respect to current position and z in meters abosolute
@@ -1273,7 +1281,7 @@ On Error GoTo ComputeJobSequential_Error
     codeMicToJobName.Add "trigger1", 1
     codeMicToJobName.Add "trigger2", 2
     
-    codeMic = Split(Replace(OiaSettings.readKeyFromRegistry("codeMic"), " ", ""), ";")
+    codeMic = Split(Replace(AFMSettings.readKeyFromRegistry("codeMic"), " ", ""), ";")
     Dim TimeWait, TimeStart, maxTimeWait As Double
     
     maxTimeWait = 100
@@ -1289,10 +1297,9 @@ On Error GoTo ComputeJobSequential_Error
             DisplayProgress PipelineConstructor.ProgressLabel, "Waiting for image analysis...", RGB(0, &HC0, 0)
             TimeStart = CDbl(GetTickCount) * 0.001
             Do While ((TimeWait < maxTimeWait) And (codeMic(0) = "wait"))
-                Sleep (50)
+                SleepWithEvents PauseGrabbing
                 TimeWait = CDbl(GetTickCount) * 0.001 - TimeStart
-                codeMic = Split(Replace(OiaSettings.readKeyFromRegistry("codeMic"), " ", ""), ";")
-                DoEvents
+                codeMic = Split(Replace(AFMSettings.readKeyFromRegistry("codeMic"), " ", ""), ";")
                 If ScanStop Then
                     GoTo Abort
                 End If
@@ -1305,18 +1312,18 @@ On Error GoTo ComputeJobSequential_Error
     End Select
 
     ''Read all settings at once
-    OiaSettings.readFromRegistry
+    AFMSettings.readFromRegistry
     
     ComputeJobSequential = parentPosition
     'read if it is the correct code
-    If Not OiaSettings.checkKeyItem("codeMic", OiaSettings.getSettings("codeMic")) Then
+    If Not AFMSettings.checkKeyItem("codeMic", AFMSettings.getSettings("codeMic")) Then
         GoTo Abort
     End If
     
-    codeMic = Split(Replace(OiaSettings.getSettings("codeMic"), " ", ""), ";")
+    codeMic = Split(Replace(AFMSettings.getSettings("codeMic"), " ", ""), ";")
 
     'Read positions and rois from registry the fcs positions are read with respect to center of image
-    If OiaSettings.getFcsPositions(fcsPosPx, centralPositionPx) Then
+    If AFMSettings.getFcsPositions(fcsPosPx, centralPositionPx) Then
         VectorString = VectorList2String(fcsPosPx)
         LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & imgFileExtension & " obtained " & UBound(fcsPosPx) + 1 & " position(s) " & _
            " X = " & VectorString(0) & " Y = " & VectorString(1) & " Z = " & VectorString(2)
@@ -1325,12 +1332,12 @@ On Error GoTo ComputeJobSequential_Error
             LogManager.UpdateLog "OnlineImageAnalysis position(s) exceeded boundaries and has been set to   X = " & VectorString(0) & " Y = " & VectorString(1) & " Z = " & VectorString(2)
         End If
         fcsPos = computeCoordinatesFcs(ImgJobs(tsk.jobNr), parentPosition, fcsPosPx)
-        OiaSettings.writeKeyToRegistry "fcsX", ""
-        OiaSettings.writeKeyToRegistry "fcsY", ""
-        OiaSettings.writeKeyToRegistry "fcsZ", ""
+        AFMSettings.writeKeyToRegistry "fcsX", ""
+        AFMSettings.writeKeyToRegistry "fcsY", ""
+        AFMSettings.writeKeyToRegistry "fcsZ", ""
     End If
     
-    If OiaSettings.getPositions(newPositionsPx, centralPositionPx) Then
+    If AFMSettings.getPositions(newPositionsPx, centralPositionPx) Then
         VectorString = VectorList2String(newPositionsPx)
         LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & imgFileExtension & " obtained " & UBound(newPositionsPx) + 1 & " position(s) (in px)" & _
         " X = " & VectorString(0) & " Y = " & VectorString(1) & " Z = " & VectorString(2)
@@ -1341,26 +1348,26 @@ On Error GoTo ComputeJobSequential_Error
         If Not checkForMaximalDisplacementVec(ImgJobs(tsk.jobNr), parentPosition, newPositions) Then
             GoTo ExitThis
         End If
-        OiaSettings.writeKeyToRegistry "X", ""
-        OiaSettings.writeKeyToRegistry "Y", ""
-        OiaSettings.writeKeyToRegistry "Z", ""
-        OiaSettings.writeKeyToRegistry "rotation", ""
+        AFMSettings.writeKeyToRegistry "X", ""
+        AFMSettings.writeKeyToRegistry "Y", ""
+        AFMSettings.writeKeyToRegistry "Z", ""
+        AFMSettings.writeKeyToRegistry "rotation", ""
     End If
     
     
-    OiaSettings.getRois Rois
-    OiaSettings.writeKeyToRegistry "roiAim", ""
-    OiaSettings.writeKeyToRegistry "roiType", ""
-    OiaSettings.writeKeyToRegistry "roiX", ""
-    OiaSettings.writeKeyToRegistry "roiY", ""
-    prefix = OiaSettings.readKeyFromRegistry("prefix")
-    OiaSettings.writeKeyToRegistry "prefix", ""
+    AFMSettings.getRois Rois
+    AFMSettings.writeKeyToRegistry "roiAim", ""
+    AFMSettings.writeKeyToRegistry "roiType", ""
+    AFMSettings.writeKeyToRegistry "roiX", ""
+    AFMSettings.writeKeyToRegistry "roiY", ""
+    prefix = AFMSettings.readKeyFromRegistry("prefix")
+    AFMSettings.writeKeyToRegistry "prefix", ""
     'TODO find way for passing ROIS
     
     ''for all commands in codeMic
     For Each code In codeMic
         LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " found " & code
-        OiaSettings.writeKeyToRegistry "codeMic", "nothing"
+        AFMSettings.writeKeyToRegistry "codeMic", "nothing"
         Select Case code
             Case "nothing", "": 'Nothing to do
                 Pipelines(indexPl).Grid.setThisFcsPositions fcsPos
@@ -1368,12 +1375,12 @@ On Error GoTo ComputeJobSequential_Error
                 Pipelines(indexPl).Grid.setThisFcsName ""
                 Pipelines(indexPl).Grid.setThisFcsImage ""
             Case "error":
-                OiaSettings.readKeyFromRegistry "errorMsg"
-                OiaSettings.getSettings ("errorMsg")
+                AFMSettings.readKeyFromRegistry "errorMsg"
+                AFMSettings.getSettings ("errorMsg")
                 LogManager.UpdateErrorLog "codeMic error. Online image analysis for task " & JobName & " file " & ParentPath & parentFile & " failed . " _
-                & " Error from Oia: " & OiaSettings.getSettings("errorMsg")
-                LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " obtained an error. " & OiaSettings.getSettings("errorMsg")
-                OiaSettings.writeKeyToRegistry "errorMsg", ""
+                & " Error from Oia: " & AFMSettings.getSettings("errorMsg")
+                LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " obtained an error. " & AFMSettings.getSettings("errorMsg")
+                AFMSettings.writeKeyToRegistry "errorMsg", ""
             Case "timeExpired":
                 LogManager.UpdateErrorLog "codeMic timeExpired. Online image analysis for job " & JobName & " file " & ParentPath & parentFile & " took more then " & maxTimeWait & " sec"
                 LogManager.UpdateLog "OnlineImageAnalysis from " & ParentPath & parentFile & " took more then " & maxTimeWait & " sec"
@@ -1467,4 +1474,6 @@ ComputeJobSequential_Error:
     LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
     ") in procedure ComputeJobSequential of Module JobsManager at line " & Erl & " " & ParentPath & " " & parentFile
 End Function
+
+
 
