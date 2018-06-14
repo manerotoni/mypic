@@ -1,4 +1,11 @@
 Attribute VB_Name = "FileIO"
+'---------------------------------------------------------------------------------------
+' Module    : FileIO
+' Author    : LSM User
+' Date      : 06/14/2018
+' Purpose   :
+'---------------------------------------------------------------------------------------
+
 ''''
 ' A list of functions to open and write text files, check their existance etc
 ''''
@@ -134,12 +141,28 @@ FileIsNotAccessible:
 End Function
 
 
-Public Function getRecordingFromImageFile(PathName As String, ZEN As Object) As DsRecording
+'---------------------------------------------------------------------------------------
+' Procedure : getRecordingFromImageFile
+' Author    : LSM User
+' Date      : 06/14/2018
+' Purpose   : Load DsRecording from image file. A node with identical image name must be removed before loading
+'---------------------------------------------------------------------------------------
+'
+Public Function getRecordingFromImageFile(PathName As String, JobName As String, ZEN As Object) As DsRecording
  
     Dim ViewerGuiServer As AimViewerGuiServer40.AimViewerGuiServer
     Dim Node As AimExperiment40.AimExperimentTreeNode
+   On Error GoTo getRecordingFromImageFile_Error
     Set ViewerGuiServer = Lsm5.ViewerGuiServer
-    
+    If ZenV > 2010 Then
+        If ZEN.GUI.Document.ItemCount > 0 Then
+            ZEN.GUI.Document.ByName = JobName
+            SleepWithEvents (500)
+            If ZEN.GUI.Document.Name.value = JobName Then
+                ZEN.GUI.Document.Close.Execute
+            End If
+        End If
+    End If
     Set Node = ViewerGuiServer.LoadFile(PathName, False)
     SleepWithEvents (500)
     Lsm5.DsRecording.Copy Lsm5.DsRecordingActiveDocObject.Recording
@@ -152,6 +175,13 @@ Public Function getRecordingFromImageFile(PathName As String, ZEN As Object) As 
         SleepWithEvents (200)
     Wend
     ViewerGuiServer.Close Node
+
+   On Error GoTo 0
+   Exit Function
+
+getRecordingFromImageFile_Error:
+
+    MsgBox "Error " & Err.number & " (" & Err.Description & ") in procedure getRecordingFromImageFile of Module FileIO"
 End Function
 
 '''''
