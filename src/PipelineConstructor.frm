@@ -1463,7 +1463,7 @@ On Error GoTo UpdateFocusEnabled_Error
     End If
     enableFrame TrackingFrame, True
     FocusMethod.Enabled = True
-    CenterOfMassChannel.Enabled = True And (FocusMethod.ListIndex > AnalyseImage.No) And (Not FocusMethod.ListIndex = AnalyseImage.AFM) And (Not FocusMethod.ListIndex = AnalyseImage.AFM)
+    CenterOfMassChannel.Enabled = True And (FocusMethod.ListIndex > AnalyseImage.No) And (Not FocusMethod.ListIndex = AnalyseImage.AFM) And (Not FocusMethod.ListIndex = AnalyseImage.AFMfast)
     TrackZ.value = Pipelines(currPipeline).getTrackZ(index)
     TrackXY.value = Pipelines(currPipeline).getTrackXY(index)
     With ImgJobs(Pipelines(currPipeline).getTask(index).jobNr)
@@ -1495,7 +1495,10 @@ On Error GoTo FocusMethod_Click_Error
         SaveImage = True
         Pipelines(currPipeline).setSaveImage index, True
     End If
-
+    If Pipelines(currPipeline).getAnalyse(index) = AnalyseImage.AFMfast Then
+            SaveImage = True
+            Pipelines(currPipeline).setSaveImage index, True
+    End If
    On Error GoTo 0
    Exit Sub
 

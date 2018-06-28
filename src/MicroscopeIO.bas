@@ -400,9 +400,12 @@ RepeatScanToImage:
                     End If
                     SleepWithEvents PauseGrabbing
                     AcquisitionController.TimeSeriesPause False
+
                 Case Else
+                    AFMSettings.writeKeyToRegistry "codeMic", "wait"
                     SleepWithEvents PauseGrabbing
                     AcquisitionController.TimeSeriesPause False
+                    
             End Select
         End If
 ExitThis:
