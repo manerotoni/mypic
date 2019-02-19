@@ -34,6 +34,7 @@ from ome.units.quantity import Time
 from loci.common import RandomAccessInputStream
 from loci.common import RandomAccessOutputStream
 
+pattern =  ['(\S+\d+|\d+\S+)(_+T|_+t)(\d+)\.(lsm$|czi$)', '(\S+\d+|\d+\S+)(_+T|_+t)(\d+)_Out\.(lsm$|czi$)']
 
 
 def run(indir=None,outdir=None):
@@ -60,6 +61,7 @@ def run(indir=None,outdir=None):
 	start_time = time()
 	for root, dirs, files in os.walk(indir, topdown = False):
 		locfiles = glob(root+"/*.lsm")
+		print locfiles
 		locfiles= locfiles + glob(root+"/*.czi")
 		if locfiles is not None:
 			find_timepoints(root, locfiles, outdir)
@@ -70,23 +72,23 @@ def find_timepoints(root, files, outdir):
 	while len(files) > 0:
 		for file in files:
 			filename =  os.path.basename(file)
-
-			result = re.match('(\S+\d+|\d+\S+)(_+T|_+t)(\d+)\.(lsm$|czi$)', filename)
-			result = re.match('(\S+\d+|\d+\S+)(_+T|_+t)(\d+)_Out\.(lsm$|czi$)', filename)
-
-			#result = re.match('(\S+\d+|\d+\S+)(\-\-)(\d+)\.(lsm$|czi$)', filename)
-			if result is not None:
-				baseName = result.group(1)
-				locfiles = glob(os.path.join(root, baseName + result.group(2)+'*'+result.group(4)))
-				if locfiles is not None:
-					for i in range(0,len(locfiles)):
-						try:
-							files.remove(locfiles[i])
-						except:
-							pass
-					process_time_points(root, locfiles, outdir)
-			else:
+			for patt  in pattern:
+				result = re.match(patt, filename)
+				if result is not None:
+					break
+			if result is None:
 				files.remove(file)
+				continue
+			baseName = result.group(1)
+			locfiles = glob(os.path.join(root, baseName + result.group(2)+'*'+result.group(4)))
+			if locfiles is not None:
+				for i in range(0,len(locfiles)):
+					try:
+						files.remove(locfiles[i])
+					except:
+						pass
+				process_time_points(root, locfiles, outdir)
+
 
 def process_time_points(root, files, outdir):
 	'''Concatenate images and write ome.tiff file. If image contains already multiple time points just copy the image'''
@@ -104,103 +106,103 @@ def process_time_points(root, files, outdir):
 	
 	width  = image.getWidth()
 	height = image.getHeight()
-
-	outName = re.match('(\S+\d+|\d+\S+)(_+T|_+t)(\d+)\.(lsm$|czi$)', os.path.basename(files[0]))
-	outName = re.match('(\S+\d+|\d+\S+)(_+T|_+t)(\d+)_Out\.(lsm$|czi$)', os.path.basename(files[0]))
-
-	if outdir is None:
-		outfile = os.path.join(root, outName.group(1) + '.ome.tif')
-	else:
-		outfile =  os.path.join(outdir, outName.group(1) + '.ome.tif')
-	reader = ImageReader()
-	reader.setMetadataStore(MetadataTools.createOMEXMLMetadata())
-	reader.setId(files[0])
-	timeInfo = []
-	omeOut = reader.getMetadataStore()
-	omeOut = setUpXml(omeOut, image, files)
-	reader.close()
-	image.close()
-	IJ.log ('Concatenates ' + os.path.join(root, outName.group(1) + '.ome.tif'))
-	itime = 0
-	try:
-		for ifile, fileName in enumerate(files):
-			print fileName
-			omeMeta = MetadataTools.createOMEXMLMetadata()
-
-			reader.setMetadataStore(omeMeta)
-			reader.setId(fileName)
-			#print omeMeta.getPlaneDeltaT(0,0)
-			#print omeMeta.getPixelsTimeIncrement(0)
+	for patt in pattern:
+		outName = re.match(patt, os.path.basename(files[0]))
+		if outName is None:
+			continue
+		if outdir is None:
+			outfile = os.path.join(root, outName.group(1) + '.ome.tif')
+		else:
+			outfile =  os.path.join(outdir, outName.group(1) + '.ome.tif')
+		reader = ImageReader()
+		reader.setMetadataStore(MetadataTools.createOMEXMLMetadata())
+		reader.setId(files[0])
+		timeInfo = []
+		omeOut = reader.getMetadataStore()
+		omeOut = setUpXml(omeOut, image, files)
+		reader.close()
+		image.close()
+		IJ.log ('Concatenates ' + os.path.join(root, outName.group(1) + '.ome.tif'))
+		itime = 0
+		try:
+			for ifile, fileName in enumerate(files):
+				print fileName
+				omeMeta = MetadataTools.createOMEXMLMetadata()
+	
+				reader.setMetadataStore(omeMeta)
+				reader.setId(fileName)
+				#print omeMeta.getPlaneDeltaT(0,0)
+				#print omeMeta.getPixelsTimeIncrement(0)
+				
+				if fileName.endswith('.czi'):
+					if ifile == 0:
+						T0 = omeMeta.getPlaneDeltaT(0,0).value()
+					dT = omeMeta.getPlaneDeltaT(0,0).value() - T0
+					unit =  omeMeta.getPlaneDeltaT(0,0).unit()
+				else:
+					timeInfo.append(getTimePoint(reader, omeMeta))
+	 				unit = omeMeta.getPixelsTimeIncrement(0).unit()
+					try:
+						dT = round(timeInfo[files.index(fileName)]-timeInfo[0],2)
+					except:
+						dT = (timeInfo[files.index(fileName)]-timeInfo[0]).seconds
+				
+				nrImages = reader.getImageCount()
+	
+	
+				for i in range(0, reader.getImageCount()):
+	
+					try:
+						omeOut.setPlaneDeltaT(dT, 0, i + itime*nrImages)
+					except TypeError:
+						omeOut.setPlaneDeltaT(Time(dT, unit),0, i + itime*nrImages)
+					omeOut.setPlanePositionX(omeOut.getPlanePositionX(0,i), 0, i + itime*nrImages)
+					omeOut.setPlanePositionY(omeOut.getPlanePositionY(0,i), 0, i + itime*nrImages)
+					omeOut.setPlanePositionZ(omeOut.getPlanePositionZ(0,i), 0, i + itime*nrImages)
+					omeOut.setPlaneTheC(omeOut.getPlaneTheC(0,i), 0, i + itime*nrImages)
+					omeOut.setPlaneTheT(NonNegativeInteger(itime), 0, i + itime*nrImages)
+					omeOut.setPlaneTheZ(omeOut.getPlaneTheZ(0,i), 0, i + itime*nrImages)
+				itime = itime + 1
+				reader.close()
+	
+				IJ.showProgress(files.index(fileName), len(files))
+			try:
+				incr = float(dT/(len(files)-1))
+			except:
+				incr = 0
 			
-			if fileName.endswith('.czi'):
-				if ifile == 0:
-					T0 = omeMeta.getPlaneDeltaT(0,0).value()
-				dT = omeMeta.getPlaneDeltaT(0,0).value() - T0
-				unit =  omeMeta.getPlaneDeltaT(0,0).unit()
-			else:
-				timeInfo.append(getTimePoint(reader, omeMeta))
- 				unit = omeMeta.getPixelsTimeIncrement(0).unit()
-				try:
-					dT = round(timeInfo[files.index(fileName)]-timeInfo[0],2)
-				except:
-					dT = (timeInfo[files.index(fileName)]-timeInfo[0]).seconds
+			try:
+				omeOut.setPixelsTimeIncrement(incr, 0)
+			except TypeError:
+				#new Bioformats >5.1.x
+				omeOut.setPixelsTimeIncrement(Time(incr, unit),0)
 			
-			nrImages = reader.getImageCount()
-
-
-			for i in range(0, reader.getImageCount()):
-
-				try:
-					omeOut.setPlaneDeltaT(dT, 0, i + itime*nrImages)
-				except TypeError:
-					omeOut.setPlaneDeltaT(Time(dT, unit),0, i + itime*nrImages)
-				omeOut.setPlanePositionX(omeOut.getPlanePositionX(0,i), 0, i + itime*nrImages)
-				omeOut.setPlanePositionY(omeOut.getPlanePositionY(0,i), 0, i + itime*nrImages)
-				omeOut.setPlanePositionZ(omeOut.getPlanePositionZ(0,i), 0, i + itime*nrImages)
-				omeOut.setPlaneTheC(omeOut.getPlaneTheC(0,i), 0, i + itime*nrImages)
-				omeOut.setPlaneTheT(NonNegativeInteger(itime), 0, i + itime*nrImages)
-				omeOut.setPlaneTheZ(omeOut.getPlaneTheZ(0,i), 0, i + itime*nrImages)
-			itime = itime + 1
-			reader.close()
-
-			IJ.showProgress(files.index(fileName), len(files))
-		try:
-			incr = float(dT/(len(files)-1))
+			outfile = concatenateImagePlus(files, outfile)
+			if outfile is not None:
+				filein = RandomAccessInputStream(outfile)
+				fileout = RandomAccessOutputStream(outfile)
+				saver = TiffSaver(fileout, outfile)
+				saver.overwriteComment(filein,omeOut.dumpXML())
+				fileout.close()
+				filein.close()
+	
+	
 		except:
-			incr = 0
-		
-		try:
-			omeOut.setPixelsTimeIncrement(incr, 0)
-		except TypeError:
-			#new Bioformats >5.1.x
-			omeOut.setPixelsTimeIncrement(Time(incr, unit),0)
-		
-		outfile = concatenateImagePlus(files, outfile)
-		if outfile is not None:
-			filein = RandomAccessInputStream(outfile)
-			fileout = RandomAccessOutputStream(outfile)
-			saver = TiffSaver(fileout, outfile)
-			saver.overwriteComment(filein,omeOut.dumpXML())
-			fileout.close()
-			filein.close()
-
-
-	except:
-		traceback.print_exc()
-	finally:
-		#close all possible open files
-		try:
-			reader.close()
-		except:
-			pass
-		try:
-			filein.close()
-		except:
-			pass
-		try:
-			fileout.close()
-		except:
-			pass
+			traceback.print_exc()
+		finally:
+			#close all possible open files
+			try:
+				reader.close()
+			except:
+				pass
+			try:
+				filein.close()
+			except:
+				pass
+			try:
+				fileout.close()
+			except:
+				pass
 
 def getTimePoint(reader, omeMeta):
 	""" Extract timeStamp from file """
@@ -283,6 +285,8 @@ def concatenateImagePlus(files, outfile):
 		concatImgPlus.close()
 
 	return outfile
-if __name__=="__main__":
-	run()
+run()
+	
+#if __name__=="__main__":
+#	run()
 #dC = directoryChooser()
