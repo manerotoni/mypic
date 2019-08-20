@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} PipelineConstructor 
    Caption         =   "MyPiC"
-   ClientHeight    =   17775
-   ClientLeft      =   45
-   ClientTop       =   375
-   ClientWidth     =   16005
+   ClientHeight    =   17784
+   ClientLeft      =   48
+   ClientTop       =   372
+   ClientWidth     =   16008
    OleObjectBlob   =   "PipelineConstructor.frx":0000
    ShowModal       =   0   'False
    StartUpPosition =   1  'CenterOwner
@@ -69,7 +69,7 @@ Public Sub UserForm_Initialize()
     
 On Error GoTo UserForm_Initialize_Error
 
-    Version = "v0.8.2"
+    Version = "v0.8.3"
     
     Me.Caption = Me.Caption + " " + Version
 
