@@ -1,3 +1,4 @@
 ### changes
+* version 0.8.3: Fix error when max pts is used for trigger. Now pts are added to trigger 1 pipeline only up to #max pts is reached.
 * version 0.8.2: Fix of errors when reading in jobs.
 * version 0.8: minors, alphabetical sorting of jobs.
