@@ -1,9 +1,9 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} JobSetter 
    Caption         =   "JobSetter"
-   ClientHeight    =   6390
-   ClientLeft      =   45
-   ClientTop       =   375
+   ClientHeight    =   6396
+   ClientLeft      =   48
+   ClientTop       =   372
    ClientWidth     =   7260
    OleObjectBlob   =   "JobSetter.frx":0000
    ShowModal       =   0   'False
@@ -372,6 +372,7 @@ End Sub
 Private Sub AddImgJobFromFile(FileName As String)
     Dim FSO As New FileSystemObject
     Dim JobName As String
+    Dim Recording As DsRecording
 On Error GoTo AddImgJobFromFile_Error
 
     If Not FileExist(FileName) Then
@@ -382,9 +383,14 @@ On Error GoTo AddImgJobFromFile_Error
         MsgBox "Name of imaging job must be unique!", VbExclamation, "JobSetter warning"
         Exit Sub
     End If
+    Recording = getRecordingFromImageFile(FileName, ZEN)
+    If Recording.MultiViewAcquisition Then
+        MsgBox "You can't use Multiviews in MyPic"
+        Exit Sub
+    End If
     ImgJobList.AddItem JobName
     ImgJobList.Selected(ImgJobList.ListCount - 1) = True
-    AddJob ImgJobs, ImgJobList.List(ImgJobList.ListCount - 1), ImgJobList.ListCount - 1, getRecordingFromImageFile(FileName, ZEN), ZEN
+    AddJob ImgJobs, ImgJobList.List(ImgJobList.ListCount - 1), ImgJobList.ListCount - 1, Recording, ZEN
     setLabels ImgJobList.ListCount - 1
     setTrackNames ImgJobList.ListCount - 1
 
@@ -581,7 +587,10 @@ Private Sub SetJobButton_Click()
     ''' Read imaging Job from ZEN and import into macro. ZEN->Macro button'
     Dim index As Integer
 On Error GoTo SetJobButton_Click_Error
-
+    If Lsm5.DsRecording.MultiViewAcquisition Then
+        MsgBox "You can't use MultiView with MyPic. Please deselect multiview and try again."
+        Exit Sub
+    End If
     index = ImgJobList.ListIndex
     If index = -1 Then
         MsgBox "Job list is empty or you need to select one job", VbExclamation, "JobSetter Warning"
@@ -834,7 +843,11 @@ Private Sub AddJobButton_Click()
     Dim Name As String
     Dim Names() As String
 On Error GoTo AddJobButton_Click_Error
-
+    If Lsm5.DsRecording.MultiViewAcquisition Then
+        MsgBox "You can't use MultiView with MyPic. Please deselect multiview and try again."
+        Exit Sub
+    End If
+    
     Name = InputBox("Name of imaging job to be created from current ZEN settings", "JobSetter: Define job name")
     'Cancel pressed
     If StrPtr(Name) = 0 Then Exit Sub
@@ -893,6 +906,10 @@ On Error GoTo setTrackNames_Error
         If iTrack < 5 Then
             ChannelOK = False
             Set Track = ImgJobs(index).Recording.TrackObjectByMultiplexOrder(i, 1)
+            If Track Is Nothing Then
+               GoTo nextstep
+            End If
+            
             For j = 0 To Track.DataChannelCount - 1
                 If Track.DataChannelObjectByIndex(j, 1).Acquire = True Then
                     ChannelOK = True
@@ -909,6 +926,7 @@ On Error GoTo setTrackNames_Error
                 iTrack = iTrack + 1
             End If
         End If
+nextstep:
     Next i
 
    On Error GoTo 0
