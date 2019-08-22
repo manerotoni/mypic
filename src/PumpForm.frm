@@ -2,9 +2,9 @@ VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} PumpForm 
    Caption         =   "Start imaging and pump"
    ClientHeight    =   5190
-   ClientLeft      =   45
-   ClientTop       =   375
-   ClientWidth     =   4530
+   ClientLeft      =   48
+   ClientTop       =   372
+   ClientWidth     =   4524
    OleObjectBlob   =   "PumpForm.frx":0000
    ShowModal       =   0   'False
    StartUpPosition =   1  'CenterOwner

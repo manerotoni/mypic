@@ -1,7 +1,7 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} JobSetter 
    Caption         =   "JobSetter"
-   ClientHeight    =   6396
+   ClientHeight    =   6390
    ClientLeft      =   48
    ClientTop       =   372
    ClientWidth     =   7260
@@ -384,8 +384,7 @@ On Error GoTo AddImgJobFromFile_Error
         Exit Sub
     End If
     Recording = getRecordingFromImageFile(FileName, ZEN)
-    If Recording.MultiViewAcquisition Then
-        MsgBox "You can't use Multiviews in MyPic"
+    If isMultiView(Recording) Then
         Exit Sub
     End If
     ImgJobList.AddItem JobName
@@ -587,8 +586,7 @@ Private Sub SetJobButton_Click()
     ''' Read imaging Job from ZEN and import into macro. ZEN->Macro button'
     Dim index As Integer
 On Error GoTo SetJobButton_Click_Error
-    If Lsm5.DsRecording.MultiViewAcquisition Then
-        MsgBox "You can't use MultiView with MyPic. Please deselect multiview and try again."
+    If isMultiView(Lsm5.DsRecording) Then
         Exit Sub
     End If
     index = ImgJobList.ListIndex
@@ -843,10 +841,10 @@ Private Sub AddJobButton_Click()
     Dim Name As String
     Dim Names() As String
 On Error GoTo AddJobButton_Click_Error
-    If Lsm5.DsRecording.MultiViewAcquisition Then
-        MsgBox "You can't use MultiView with MyPic. Please deselect multiview and try again."
+    If isMultiView(Lsm5.DsRecording) Then
         Exit Sub
     End If
+
     
     Name = InputBox("Name of imaging job to be created from current ZEN settings", "JobSetter: Define job name")
     'Cancel pressed
@@ -981,10 +979,25 @@ On Error GoTo DeleteJobButton_Click_Error
    Exit Sub
 
 DeleteJobButton_Click_Error:
-
     LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
     ") in procedure DeleteJobButton_Click of Form JobSetter at line " & Erl & " "
 End Sub
+
+'---------------------------------------------------------------------------------------
+' Procedure : isMultiView
+' Purpose   : Check if system is Spim and if Recording is Multiview. True in case Multiview
+' Variables :
+'   Recording  - a DsRecording
+'---------------------------------------------------------------------------------------
+'
+Private Function isMultiView(Recording As DsRecording) As Boolean
+    If Lsm5.Info.IsSPIM Then
+        If Recording.MultiViewAcquisition Then
+            MsgBox "MyPic does not allow for MultiView acquisition. Uncheck the MultiView option and try again"
+            isMultiView = True
+        End If
+    End If
+End Function
 
 ''
 ' Add imaging job Recording to JobsV with Name at index base 0

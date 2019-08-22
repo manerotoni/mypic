@@ -30,6 +30,7 @@ Private Type GridPoint
     Name As String    'this should be used as prefix for the name, e.g. siRNA name
     fcsName As String
     stgPos As Vector  'this is a stage position
+    rot As Double     'rotation of the stage SPIM
     fcsPos() As Vector 'this are aboslute position where to take measurments in meter. X, Y is with respect to center of image (current pos) Z (in m) absolute position
     fcsImage As String
     fcsPosPx() As Vector ' this are px positions using the usual convention 0,0,0 is upper left and bottom of image stack

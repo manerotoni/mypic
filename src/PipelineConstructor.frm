@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} PipelineConstructor 
    Caption         =   "MyPiC"
-   ClientHeight    =   17784
+   ClientHeight    =   8880
    ClientLeft      =   48
    ClientTop       =   372
-   ClientWidth     =   16008
+   ClientWidth     =   8472
    OleObjectBlob   =   "PipelineConstructor.frx":0000
    ShowModal       =   0   'False
    StartUpPosition =   1  'CenterOwner

@@ -77,12 +77,12 @@ Public Const OFN_SHOWHELP As Long = &H10&
 
 
 
-Public Function ShowOpen(Filter As String, Flags As Long, Optional fileName As String = "", Optional initDir As String = "", Optional DialogTitle As String = "Open") As String
+Public Function ShowOpen(Filter As String, Flags As Long, Optional FileName As String = "", Optional initDir As String = "", Optional DialogTitle As String = "Open") As String
     Dim Buffer As String
     Dim Result As Long
     Dim ComDlgOpenFileName As OPENFILENAME
     
-    Buffer = fileName & String$(600 - Len(fileName), 0)
+    Buffer = FileName & String$(600 - Len(FileName), 0)
     
     With ComDlgOpenFileName
         .lStructSize = Len(ComDlgOpenFileName)
@@ -106,13 +106,13 @@ Public Function ShowOpen(Filter As String, Flags As Long, Optional fileName As S
     
 End Function
 
-Public Function ShowSave(Filter As String, Flags As Long, fileName As String, Optional initDir As String = "", Optional DialogTitle As String = "Save As") As String
+Public Function ShowSave(Filter As String, Flags As Long, FileName As String, Optional initDir As String = "", Optional DialogTitle As String = "Save As") As String
                            
     Dim Buffer As String
     Dim Result As Long
     Dim ComDlgOpenFileName As OPENFILENAME
     
-    Buffer = fileName & String$(600 - Len(fileName), 0)
+    Buffer = FileName & String$(600 - Len(FileName), 0)
     
     With ComDlgOpenFileName
         .lStructSize = Len(ComDlgOpenFileName)

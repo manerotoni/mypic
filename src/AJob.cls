@@ -29,7 +29,7 @@ Public SamplingMethod As Long
 Public BitDepth As Long
 Private ptimeToAcquire As Double 'time to acquire a job in seconds
 '''a Job can also have Rois associated to it
-Private Rois() As roi
+Private Rois() As Roi
 ''Number of Rois associated to the Job
 Private pRoiMaxNr As Integer
 
@@ -297,7 +297,7 @@ Public Sub setRoiMaxNr(roiMaxNr As Integer)
     Else
         ReDim Rois(0 To pRoiMaxNr - 1)
         For i = 0 To pRoiMaxNr - 1
-            Set Rois(i) = New roi
+            Set Rois(i) = New Roi
         Next i
     End If
 End Sub
@@ -315,7 +315,7 @@ End Sub
 ''
 ' load Roi from ARoi inti class
 ''
-Public Sub setRoi(ARoi As roi, roiNr As Integer)
+Public Sub setRoi(ARoi As Roi, roiNr As Integer)
     If UBound(Rois) <= roiNr Then
         Rois(roiNr).setRoi ARoi.roiType, ARoi.roiAim, ARoi.getX, ARoi.getY
     Else
@@ -326,7 +326,7 @@ End Sub
 ''
 ' load Rois into class
 ''
-Public Sub setRois(RoisIn() As roi)
+Public Sub setRois(RoisIn() As Roi)
     If isArrayEmpty(RoisIn) Then
          LogManager.UpdateErrorLog "AJob.setRois tried to initialize Rois with empty vector"
     Else
@@ -338,7 +338,7 @@ End Sub
 '''
 ' getRoi: returns a Roi
 '''
-Public Function getRoi(roiNr As Integer) As roi
+Public Function getRoi(roiNr As Integer) As Roi
     If UBound(Rois) <= roiNr Then
         Set getRoi = Rois(roiNr)
     Else
@@ -372,7 +372,7 @@ End Function
 
 
 Public Function createRois() As Boolean
-    Dim ARoi As roi
+    Dim ARoi As Roi
     Dim i As Integer
     ClearVectorElements
     For i = 0 To pRoiMaxNr - 1

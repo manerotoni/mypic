@@ -145,6 +145,7 @@ On Error GoTo AcquireJob_Error
     Dim SuccessRecenter As Boolean
     Dim Time As Double
     Dim cStgPos As Vector 'current stage position
+    Dim PosUnit As New PositionUnit
     cStgPos = getCurrentPosition
     
     'stop any running jobs
@@ -190,7 +191,7 @@ On Error GoTo AcquireJob_Error
     Debug.Print "Time to put job and recenter pre " & Round(Timer - Time, 3)
     If DebugCode And isZStack(Lsm5.DsRecording) Then
         'SleepWithEvents (1000)
-        cStgPos.Z = Lsm5.Hardware.CpFocus.position
+        cStgPos.Z = PosUnit.GetPositionZ
 #If ZENvC >= 2012 Then
         If (Abs(Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z)) > 0.01) Or (Abs(Lsm5.DsRecording.ReferenceZ - position.Z) > 0.01) Then
             LogManager.UpdateWarningLog " Problems in settings ZStack before imaging. Sample0Z_diff " _
@@ -228,7 +229,7 @@ On Error GoTo AcquireJob_Error
     
     If isZStack(Lsm5.DsRecording) Then
         'Warning if there are any issues with the central slice
-        cStgPos.Z = Lsm5.Hardware.CpFocus.position
+        cStgPos.Z = PosUnit.GetPositionZ
 #If ZENvC >= 2012 Then
         If (Abs(Lsm5.DsRecording.Sample0Z - (getHalfZRange(Lsm5.DsRecording) + position.Z - cStgPos.Z)) > 0.01) Or (Abs(Lsm5.DsRecording.ReferenceZ - position.Z) > 0.01) Then
             LogManager.UpdateWarningLog " Problems returning to rest position after imaging. Sample0Z_diff " _

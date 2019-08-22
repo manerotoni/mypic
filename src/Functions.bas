@@ -9,6 +9,7 @@ Public Type Vector
   X As Double
   Y As Double
   Z As Double
+  A As Double
 End Type
 
 Public Type WellPoint

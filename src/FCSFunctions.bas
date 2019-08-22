@@ -13,16 +13,16 @@ Public FcsPositions As AimFcsSamplePositionParameters
 '   GetFcsPosition(PosX As Double, PosY As Double, PosZ As Double)
 '   reads position of small crosshair
 '''''
-Public Sub getFcsPosition(PosX As Double, PosY As Double, PosZ As Double, Optional pos As Long = -1)
+Public Sub getFcsPosition(posX As Double, posY As Double, PosZ As Double, Optional pos As Long = -1)
     If pos = -1 Then
         'read actual position of crosshair
         Set ViewerGuiServer = Lsm5.ViewerGuiServer
-        ViewerGuiServer.FcsGetLsmCoordinates PosX, PosY, PosZ
+        ViewerGuiServer.FcsGetLsmCoordinates posX, posY, PosZ
     Else
         Set FcsControl = Fcs
         Set FcsPositions = FcsControl.SamplePositionParameters
-        PosX = FcsPositions.PositionX(pos)
-        PosY = FcsPositions.PositionY(pos)
+        posX = FcsPositions.PositionX(pos)
+        posY = FcsPositions.PositionY(pos)
         PosZ = FcsPositions.PositionZ(pos)
     End If
 End Sub

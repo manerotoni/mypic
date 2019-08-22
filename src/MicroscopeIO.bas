@@ -614,15 +614,15 @@ Public Sub SaveFcsPositionList(sFile As String, positionsPx() As Vector, imageNa
     Close
     Dim iFileNum As Integer
     Dim i As Long
-    Dim PosX As Double
-    Dim PosY As Double
+    Dim posX As Double
+    Dim posY As Double
     Dim PosZ As Double
     iFileNum = FreeFile()
     Open sFile & ".txt" For Output As iFileNum
     Print #iFileNum, "%X Y Z (meter): ZEN Fcs position convention 0, 0  is center of image, Z is absolute coordinate"
     For i = 0 To GetFcsPositionListLength - 1
-        getFcsPosition PosX, PosY, PosZ, i
-        Print #iFileNum, PosX & " " & PosY & " " & PosZ
+        getFcsPosition posX, posY, PosZ, i
+        Print #iFileNum, posX & " " & posY & " " & PosZ
     Next i
     On Error GoTo ErrorHandle2:
     Print #iFileNum, "%X Y Z (px). Imaging convention 0,0,0 is upper left corner bottom slice"
@@ -636,7 +636,7 @@ Public Sub SaveFcsPositionList(sFile As String, positionsPx() As Vector, imageNa
     Print #iFileNum, "<?xml  version=" & VBA.Chr(34) & "1.0" & VBA.Chr(34) & "?>" & vbCrLf & "<xml>"
     Print #iFileNum, "<Image Name=" & VBA.Chr(34) & imageName & VBA.Chr(34) & "></Image>"
     For i = 0 To GetFcsPositionListLength - 1
-        getFcsPosition PosX, PosY, PosZ, i
+        getFcsPosition posX, posY, PosZ, i
         Print #iFileNum, "<object ID= " & VBA.Chr(34) & 1 & VBA.Chr(34) & ">"
         If UBound(classNames) >= i + 1 Then
             If classNames(0) = "" Then
@@ -717,18 +717,28 @@ Public Function FailSafeMoveStageXY(X As Double, Y As Double) As Boolean
     Dim WaitTime As Integer
     Dim Prec As Double
     Dim Trial As Integer
-    
-On Error GoTo FailSafeMoveStageXY_Error
-
+    Dim PosUnit As New PositionUnit
     Prec = 1 'um (Thorsten Lenser uses 1 um)
-    Trial = 1
+On Error GoTo FailSafeMoveStageXY_Error
 SetPosition:
+    CurrentX = PosUnit.GetPositionX
+    CurrentY = PosUnit.GetPositionY
+    If (Abs(CurrentX - X) > Prec) Then
+        PosUnit.SetPositionX (X)
+    End If
+    If (Abs(CurrentY - Y) > Prec) Then
+        PosUnit.SetPositionY (Y)
+    End If
+    ' stop here for the SPIM
+    If Lsm5.Info.IsSPIM Then
+        FailSafeMoveStageXY = True
+    End If
+    Trial = 1
     WaitTime = 0
-    Lsm5.Hardware.CpStages.GetXYPosition CurrentX, CurrentY
-    Lsm5.Hardware.CpStages.SetXYPosition X, Y
     Do While (Abs(CurrentX - X) > Prec) Or (Abs(CurrentY - Y) > Prec) Or Lsm5.Hardware.CpStages.IsBusy
         SleepWithEvents (100)
-        Lsm5.Hardware.CpStages.GetXYPosition CurrentX, CurrentY
+        CurrentX = PosUnit.GetPositionX
+        CurrentY = PosUnit.GetPositionY
         WaitTime = WaitTime + 1
         If ScanStop Then
             ScanStop = True
@@ -763,7 +773,7 @@ End Function
 '   Wrapper to run with ZBacklash (generally ZBacklash is zero) or not
 '''''
 Public Function FailSafeMoveStageZ(Z As Double) As Boolean
-    If ZBacklash <> 0 Then
+    If ZBacklash <> 0 And Not Lsm5.Info.IsSPIM Then
         If Not FailSafeMoveStageZExec(Z - ZBacklash) Then
             Exit Function
         End If
@@ -781,6 +791,7 @@ Public Function FailSafeMoveStageZExec(Z As Double) As Boolean
     Dim WaitTime As Integer
     Dim Prec As Double
     Dim Trial As Integer
+    Dim PosUnit As New PositionUnit
 On Error GoTo FailSafeMoveStageZExec_Error
 
     Prec = 0.2 'Used in MultitimeZEN2012 Thoresten Lenser
@@ -788,12 +799,17 @@ On Error GoTo FailSafeMoveStageZExec_Error
     
 SetPosition:
     WaitTime = 0
-    CurrentZ = Lsm5.Hardware.CpFocus.position
-    Lsm5.Hardware.CpFocus.position = Z
+    CurrentZ = PosUnit.GetPositionZ
+    If Abs(CurrentZ - Z) > Prec Then
+        PosUnit.SetPositionZ (Z)
+    End If
+    If Lsm5.Info.IsSPIM Then
+        FailSafeMoveStageZExec = True
+    End If
     
     Do While (Abs(CurrentZ - Z) > Prec) Or Lsm5.Hardware.CpFocus.IsBusy
         SleepWithEvents (100)
-        CurrentZ = Lsm5.Hardware.CpFocus.position
+        CurrentZ = PosUnit.GetPositionZ
         WaitTime = WaitTime + 1
         If ScanStop Then
             Exit Function
@@ -864,6 +880,17 @@ MoveToNextLocation_Error:
 End Function
 
 Public Function getCurrentPosition() As Vector
+    If Lsm5.Info.IsSPIM Then
+        Dim PosUnit As New PositionUnit
+        Debug.Print PosUnit.GetPositionX
+        
+        getCurrentPosition.X = PosUnit.GetPositionX
+        getCurrentPosition.Y = PosUnit.GetPositionY
+        getCurrentPosition.Z = PosUnit.GetPositionZ
+        getCurrentPosition.A = PosUnit.GetPositionAlpha
+        Exit Function
+    End If
+        
     getCurrentPosition.X = Lsm5.Hardware.CpStages.PositionX
     getCurrentPosition.Y = Lsm5.Hardware.CpStages.PositionY
     getCurrentPosition.Z = Lsm5.Hardware.CpFocus.position
@@ -984,6 +1011,7 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
     Dim ZOffset As Double
     Dim ReferenceZ As Double
     Dim Prec As Double
+    Dim PosUnit As New PositionUnit
     'Dim ScanController As AimScanController
     'Set ScanController = Lsm5.ExternalDsObject.ScanController
         
@@ -992,7 +1020,7 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
     cnt = 0
     
     'ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too, leave it out for the moment)'''
-    pos = Lsm5.Hardware.CpFocus.position
+    pos = PosUnit.GetPositionZ
     ZOffset = getHalfZRange(Lsm5.DsRecording) + pos - Z
     ReferenceZ = Lsm5.DsRecording.ReferenceZ
     
@@ -1048,6 +1076,7 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
     Dim pos As Double
     Dim ZOffset As Double
     Dim Prec As Double
+    Dim PosUnit As New PositionUnit
     'Dim ScanController As AimScanController
     'Set ScanController = Lsm5.ExternalDsObject.ScanController
         
@@ -1056,7 +1085,7 @@ Public Function WaitForRecentering2011(Z As Double, Optional Success As Boolean 
     cnt = 0
     
     'ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too, leave it out for the moment)'''
-    pos = Lsm5.Hardware.CpFocus.position
+    pos = PosUnit.GetPositionZ
     ZOffset = getHalfZRange(Lsm5.DsRecording) + pos - Z
     
     If isZStack(Lsm5.DsRecording) Then
@@ -1153,6 +1182,7 @@ Public Function Recenter2011(Z As Double) As Boolean
     Dim ZOffset As Double
     Dim Prec As Double
     Dim count As Integer
+    Dim PosUnit As New PositionUnit
     'Dim ScanController As AimScanController
     'Set ScanController = Lsm5.ExternalDsObject.ScanController
     count = 0
@@ -1160,7 +1190,7 @@ Public Function Recenter2011(Z As Double) As Boolean
     
 
     'ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
-    pos = Lsm5.Hardware.CpFocus.position
+    pos = PosUnit.GetPositionZ
     'ScanController.LockAll False
     'If Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then 'Move at the start alwayes if piezo, for ZEN 2012 the best strategy is always to move at the start
     If Round(pos, PrecZ) <> Round(Z, PrecZ) Then ' move only if necessary
@@ -1215,6 +1245,7 @@ Public Function Recenter2011(Z As Double) As Boolean
     Dim ZOffset As Double
     Dim Prec As Double
     Dim count As Integer
+    Dim PosUnit As New PositionUnit
     'Dim ScanController As AimScanController
     'Set ScanController = Lsm5.ExternalDsObject.ScanController
     count = 0
@@ -1222,7 +1253,7 @@ Public Function Recenter2011(Z As Double) As Boolean
     
 
     'ScanController.LockAll True ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
-    pos = Lsm5.Hardware.CpFocus.position
+    pos = PosUnit.GetPositionZ
     'ScanController.LockAll False ''The lock command may be recquired to properly pass command (without it it seems to work too)'''
     
     If Lsm5.DsRecording.SpecialScanMode = "ZScanner" Then 'Move at the start always if piezo
@@ -1323,6 +1354,7 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As In
 
 
     'Gets the dimensions of the image in X (Columns), Y (lines) and Z (Frames)
+
     ColMax = RecordingDoc.Recording.SamplesPerLine
     LineMax = RecordingDoc.Recording.LinesPerFrame
     
