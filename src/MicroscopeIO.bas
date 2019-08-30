@@ -705,6 +705,23 @@ Public Sub SystemVersionOffset(Optional Tmp As Boolean) ' tmp is a hack to hide 
 End Sub
 
 
+Public Function FailSafeRotateSPIM(A As Double) As Boolean
+    Dim CurrentA As Double
+    Dim PosUnit As New PositionUnit
+    Dim Prec As Double
+    Prec = 0.1
+On Error GoTo FailSafeRotateSPIM_Error
+    CurrentA = PosUnit.GetPositionAlpha
+    If (Abs(CurrentA - A) > Prec) Then
+        PosUnit.SetPositionAlpha (A)
+    End If
+    FailSafeRotateSPIM = True
+    Exit Function
+FailSafeRotateSPIM_Error:
+    LogManager.UpdateErrorLog "Error " & Err.number & " (" & Err.Description & _
+    ") in procedure FailSafeRotateSPIM of Module MicroscopeIO at line " & Erl & " "
+        
+End Function
 
 '''''
 '   Moves stage and wait till it is finished. Repeat the process twice if precision is not achieved
@@ -879,15 +896,21 @@ MoveToNextLocation_Error:
     ") in procedure MoveToNextLocation of Module MicroscopeIO at line " & Erl & " "
 End Function
 
+Public Function getCurrentAlpha() As Double
+    If Lsm5.Info.IsSPIM Then
+        Dim PosUnit As New PositionUnit
+        getCurrentAlpha = PosUnit.GetPositionAlpha
+    Else
+        getCurrentAlpha = 0
+    End If
+End Function
+
 Public Function getCurrentPosition() As Vector
     If Lsm5.Info.IsSPIM Then
         Dim PosUnit As New PositionUnit
-        Debug.Print PosUnit.GetPositionX
-        
         getCurrentPosition.X = PosUnit.GetPositionX
         getCurrentPosition.Y = PosUnit.GetPositionY
         getCurrentPosition.Z = PosUnit.GetPositionZ
-        getCurrentPosition.A = PosUnit.GetPositionAlpha
         Exit Function
     End If
         
@@ -1309,6 +1332,41 @@ Public Function Recenter2011(Z As Double) As Boolean
 End Function
 #End If
 
+''
+' returns size of image in pixels base 0
+''''
+Public Function GetimageSizePx(Recording As DsRecording) As Vector
+    Dim TX As Integer
+    Dim TY As Integer
+    TX = 1
+    TY = 1
+    If Lsm5.Info.IsSPIM Then
+        GetimageSizePx.X = Recording.CameraFrameWidth
+        GetimageSizePx.Y = Recording.CameraFrameHeight
+    Else
+        If Recording.TileAcquisition Then
+            TX = Recording.TilesX
+            TY = Recording.TilesY
+        End If
+        GetimageSizePx.X = Round(Recording.SamplesPerLine * (TX - (TX - 1) * Recording.TileAcquisitionOverlap))
+        
+        If Recording.ScanMode = "ZScan" Then
+            GetimageSizePx.Y = 1
+        Else
+            GetimageSizePx.Y = Round(Recording.LinesPerFrame * (TY - (TY - 1) * Recording.TileAcquisitionOverlap))
+        End If
+    End If
+    Dim ScanMode As String
+    ScanMode = Recording.ScanMode
+    If ScanMode = "ZScan" Or ScanMode = "Stack" Then
+        GetimageSizePx.Z = Recording.FramesPerStack
+    Else
+        GetimageSizePx.Z = 1
+    End If
+
+End Function
+
+
 
 ''''
 ' Compute the centerofmass of image stored in RecordingDoc return values according
@@ -1339,13 +1397,13 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As In
     Dim YMinMax(1) As Long
     Dim ZMinMax(1) As Long
     Dim thresh As Double
+    Dim imgSizePx As Vector
     DoEvents
        
     'Find the channel to track
 
     Debug.Print RecordingDoc.ChannelName(TrackingChannel)
     
-   
     If TrackingChannel > RecordingDoc.GetDimensionChannels - 1 Or TrackingChannel < -1 Then
         LogManager.UpdateErrorLog " MassCenter Was not able to find channel: " & TrackingChannel & " for tracking in " & _
         GetSetting(appname:="OnlineImageAnalysis", section:="macro", Key:="filePath")
@@ -1354,18 +1412,13 @@ Public Function MassCenter(RecordingDoc As DsRecordingDoc, TrackingChannel As In
 
 
     'Gets the dimensions of the image in X (Columns), Y (lines) and Z (Frames)
+    imgSizePx = GetimageSizePx(RecordingDoc.Recording)
+        
+    ColMax = CLng(imgSizePx.X)
+    LineMax = CLng(imgSizePx.Y)
+    FrameMax = CLng(imgSizePx.Z)
 
-    ColMax = RecordingDoc.Recording.SamplesPerLine
-    LineMax = RecordingDoc.Recording.LinesPerFrame
     
-    If RecordingDoc.Recording.ScanMode = "ZScan" Then
-        LineMax = 1
-    End If
-    If RecordingDoc.Recording.ScanMode = "ZScan" Or RecordingDoc.Recording.ScanMode = "Stack" Then
-        FrameMax = RecordingDoc.Recording.framesPerStack
-    Else
-        FrameMax = 1
-    End If
     
      
     'Initiallize tables to store projected (integrated) pixels values in the 3 dimensions
@@ -1497,7 +1550,7 @@ End Function
 '''
 Public Function getHalfZRange(ARecording As DsRecording) As Double
     If isZStack(ARecording) Then
-        getHalfZRange = ARecording.frameSpacing * (ARecording.framesPerStack - 1) / 2
+        getHalfZRange = ARecording.frameSpacing * (ARecording.FramesPerStack - 1) / 2
     Else
         getHalfZRange = 0
     End If

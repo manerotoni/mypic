@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} PipelineConstructor 
    Caption         =   "MyPiC"
-   ClientHeight    =   8880
+   ClientHeight    =   13875
    ClientLeft      =   48
    ClientTop       =   372
-   ClientWidth     =   8472
+   ClientWidth     =   19212
    OleObjectBlob   =   "PipelineConstructor.frx":0000
    ShowModal       =   0   'False
    StartUpPosition =   1  'CenterOwner
@@ -28,6 +28,7 @@ Private Lett() As Variant
 Public Version As String
 Private TestedPipelines
 Private positionOption As Integer
+
 
 
 
@@ -136,9 +137,23 @@ NoError:
     JobChoiceList.ColumnCount = 2
     JobChoiceList.ColumnWidths = "30;200"
     JobChoiceFrame.Visible = False
-    PositionsList.ColumnCount = 5
-    PositionsList.ColumnWidths = "20;25;35;35;50"
-
+    If Lsm5.Info.IsSPIM Then
+        PositionsList.ColumnCount = 6
+        PositionsList.ColumnWidths = "20;25;35;35;50;35"
+        StartPumpExpButton.Visible = False
+        label_R_SP.Visible = True
+        label_plate.Visible = False
+        label_ID.Visible = False
+        PositionButton3.Enabled = False
+        PositionButton4.Enabled = False
+        PlateType.Visible = False
+        WellID.Visible = False
+    Else
+        PositionsList.ColumnCount = 5
+        PositionsList.ColumnWidths = "20;25;35;35;50"
+        label_R_SP.Visible = False
+    
+    End If
     Set FocusMethods = New Dictionary
     FocusMethods.Add AnalyseImage.No, "None"
     FocusMethods.Add AnalyseImage.CenterOfMassThr, "Center of Mass (thr)"
@@ -1003,12 +1018,10 @@ Private Sub PositionButton5_Click()
 End Sub
 
 Private Sub AddPositionButton_Click()
-    Dim posVec As Vector
-    posVec = getCurrentPosition
-    AddPosition WellID.value, posVec
+    AddPosition WellID.value, getCurrentPosition, getCurrentAlpha
 End Sub
 
-Private Sub AddPosition(ID As String, pos As Vector)
+Private Sub AddPosition(ID As String, pos As Vector, Alpha As Double)
     With PositionsList
         .AddItem
         .List(.ListCount - 1, 0) = .ListCount
@@ -1016,6 +1029,9 @@ Private Sub AddPosition(ID As String, pos As Vector)
         .List(.ListCount - 1, 2) = pos.X
         .List(.ListCount - 1, 3) = pos.Y
         .List(.ListCount - 1, 4) = pos.Z
+        If Lsm5.Info.IsSPIM Then
+            .List(.ListCount - 1, 5) = Alpha
+        End If
         .ListIndex = .ListCount - 1
     End With
 End Sub
@@ -1025,6 +1041,10 @@ Private Sub MoveToPositionButton_Click()
         If .ListIndex > -1 Then
             FailSafeMoveStageXY CDbl(.List(.ListIndex, 2)), CDbl(.List(.ListIndex, 3))
             FailSafeMoveStageZ CDbl(.List(.ListIndex, 4))
+            If Lsm5.Info.IsSPIM Then
+                FailSafeRotateSPIM CDbl(.List(.ListIndex, 5))
+            End If
+                
         End If
     End With
 End Sub
@@ -1038,6 +1058,9 @@ Private Sub UpdatePositionButton_Click()
             .List(.ListIndex, 2) = posVec.X
             .List(.ListIndex, 3) = posVec.Y
             .List(.ListIndex, 4) = posVec.Z
+        If Lsm5.Info.IsSPIM Then
+            .List(.ListIndex, 5) = getCurrentAlpha
+        End If
         End If
     End With
 End Sub
@@ -1245,7 +1268,7 @@ On Error GoTo UpdatePositionsListFromGrid_Error
     Do ''Cycle all positions defined in grid
         If locGrid.getThisValid Then
             index = index + 1
-            AddPosition WellID.value, locGrid.getThisPosition
+            AddPosition WellID.value, locGrid.getThisPosition, locGrid.getThisAlpha
         End If
     Loop While (locGrid.nextGridPt(False) And index < 100)
 

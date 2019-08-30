@@ -82,7 +82,7 @@ On Error GoTo SetJob_Error
         'Debug.Print "nr Lasers " & ZEN.gui.Acquisition.Channels.Track.LaserLine.ItemCount
         
     End If
-    Recording.Sample0Z = Recording.frameSpacing * (Recording.framesPerStack - 1) / 2
+    Recording.Sample0Z = Recording.frameSpacing * (Recording.FramesPerStack - 1) / 2
     Me.pixelDwell = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SampleObservationTime
     Me.SamplingNumber = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingNumber
     Me.SamplingMethod = Lsm5.DsRecording.TrackObjectByMultiplexOrder(0, 1).SamplingMethod
@@ -218,23 +218,28 @@ Public Function imageSizePx() As Vector
     Dim TY As Integer
     TX = 1
     TY = 1
-    If Recording.TileAcquisition Then
-        TX = Recording.TilesX
-        TY = Recording.TilesY
-    End If
-    imageSizePx.X = Round(Recording.SamplesPerLine * (TX - (TX - 1) * Recording.TileAcquisitionOverlap))
-    
-    If Recording.ScanMode = "ZScan" Then
-        imageSizePx.Y = 1
+    If Lsm5.Info.IsSPIM Then
+        imageSizePx.X = Recording.CameraFrameWidth
+        imageSizePx.Y = Recording.CameraFrameHeight
     Else
-        imageSizePx.Y = Round(Recording.LinesPerFrame * (TY - (TY - 1) * Recording.TileAcquisitionOverlap))
+        If Recording.TileAcquisition Then
+            TX = Recording.TilesX
+            TY = Recording.TilesY
+        End If
+        imageSizePx.X = Round(Recording.SamplesPerLine * (TX - (TX - 1) * Recording.TileAcquisitionOverlap))
+        
+        If Recording.ScanMode = "ZScan" Then
+            imageSizePx.Y = 1
+        Else
+            imageSizePx.Y = Round(Recording.LinesPerFrame * (TY - (TY - 1) * Recording.TileAcquisitionOverlap))
+        End If
     End If
-    
     If isZStack Then
-        imageSizePx.Z = Recording.framesPerStack
+        imageSizePx.Z = Recording.FramesPerStack
     Else
         imageSizePx.Z = 1
     End If
+
 End Function
 
 
@@ -428,9 +433,9 @@ Public Function jobDescriptor() As String
     End If
     
     If isZStack Then
-        Description = Description & "Z-Slices    = " & Recording.framesPerStack & vbCrLf
+        Description = Description & "Z-Slices    = " & Recording.FramesPerStack & vbCrLf
         Description = Description & "Z-Interval  = " & Round(Recording.frameSpacing, 2) & " um" & vbCrLf
-        Description = Description & "Z-Range     = " & Round(Recording.frameSpacing, 2) * (Recording.framesPerStack - 1) & " um" & vbCrLf
+        Description = Description & "Z-Range     = " & Round(Recording.frameSpacing, 2) * (Recording.FramesPerStack - 1) & " um" & vbCrLf
     Else
         Description = Description & "Z-Slices = " & 1 & vbCrLf
     End If
@@ -488,7 +493,7 @@ Public Function jobDescriptorSettings() As String
     Descriptor = Descriptor & "ScanDirection " & Recording.ScanDirection & vbCrLf
     Descriptor = Descriptor & "CorrX " & Me.CorrX & vbCrLf
     Descriptor = Descriptor & "CorrY " & Me.CorrY & vbCrLf
-    Descriptor = Descriptor & "FramesPerStack " & Recording.framesPerStack & vbCrLf
+    Descriptor = Descriptor & "FramesPerStack " & Recording.FramesPerStack & vbCrLf
     Descriptor = Descriptor & "FrameSpacing " & Recording.frameSpacing & vbCrLf
     Descriptor = Descriptor & "Bleaching " & isBleaching & vbCrLf
     Descriptor = Descriptor & "UseRoi " & Me.UseRoi & vbCrLf
@@ -561,7 +566,7 @@ Public Function changeJobFromDescriptor(Descriptor As String, value As Variant)
         Case "CorrY":
             Me.CorrY = CDbl(value)
         Case "FramesPerStack":
-            Recording.framesPerStack = CLng(value)
+            Recording.FramesPerStack = CLng(value)
         Case "FrameSpacing":
             Recording.frameSpacing = CDbl(value)
         Case "Bleaching":

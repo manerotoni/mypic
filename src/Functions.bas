@@ -9,7 +9,6 @@ Public Type Vector
   X As Double
   Y As Double
   Z As Double
-  A As Double
 End Type
 
 Public Type WellPoint
@@ -102,18 +101,18 @@ Public Function normVector3D(vec As Vector) As Double
     normVector3D = Sqr(vec.X ^ 2 + vec.Y ^ 2 + vec.Z ^ 2)
 End Function
 
-Public Function scaleVector(vec As Vector, alpha As Double) As Vector
-    scaleVector.X = vec.X * alpha
-    scaleVector.Y = vec.Y * alpha
-    scaleVector.Z = vec.Z * alpha
+Public Function scaleVector(vec As Vector, Alpha As Double) As Vector
+    scaleVector.X = vec.X * Alpha
+    scaleVector.Y = vec.Y * Alpha
+    scaleVector.Z = vec.Z * Alpha
 End Function
 
-Public Function scaleVectorList(vec() As Vector, alpha As Double) As Vector()
+Public Function scaleVectorList(vec() As Vector, Alpha As Double) As Vector()
     Dim outVec() As Vector
     ReDim outVec(0 To UBound(vec))
     Dim i As Integer
     For i = 0 To UBound(vec)
-        outVec(i) = scaleVector(vec(i), alpha)
+        outVec(i) = scaleVector(vec(i), Alpha)
     Next i
     scaleVectorList = outVec
 End Function
