@@ -29,9 +29,9 @@ For adaptive feedback microscopy experiments you can use the ImageJ tool Automte
 > MyPiC for ZEN has been tested on Zeiss LSM 780 microscopes with ZEN 2010, 2011, and 2012, and LSM880 microscopes with ZEN2.1 and ZEN2.3. We don’t guarantee that it will work on other configurations and we don’t take any responsibility for damage occuring during or after use of MyPiC.
 
 ## Authors  
-Antonio Politi, EMBL Heidelberg, Ellenberg group
+MyPiC has been originally developed at EMBL Heidelberg in the group of Jan Ellenberg
 
-mail@apoliti.de, politi@embl.de
+mail@apoliti.de, apoliti@mpibpc.mpg.de
 
 
 
