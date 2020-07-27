@@ -20,7 +20,7 @@ The macro allows
 * Flexible combination of several fluorescence correlation spectroscopy (FCS) measurements settings
 * Adaptive Feedback microscopy support of two triggable imaging and FCS workflows
 
-Please refer to the [Wiki](https://git.embl.de/politi/mypic/wikis/home) for further explanations 
+Please refer to the WiKi for further explanations 
 and examples.
 
 To concatenate files generated from a time lapse experiment in MyPiC refer the concat_utils. The original repository is in [https://git.embl.de/politi/concat](https://git.embl.de/politi/concat).
