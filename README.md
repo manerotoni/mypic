@@ -1,6 +1,8 @@
+# LSZ1 branch: Development branch to provide MyPiC functionality to light-sheet microscope LSZ1 of Zeiss.
+
 # Microscopy Pipeline Constructor (MyPiC)
 
-LSZ1 branch: Development branch to provide MyPiC functionality to light-sheet microscope LSZ1 of Zeiss.
+
 
 
 MyPiC is a Visual Basic for Application (VBA) macro to be used with Zeiss confocal microscopes running with the ZEN software (version black). The macro has been developed in the group of Jan Ellenberg, EMBL, Heidelberg and replaces the AutofocusScreenMacro.
