@@ -1,12 +1,14 @@
+# !!! THIS PROJECT MOVED TO https://github.com/manerotoni/mypic/ !!!
+
 # Microscopy Pipeline Constructor (MyPiC)
+
 
 MyPiC is a Visual Basic for Application (VBA) macro to be used with Zeiss confocal microscopes running with the ZEN software (version black). The macro has been developed in the group of Jan Ellenberg, EMBL, Heidelberg and replaces the AutofocusScreenMacro.
 
 > **Supplementary software 2** of 
->>  Quantitative mapping of fluorescently tagged cellular proteins using FCS-calibrated four dimensional imaging
-Antonio Z Politi, Yin Cai, Nike Walther, M. Julius Hossain, Birgit Koch, Malte Wachsmuth, Jan Ellenberg (2018)
-bioRxiv 188862; doi: https://doi.org/10.1101/188862.
-> 
+>>  Quantitative mapping of fluorescently tagged cellular proteins using FCS-calibrated four-dimensional imaging. Antonio Z Politi, Yin Cai, Nike Walther , M Julius Hossain ,
+Birgit Koch, Malte Wachsmuth , Jan Ellenberg. (2018). Nature Protocols, Vol. 13,  DOI: 10.1038/nprot.2018.040
+>
 > Plase cite the above work when using this tool.
 
 The macro allows  
