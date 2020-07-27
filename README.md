@@ -1,5 +1,3 @@
-# !!! THIS PROJECT MOVED TO https://github.com/manerotoni/mypic/ !!!
-
 # Microscopy Pipeline Constructor (MyPiC)
 
 
