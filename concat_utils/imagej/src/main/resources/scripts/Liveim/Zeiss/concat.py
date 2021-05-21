@@ -1,3 +1,9 @@
+# @ File (label = "directory to concat", style = "directory") indir
+# @ File (label = "directory for output", style = "directory") outdir
+# @ Boolean fixt0
+# @ File[] (label = "file to concat") imgfiles
+# @ String (label = "regex for merging several image types") commonregex
+
 '''
 To run concat_.py in fiji you have two options
 Make it a plugin (have to be done only once):
@@ -9,6 +15,8 @@ Run it from the macro editor (have to be done everytime you use the macro):
 1) Plugins -> New -> Macro
 2) Open concat_.py in the macro editor
 3) push run
+Author Antonio Politi, MPIBPC
+Modified May 2021
 '''
 
 import traceback
@@ -36,6 +44,18 @@ from loci.common import RandomAccessOutputStream
 
 pattern =  ['(\S+\d+|\d+\S+)(_+T|_+t)(\d+)\.(lsm$|czi$)', '(\S+\d+|\d+\S+)(_+T|_+t)(\d+)_Out\.(lsm$|czi$)']
 
+def run_onfiles(infiles = None, outdir = None):
+	IJ.run("Close All")
+	IJ.log(" ")
+	IJ.log("!!concat: concatenation of lsm, czi created with AutofocusScreen VBA macro!!")
+	outdir = IJ.getDirectory("Choose output directory. If cancel macro uses respective local directories")
+	if outdir == '': 
+		outdir = None
+
+	if outdir is not None:
+		if not os.path.exists(outdir):
+			os.mkdir(outdir)
+
 
 def run(indir=None,outdir=None):
 	IJ.run("Close All")
@@ -61,7 +81,6 @@ def run(indir=None,outdir=None):
 	start_time = time()
 	for root, dirs, files in os.walk(indir, topdown = False):
 		locfiles = glob(root+"/*.lsm")
-		print locfiles
 		locfiles= locfiles + glob(root+"/*.czi")
 		if locfiles is not None:
 			find_timepoints(root, locfiles, outdir)
@@ -81,6 +100,7 @@ def find_timepoints(root, files, outdir):
 				continue
 			baseName = result.group(1)
 			locfiles = glob(os.path.join(root, baseName + result.group(2)+'*'+result.group(4)))
+			print(locfiles)
 			if locfiles is not None:
 				for i in range(0,len(locfiles)):
 					try:
@@ -88,6 +108,22 @@ def find_timepoints(root, files, outdir):
 					except:
 						pass
 				process_time_points(root, locfiles, outdir)
+
+
+def process_files_ome(files, outdir):
+	'''Concatenate ome.tiff files. From different settings Jobs'''
+
+	options = ImporterOptions()
+	options.setId(files[0])
+	options.setVirtual(1)
+	image = BF.openImagePlus(options)
+	image = image[0]
+	width  = image.getWidth()
+	height = image.getHeight()
+	reader = ImageReader()
+	reader.setMetadataStore(MetadataTools.createOMEXMLMetadata())
+	reader.setId(files[0])
+
 
 
 def process_time_points(root, files, outdir):
@@ -100,7 +136,10 @@ def process_time_points(root, files, outdir):
 	image = BF.openImagePlus(options)
 	image = image[0]
 	if image.getNFrames() > 1:
-		IJ.log(files[0] + " Contains multiple time points. Can only concatenate single time points! Don't do anything!")
+		basename = os.path.basename(files[0])
+		basename = os.path.splitext(basename)[0]
+		IJ.log(files[0] + " Contains multiple time points. Can only concatenate single time points! Just export as ome.tif")
+		IJ.run(image, "Bio-Formats Exporter", "save="+ os.path.join(outdir, basename + ".ome.tif") +" export compression=Uncompressed");
 		image.close()
 		return
 	
@@ -119,14 +158,13 @@ def process_time_points(root, files, outdir):
 		reader.setId(files[0])
 		timeInfo = []
 		omeOut = reader.getMetadataStore()
-		omeOut = setUpXml(omeOut, image, files)
+		omeOut = setUpXml(omeOut, image, len(files))
 		reader.close()
 		image.close()
 		IJ.log ('Concatenates ' + os.path.join(root, outName.group(1) + '.ome.tif'))
 		itime = 0
 		try:
 			for ifile, fileName in enumerate(files):
-				print fileName
 				omeMeta = MetadataTools.createOMEXMLMetadata()
 	
 				reader.setMetadataStore(omeMeta)
@@ -137,6 +175,8 @@ def process_time_points(root, files, outdir):
 				if fileName.endswith('.czi'):
 					if ifile == 0:
 						T0 = omeMeta.getPlaneDeltaT(0,0).value()
+					if fixt0:
+						T0 = 0
 					dT = omeMeta.getPlaneDeltaT(0,0).value() - T0
 					unit =  omeMeta.getPlaneDeltaT(0,0).unit()
 				else:
@@ -211,7 +251,9 @@ def getTimePoint(reader, omeMeta):
 	time = [x for x in time if x is not None]
 	return time[0]
 
-def setUpXml(ome, image, files):
+
+
+def setUpXml(ome, image, sizeT):
 	"""setup Xml standard for concatenated file"""
 	ome.setImageID("Image:0", 0)
 	ome.setPixelsID("Pixels:0", 0)
@@ -228,7 +270,7 @@ def setUpXml(ome, image, files):
 	ome.setPixelsSizeX(PositiveInteger(image.getWidth()), 0)
 	ome.setPixelsSizeY(PositiveInteger(image.getHeight()), 0)
 	ome.setPixelsSizeZ(PositiveInteger(image.getNSlices()), 0)
-	ome.setPixelsSizeT(PositiveInteger(len(files)), 0)
+	ome.setPixelsSizeT(PositiveInteger(sizeT), 0)
 	ome.setPixelsSizeC(PositiveInteger(image.getNChannels()), 0)
 	return ome
 
@@ -285,7 +327,8 @@ def concatenateImagePlus(files, outfile):
 		concatImgPlus.close()
 
 	return outfile
-run()
+	
+run(indir.getPath(), outdir.getPath())
 	
 #if __name__=="__main__":
 #	run()
