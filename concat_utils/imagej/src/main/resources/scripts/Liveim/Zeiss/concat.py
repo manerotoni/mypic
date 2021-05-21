@@ -20,7 +20,6 @@ Modified May 2021
 '''
 
 import traceback
-import sys
 import os
 import re
 from time import time
@@ -29,7 +28,9 @@ from glob import glob
 from ij import IJ, ImagePlus, ImageStack
 #Bioformats specific stuff
 from loci.plugins import BF
-from loci.plugins.in import ImporterOptions
+# the not showing in the import is a bug
+import loci.plugins.in.ImporterOptions as ImporterOptions
+#import ImporterOptions
 from loci.formats import ImageReader
 from loci.formats import MetadataTools
 from loci.formats import ImageWriter
@@ -91,7 +92,8 @@ def find_timepoints(root, files, outdir):
 	while len(files) > 0:
 		for file in files:
 			filename =  os.path.basename(file)
-			for patt  in pattern:
+
+			for patt  in pattern:
 				result = re.match(patt, filename)
 				if result is not None:
 					break

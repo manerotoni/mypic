@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+		http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.scijava</groupId>
+		<artifactId>pom-scijava</artifactId>
+		<version>29.2.1</version>
+		<relativePath />
+	</parent>
+	<groupId>de.mpibpc.liveim</groupId>
+	<artifactId>IJconcat-zeiss</artifactId>
+	<version>0.2.0-SNAPSHOT</version>
+
+	<name>Concat tools for  Zeiss files generated with MyPiC ZEN black macro </name>
+	<description>Concatenate time-lapse from single time point files and create metadata accordingly </description>
+	<url>N/A</url>
+	<inceptionYear>206</inceptionYear>
+	<organization>
+		<name>Max-Planck-Institute for Biophysical Chemistry</name>
+		<url>https://www.mpibpc.mpg.de/16355971/live_cell_imaging</url>
+	</organization>
+	<licenses>
+		<license>
+			<name>Simplified BSD License</name>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<developers>
+		<!-- See https://imagej.net/Team -->
+		<developer>
+			<id>apoliti</id>
+			<name>Antonio Politi</name>
+			<url>https://imagej.net/User:apoliti</url>
+			<roles>
+				<role>founder</role>
+				<role>lead</role>
+				<role>developer</role>
+				<role>debugger</role>
+				<role>reviewer</role>
+				<role>support</role>
+				<role>maintainer</role>
+			</roles>
+		</developer>
+	</developers>
+	<properties>
+		<package-name>de.mpibpc.liveim</package-name>
+		<license.licenseName>bsd_2</license.licenseName>
+		<license.copyrightOwners>MPIBPC</license.copyrightOwners>
+		<license.projectName>Fiji distribution of ImageJ for the life sciences.</license.projectName>
+		<imagescience.version>3.0.0</imagescience.version>
+		<enforcer.skip>true</enforcer.skip>
+	</properties>
+
+	<contributors>
+
+	</contributors>
+	<mailingLists>
+
+	</mailingLists>
+	<scm></scm>
+	<issueManagement></issueManagement>
+	<repositories>
+		<repository>
+			<id>scijava.public</id>
+			<url>https://maven.scijava.org/content/groups/public</url>
+		</repository>
+	</repositories>
+
+	<dependencies>
+		<dependency>
+			<groupId>ome</groupId>
+			<artifactId>bio-formats_plugins</artifactId>
+			<version>6.3.0</version>
+		</dependency>
+		<dependency>
+			<groupId>net.imagej</groupId>
+			<artifactId>imagej</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>net.imagej</groupId>
+			<artifactId>ij</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>loci</groupId>
+			<artifactId>loci_plugins</artifactId>
+			<version>4.4.9</version>
+		</dependency>
+		<dependency>
+			<groupId>net.imagej</groupId>
+			<artifactId>imagej-legacy</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+</project>
