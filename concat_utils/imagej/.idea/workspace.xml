@@ -30,11 +30,29 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/resources/scripts/Liveim/Zeiss/concat.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-228">
-              <caret line="124" column="26" lean-forward="true" selection-start-line="124" selection-start-column="26" selection-end-line="124" selection-end-column="26" />
+            <state relative-caret-position="325">
+              <caret line="135" column="37" selection-start-line="135" selection-start-column="37" selection-end-line="135" selection-end-column="37" />
               <folding>
                 <element signature="e#712#728#0" expanded="true" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="jar://$MAVEN_REPOSITORY$/org/openmicroscopy/ome-xml/6.1.0/ome-xml-6.1.0.jar!/ome/xml/meta/MetadataRetrieve.class">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="302">
+              <caret line="926" column="18" lean-forward="true" selection-start-line="926" selection-start-column="18" selection-end-line="926" selection-end-column="18" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="jar://$MAVEN_REPOSITORY$/loci/scifio/4.4.9/scifio-4.4.9.jar!/loci/formats/ome/OMEXMLMetadataImpl.class">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="15">
+              <caret line="1803" column="18" selection-start-line="1803" selection-start-column="18" selection-end-line="1803" selection-end-column="18" />
             </state>
           </provider>
         </entry>
@@ -76,8 +94,8 @@
     </option>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="404" />
-    <option name="y" value="515" />
+    <option name="x" value="268" />
+    <option name="y" value="242" />
     <option name="width" value="1680" />
     <option name="height" value="1027" />
   </component>
@@ -133,6 +151,7 @@
     </panes>
   </component>
   <component name="PropertiesComponent">
+    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="project.structure.last.edited" value="Modules" />
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.38504156" />
@@ -277,7 +296,7 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-31" y="23" width="1680" height="1027" extended-state="0" />
+    <frame x="268" y="242" width="1680" height="1027" extended-state="0" />
     <editor active="true" />
     <layout>
       <window_info id="Image Layers" />
@@ -322,10 +341,24 @@
         </state>
       </provider>
     </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/loci/scifio/4.4.9/scifio-4.4.9.jar!/loci/formats/ome/OMEXMLMetadataImpl.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="15">
+          <caret line="1803" column="18" selection-start-line="1803" selection-start-column="18" selection-end-line="1803" selection-end-column="18" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="jar://$MAVEN_REPOSITORY$/org/openmicroscopy/ome-xml/6.1.0/ome-xml-6.1.0.jar!/ome/xml/meta/MetadataRetrieve.class">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="302">
+          <caret line="926" column="18" lean-forward="true" selection-start-line="926" selection-start-column="18" selection-end-line="926" selection-end-column="18" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/main/resources/scripts/Liveim/Zeiss/concat.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-228">
-          <caret line="124" column="26" lean-forward="true" selection-start-line="124" selection-start-column="26" selection-end-line="124" selection-end-column="26" />
+        <state relative-caret-position="325">
+          <caret line="135" column="37" selection-start-line="135" selection-start-column="37" selection-end-line="135" selection-end-column="37" />
           <folding>
             <element signature="e#712#728#0" expanded="true" />
           </folding>

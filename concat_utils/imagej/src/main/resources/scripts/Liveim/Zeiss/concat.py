@@ -49,7 +49,8 @@ def run_onfiles(infiles = None, outdir = None):
 	IJ.run("Close All")
 	IJ.log(" ")
 	IJ.log("!!concat: concatenation of lsm, czi created with AutofocusScreen VBA macro!!")
-	outdir = IJ.getDirectory("Choose output directory. If cancel macro uses respective local directories")
+	if outdir is None:
+		outdir = IJ.getDirectory("Choose output directory. If cancel macro uses respective local directories")
 	if outdir == '': 
 		outdir = None
 
@@ -57,6 +58,7 @@ def run_onfiles(infiles = None, outdir = None):
 		if not os.path.exists(outdir):
 			os.mkdir(outdir)
 
+	process_files_ome(infiles, outdir)
 
 def run(indir=None,outdir=None):
 	IJ.run("Close All")
@@ -116,16 +118,36 @@ def process_files_ome(files, outdir):
 	'''Concatenate ome.tiff files. From different settings Jobs'''
 
 	options = ImporterOptions()
-	options.setId(files[0])
-	options.setVirtual(1)
-	image = BF.openImagePlus(options)
-	image = image[0]
-	width  = image.getWidth()
-	height = image.getHeight()
+	sizeT = 0;
 	reader = ImageReader()
-	reader.setMetadataStore(MetadataTools.createOMEXMLMetadata())
-	reader.setId(files[0])
+	for afile in files:
+		
+		options.setId(afile.getPath())
+		options.setVirtual(1)
+		image = BF.openImagePlus(options)
+		image = image[0]
+		sizeT_file = image.getNFrames()
+		width  = image.getWidth()
+		height = image.getHeight()
+		sizeT = sizeT + sizeT_file
+		image.close()
+		omeMeta = MetadataTools.createOMEXMLMetadata()
+		reader.setMetadataStore(omeMeta)
+		reader.setId(afile.getPath())
+		nrImages = reader.getImageCount()
+		for i in range(0, nrImages):
+			print(omeMeta.getPlaneDeltaT(0,i).value())
+		reader.close()
 
+	#reader = ImageReader()
+	#reader.setMetadataStore(MetadataTools.createOMEXMLMetadata())
+	#reader.setId(afile.getPath())
+	#omeOut = reader.getMetadataStore()
+	#omeOut = setUpXml(omeOut, image, sizeT)
+	#reader.close()
+
+
+	print(sizeT)
 
 
 def process_time_points(root, files, outdir):
@@ -330,8 +352,9 @@ def concatenateImagePlus(files, outfile):
 
 	return outfile
 	
-run(indir.getPath(), outdir.getPath())
-	
+#run(indir.getPath(), outdir.getPath())
+run_onfiles(imgfiles,  outdir.getPath())
+
 #if __name__=="__main__":
 #	run()
 #dC = directoryChooser()
