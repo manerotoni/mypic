@@ -113,41 +113,92 @@ def find_timepoints(root, files, outdir):
 						pass
 				process_time_points(root, locfiles, outdir)
 
-
-def process_files_ome(files, outdir):
-	'''Concatenate ome.tiff files. From different settings Jobs'''
-
+def maxSizeT(files):
+	'''Maximal number of time points when concatenating files with each some time-lapse data'''
 	options = ImporterOptions()
-	sizeT = 0;
-	reader = ImageReader()
-	for afile in files:
-		
-		options.setId(afile.getPath())
+	sizeT = 0
+	for fileName in files:
+		options.setId(fileName.getPath())
 		options.setVirtual(1)
 		image = BF.openImagePlus(options)
 		image = image[0]
 		sizeT_file = image.getNFrames()
-		width  = image.getWidth()
-		height = image.getHeight()
 		sizeT = sizeT + sizeT_file
 		image.close()
+	return sizeT
+
+def process_files_ome( files, outdir):
+	''' Concatenate ome.tiff files. From different settings Jobs '''
+
+	options = ImporterOptions()
+	# compute maximal number of frames
+
+	reader = ImageReader()
+
+	options.setId(files[0].getPath())
+	options.setVirtual(1)
+	image = BF.openImagePlus(options)
+	image = image[0]
+	sizeT = maxSizeT(files)
+
+	# Create some default ome dump file from first file
+	reader.setMetadataStore(MetadataTools.createOMEXMLMetadata())
+	reader.setId(files[0].getPath())
+	omeOut = reader.getMetadataStore()
+	omeOut = setUpXml(omeOut, image, sizeT)
+	nrplanes_per_timepoint = omeOut.getPixelsSizeC(0).getValue()*omeOut.getPixelsSizeZ(0).getValue()
+	reader.close()
+
+	images_total = 0
+	itime = 0
+	itime_local = 0
+
+	outName = re.match('(\S+\d+|\d+\S+)(_+T|_+t)(\d+)\.(lsm$|czi$|ome.tif$)', os.path.basename(files[0].getPath()))
+	print(outName)
+	outfile =  os.path.join(outdir, outName.group(1) + '_final.ome.tif')
+
+	for ifile, fileName in enumerate(files):
+
 		omeMeta = MetadataTools.createOMEXMLMetadata()
 		reader.setMetadataStore(omeMeta)
-		reader.setId(afile.getPath())
+		reader.setId(fileName.getPath())
 		nrImages = reader.getImageCount()
+		if ifile == 0:
+			T0 = omeMeta.getPlaneDeltaT(0,0).value()
+			unit =  omeMeta.getPlaneDeltaT(0,0).unit()
 		for i in range(0, nrImages):
-			print(omeMeta.getPlaneDeltaT(0,i).value())
+			itime_local = itime + (i/nrplanes_per_timepoint)
+			dT = omeMeta.getPlaneDeltaT(0,i).value() - T0
+			omeOut.setPlaneDeltaT(Time(dT, unit),0, i + images_total)
+			omeOut.setPlanePositionX(omeMeta.getPlanePositionX(0,i), 0, i + images_total)
+			omeOut.setPlanePositionY(omeMeta.getPlanePositionY(0,i), 0, i + images_total)
+			omeOut.setPlanePositionZ(omeMeta.getPlanePositionZ(0,i), 0, i + images_total)
+			omeOut.setPlaneTheC(omeMeta.getPlaneTheC(0,i), 0, i + images_total)
+			omeOut.setPlaneTheT(NonNegativeInteger(itime_local), 0, i + images_total)
+			omeOut.setPlaneTheZ(omeMeta.getPlaneTheZ(0,i), 0, i + images_total)
+		itime = itime_local  + 1
+		images_total = images_total + nrImages
 		reader.close()
 
-	#reader = ImageReader()
-	#reader.setMetadataStore(MetadataTools.createOMEXMLMetadata())
-	#reader.setId(afile.getPath())
-	#omeOut = reader.getMetadataStore()
-	#omeOut = setUpXml(omeOut, image, sizeT)
-	#reader.close()
+	try:
+		incr = float(dT/(sizeT - 1))
+	except:
+		incr = 0
 
+	try:
+		omeOut.setPixelsTimeIncrement(incr, 0)
+	except TypeError:
+		#new Bioformats >5.1.x
+		omeOut.setPixelsTimeIncrement(Time(incr, unit),0)
 
-	print(sizeT)
+	outfile = concatenateImagePlus(files, sizeT, outfile)
+	if outfile is not None:
+		filein = RandomAccessInputStream(outfile)
+		fileout = RandomAccessOutputStream(outfile)
+		saver = TiffSaver(fileout, outfile)
+		saver.overwriteComment(filein,omeOut.dumpXML())
+		fileout.close()
+		filein.close()
 
 
 def process_time_points(root, files, outdir):
@@ -212,10 +263,7 @@ def process_time_points(root, files, outdir):
 						dT = (timeInfo[files.index(fileName)]-timeInfo[0]).seconds
 				
 				nrImages = reader.getImageCount()
-	
-	
 				for i in range(0, reader.getImageCount()):
-	
 					try:
 						omeOut.setPlaneDeltaT(dT, 0, i + itime*nrImages)
 					except TypeError:
@@ -241,7 +289,7 @@ def process_time_points(root, files, outdir):
 				#new Bioformats >5.1.x
 				omeOut.setPixelsTimeIncrement(Time(incr, unit),0)
 			
-			outfile = concatenateImagePlus(files, outfile)
+			outfile = concatenateImagePlus(files, len(files),  outfile)
 			if outfile is not None:
 				filein = RandomAccessInputStream(outfile)
 				fileout = RandomAccessOutputStream(outfile)
@@ -304,7 +352,7 @@ def addPositionName(position, outfile):
 	filename, extension = os.path.splitext(outfile)
 	return filename + '_P' + str(position) + extension
 
-def concatenateImagePlus(files, outfile):
+def concatenateImagePlus(files, sizeT, outfile):
 	"""concatenate images contained in files and save in outfile"""
 	'''
 	if len(files) == 1:
@@ -312,7 +360,11 @@ def concatenateImagePlus(files, outfile):
 		return
 	'''
 	options = ImporterOptions()
-	options.setId(files[0])
+	try:
+		filestr = files[0].getPath()
+	except AttributeError:
+		filestr = files[0]
+	options.setId(filestr)
 	options.setVirtual(1)
 	options.setOpenAllSeries(1)
 	options.setQuiet(1)
@@ -322,14 +374,18 @@ def concatenateImagePlus(files, outfile):
 	options.setOpenAllSeries(0)
 
 	for i in range(0, nrPositions):
-		concatImgPlus = IJ.createHyperStack("ConcatFile", imageG.getWidth(), imageG.getHeight(), imageG.getNChannels(), imageG.getNSlices(), len(files), imageG.getBitDepth())
+		concatImgPlus = IJ.createHyperStack("ConcatFile", imageG.getWidth(), imageG.getHeight(), imageG.getNChannels(), imageG.getNSlices(), sizeT, imageG.getBitDepth())
 		concatStack = ImageStack(imageG.getWidth(), imageG.getHeight())
 		IJ.showStatus("Concatenating files")
 		for file in files:
 			try:
-				IJ.log("	Add file " + file)
+				filestr = file.getPath()
+			except AttributeError:
+				filestr = file
+			try:
+				IJ.log("	Add file " + filestr)
 				options.setSeriesOn(i,1)
-				options.setId(file)
+				options.setId(filestr)
 				image = BF.openImagePlus(options)[0]
 				imageStack = image.getImageStack()
 				sliceNr = imageStack.getSize()
@@ -339,7 +395,7 @@ def concatenateImagePlus(files, outfile):
 				options.setSeriesOn(i,0)
 			except:
 				traceback.print_exc()
-				IJ.log(file + " failed to concatenate!")
+				IJ.log(filestr + " failed to concatenate!")
 			IJ.showProgress(files.index(file), len(files))
 		concatImgPlus.setStack(concatStack)
 		concatImgPlus.setCalibration(image.getCalibration())
@@ -349,11 +405,11 @@ def concatenateImagePlus(files, outfile):
 		else:
 			IJ.saveAs(concatImgPlus, "Tiff",  outfile)
 		concatImgPlus.close()
-
 	return outfile
-	
-#run(indir.getPath(), outdir.getPath())
-run_onfiles(imgfiles,  outdir.getPath())
+if len(imgfiles)  == 0:
+	run(indir.getPath(), outdir.getPath())
+else:
+	run_onfiles(imgfiles,  outdir.getPath())
 
 #if __name__=="__main__":
 #	run()
