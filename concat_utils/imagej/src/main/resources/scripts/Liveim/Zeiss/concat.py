@@ -1,8 +1,7 @@
 # @ File (label = "directory to concat", style = "directory") indir
 # @ File (label = "directory for output", style = "directory") outdir
 # @ Boolean fixt0
-# @ File[] (label = "file to concat") imgfiles
-# @ String (label = "regex for merging several image types") commonregex
+# @ Boolean (label = "regex for merging several image types") well_position
 
 '''
 To run concat_.py in fiji you have two options
@@ -89,6 +88,34 @@ def run(indir=None,outdir=None):
 			find_timepoints(root, locfiles, outdir)
 	return start_time
 
+def getFilesToProcess(indir):
+	"""get files to process according to a pattern"""
+	pattern = ".+_(?P<jobidx>\d+)_W(?P<well>\d+)_P(?P<position>\d+)(_T(?P<timepoint>\d+))?.(ome.tif|lsm|czi)"
+	files = os.listdir(indir)
+	file_with_indexes = list() 
+	for afile in files:
+		m = re.match(pattern, afile)
+		if m is not None:
+			tpoint = m.group('timepoint')
+			if tpoint is not None:
+				tpoint = int(m.group('timepoint'))
+			file_with_indexes.append([afile,  int(m.group('jobidx')), int(m.group('well')), int(m.group('position')), tpoint])
+	
+	# find matching well and position
+	posused = list()
+	wellused = list()
+	concat_files = list()
+	for afile in file_with_indexes:	
+		well = afile[2]
+		pos = afile[3]
+		if well in wellused and pos in posused:
+			continue
+		concat_files.append([os.path.join(indir, x[0]) for x in file_with_indexes if x[2] == well and x[3] == pos])
+		posused.append(pos)
+		wellused.append(well)
+	
+	return concat_files
+
 def find_timepoints(root, files, outdir):
 	'''Find files with same root and process them'''
 	while len(files) > 0:
@@ -118,7 +145,7 @@ def maxSizeT(files):
 	options = ImporterOptions()
 	sizeT = 0
 	for fileName in files:
-		options.setId(fileName.getPath())
+		options.setId(fileName)
 		options.setVirtual(1)
 		image = BF.openImagePlus(options)
 		image = image[0]
@@ -135,7 +162,7 @@ def process_files_ome( files, outdir):
 
 	reader = ImageReader()
 
-	options.setId(files[0].getPath())
+	options.setId(files[0])
 	options.setVirtual(1)
 	image = BF.openImagePlus(options)
 	image = image[0]
@@ -143,7 +170,7 @@ def process_files_ome( files, outdir):
 
 	# Create some default ome dump file from first file
 	reader.setMetadataStore(MetadataTools.createOMEXMLMetadata())
-	reader.setId(files[0].getPath())
+	reader.setId(files[0])
 	omeOut = reader.getMetadataStore()
 	omeOut = setUpXml(omeOut, image, sizeT)
 	nrplanes_per_timepoint = omeOut.getPixelsSizeC(0).getValue()*omeOut.getPixelsSizeZ(0).getValue()
@@ -153,15 +180,16 @@ def process_files_ome( files, outdir):
 	itime = 0
 	itime_local = 0
 
-	outName = re.match('(\S+\d+|\d+\S+)(_+T|_+t)(\d+)\.(lsm$|czi$|ome.tif$)', os.path.basename(files[0].getPath()))
-	print(outName)
+	outName = re.match('(\S+\d+|\d+\S+)(_+T|_+t)(\d+)\.(lsm$|czi$|ome.tif$)', os.path.basename(files[0]))
+
 	outfile =  os.path.join(outdir, outName.group(1) + '_final.ome.tif')
+	print(outfile)
 
 	for ifile, fileName in enumerate(files):
 
 		omeMeta = MetadataTools.createOMEXMLMetadata()
 		reader.setMetadataStore(omeMeta)
-		reader.setId(fileName.getPath())
+		reader.setId(fileName)
 		nrImages = reader.getImageCount()
 		if ifile == 0:
 			T0 = omeMeta.getPlaneDeltaT(0,0).value()
@@ -406,10 +434,15 @@ def concatenateImagePlus(files, sizeT, outfile):
 			IJ.saveAs(concatImgPlus, "Tiff",  outfile)
 		concatImgPlus.close()
 	return outfile
-if len(imgfiles)  == 0:
+
+if not well_position:
 	run(indir.getPath(), outdir.getPath())
 else:
-	run_onfiles(imgfiles,  outdir.getPath())
+	concat_files = getFilesToProcess(indir.getPath())
+	print(concat_files)
+	for cfiles in concat_files:
+		
+		run_onfiles(cfiles,  outdir.getPath())
 
 #if __name__=="__main__":
 #	run()
