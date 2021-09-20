@@ -167,7 +167,7 @@ def process_files_ome( files, outdir):
 	image = BF.openImagePlus(options)
 	image = image[0]
 	sizeT = maxSizeT(files)
-
+	
 	# Create some default ome dump file from first file
 	reader.setMetadataStore(MetadataTools.createOMEXMLMetadata())
 	reader.setId(files[0])
@@ -183,7 +183,8 @@ def process_files_ome( files, outdir):
 	outName = re.match('(\S+\d+|\d+\S+)(_+T|_+t)(\d+)\.(lsm$|czi$|ome.tif$)', os.path.basename(files[0]))
 
 	outfile =  os.path.join(outdir, outName.group(1) + '_final.ome.tif')
-	print(outfile)
+
+	print(outfile)
 
 	for ifile, fileName in enumerate(files):
 
@@ -195,6 +196,7 @@ def process_files_ome( files, outdir):
 			T0 = omeMeta.getPlaneDeltaT(0,0).value()
 			unit =  omeMeta.getPlaneDeltaT(0,0).unit()
 		for i in range(0, nrImages):
+			
 			itime_local = itime + (i/nrplanes_per_timepoint)
 			dT = omeMeta.getPlaneDeltaT(0,i).value() - T0
 			omeOut.setPlaneDeltaT(Time(dT, unit),0, i + images_total)
@@ -438,12 +440,14 @@ def concatenateImagePlus(files, sizeT, outfile):
 if not well_position:
 	run(indir.getPath(), outdir.getPath())
 else:
-	concat_files = getFilesToProcess(indir.getPath())
-	print(concat_files)
-	for cfiles in concat_files:
+	if recursive:
 		
-		run_onfiles(cfiles,  outdir.getPath())
-
+	else:
+		concat_files = getFilesToProcess(indir.getPath())
+		print(concat_files)
+		for cfiles in concat_files:
+			run_onfiles(cfiles,  outdir.getPath())
+	
 #if __name__=="__main__":
 #	run()
 #dC = directoryChooser()

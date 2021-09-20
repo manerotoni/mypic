@@ -2,7 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="6ceca1c5-d2ac-4045-aa6a-b4f50e74c33f" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/src/main/resources/scripts/Liveim/Zeiss/concat.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/scripts/Liveim/Zeiss/concat.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/markdown-navigator/profiles_settings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/scripts/Liveim/Zeiss/concat_.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/scripts/Liveim/Zeiss/concat_.py" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <ignored path="$PROJECT_DIR$/target/" />
@@ -13,27 +16,26 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="DefaultGradleProjectSettings">
-    <option name="testRunner" value="GRADLE" />
-    <option name="delegatedBuild" value="true" />
+    <option name="isMigrated" value="true" />
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/pom.xml">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1155">
+            <state relative-caret-position="263">
               <caret line="77" column="26" selection-start-line="77" selection-start-column="26" selection-end-line="77" selection-end-column="26" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/src/main/resources/scripts/Liveim/Zeiss/concat.py">
+        <entry file="file://$PROJECT_DIR$/src/main/resources/scripts/Liveim/Zeiss/concat_.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="168">
-              <caret line="366" column="25" selection-start-line="366" selection-start-column="25" selection-end-line="366" selection-end-column="25" />
+            <state relative-caret-position="385">
+              <caret line="444" column="31" selection-start-line="444" selection-start-column="31" selection-end-line="444" selection-end-column="31" />
               <folding>
-                <element signature="e#712#728#0" expanded="true" />
+                <element signature="e#668#684#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -42,7 +44,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="jar://$MAVEN_REPOSITORY$/org/openmicroscopy/ome-xml/6.1.0/ome-xml-6.1.0.jar!/ome/xml/meta/MetadataRetrieve.class">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="13215">
+            <state relative-caret-position="17620">
               <caret line="926" column="18" selection-start-line="926" selection-start-column="18" selection-end-line="926" selection-end-column="18" />
             </state>
           </provider>
@@ -51,7 +53,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="jar://$MAVEN_REPOSITORY$/loci/scifio/4.4.9/scifio-4.4.9.jar!/loci/formats/ome/OMEXMLMetadataImpl.class">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="24165">
+            <state relative-caret-position="32220">
               <caret line="1803" column="18" selection-start-line="1803" selection-start-column="18" selection-end-line="1803" selection-end-column="18" />
             </state>
           </provider>
@@ -60,7 +62,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="jar://$MAVEN_REPOSITORY$/loci/loci_plugins/4.4.9/loci_plugins-4.4.9.jar!/loci/plugins/in/ImporterOptions.class">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="90">
+            <state relative-caret-position="120">
               <caret line="19" column="13" selection-start-line="19" selection-start-column="13" selection-end-line="19" selection-end-column="13" />
             </state>
           </provider>
@@ -81,23 +83,15 @@
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/src/main/resources/scripts/Liveim/Zeiss/concat.py" />
+        <option value="$PROJECT_DIR$/src/main/resources/scripts/Liveim/Zeiss/concat_.py" />
       </list>
     </option>
   </component>
-  <component name="ProjectConfigurationFiles">
-    <option name="files">
-      <list>
-        <option value="$PROJECT_DIR$/.idea/vcs.xml" />
-        <option value="$PROJECT_DIR$/.idea/compiler.xml" />
-        <option value="$PROJECT_DIR$/.idea/encodings.xml" />
-      </list>
-    </option>
-  </component>
-  <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="280" />
-    <option name="y" value="121" />
+  <component name="ProjectFrameBounds">
+    <option name="x" value="673" />
+    <option name="y" value="150" />
     <option name="width" value="1680" />
-    <option name="height" value="1027" />
+    <option name="height" value="1028" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -105,7 +99,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -139,20 +132,18 @@
               <item name="resources" type="462c0819:PsiDirectoryNode" />
               <item name="Zeiss" type="462c0819:PsiDirectoryNode" />
             </path>
-            <path>
-              <item name="IJ_concat_zeiss" type="b2602c69:ProjectViewProjectNode" />
-              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
-            </path>
           </expand>
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
       <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="project.structure.last.edited" value="Modules" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="project.structure.last.edited" value="Project" />
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.38504156" />
     <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
@@ -183,10 +174,10 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="359" y="147" width="1680" height="1027" extended-state="0" />
+    <frame x="539" y="120" width="1344" height="822" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.25274727" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.3979751" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Image Layers" order="2" />
       <window_info id="Designer" order="3" />
@@ -203,6 +194,8 @@
       <window_info anchor="bottom" id="Terminal" order="7" />
       <window_info anchor="bottom" id="Event Log" order="8" side_tool="true" />
       <window_info anchor="bottom" id="Version Control" order="9" />
+      <window_info anchor="right" id="PlantUML" />
+      <window_info anchor="right" id="make" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -214,40 +207,41 @@
     </layout>
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/src/main/resources/scripts/Liveim/Zeiss/concat.py" />
     <entry file="file://$PROJECT_DIR$/pom.xml">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1155">
+        <state relative-caret-position="263">
           <caret line="77" column="26" selection-start-line="77" selection-start-column="26" selection-end-line="77" selection-end-column="26" />
         </state>
       </provider>
     </entry>
     <entry file="jar://$MAVEN_REPOSITORY$/org/openmicroscopy/ome-xml/6.1.0/ome-xml-6.1.0.jar!/ome/xml/meta/MetadataRetrieve.class">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="13215">
+        <state relative-caret-position="17620">
           <caret line="926" column="18" selection-start-line="926" selection-start-column="18" selection-end-line="926" selection-end-column="18" />
         </state>
       </provider>
     </entry>
     <entry file="jar://$MAVEN_REPOSITORY$/loci/scifio/4.4.9/scifio-4.4.9.jar!/loci/formats/ome/OMEXMLMetadataImpl.class">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="24165">
+        <state relative-caret-position="32220">
           <caret line="1803" column="18" selection-start-line="1803" selection-start-column="18" selection-end-line="1803" selection-end-column="18" />
         </state>
       </provider>
     </entry>
     <entry file="jar://$MAVEN_REPOSITORY$/loci/loci_plugins/4.4.9/loci_plugins-4.4.9.jar!/loci/plugins/in/ImporterOptions.class">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
+        <state relative-caret-position="120">
           <caret line="19" column="13" selection-start-line="19" selection-start-column="13" selection-end-line="19" selection-end-column="13" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/resources/scripts/Liveim/Zeiss/concat.py">
+    <entry file="file://$PROJECT_DIR$/src/main/resources/scripts/Liveim/Zeiss/concat_.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="168">
-          <caret line="366" column="25" selection-start-line="366" selection-start-column="25" selection-end-line="366" selection-end-column="25" />
+        <state relative-caret-position="385">
+          <caret line="444" column="31" selection-start-line="444" selection-start-column="31" selection-end-line="444" selection-end-column="31" />
           <folding>
-            <element signature="e#712#728#0" expanded="true" />
+            <element signature="e#668#684#0" expanded="true" />
           </folding>
         </state>
       </provider>
