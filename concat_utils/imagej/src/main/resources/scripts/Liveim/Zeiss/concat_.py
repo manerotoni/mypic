@@ -440,8 +440,16 @@ def concatenateImagePlus(files, sizeT, outfile):
 if not well_position:
 	run(indir.getPath(), outdir.getPath())
 else:
+	recursive = 1
 	if recursive:
-		
+		maindir = indir.getPath()
+		dirs = os.listdir(maindir)
+		for adir in dirs:
+			locdir = os.path.join(maindir,adir)
+			if os.path.isdir(os.path.join(maindir,adir)):
+				concat_files = getFilesToProcess(locdir)
+				for cfiles in concat_files:
+					run_onfiles(cfiles,  outdir.getPath())			
 	else:
 		concat_files = getFilesToProcess(indir.getPath())
 		print(concat_files)
